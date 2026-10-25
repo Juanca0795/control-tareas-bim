@@ -2500,6 +2500,25 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 @media(max-width:700px){
   #weekly-view .weekly-status-context,#weekly-view .weekly-status-comparison{display:block;margin:4px 0 0}
 }
+
+/* Control semanal fiel a la referencia: acciones esenciales integradas en timeline. */
+#weekly-view .weekly-utility-actions{
+  display:inline-flex;gap:6px;align-items:center;
+  padding-left:9px;margin-left:2px;border-left:1px solid var(--border-base);
+}
+#weekly-view .weekly-utility-actions .btn{white-space:nowrap}
+#weekly-view .weekly-utility-actions #weekly-close-btn{
+  color:var(--ink-primary);border-color:var(--border-strong);
+}
+#weekly-view .weekly-utility-actions #weekly-close-btn:not(:disabled):hover{border-color:var(--status-done-fg)}
+@media(max-width:1400px){
+  #weekly-view .weekly-timeline-toolbar{flex-wrap:wrap}
+  #weekly-view .weekly-timeline-controls{flex-wrap:wrap;justify-content:flex-start}
+}
+@media(max-width:700px){
+  #weekly-view .weekly-utility-actions{flex:1 1 100%;margin:5px 0 0;padding:8px 0 0;border-left:0;border-top:1px solid var(--border-base)}
+  #weekly-view .weekly-utility-actions .btn{flex:1}
+}
 </style>
 </head>
 <body>
@@ -2612,17 +2631,6 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 
   <!-- VISTA: CONTROL SEMANAL BIM — INDICADORES, NO MATRIZ DE TAREAS -->
   <div id="weekly-view" class="hidden" aria-label="Control semanal BIM">
-    <section class="weekly-titlebar">
-      <div>
-        <div class="eyebrow">GESTIÓN DE RESULTADOS BIM</div>
-        <h1>Control semanal <span class="weekly-title-mark">/ KPI</span></h1>
-        <p>Productividad, compromisos y cumplimiento medidos por semana ISO (lunes a domingo).</p>
-      </div>
-      <div class="weekly-title-actions">
-        <button type="button" class="btn" onclick="downloadWeeklyCSV()" title="Exportar indicadores de la semana seleccionada"> Exportar CSV</button>
-        <button type="button" class="btn primary" id="weekly-close-btn" onclick="requestWeeklyClose()">V Cerrar semana</button>
-      </div>
-    </section>
     <section class="card weekly-filter-card" aria-label="Filtros del control semanal">
       <div class="weekly-week-navigation weekly-timeline-toolbar">
         <div class="weekly-timeline-head">
@@ -2635,6 +2643,10 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
           <label for="weekly-week">Ir a semana:</label>
           <input type="week" id="weekly-week" class="field-input" aria-label="Elegir semana de análisis" onchange="changeWeeklyWeek(this.value)">
           <button type="button" class="icon-btn" onclick="stepWeekly(1)" aria-label="Semana siguiente" title="Semana siguiente">›</button>
+          <div class="weekly-utility-actions">
+            <button type="button" class="btn small" onclick="downloadWeeklyCSV()" title="Exportar los resultados reales de la semana">Exportar CSV</button>
+            <button type="button" class="btn small" id="weekly-close-btn" onclick="requestWeeklyClose()" title="Cerrar y archivar la semana seleccionada">Cerrar semana</button>
+          </div>
         </div>
       </div>
       <div id="weekly-timeline" class="weekly-timeline" aria-label="Selecciona una semana en la línea de tiempo" role="group">
@@ -2674,11 +2686,6 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
         <div id="weekly-cnc" class="weekly-cnc-content" aria-live="polite"></div>
       </article>
     </section>
-    <div class="weekly-help-line">
-      <div><strong>Metodología:</strong> Indicadores calculados con registros de Supabase. La semana planificada procede de la fecha límite (o del registro si no hay plazo), por lo que el PPC es <b>operativo</b>, no un compromiso semanal formal. Los períodos abiertos son provisionales; los cierres archivados mantienen sus resultados.</div>
-      <button type="button" class="btn small" onclick="switchView('tasks')">Ir a Control de tareas</button>
-    </div>
-    <footer>Los registros se sincronizan en Supabase. Los cierres semanales conservan una copia fija de sus indicadores y se incluyen en el respaldo JSON.</footer>
   </div>
 
   <!-- VISTA: DASHBOARD SALA DE CONTROL -->
