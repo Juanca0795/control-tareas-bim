@@ -2071,6 +2071,32 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
 @media(min-width:560px) and (max-width:760px){
   #tasks-view .task-mobile-cards{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+
+/* FACETAS BIM — opciones cruzadas visibles, estados activos y cronograma PPC */
+.select-wrap.filter-selected select{
+  border-color:var(--accent-blue);
+  background-color:var(--bg-selected);
+  font-weight:600;
+}
+.select-wrap.filter-selected:focus-within select{
+  box-shadow:0 0 0 3px rgba(94,167,255,.15);
+}
+#dash-scope-heading{font-variant-numeric:tabular-nums;white-space:nowrap}
+.weekly-time-step .weekly-time-ppc{
+  display:inline-flex;justify-content:center;align-items:center;
+  border:1px solid var(--border-strong);border-radius:6px;
+  padding:2px 6px;font:700 10px var(--font-mono);
+  color:var(--ink-secondary);background:var(--bg-panel);line-height:1.35;
+}
+.weekly-time-step .weekly-time-ppc.good{color:var(--status-done-fg);border-color:var(--status-done-bd);background:var(--status-done-bg)}
+.weekly-time-step .weekly-time-ppc.mid{color:var(--accent-blue);border-color:var(--accent-blue);background:var(--bg-selected)}
+.weekly-time-step .weekly-time-ppc.low{color:var(--status-crit-fg);border-color:var(--status-crit-bd);background:var(--status-crit-bg)}
+.weekly-is-empty.weekly-chart-card{min-height:0!important}
+.weekly-is-empty.weekly-chart-wide{min-height:0!important}
+.weekly-is-empty .weekly-chart-content{min-height:95px!important}
+.weekly-is-empty .weekly-empty{min-height:95px;height:auto;padding:12px 14px}
+.weekly-is-empty .weekly-card-head{margin-bottom:9px}
+@media(max-width:680px){#dash-scope-heading{width:100%;font-size:9px}}
 </style>
 </head>
 <body>
@@ -2276,7 +2302,7 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
   <!-- VISTA: DASHBOARD SALA DE CONTROL -->
   <div id="dashboard-view">
     <section class="card dash-filters">
-      <span>SEGMENTAR ALCANCE</span>
+      <span id="dash-scope-heading">SEGMENTAR ALCANCE</span>
       <div class="select-wrap"><select id="dash-package" onchange="renderDashboard()" aria-label="Filtrar paquete dashboard"></select></div>
       <div class="select-wrap"><select id="dash-team" onchange="renderDashboard()" aria-label="Filtrar equipo dashboard"></select></div>
       <div class="select-wrap"><select id="dash-owner" onchange="renderDashboard()" aria-label="Filtrar responsable dashboard"></select></div>
@@ -2737,15 +2763,21 @@ function crossFilterOptions(fields,sourceRows){
     if(!el)continue;
     const rows=sourceRows.filter(row=>fields.every(([otherId,otherField])=>
       otherId===id||!selected[otherId]||row[otherField]===selected[otherId]));
-    const available=unique(rows.map(row=>row[field]).filter(value=>typeof value==='string'));
+    const counts=new Map();
+    for(const row of rows){
+      const value=row[field];
+      if(typeof value==='string'&&value)counts.set(value,(counts.get(value)||0)+1);
+    }
+    const available=unique([...counts.keys()]);
     const current=selected[id];
     el.innerHTML='<option value="">'+esc(label)+'</option>'+
-      available.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('');
+      available.map(value=>'<option value="'+esc(value)+'">'+esc(value)+' ('+counts.get(value)+')</option>').join('');
     // Si un registro desaparece por sincronización, mantener visible su filtro
     // hasta que el usuario lo quite: nunca borrar selecciones silenciosamente.
     if(current&&!available.includes(current))
       el.insertAdjacentHTML('beforeend','<option value="'+esc(current)+'" disabled>'+esc(current)+' (sin coincidencias)</option>');
     el.value=current;
+    el.closest('.select-wrap')?.classList.toggle('filter-selected',Boolean(current));
   }
 }
 function taskCrossSource(){
@@ -2943,6 +2975,7 @@ function renderDashboard(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
   const a = dashboardTasks(), s = stats(a);
   $('#dashboard-view').classList.toggle('ui-empty-dashboard',a.length===0);
+  $('#dash-scope-heading').textContent='SEGMENTAR ALCANCE · '+a.length+' DE '+tasks.length;
   $('#dash-stats').innerHTML = makeStats(a, true);
   $('#state-chart').innerHTML = makeRadar(a);
   $('#radar-count').textContent = `${a.length} entregable${a.length===1?'':'s'}`;
@@ -3754,17 +3787,23 @@ function renderWeeklyTimeline(){
   const weeks=Array.from({length:11},(_,i)=>neighborWeek(selectedWeek,i-7));
   track.innerHTML=weeks.map(week=>{
     const start=dateDisplay(localISO(weekStart(week))).slice(0,5),end=dateDisplay(weekEnd(week)).slice(0,5);
-    const m=weeklyFiltered(week),hasData=m.rows.length>0,archived=m.closed;
+    const m=weeklyMetrics(week),hasData=m.rows.length>0,archived=m.closed;
     const selected=week===selectedWeek,current=week===nowWeek;
+    const scoreVisible=hasData&&(archived||weekEnd(week)<todayString()||current);
+    const score=scoreVisible&&m.ppc!==null?m.ppc.toFixed(0)+'%':'';
+    const performance=score?(m.ppc>=85?'good':m.ppc>=75?'mid':'low'):'';
     const classes=['weekly-time-step',hasData?'has-data':'',archived?'archived':'',
       selected?'selected':'',current?'current':''].filter(Boolean).join(' ');
-    const subtitle=archived?'Archivada':hasData?m.rows.length+' tarea'+(m.rows.length===1?'':'s'):current?'Actual':'Sin registros';
+    const subtitle=archived?'Archivada':current?'Semana actual':hasData?m.rows.length+' tarea'+(m.rows.length===1?'':'s'):'Sin registros';
+    const accessibility=score?' · PPC '+score+(current&&!archived?' provisional':''):'';
     return `<button type="button" class="${classes}" onclick="changeWeeklyWeek('${week}')"
-      aria-pressed="${selected}" aria-label="Semana ${esc(week)} del ${start} al ${end}: ${esc(subtitle)}">
+      aria-pressed="${selected}" aria-label="Semana ${esc(week)} del ${start} al ${end}: ${esc(subtitle+accessibility)}">
       <span class="weekly-time-dot" aria-hidden="true"></span>
       <span class="weekly-time-name">${esc(weekShort(week))} <small>${week.slice(0,4)}</small></span>
       <span class="weekly-time-range">${start} – ${end}</span>
-      <span class="weekly-time-status">${esc(subtitle)}</span></button>`;
+      <span class="weekly-time-status">${esc(subtitle)}</span>
+      ${score?`<span class="weekly-time-ppc ${performance}" title="PPC operativo ${current&&!archived?'provisional':'de la semana'}">${score}</span>`:''}
+    </button>`;
   }).join('');
   const active=track.querySelector('.selected');
   if(active)target.scrollLeft=Math.max(0,active.offsetLeft-(target.clientWidth-active.offsetWidth)/2);
@@ -3800,7 +3839,11 @@ function weeklyChartOptions(){
   return {text:dark?'#bdcce4':'#50617c',grid:dark?'rgba(127,160,198,.16)':'rgba(65,85,122,.14)',
     blue:'#4da5ff',green:'#24cba5',pink:'#f25570',amber:'#f3bb67',muted:dark?'#75839b':'#a4adbd'};
 }
-function weeklyEmpty(el,msg){el.style.removeProperty('height');el.innerHTML=`<div class="weekly-empty"><strong>Sin datos para graficar</strong><span>${esc(msg)}</span></div>`;}
+function weeklyEmpty(el,msg){
+  el.style.removeProperty('height');
+  el.closest('.weekly-chart-card')?.classList.add('weekly-is-empty');
+  el.innerHTML=`<div class="weekly-empty"><strong>Sin datos para graficar</strong><span>${esc(msg)}</span></div>`;
+}
 function weeklyTrend(m){
   const node=$('#weekly-trend-chart'),weeks=weeklyHistoryWeeks();
   const vals=weeks.map(w=>weeklyMetrics(w).ppc);
@@ -3933,6 +3976,7 @@ function renderWeekly(){
   if(!$('#weekly-view'))return;
   if(currentView!=='weekly')return;
   disposeWeeklyCharts();
+  document.querySelectorAll('.weekly-chart-card').forEach(card=>card.classList.remove('weekly-is-empty'));
   updateWeeklyFilters();
   $('#weekly-week').value=selectedWeek;
   $('#weekly-period').textContent='Semana '+selectedWeek.split('-W')[1]+' · '+weekDatesText(selectedWeek);
@@ -3969,6 +4013,7 @@ function renderWeekly(){
   weeklyGroupChart('weekly-packages-chart',packages,'package');
   weeklyBacklogChart();
   const highest=packages.length?packages.map(g=>({...g,ppc:100*g.done/g.planned})).sort((a,b)=>a.ppc-b.ppc)[0]:null;
+  $('#weekly-insights').closest('.weekly-chart-card')?.classList.toggle('weekly-is-empty',m.ppc===null);
   $('#weekly-insights').innerHTML=m.ppc===null?`<div class="weekly-empty"><strong>Primero registra los compromisos</strong><span>El control semanal muestra resultados verificables, nunca valores de demostración.</span></div>`:
     `<div class="weekly-insight"><strong>Cumplimiento semanal</strong><div><span class="measure">${pct(m.ppc)}</span> de los compromisos planificados.</div></div>
     <div class="weekly-insight"><strong>Brecha de planificación</strong><div><span class="measure">${m.remaining}</span> entrega(s) no cumplida(s) al cierre de la semana.</div></div>
