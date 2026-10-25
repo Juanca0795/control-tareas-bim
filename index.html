@@ -2139,6 +2139,237 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
   .ui-empty-dashboard .executive-grid > .chart-card{min-height:175px!important}
   .ui-empty-dashboard .executive-grid .compact-empty{min-height:85px}
 }
+
+/* ===============================================================
+   AEC OBSIDIAN PROFESSIONAL | diseño híbrido basado en Stitch
+   Solo presentación; catálogo, Supabase, identidad y lógica intactos.
+   Colores semánticos reservados para estados operativos verificables.
+   =============================================================== */
+html[data-theme="dark"]{
+  --bg-app:#0D1420;
+  --bg-panel:#172232;
+  --bg-subtle:#1D2B3C;
+  --bg-hover:#26374B;
+  --bg-selected:rgba(100,145,185,.16);
+  --ink-primary:#E9EEF5;
+  --ink-secondary:#C4CFDB;
+  --ink-muted:#9AADC2;
+  --border-base:#2A394C;
+  --border-strong:#44566D;
+  --sidebar-bg:rgba(13,20,32,.98);
+  --sidebar-hover:#26374B;
+  --sidebar-ink:#B1C1D1;
+  --sidebar-ink-active:#E9EEF5;
+  --brand-red:#C63F50;
+  --brand-red-hover:#B03444;
+  --accent-blue:#83B3D9;
+  --accent-purple:#9A97BE;
+  --status-done-bg:rgba(53,137,119,.15);
+  --status-done-fg:#69C7AC;
+  --status-done-bd:rgba(74,163,140,.36);
+  --status-prog-bg:rgba(82,125,168,.18);
+  --status-prog-fg:#9BC5E9;
+  --status-prog-bd:rgba(109,157,195,.36);
+  --status-todo-bg:rgba(151,169,188,.12);
+  --status-todo-fg:#B7C4D0;
+  --status-todo-bd:rgba(151,169,188,.27);
+  --status-warn-bg:rgba(194,142,70,.14);
+  --status-warn-fg:#E6B771;
+  --status-warn-bd:rgba(194,142,70,.36);
+  --status-crit-bg:rgba(197,74,84,.14);
+  --status-crit-fg:#E98B92;
+  --status-crit-bd:rgba(197,74,84,.37);
+  --shadow-sm:0 1px 3px rgba(0,0,0,.13);
+  --shadow-md:0 8px 24px rgba(0,0,0,.23);
+}
+html[data-theme="light"]{
+  --bg-app:#F4F6F9;
+  --bg-panel:#FFFFFF;
+  --bg-subtle:#ECF1F6;
+  --bg-hover:#E6EDF5;
+  --bg-selected:rgba(82,125,168,.10);
+  --ink-primary:#162235;
+  --ink-secondary:#465970;
+  --ink-muted:#61758A;
+  --border-base:#D9E1E9;
+  --border-strong:#BBC9D7;
+  --sidebar-bg:rgba(255,255,255,.97);
+  --sidebar-hover:#EDF2F8;
+  --sidebar-ink:#53667E;
+  --sidebar-ink-active:#1B3049;
+  --brand-red:#C53749;
+  --brand-red-hover:#AC2D3D;
+  --accent-blue:#406F99;
+  --accent-purple:#736A9C;
+  --status-done-bg:#EAF6F1;
+  --status-done-fg:#27745F;
+  --status-done-bd:#BCDCCF;
+  --status-prog-bg:#EAF2F9;
+  --status-prog-fg:#3E6F9C;
+  --status-prog-bd:#BBD0E0;
+  --status-todo-bg:#F0F3F7;
+  --status-todo-fg:#52667A;
+  --status-todo-bd:#CFD9E2;
+  --status-warn-bg:#FCF4E9;
+  --status-warn-fg:#93611E;
+  --status-warn-bd:#E8D1AB;
+  --status-crit-bg:#FCEDF0;
+  --status-crit-fg:#A83B49;
+  --status-crit-bd:#E9B9C0;
+  --shadow-sm:0 1px 3px rgba(22,34,53,.035);
+  --shadow-md:0 7px 24px rgba(22,34,53,.09);
+}
+body{background-image:none}
+.sidebar{box-shadow:0 2px 16px rgba(10,20,32,.08);border-bottom-color:var(--border-base)}
+.sidebar nav{border-radius:10px;background:var(--bg-subtle)}
+.nav-link,.nav-link.active{border-radius:7px}
+.nav-link.active{box-shadow:0 1px 7px rgba(14,31,50,.07);border-color:var(--border-strong)}
+.nav-link.active:before{background:var(--accent-blue);box-shadow:none}
+.card,.chart-card,.weekly-chart-card{
+  border:1px solid var(--border-base);
+  border-radius:12px;
+  box-shadow:var(--shadow-sm);
+}
+.card:hover,.weekly-chart-card:hover{box-shadow:var(--shadow-sm)}
+.card h2,.weekly-card-head h2{font-size:11px;letter-spacing:.045em;font-weight:700}
+.card .desc,.weekly-card-head p{font-size:11px;line-height:1.5}
+.btn,.icon-btn,.field-input,select{
+  border-radius:8px;
+}
+.btn.primary{
+  background:var(--brand-red);
+  border-color:var(--brand-red);
+  box-shadow:none;
+}
+.btn.primary:hover:not(:disabled){
+  background:var(--brand-red-hover);
+  border-color:var(--brand-red-hover);
+  transform:none;
+}
+.stat-grid{gap:12px;margin-bottom:16px}
+.stat{
+  display:flex;
+  flex-direction:column;
+  min-height:132px;
+  gap:0;
+  padding:15px 17px 12px;
+  border-radius:11px;
+  box-shadow:none;
+}
+.stat .label{font-size:10px;letter-spacing:.06em}
+.stat .val{
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums;
+  font-size:clamp(22px,2.15vw,30px);
+  font-weight:600;
+  margin:10px 0 5px;
+  color:var(--ink-primary);
+  line-height:1.16;
+}
+.stat .foot{font-size:10px;color:var(--ink-muted);line-height:1.35}
+.stat .stamp{background:var(--bg-subtle);color:var(--ink-secondary)}
+.stat .stamp.blue{color:var(--accent-blue)}
+.stat .stamp.green{background:var(--status-done-bg);color:var(--status-done-fg)}
+.stat .stamp.red{background:var(--status-crit-bg);color:var(--status-crit-fg)}
+.stat-meter{
+  display:block;width:100%;height:4px;min-height:4px;
+  overflow:hidden;border-radius:99px;
+  margin-top:auto;background:var(--border-base);
+  transform:translateY(4px);
+}
+.stat-meter i{display:block;height:100%;background:var(--accent-blue);border-radius:99px}
+.stat:has(.stamp.green) .stat-meter i{background:var(--status-done-fg)}
+.stat:has(.stamp.red) .stat-meter i{background:var(--status-crit-fg)}
+button.stat:hover{transform:none;border-color:var(--border-strong);box-shadow:var(--shadow-sm)}
+button.stat:focus-visible{outline-offset:3px}
+.dash-filters,.controls,.weekly-filter-card{border-radius:11px;box-shadow:none}
+.executive-grid{gap:14px}
+.executive-grid>.chart-card{padding:17px 18px}
+.radar-card .radar-legend{gap:5px}
+.radar-card .radar-choice{
+  background:var(--bg-subtle);
+  border:1px solid var(--border-base);
+  border-radius:7px;
+  box-shadow:none;
+}
+.radar-card .radar-choice:hover{transform:none;border-color:var(--accent-blue)}
+.radar-card .radar-choice i{box-shadow:none}
+.control-team-summary{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
+.pulse-card .control-team-summary{grid-template-columns:minmax(0,1fr);gap:8px}
+.pulse-card button.owner-item{
+  grid-template-columns:28px minmax(0,1fr) auto;
+  background:var(--bg-subtle);
+  border:1px solid var(--border-base);
+  padding:10px 11px;
+  border-radius:8px;
+}
+.pulse-card .owner-item .who b{font-size:11px;line-height:1.35;white-space:normal}
+.pulse-card .owner-item .who small{display:block;margin:4px 0 6px;color:var(--ink-muted)}
+.discipline-meter{display:block;width:100%;height:4px;border-radius:5px;background:var(--border-strong);overflow:hidden}
+.discipline-meter i{display:block;background:var(--accent-blue);height:100%;border-radius:5px}
+.hbar-line .track{height:5px;border:0;background:var(--border-base)}
+.hbar-line .track i{background:var(--accent-blue)}
+#package-chart .hbar-line .track i{background:var(--accent-blue)}
+.risk-row{border-radius:7px}
+button.risk-row:hover{transform:none}
+.attention-card .risk-row.alert-overdue{border-left:3px solid var(--status-crit-fg)}
+.attention-card .risk-row.alert-soon{border-left:3px solid var(--status-warn-fg)}
+#tasks-view .task-table{
+  border-collapse:separate;
+  border-spacing:0;
+  font-size:11px;
+}
+#tasks-view .task-table th{
+  letter-spacing:.045em;
+  background:var(--bg-subtle);
+  font-size:9.5px;
+  font-weight:700;
+  border-bottom:1px solid var(--border-strong);
+  padding:12px 8px;
+}
+#tasks-view .task-table td{
+  background:var(--bg-panel);
+  border-bottom:1px solid var(--border-base);
+  padding:11px 8px;
+  line-height:1.42;
+}
+#tasks-view .task-table tbody tr:hover td{background:var(--bg-hover)}
+#tasks-view .task-table tbody tr.task-row-selected td{background:var(--bg-selected)}
+#tasks-view .task-table .chip{box-shadow:none}
+#tasks-view .task-table td:nth-child(2) .task-name{
+  line-height:1.45;text-align:left!important;
+  text-justify:auto;hyphens:none;
+}
+.task-mobile-card{box-shadow:var(--shadow-sm)}
+.task-mobile-card h3{font-weight:600}
+.weekly-filter-card{border:1px solid var(--border-base)}
+.weekly-time-step{border-radius:8px}
+.weekly-time-step:hover{background:var(--bg-hover)}
+.weekly-time-step.selected{box-shadow:inset 0 0 0 1px var(--accent-blue)}
+.weekly-time-step .weekly-time-dot{box-shadow:0 0 0 1px var(--border-strong)}
+.weekly-kpis{gap:10px}
+.weekly-kpi{
+  min-height:120px;
+  padding:14px 13px;
+  border-radius:10px;
+  box-shadow:none;
+}
+.weekly-kpi:before{height:2px;opacity:.48}
+.weekly-kpi .number{font-size:clamp(20px,2vw,28px);font-weight:600}
+.weekly-chart-card{padding:17px 18px}
+.weekly-insight{background:var(--bg-subtle);border-radius:8px}
+.weekly-status-strip{box-shadow:none}
+@media(max-width:850px){
+  .executive-grid{gap:11px}
+  .executive-grid>.chart-card{padding:13px 14px}
+  .pulse-card .control-team-summary{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:610px){
+  .stat{padding:13px 12px;min-height:115px}
+  .stat .val{font-size:23px}
+  .weekly-kpi{padding:12px 11px;min-height:112px}
+  .weekly-chart-card{padding:14px 12px}
+}
 </style>
 </head>
 <body>
@@ -2832,7 +3063,9 @@ function refreshFilters(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
 }
 
-function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=false){
+function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=false, proportion=null){
+  // Las barras solo reflejan proporciones calculadas de las tareas filtradas.
+  const width=Number.isFinite(proportion)?Math.min(100,Math.max(0,proportion)):null;
   const body = `
     <div class="stat-head">
       <span class="label">${esc(label)}</span>
@@ -2840,6 +3073,7 @@ function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=fa
     </div>
     <div class="val">${esc(val)}</div>
     <div class="foot">${esc(foot)}</div>
+    ${width===null?'':`<span class="stat-meter" aria-hidden="true"><i style="width:${width}%"></i></span>`}
   `;
   return drill
     ? `<button type="button" class="stat stat-action${selected?' selected':''}" data-drill="${esc(drill)}" aria-pressed="${selected}" title="Filtrar por: ${esc(label)}">${body}</button>`
@@ -2848,13 +3082,15 @@ function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=fa
 
 function makeStats(a, interactive=false){
   const s = stats(a), d = interactive ? dashboardDrill : null;
-  const one = (label, n, foot, icon, accent, type) => statCard(label, n, foot, icon, accent, interactive?type:'', Boolean(d&&d.type===type));
+  const one = (label, n, foot, icon, accent, type, proportion=null) =>
+    statCard(label,n,foot,icon,accent,interactive?type:'',Boolean(d&&d.type===type),proportion);
+  const share=n=>s.total?100*n/s.total:0;
   return [
     one('Total Entregables', s.total, 'Frentes registrados', SVG_ICONS.grid, '', 'all'),
-    one('Avance Promedio', s.avg.toFixed(1)+'%', 'Media del alcance', SVG_ICONS.gauge, 'blue', 'average'),
-    one('Completadas', s.done, 'Entregables cerrados', SVG_ICONS.check, 'green', 'completed'),
-    one('En Ejecución', s.inProgress, 'Modelado activo', SVG_ICONS.play, 'blue', 'inProgress'),
-    one('Vencidas / Hoy', s.late, 'Atención inmediata', SVG_ICONS.alert, 'red', 'late')
+    one('Avance Promedio', s.avg.toFixed(1)+'%', 'Media del alcance', SVG_ICONS.gauge, 'blue', 'average',s.avg),
+    one('Completadas', s.done, 'Entregables cerrados', SVG_ICONS.check, 'green', 'completed',share(s.done)),
+    one('En Ejecución', s.inProgress, 'Modelado activo', SVG_ICONS.play, 'blue', 'inProgress',share(s.inProgress)),
+    one('Vencidas / Hoy', s.late, 'Atención inmediata', SVG_ICONS.alert, 'red', 'late',share(s.late))
   ].join('');
 }
 
@@ -3043,8 +3279,8 @@ function renderDashboard(){
   $('#team-summary').innerHTML = tm.length ? tm.map(t=>`
     <button type="button" class="owner-item${selectedDrill('team',t.name)?' selected':''}" data-drill="team" data-value="${esc(t.name)}" aria-pressed="${selectedDrill('team',t.name)}">
       <span class="avatar">${esc(t.name.slice(0,2).toUpperCase())}</span>
-      <span class="who"><b>${esc(t.name)}</b><small>Avance ${ave(t.items).toFixed(0)}%</small></span>
-      <span class="count">${t.items.length}</span>
+      <span class="who"><b>${esc(t.name)}</b><small>Avance operativo ${ave(t.items).toFixed(0)}%</small><span class="discipline-meter" aria-hidden="true"><i style="width:${Math.min(100,Math.max(0,ave(t.items)))}%"></i></span></span>
+      <span class="count" title="Entregables de esta disciplina">${t.items.length}</span>
     </button>
   `).join('') : (a.length?'<div class="empty">Sin disciplinas activas.</div>':'<div class="compact-empty" role="status"><strong>Sin disciplinas registradas</strong><span>La distribución aparecerá al registrar entregables.</span></div>');
 
