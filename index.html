@@ -2357,6 +2357,78 @@ button.risk-row:hover{transform:none}
 @media(max-width:760px){
   #dashboard-view .stat{min-height:142px}
 }
+
+/* Tarjetas KPI de referencia (Dashboard y Control de tareas) con colores semánticos. */
+#dashboard-view .stat-grid,#tasks-view .stat-grid{
+  display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;
+}
+#dashboard-view .stat.kpi-reference,#tasks-view .stat.kpi-reference{
+  --kpi-color:var(--ink-primary);
+  display:flex;flex-direction:column;align-items:stretch;
+  min-width:0;min-height:154px;padding:15px 14px 13px;
+  border:1px solid var(--border-base);border-radius:12px;
+  background:var(--bg-panel);box-shadow:none;
+  text-align:left;
+}
+#dashboard-view .kpi-reference.kpi-cyan,#tasks-view .kpi-reference.kpi-cyan{--kpi-color:#1CC8EE}
+#dashboard-view .kpi-reference.kpi-green,#tasks-view .kpi-reference.kpi-green{--kpi-color:#31D4A2}
+#dashboard-view .kpi-reference.kpi-blue,#tasks-view .kpi-reference.kpi-blue{--kpi-color:#5F96FF}
+#dashboard-view .kpi-reference.kpi-pink,#tasks-view .kpi-reference.kpi-pink{--kpi-color:#F14A75}
+#dashboard-view .kpi-reference.kpi-teal,#tasks-view .kpi-reference.kpi-teal{--kpi-color:#2BD5C6}
+html[data-theme="light"] .kpi-reference.kpi-cyan{--kpi-color:#087DA0!important}
+html[data-theme="light"] .kpi-reference.kpi-green{--kpi-color:#16775B!important}
+html[data-theme="light"] .kpi-reference.kpi-blue{--kpi-color:#335DB6!important}
+html[data-theme="light"] .kpi-reference.kpi-pink{--kpi-color:#BD3656!important}
+html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
+#dashboard-view .kpi-reference .stat-head,#tasks-view .kpi-reference .stat-head{margin-bottom:8px}
+.kpi-reference .stat-number-line{
+  display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 8px;min-width:0;margin-bottom:9px;
+}
+#dashboard-view .kpi-reference .val,#tasks-view .kpi-reference .val{
+  font-size:clamp(23px,2.05vw,30px);line-height:1.1;
+  letter-spacing:-.045em;margin:0;color:var(--kpi-color);
+  font-weight:700;white-space:nowrap;
+}
+.kpi-reference.kpi-neutral .val{color:var(--ink-primary)!important}
+.kpi-reference .stat-kpi-badge{
+  font-size:9px;line-height:1.45;font-weight:700;white-space:normal;
+  color:var(--kpi-color);border-radius:4px;
+}
+.kpi-reference .stat-kpi-badge.positive{color:var(--status-done-fg)}
+.kpi-reference .stat-kpi-badge.negative{color:var(--status-crit-fg)}
+.kpi-reference .stat-kpi-badge.attention{
+  border:1px solid var(--status-crit-bd);background:var(--status-crit-bg);
+  color:var(--status-crit-fg);padding:1px 5px;
+}
+.kpi-reference .stat-detail-line{
+  margin-top:auto;display:flex;justify-content:space-between;
+  align-items:center;gap:6px;padding-top:8px;border-top:1px solid var(--border-base);
+  min-width:0;
+}
+#dashboard-view .kpi-reference .foot,#tasks-view .kpi-reference .foot{
+  font-size:9.5px;line-height:1.35;color:var(--ink-secondary);overflow-wrap:anywhere;
+}
+.kpi-reference .stat-right{color:var(--kpi-color);font:600 9px var(--font-mono);white-space:nowrap}
+#dashboard-view .kpi-reference .stat-meter,#tasks-view .kpi-reference .stat-meter{
+  margin-top:7px;transform:none;height:4px;min-height:4px;background:var(--border-base);
+}
+.kpi-reference .stat-meter i{background:var(--kpi-color)!important}
+.kpi-reference .stamp{color:var(--kpi-color);background:transparent;border:1px solid var(--border-base)}
+.kpi-reference.kpi-neutral .stamp{color:var(--ink-secondary)}
+#dashboard-view .kpi-reference.stat-action:hover,#tasks-view .kpi-reference.stat-action:hover{
+  transform:none;border-color:var(--kpi-color);box-shadow:none;
+}
+@media(max-width:1500px){
+  #dashboard-view .stat-grid,#tasks-view .stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:700px){
+  #dashboard-view .stat-grid,#tasks-view .stat-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  #dashboard-view .stat.kpi-reference,#tasks-view .stat.kpi-reference{min-height:145px;padding:12px}
+  #dashboard-view .kpi-reference .val,#tasks-view .kpi-reference .val{font-size:23px}
+}
+@media(max-width:360px){
+  #dashboard-view .stat-grid,#tasks-view .stat-grid{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 </head>
 <body>
@@ -3098,63 +3170,69 @@ function refreshFilters(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
 }
 
-function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=false, proportion=null, detail=null){
-  // Las barras reflejan únicamente proporciones de los entregables del alcance filtrado.
-  const width=Number.isFinite(proportion)?Math.min(100,Math.max(0,proportion)):null;
-  const detailHtml=detail&&detail.text
-    ?`<span class="stat-period-detail ${['positive','negative','neutral'].includes(detail.kind)?detail.kind:'neutral'}" ${detail.help?`title="${esc(detail.help)}"`:''}>${esc(detail.text)}</span>`
-    :'';
-  const body = `
-    <div class="stat-head">
-      <span class="label">${esc(label)}</span>
-      <span class="stamp ${accent}">${iconSvg}</span>
+function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,proportion=null,badge=null,tone='neutral',rightText=''){
+  const percent=Number.isFinite(proportion)?Math.max(0,Math.min(100,proportion)):null;
+  const safeTone=['neutral','cyan','green','blue','pink','teal'].includes(tone)?tone:'neutral';
+  const text=badge?.text||'';
+  const badgeKind=['positive','negative','attention','neutral'].includes(badge?.kind)?badge.kind:'neutral';
+  const body=`
+    <div class="stat-head"><span class="label">${esc(label)}</span><span class="stamp ${accent}">${iconSvg}</span></div>
+    <div class="stat-number-line">
+      <span class="val">${esc(val)}</span>
+      ${text?`<span class="stat-kpi-badge ${badgeKind}" ${badge.help?`title="${esc(badge.help)}"`:''}>${esc(text)}</span>`:''}
     </div>
-    <div class="val">${esc(val)}</div>
-    <div class="foot">${esc(foot)}</div>
-    ${detailHtml}
-    ${width===null?'':`<span class="stat-meter" aria-hidden="true"><i style="width:${width}%"></i></span>`}
+    <div class="stat-detail-line"><span class="foot">${esc(foot)}</span>${rightText?`<strong class="stat-right">${esc(rightText)}</strong>`:''}</div>
+    ${percent===null?'':`<span class="stat-meter" aria-hidden="true"><i style="width:${percent}%"></i></span>`}
   `;
+  const cls='stat kpi-reference kpi-'+safeTone+(drill?' stat-action':'')+(selected?' selected':'');
   return drill
-    ? `<button type="button" class="stat stat-action${selected?' selected':''}" data-drill="${esc(drill)}" aria-pressed="${selected}" title="Filtrar por: ${esc(label)}">${body}</button>`
-    : `<article class="stat">${body}</article>`;
+    ?`<button type="button" class="${cls}" data-drill="${esc(drill)}" aria-pressed="${selected}" title="Filtrar por: ${esc(label)}">${body}</button>`
+    :`<article class="${cls}">${body}</article>`;
 }
-// Los meses se basan en la FECHA LÍMITE, no en la creación del registro:
-// Supabase no dispone de un histórico mensual del avance global en el modelo utilizado.
-function deadlineMonthStats(rows,now=new Date()){
-  const month=new Date(now.getFullYear(),now.getMonth(),1);
-  const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
-  const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
-  const rowsWithDeadline=keyMonth=>rows.filter(t=>typeof t.deadline==='string'&&t.deadline.slice(0,7)===keyMonth);
-  const current=rowsWithDeadline(key(month)),previous=rowsWithDeadline(key(prev));
-  const monthName=d=>new Intl.DateTimeFormat('es-PE',{month:'short'}).format(d).replace('.','').toLocaleLowerCase('es');
-  return {current,previous,currentName:monthName(month),previousName:monthName(prev),
-    difference:current.length&&previous.length?ave(current)-ave(previous):null};
+function currentWeekPerformance(rows){
+  const week=isoWeekKey(new Date()),end=weekEnd(week);
+  const planned=rows.filter(t=>effectiveTaskWeek(t)===week);
+  const done=planned.filter(t=>categoryOf(t.status)==='done'&&t.completedAt&&t.completedAt<=end).length;
+  return {week,planned:planned.length,done,ppc:planned.length?100*done/planned.length:null};
 }
-function makeStats(a, interactive=false){
-  const s=stats(a),d=interactive?dashboardDrill:null;
-  const month=deadlineMonthStats(a);
+function makeStats(rows,interactive=false){
+  const s=stats(rows),selected=interactive?dashboardDrill:null,now=todayString(),month=now.slice(0,7);
   const share=n=>s.total?100*n/s.total:0;
-  const detail=(text,kind='neutral',help='')=>({text,kind,help});
-  const comparison=month.difference;
-  const sign=comparison>0?'↑ +':comparison<0?'↓ −':'= ';
-  const diffText=comparison===null?'Sin comparación mensual':
-    'Plazos '+month.currentName+'/'+month.previousName+': '+sign+Math.abs(comparison).toFixed(1)+' pp';
-  const trendKind=comparison===null||Math.abs(comparison)<.05?'neutral':comparison>0?'positive':'negative';
-  const monthlyHelp='Diferencia entre el avance medio de entregables con fecha límite en ambos meses; no representa la evolución histórica del mismo grupo de tareas.';
-  const one=(label,n,foot,icon,accent,type,proportion=null,secondary=null)=>
-    statCard(label,n,foot,icon,accent,interactive?type:'',Boolean(d&&d.type===type),proportion,secondary);
+  const createdThisMonth=rows.filter(t=>taskCreationDate(t).slice(0,7)===month).length;
+  const withoutCreationDate=rows.filter(t=>!taskCreationDate(t)).length;
+  const history=catalogs.analytics?.monthlySnapshots||{};
+  const lastMonthDate=new Date(new Date().getFullYear(),new Date().getMonth()-1,1);
+  const previousMonth=lastMonthDate.getFullYear()+'-'+String(lastMonthDate.getMonth()+1).padStart(2,'0');
+  // La comparación histórica global no debe atribuirse a filtros que no existían en el snapshot.
+  const hasFullScope=rows.length===tasks.length&&rows.every(t=>tasks.some(x=>x.id===t.id));
+  const before=hasFullScope?history[previousMonth]:null;
+  const delta=before?Math.max(-100,Math.min(100,s.avg-before.avg)):null;
+  const trend=delta===null?{text:'Sin histórico',kind:'neutral',help:'La comparación estará disponible cuando exista una lectura guardada en Supabase del mes anterior.'}:
+    {text:(delta>0?'↑ +':delta<0?'↓ −':'= ')+Math.abs(delta).toFixed(1)+' pp',
+     kind:delta>0?'positive':delta<0?'negative':'neutral',
+     help:'Variación respecto a la última lectura real guardada del mes anterior ('+before.capturedOn+').'};
+  if(!hasFullScope){trend.text='Sin comparativa filtrada';trend.kind='neutral';}
+  const badge=(text,kind='neutral',help='')=>({text,kind,help});
+  const one=(label,value,foot,icon,accent,drill,tone,pct=null,mark=null,right='')=>
+    statCard(label,value,foot,icon,accent,interactive?drill:'',Boolean(selected&&selected.type===drill),pct,mark,tone,right);
+  const running=rows.filter(t=>categoryOf(t.status)==='progress');
+  const onSchedule=running.filter(t=>!t.deadline||dueDays(t.deadline)>0).length;
+  const current=currentWeekPerformance(rows);
   return [
-    one('Total Entregables',s.total,'Frentes registrados',SVG_ICONS.grid,'','all',null,
-      detail(month.current.length+' con plazo en '+month.currentName,'neutral','Cantidad con fecha límite en el mes actual; no equivale a tareas registradas este mes.')),
-    one('Avance Promedio',s.avg.toFixed(1)+'%','Media del alcance',SVG_ICONS.gauge,'blue','average',s.avg,
-      detail(diffText,trendKind,monthlyHelp)),
-    one('Completadas',s.done,s.done+' de '+s.total+' · '+share(s.done).toFixed(1)+'% del total',
-      SVG_ICONS.check,'green','completed',share(s.done),
-      detail(a.filter(t=>categoryOf(t.status)==='done'&&typeof t.completedAt==='string'&&
-        t.completedAt.slice(0,7)===todayString().slice(0,7)).length+' finalizadas este mes')),
-    one('En Ejecución',s.inProgress,s.inProgress+' de '+s.total+' · '+share(s.inProgress).toFixed(1)+'% del total',
-      SVG_ICONS.play,'blue','inProgress',share(s.inProgress)),
-    one('Vencidas / Hoy',s.late,'Atención inmediata',SVG_ICONS.alert,'red','late',share(s.late))
+    one('TOTAL ENTREGABLES',s.total,'Entregables del alcance',SVG_ICONS.grid,'','all','neutral',null,
+      badge('+'+createdThisMonth+' este mes','positive',
+        withoutCreationDate?'Existen '+withoutCreationDate+' entregables históricos sin fecha de creación verificable.':'Altas registradas automáticamente este mes.'),''),
+    one('AVANCE PROMEDIO',s.avg.toFixed(1)+'%','Media del alcance actual',SVG_ICONS.gauge,'blue','average','cyan',s.avg,trend),
+    one('COMPLETADAS',s.done,'Entregables cerrados',SVG_ICONS.check,'green','completed','green',share(s.done),
+      badge('/ '+s.total+' tot.','neutral'),share(s.done).toFixed(1)+'%'),
+    one('EN EJECUCIÓN',s.inProgress,'Modelado activo',SVG_ICONS.play,'blue','inProgress','blue',share(s.inProgress),
+      badge(onSchedule+' en plazo','neutral'),share(s.inProgress).toFixed(1)+'%'),
+    one('VENCIDAS / HOY',s.late,'Requieren atención',SVG_ICONS.alert,'red','late','pink',share(s.late),
+      badge(s.late?'ATENCIÓN':'SIN ALERTAS',s.late?'attention':'neutral'),share(s.late).toFixed(1)+'%'),
+    one('PPC SEMANAL',current.ppc===null?'—':current.ppc.toFixed(1)+'%','Cumplimiento '+weekShort(current.week),
+      SVG_ICONS.trend,'blue','','teal',current.ppc,
+      badge(current.planned?current.done+'/'+current.planned+' cumplidas':'Sin compromisos','neutral',
+        'Calculado a partir de la fecha límite y la fecha real de finalización de cada tarea.'))
   ].join('');
 }
 
