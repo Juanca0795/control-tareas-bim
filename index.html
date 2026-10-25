@@ -2538,11 +2538,6 @@ function syncCatalogsWithTasks(){
 }
 syncCatalogsWithTasks();
 
-function saveCatalogs(){
-  try{ localStorage.setItem(CATALOG_KEY, JSON.stringify(catalogs)); }
-  catch(e){ toast('No se pudo guardar la configuración.'); }
-}
-
 let editingId = null;
 let currentView = 'dashboard';
 let dashboardDrill = null;
@@ -3150,7 +3145,7 @@ function addCatalogItem(e){
   if(sameCatalogName(key, name)){ toast('El elemento ya existe en el catálogo.'); return; }
   if(key==='statuses') catalogs.statuses.push({name, category:$('#settings-new-category').value});
   else catalogs[key].push(name);
-  saveCatalogs(); renderAll(); renderSettingsList();
+  persist(); renderSettingsList();
   $('#settings-new-name').value = ''; $('#settings-new-name').focus();
   toast('Catálogo actualizado');
 }
@@ -3178,7 +3173,7 @@ function removeCatalogItem(index){
   if(!name || countCatalogUse(key, name)) return;
   items.splice(index, 1);
   settingsEditing = null;
-  saveCatalogs(); renderAll(); renderSettingsList();
+  persist(); renderSettingsList();
   toast('Registro eliminado del catálogo');
 }
 
@@ -3900,4 +3895,95 @@ renderAll();
 syncThemeButton();
 </script>
 </body>
-</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}async function load(){let[a,c,w]=await Promise.all([d.from('bim_tasks').select('*').order('id'),d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1),d.from('bim_weekly_snapshots').select('*').order('week')]);check(a,'Tareas');check(c,'Catálogos');check(w,'Semanas');tasks=a.data.map(f);ids=new Set(tasks.map(x=>x.id));if(c.data?.[0]?.data)catalogs=normalizeCatalogs(c.data[0].data);weeklySnapshots=w.data.map(x=>({week:x.week,createdAt:x.created_at,rows:x.rows||[]}));syncCatalogsWithTasks();ready=1;renderAll();if(pendingSave){pendingSave=false;save()}}async function save(){if(!ready){pendingSave=true;return}if(lock){pendingSave=true;return}lock=1;try{let now=new Set(tasks.map(x=>x.id)),gone=[...ids].filter(x=>!now.has(x));if(gone.length){let r=await d.from('bim_tasks').delete().in('id',gone);check(r,'Eliminar tareas')}if(tasks.length){let r=await d.from('bim_tasks').upsert(tasks.map(g),{onConflict:'user_id,id'});check(r,'Guardar tareas')}let cr=await d.from('bim_catalogs').upsert({user_id:sharedUser,data:catalogs});check(cr,'Guardar catálogos');if(weeklySnapshots.length){let wr=await d.from('bim_weekly_snapshots').upsert(weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]})),{onConflict:'user_id,week'});check(wr,'Guardar semanas')}ids=now;toast('Cambios sincronizados en Supabase')}catch(e){console.error(e);toast('Error Supabase: '+e.message)}finally{lock=0;if(pendingSave){pendingSave=false;save()}}}let old=persist;persist=()=>{old();save()};load().catch(e=>{console.error(e);toast('Error al cargar Supabase: '+e.message)});setInterval(()=>{if(!lock&&!pendingSave)load().catch(e=>toast('Error Supabase: '+e.message))},10000)})();</script>
+</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
+async function load(){
+  // El refresco automático no debe sobrescribir modificaciones locales aún no sincronizadas.
+  if(loading||lock||(ready&&pendingSave))return;
+  loading=true;
+  const loadedAtRevision=revision;
+  try{
+    const [a,c,w]=await Promise.all([
+      d.from('bim_tasks').select('*').order('id'),
+      d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1),
+      d.from('bim_weekly_snapshots').select('*').order('week')
+    ]);
+    check(a,'Tareas');check(c,'Catálogos');check(w,'Semanas');
+    const cloudTasks=(a.data||[]).map(f);
+    const cloudIds=new Set(cloudTasks.map(t=>t.id));
+    const cloudWeeks=(w.data||[]).map(x=>({week:x.week,createdAt:x.created_at,rows:x.rows||[]}));
+    if(loadedAtRevision!==revision){
+      // Una edición ocurrió durante la consulta: descartar respuesta obsoleta.
+      if(!ready){
+        const editedTasks=new Map(tasks.map(t=>[t.id,t]));
+        tasks=[...cloudTasks.map(t=>editedTasks.get(t.id)||t),...tasks.filter(t=>!cloudIds.has(t.id))];
+        const fromCloud=normalizeCatalogs(c.data?.[0]?.data||DEFAULT_CATALOGS);
+        const merged={};
+        for(const key of ['packages','owners','teams'])merged[key]=unique([...fromCloud[key],...catalogs[key]]);
+        merged.statuses=[...fromCloud.statuses,...catalogs.statuses].filter((x,i,all)=>
+          all.findIndex(y=>y.name.toLocaleLowerCase('es')===x.name.toLocaleLowerCase('es'))===i);
+        catalogs=normalizeCatalogs(merged);
+        ids=cloudIds;
+        weeklySnapshots=cloudWeeks;
+        syncCatalogsWithTasks();
+        ready=1;renderAll();
+        if($('#settings-back')?.classList.contains('open')&&!settingsEditing)renderSettingsList();
+      }
+      return;
+    }
+    tasks=cloudTasks;ids=cloudIds;
+    if(c.data?.[0]?.data)catalogs=normalizeCatalogs(c.data[0].data);
+    weeklySnapshots=cloudWeeks;
+    syncCatalogsWithTasks();ready=1;renderAll();
+    if($('#settings-back')?.classList.contains('open')&&!settingsEditing)renderSettingsList();
+  }finally{
+    loading=false;
+    if(pendingSave&&ready)save();
+  }
+}
+async function save(){
+  if(!ready||lock){pendingSave=true;return;}
+  lock=1;
+  const savingRevision=revision;
+  pendingSave=false;
+  try{
+    const now=new Set(tasks.map(t=>t.id));
+    const gone=[...ids].filter(id=>!now.has(id));
+    const rows=tasks.map(g);
+    const catalogsToSave=normalizeCatalogs(catalogs);
+    const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
+    if(gone.length){
+      const deleted=await d.from('bim_tasks').delete().in('id',gone);
+      check(deleted,'Eliminar tareas');
+    }
+    if(rows.length){
+      const result=await d.from('bim_tasks').upsert(rows,{onConflict:'user_id,id'});
+      check(result,'Guardar tareas');
+    }
+    const savedCatalogs=await d.from('bim_catalogs').upsert({user_id:sharedUser,data:catalogsToSave});
+    check(savedCatalogs,'Guardar catálogos');
+    if(snapshots.length){
+      const savedWeeks=await d.from('bim_weekly_snapshots').upsert(snapshots,{onConflict:'user_id,week'});
+      check(savedWeeks,'Guardar semanas');
+    }
+    ids=now;
+    if(savingRevision===revision)toast('Cambios sincronizados en Supabase');
+  }catch(err){
+    // Evitar perder los cambios ante errores: reintento mediante el ciclo de sincronización.
+    pendingSave=true;
+    console.error(err);
+    toast('Error Supabase: '+err.message);
+  }finally{
+    lock=0;
+    // Guardar también las ediciones realizadas durante la petición anterior.
+    if(pendingSave&&savingRevision!==revision)save();
+  }
+}
+const oldPersist=persist;
+persist=()=>{revision++;oldPersist();pendingSave=true;save();};
+load().catch(err=>{console.error(err);toast('Error al cargar Supabase: '+err.message);});
+setInterval(()=>{
+  if(lock||loading)return;
+  if(pendingSave&&ready){save();return;}
+  load().catch(err=>{console.error(err);toast('Error Supabase: '+err.message);});
+},10000);
+})();</script>
