@@ -3078,7 +3078,7 @@ function deadlineMonthStats(rows,now=new Date()){
   const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
   const rowsWithDeadline=keyMonth=>rows.filter(t=>typeof t.deadline==='string'&&t.deadline.slice(0,7)===keyMonth);
   const current=rowsWithDeadline(key(month)),previous=rowsWithDeadline(key(prev));
-  const monthName=d=>new Intl.DateTimeFormat('es-PE',{month:'short'}).format(d).replace('.','');
+  const monthName=d=>new Intl.DateTimeFormat('es-PE',{month:'short'}).format(d).replace('.','').toLocaleLowerCase('es');
   return {current,previous,currentName:monthName(month),previousName:monthName(prev),
     difference:current.length&&previous.length?ave(current)-ave(previous):null};
 }
@@ -3088,7 +3088,7 @@ function makeStats(a, interactive=false){
   const share=n=>s.total?100*n/s.total:0;
   const detail=(text,kind='neutral',help='')=>({text,kind,help});
   const comparison=month.difference;
-  const sign=comparison>0?'+':comparison<0?'−':'±';
+  const sign=comparison>0?'↑ +':comparison<0?'↓ −':'= ';
   const diffText=comparison===null?'Sin comparación mensual':
     'Plazos '+month.currentName+'/'+month.previousName+': '+sign+Math.abs(comparison).toFixed(1)+' pp';
   const trendKind=comparison===null||Math.abs(comparison)<.05?'neutral':comparison>0?'positive':'negative';
