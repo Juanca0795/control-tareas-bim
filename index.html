@@ -1301,7 +1301,7 @@ footer {
 .settings-note { font-size: 11px; color: var(--ink-muted); line-height: 1.45; margin: 12px 0 0; }
 .settings-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   border-top: 1px solid var(--border-base);
   padding: 10px 18px;
@@ -2338,7 +2338,6 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
       </section>
     </div>
     <div class="settings-footer">
-      <button type="button" class="btn small danger" onclick="resetData()">Restaurar</button>
       <button type="button" class="btn primary" onclick="closeSettings()">Cerrar</button>
     </div>
   </div>
@@ -3078,9 +3077,11 @@ function showSettings(){
   $('#settings-new-name').focus();
 }
 function closeSettings(){
+  // Cerrar o pulsar Esc descarta altas y renombrados que aún no se guardaron.
   $('#settings-back').classList.remove('open');
-  document.body.style.overflow = '';
+  $('#settings-add-form').reset();
   settingsEditing = null;
+  document.body.style.overflow = '';
 }
 function selectSettingsTab(key){
   if(!CATALOG_SECTIONS[key] && key!=='backup') return;
@@ -3216,7 +3217,9 @@ function openEditor(id=null){
   $('#f-title').focus();
 }
 function closeEditor(){
+  // Esc y Cancelar no guardan los cambios pendientes en el formulario.
   $('#modal-back').classList.remove('open');
+  $('#task-form').reset();
   document.body.style.overflow = '';
   editingId = null;
 }
@@ -3291,20 +3294,6 @@ function deleteEditing(){
   const id = editingId;
   if(id) deleteTask(id, () => closeEditor());
 }
-function resetData(){
-  openConfirm(
-    'Restaurar',
-    '¿Restaurar los 12 entregables base del sistema? Se reemplazarán las modificaciones actuales y se eliminarán los cierres semanales archivados.',
-    () => {
-      tasks = SEED.map(t=>({...t}));
-      catalogs = normalizeCatalogs(DEFAULT_CATALOGS);
-      weeklySnapshots = [];
-      persist();
-      renderSettingsList();
-      toast('Datos restaurados');
-    }
-  );
-}
 let toastTimer;
 function toast(message){
   $('#toast').textContent = message;
@@ -3345,11 +3334,20 @@ taskTableBody.addEventListener('dblclick', e => {
 
 document.addEventListener('keydown', e => {
   if(e.key==='Escape'){
-    if($('#settings-auth-back').classList.contains('open')){closeSettingsAuth();return;}
-    if($('#confirm-back').classList.contains('open')) closeConfirm();
-    else if($('#settings-back').classList.contains('open')) closeSettings();
-    else if($('#modal-back').classList.contains('open')) closeEditor();
-    else { selectedTaskId = null; hoveredTaskId = null; selectTaskRow(null); }
+    // Esc cancela el diálogo superior sin enviar formularios ni ejecutar confirmaciones.
+    if($('#settings-auth-back').classList.contains('open')){
+      e.preventDefault();closeSettingsAuth();return;
+    }
+    if($('#confirm-back').classList.contains('open')){
+      e.preventDefault();closeConfirm();return;
+    }
+    if($('#settings-back').classList.contains('open')){
+      e.preventDefault();closeSettings();return;
+    }
+    if($('#modal-back').classList.contains('open')){
+      e.preventDefault();closeEditor();return;
+    }
+    selectedTaskId = null; hoveredTaskId = null; selectTaskRow(null);
     return;
   }
   if(currentView!=='tasks' || $('#confirm-back').classList.contains('open') || $('#settings-back').classList.contains('open') || $('#modal-back').classList.contains('open')) return;
