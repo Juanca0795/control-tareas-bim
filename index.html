@@ -1999,37 +1999,6 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
 }
 
 
-/* FOTO AMBIENTAL BIM: solo Dashboard y Control semanal; no afecta tablas ni modales. */
-.main:has(> #dashboard-view:not(.hidden)),
-.main:has(> #weekly-view:not(.hidden)){
-  background-repeat:no-repeat;
-  background-position:center center;
-  background-size:cover;
-  background-attachment:fixed;
-}
-html[data-theme="dark"] .main:has(> #dashboard-view:not(.hidden)),
-html[data-theme="dark"] .main:has(> #weekly-view:not(.hidden)){
-  background-image:
-    linear-gradient(130deg,rgba(9,13,22,.88),rgba(9,13,22,.91)),
-    url("assets/obra-bim-ambient.webp");
-}
-html[data-theme="light"] .main:has(> #dashboard-view:not(.hidden)),
-html[data-theme="light"] .main:has(> #weekly-view:not(.hidden)){
-  background-image:
-    linear-gradient(130deg,rgba(244,247,252,.89),rgba(244,247,252,.93)),
-    url("assets/obra-bim-ambient.webp");
-}
-/* Las tarjetas conservan casi toda su opacidad para que los KPI sigan legibles. */
-@supports (background:color-mix(in srgb,white 95%,transparent)){
-  #dashboard-view .card,#weekly-view .card{
-    background:color-mix(in srgb,var(--bg-panel) 96%,transparent);
-  }
-}
-/* Evitar parpadeos y repintados costosos en dispositivos móviles. */
-@media (max-width:760px){
-  .main:has(> #dashboard-view:not(.hidden)),
-  .main:has(> #weekly-view:not(.hidden)){background-attachment:scroll}
-}
 </style>
 </head>
 <body>
