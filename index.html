@@ -2199,7 +2199,7 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
     <div class="modal-hd"><h2 id="settings-auth-title">Acceso a configuraci�n</h2><button class="close" type="button" onclick="closeSettingsAuth()" aria-label="Cerrar acceso">�</button></div>
     <form id="settings-auth-form" onsubmit="validateSettingsAuth(event)">
       <div class="modal-body auth-form-body">
-        <p class="auth-help">Ingresa las credenciales del �rea BIM para administrar cat�logos y respaldos.</p>
+        <p class="auth-help" id="settings-auth-help">Ingresa las credenciales del �rea BIM para administrar cat�logos y respaldos.</p>
         <div class="form-field"><label for="settings-auth-user">Usuario</label><input type="text" class="field-input" id="settings-auth-user" autocomplete="username" required></div>
         <div class="form-field"><label for="settings-auth-password">Contrase�a</label>
           <div class="password-wrap">
@@ -2930,7 +2930,12 @@ document.addEventListener('click', e => {
 });
 
 function renderAll(){ refreshFilters(); updateWeeklyFilters(); renderTasks(); renderDashboard(); if(currentView==='weekly')renderWeekly(); }
-function switchView(v){
+function switchView(v, authenticated=false){
+  // Solicitar credenciales cada vez que se entra desde otra vista.
+  if(v==='weekly' && currentView!=='weekly' && !authenticated){
+    showProtectedAuth('weeklyAccess');
+    return;
+  }
   currentView = v;
   for(const tab of ['tasks','dashboard','weekly']){
     $('#'+tab+'-view').classList.toggle('hidden',tab!==v);
@@ -2957,14 +2962,24 @@ function populateEditorSelects(){
 }
 
 let authTarget = 'settings';
-function openSettings(){
-  authTarget = 'settings';
-  // Credenciales solicitadas en cada acceso al engranaje.
+function showProtectedAuth(target){
+  authTarget = target;
+  const weeklyAccess = target==='weeklyAccess';
+  const weeklyClose = target==='weekly';
+  $('#settings-auth-title').textContent = weeklyAccess ? 'Acceso a Control semanal' : weeklyClose ? 'Confirmar cierre semanal' : 'Acceso a configuración';
+  $('#settings-auth-help').textContent = weeklyAccess
+    ? 'Ingresa el mismo ID de usuario y contraseña de Configuración para consultar el control semanal.'
+    : weeklyClose
+      ? 'Ingresa tus credenciales para confirmar el cierre de la semana.'
+      : 'Ingresa las credenciales del área BIM para administrar catálogos y respaldos.';
   $('#settings-auth-form').reset();
   $('#settings-auth-error').classList.add('hidden');
   $('#settings-auth-back').classList.add('open');
   document.body.style.overflow = 'hidden';
   $('#settings-auth-user').focus();
+}
+function openSettings(){
+  showProtectedAuth('settings');
 }
 function closeSettingsAuth(){
   $('#settings-auth-back').classList.remove('open');
@@ -2998,7 +3013,9 @@ function validateSettingsAuth(event){
   }
   const target=authTarget;
   closeSettingsAuth();
-  if(target==='weekly')confirmWeeklyClose();else showSettings();
+  if(target==='weeklyAccess') switchView('weekly', true);
+  else if(target==='weekly') confirmWeeklyClose();
+  else showSettings();
 }
 
 function showSettings(){
@@ -3666,12 +3683,7 @@ function renderWeekly(){
 function requestWeeklyClose(){
   if(weeklySnapshot(selectedWeek)){toast('Esta semana ya fue cerrada');return;}
   if(!weeklyRaw(selectedWeek).rows.length){toast('Asigna compromisos antes de cerrar la semana');return;}
-  authTarget='weekly';
-  $('#settings-auth-form').reset();
-  $('#settings-auth-error').classList.add('hidden');
-  $('#settings-auth-back').classList.add('open');
-  document.body.style.overflow='hidden';
-  $('#settings-auth-user').focus();
+  showProtectedAuth('weekly');
 }
 function confirmWeeklyClose(){
   const week=selectedWeek;
