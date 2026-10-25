@@ -2519,6 +2519,47 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   #weekly-view .weekly-utility-actions{flex:1 1 100%;margin:5px 0 0;padding:8px 0 0;border-left:0;border-top:1px solid var(--border-base)}
   #weekly-view .weekly-utility-actions .btn{flex:1}
 }
+
+/* Control de tareas — paginación de 15 registros por página */
+#tasks-view .tasks-pagination-footer{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
+  gap:12px;padding:13px 17px;background:var(--bg-panel);color:var(--ink-secondary);
+  border-top:1px solid var(--border-base);
+}
+#tasks-view #tasks-footer{font-size:11px;line-height:1.5}
+#tasks-view .tasks-pagination{
+  display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;
+  gap:6px;margin-left:auto;
+}
+#tasks-view .tasks-pagination button{
+  display:inline-flex;align-items:center;justify-content:center;
+  height:32px;min-width:32px;padding:0 9px;
+  background:var(--bg-panel);color:var(--ink-primary);
+  border:1px solid var(--border-strong);border-radius:6px;
+  font:600 11px var(--font-mono);cursor:pointer;
+  transition:background .14s ease,border-color .14s ease;
+}
+#tasks-view .tasks-pagination .task-page-edge{font-family:Inter,sans-serif;padding:0 12px}
+#tasks-view .tasks-pagination button:hover:not(:disabled):not(.active){
+  background:var(--bg-hover);border-color:var(--accent-blue);
+}
+#tasks-view .tasks-pagination button.active{
+  color:#fff;background:var(--brand-red);border-color:var(--brand-red);
+  cursor:default;
+}
+#tasks-view .tasks-pagination button:disabled{opacity:.42;cursor:not-allowed}
+#tasks-view .task-page-ellipsis{color:var(--ink-muted);padding:0 3px;font-size:13px}
+#tasks-view .tasks-shortcuts{
+  padding:7px 17px 11px;font-size:10px;line-height:1.45;
+  color:var(--ink-muted);background:var(--bg-panel);
+}
+#tasks-view .controls{scroll-margin-top:90px}
+@media(max-width:760px){
+  #tasks-view .tasks-pagination-footer{flex-direction:column;align-items:stretch;gap:10px;padding:12px}
+  #tasks-view .tasks-pagination{justify-content:center;margin-left:0;gap:5px}
+  #tasks-view .tasks-pagination button{min-width:31px;height:31px;padding:0 7px}
+  #tasks-view .tasks-shortcuts{display:none}
+}
 </style>
 </head>
 <body>
@@ -2579,11 +2620,11 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
         <div class="subtle" id="count-label"></div>
       </div>
       <div class="controls">
-        <input id="search" class="field-input" oninput="renderTasks()" placeholder="Filtrar por código BIM, entregable, colaborador o área de apoyo." aria-label="Buscar tareas">
-        <div class="select-wrap"><select id="filter-package" onchange="renderTasks()" aria-label="Filtrar paquete"></select></div>
-        <div class="select-wrap"><select id="filter-owner" onchange="renderTasks()" aria-label="Filtrar responsable"></select></div>
-        <div class="select-wrap"><select id="filter-status" onchange="renderTasks()" aria-label="Filtrar estado"></select></div>
-        <div class="select-wrap"><select id="filter-team" onchange="renderTasks()" aria-label="Filtrar equipo"></select></div>
+        <input id="search" class="field-input" oninput="onTaskFiltersChanged()" placeholder="Filtrar por código BIM, entregable, colaborador o área de apoyo." aria-label="Buscar tareas">
+        <div class="select-wrap"><select id="filter-package" onchange="onTaskFiltersChanged()" aria-label="Filtrar paquete"></select></div>
+        <div class="select-wrap"><select id="filter-owner" onchange="onTaskFiltersChanged()" aria-label="Filtrar responsable"></select></div>
+        <div class="select-wrap"><select id="filter-status" onchange="onTaskFiltersChanged()" aria-label="Filtrar estado"></select></div>
+        <div class="select-wrap"><select id="filter-team" onchange="onTaskFiltersChanged()" aria-label="Filtrar equipo"></select></div>
       </div>
       <div id="task-filter-chips" class="active-filters" aria-live="polite"></div>
       <div id="task-linked-banner" class="dashboard-selected hidden">
@@ -2622,10 +2663,11 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
         </table>
       </div>
       <div id="tasks-mobile-cards" class="task-mobile-cards" aria-label="Vista de entregables para móviles"></div>
-      <div class="table-footer">
-        <span id="tasks-footer"></span>
-        <span>Atajos: <kbd style="font-family:var(--font-mono)">Doble clic</kbd> / <kbd style="font-family:var(--font-mono)">Enter</kbd> Editar — <kbd style="font-family:var(--font-mono)">Supr</kbd> Eliminar fila seleccionada</span>
+      <div class="table-footer tasks-pagination-footer">
+        <span id="tasks-footer" role="status" aria-live="polite"></span>
+        <nav id="tasks-pagination" class="tasks-pagination" aria-label="Paginación de entregables"></nav>
       </div>
+      <div class="tasks-shortcuts">Atajos: <kbd style="font-family:var(--font-mono)">Doble clic</kbd> / <kbd style="font-family:var(--font-mono)">Enter</kbd> Editar — <kbd style="font-family:var(--font-mono)">Supr</kbd> Eliminar fila seleccionada</div>
     </section>
   </div>
 
@@ -3293,6 +3335,45 @@ function makeStats(rows,interactive=false){
   ].join('');
 }
 
+const TASKS_PER_PAGE=15;
+let currentTaskPage=1;
+function onTaskFiltersChanged(){
+  currentTaskPage=1;
+  selectedTaskId=null;
+  hoveredTaskId=null;
+  renderTasks();
+}
+function changeTaskPage(nextPage){
+  const total=filteredTasks().length;
+  const maximum=Math.max(1,Math.ceil(total/TASKS_PER_PAGE));
+  if(!Number.isInteger(nextPage)||nextPage<1||nextPage>maximum||nextPage===currentTaskPage)return;
+  currentTaskPage=nextPage;
+  selectedTaskId=null;
+  hoveredTaskId=null;
+  renderTasks();
+  // Llevar el foco visual al principio de la lista en cada cambio de página.
+  const top=$('#tasks-view .controls');
+  if(top)top.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});
+}
+function renderTaskPagination(total){
+  const host=$('#tasks-pagination'),max=Math.ceil(total/TASKS_PER_PAGE);
+  if(!total){host.innerHTML='';return;}
+  const targets=[...new Set([1,max,currentTaskPage-1,currentTaskPage,currentTaskPage+1]
+    .filter(p=>p>=1&&p<=max))].sort((a,b)=>a-b);
+  let last=0;
+  const pages=targets.map(p=>{
+    const ellipsis=p-last>1?'<span class="task-page-ellipsis" aria-hidden="true">…</span>':'';
+    last=p;
+    return ellipsis+`<button type="button" class="task-page-number${p===currentTaskPage?' active':''}"
+      onclick="changeTaskPage(${p})" aria-label="Página ${p} de ${max}"
+      ${p===currentTaskPage?'aria-current="page"':''}>${p}</button>`;
+  }).join('');
+  host.innerHTML=`<button type="button" class="task-page-edge" onclick="changeTaskPage(${currentTaskPage-1})"
+    ${currentTaskPage===1?'disabled':''} aria-label="Página anterior">Anterior</button>
+    ${pages}
+    <button type="button" class="task-page-edge" onclick="changeTaskPage(${currentTaskPage+1})"
+      ${currentTaskPage===max?'disabled':''} aria-label="Página siguiente">Siguiente</button>`;
+}
 function filteredTasks(){
   const q = $('#search').value.toLocaleLowerCase('es');
   return tasks.filter(t =>
@@ -3308,15 +3389,21 @@ function filteredTasks(){
 function renderTasks(){
   crossFilterOptions(TASK_CROSS_FIELDS,taskCrossSource());
   const a = filteredTasks();
+  const maxPage=Math.max(1,Math.ceil(a.length/TASKS_PER_PAGE));
+  currentTaskPage=Math.min(Math.max(1,currentTaskPage),maxPage);
+  const start=(currentTaskPage-1)*TASKS_PER_PAGE;
+  const visible=a.slice(start,start+TASKS_PER_PAGE);
   $('#task-stats').innerHTML = makeStats(a, false);
   $('#count-label').textContent = `${a.length} de ${tasks.length} entregables`;
-  $('#tasks-footer').textContent = `Mostrando ${a.length} registro${a.length!==1?'s':''}`;
+  $('#tasks-footer').textContent = `Mostrando ${visible.length} de ${a.length} registros${a.length===tasks.length?'':` filtrados (${tasks.length} en total)`}`;
+  renderTaskPagination(a.length);
   renderActiveFilterChips('tasks');
   $('#task-linked-banner').classList.toggle('hidden', !linkedTaskIds);
   $('#task-linked-text').textContent = linkedTaskIds ? `Filtro activo desde Dashboard: ${linkedLabel} (${a.length})` : '';
-  if(selectedTaskId && !a.some(t=>t.id===selectedTaskId)) selectedTaskId = null;
+  if(selectedTaskId && !visible.some(t=>t.id===selectedTaskId)) selectedTaskId = null;
+  if(hoveredTaskId && !visible.some(t=>t.id===hoveredTaskId)) hoveredTaskId = null;
 
-  $('#tasks-tbody').innerHTML = a.map(t => {
+  $('#tasks-tbody').innerHTML = visible.map(t => {
     const isDone = categoryOf(t.status) === 'done';
     const al = alertStatus(t);
     const lodHtml = t.lod ? `<span class="lod-badge">${esc(t.lod)}</span>` : `<span class="cell-empty">-</span>`;
@@ -3338,7 +3425,7 @@ function renderTasks(){
     </tr>`;
   }).join('') || `<tr class="task-row-empty"><td colspan="10" class="empty">No se encontraron entregables para los criterios seleccionados.</td></tr>`;
   // Vista compacta para móviles; reutiliza las mismas tareas y el editor existente.
-  $('#tasks-mobile-cards').innerHTML=a.length?a.map(t=>{
+  $('#tasks-mobile-cards').innerHTML=visible.length?visible.map(t=>{
     const alert=alertStatus(t);
     return `<article class="task-mobile-card">
       <div class="task-mobile-card-head"><span class="id">${esc(t.id)}</span><span class="chip ${clsStatus(t.status)}">${esc(t.status)}</span></div>
@@ -3595,13 +3682,14 @@ function openDrillInControl(){
   linkedLabel = drillTitle(dashboardDrill?.type, dashboardDrill?.value);
   $('#search').value = '';
   for(const sel of ['#filter-package','#filter-owner','#filter-status','#filter-team']) $(sel).value = '';
+  currentTaskPage=1;
   switchView('tasks');
   renderTasks();
 }
 function clearLinkedTasks(){
   linkedTaskIds = null;
   linkedLabel = '';
-  renderTasks();
+  onTaskFiltersChanged();
 }
 
 document.addEventListener('click', e => {
@@ -4154,14 +4242,14 @@ document.addEventListener('click',event=>{
   if(single){
     if(single.dataset.clearField==='linked') clearLinkedTasks();
     else {const control=document.getElementById(single.dataset.clearField);if(control)control.value='';}
-    (single.dataset.clearScope==='dash'?renderDashboard:renderTasks)();
+    (single.dataset.clearScope==='dash'?renderDashboard:onTaskFiltersChanged)();
     return;
   }
   if(all){
     if(all.dataset.clearAll==='dash') clearDashFilters();
     else {
       for(const id of ['search','filter-package','filter-owner','filter-status','filter-team'])document.getElementById(id).value='';
-      linkedTaskIds=null;linkedLabel='';renderTasks();
+      linkedTaskIds=null;linkedLabel='';onTaskFiltersChanged();
     }
   }
 });
