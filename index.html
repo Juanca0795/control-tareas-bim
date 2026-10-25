@@ -1912,8 +1912,6 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
 .weekly-help-line{display:flex;justify-content:space-between;align-items:center;gap:15px;background:var(--bg-subtle);border:1px solid var(--border-base);border-radius:12px;padding:14px 16px;margin:15px 0;color:var(--ink-secondary);font-size:11px;line-height:1.55}
 .weekly-help-line strong{color:var(--ink-primary)}
 .weekly-help-line .btn{flex:0 0 auto}
-.weekly-editor-head{margin-top:15px}
-.weekly-editor-help{font-size:10px;line-height:1.45;color:var(--ink-muted);margin:9px 0 3px}
 @media(max-width:1300px){
  .sidebar nav{gap:2px}.nav-link,.nav-link.active{padding-inline:9px;font-size:10.5px}
  .weekly-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}
@@ -2129,10 +2127,10 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
       </article>
     </section>
     <div class="weekly-help-line">
-      <div><strong>¿Cómo empezar?</strong> En <b>Control de tareas</b>, asigna una «Semana comprometida» a cada entregable. La fecha real de cierre se registrará al completarlo. No se reconstruyen fechas históricas inexistentes.</div>
+      <div><strong>¿Cómo empezar?</strong> Registra entregables en <b>Control de tareas</b>. Su semana comprometida se calcula con la fecha límite (o la semana de registro, si no tiene plazo), y su fecha real se guarda automáticamente al pasar a «Completada».</div>
       <button type="button" class="btn small" onclick="switchView('tasks')">Ir a Control de tareas</button>
     </div>
-    <footer>Datos guardados en este navegador. Los cierres semanales conservan una copia fija de los indicadores y se incluyen en el respaldo JSON.</footer>
+    <footer>Los registros se sincronizan en Supabase. Los cierres semanales conservan una copia fija de sus indicadores y se incluyen en el respaldo JSON.</footer>
   </div>
 
   <!-- VISTA: DASHBOARD SALA DE CONTROL -->
@@ -2349,13 +2347,6 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
             <input id="f-support" class="field-input" type="text" autocomplete="off" placeholder="Ej.: Interferencias, Hidráulica, Estructuras, Geotecnia.">
           </div>
         </div>
-        <div class="form-section-head weekly-editor-head"><span class="section-index">04</span><div><h3>CONTROL SEMANAL</h3><p>Compromiso para KPI PPC y fecha real del cierre</p></div></div>
-        <div class="form-grid">
-          <div class="form-field"><label for="f-plannedWeek">Semana comprometida (opcional)</label><input id="f-plannedWeek" type="week" class="field-input" aria-describedby="weekly-editor-help"></div>
-          <div class="form-field"><label for="f-completedAt">Fecha real de finalización</label><input id="f-completedAt" type="date" class="field-input" aria-describedby="weekly-editor-help"></div>
-        </div>
-        <p class="weekly-editor-help" id="weekly-editor-help">Al cambiar a «Completada» se propone la fecha de hoy; puedes corregirla. Los registros antiguos sin fecha no se completan de forma retroactiva.</p>
-        <div class="editor-tip">Los campos marcados con * son obligatorios. Los cambios se sincronizan en Supabase.</div>
       </div>
       <div class="modal-ft">
         <button type="button" id="delete-in-editor" class="btn danger hidden" onclick="deleteEditing()">Eliminar registro</button>
@@ -3153,13 +3144,11 @@ function openEditor(id=null){
   $('#modal-title').textContent = t ? `Editar entregable ${t.id}` : 'Registrar nuevo entregable BIM';
   $('#delete-in-editor').classList.toggle('hidden', !t);
   $('#save-button').textContent = t ? 'Guardar cambios' : 'Registrar entregable';
-  const v = t || {title:'', package:catalogs.packages[0]||'', team:catalogs.teams[0]||'', owner:'', priority:'Media', lod:'', deadline:todayString(), status:'En Progreso', support:'',plannedWeek:'',completedAt:''};
+  const v = t || {title:'', package:catalogs.packages[0]||'', team:catalogs.teams[0]||'', owner:'', priority:'Media', lod:'', deadline:todayString(), status:'En Progreso', support:''};
   populateEditorSelects();
   for(const [name,prop] of [['title','title'],['package','package'],['team','team'],['owner','owner'],['priority','priority'],['lod','lod'],['deadline','deadline'],['status','status'],['support','support']]){
     $('#f-'+name).value = v[prop] ?? '';
   }
-  $('#f-plannedWeek').value=v.plannedWeek||'';
-  $('#f-completedAt').value=v.completedAt||'';
   $('#modal-back').classList.add('open');
   document.body.style.overflow = 'hidden';
   refreshEditorDeadlinePreview();
@@ -3174,9 +3163,24 @@ function nextId(){
   const n = Math.max(0, ...tasks.map(t=>Number((t.id.match(/^BIM-(\d+)$/)||[])[1])||0));
   return `BIM-${String(n+1).padStart(3,'0')}`;
 }
+// Los indicadores semanales se calculan internamente, sin campos adicionales en el formulario.
+function taskWeeklyMetadata(previous, status, deadline){
+  const wasCompleted = previous && categoryOf(previous.status)==='done';
+  const isCompleted = categoryOf(status)==='done';
+  // La fecha real se registra al pasar a Completada; conservar fechas históricas verificadas.
+  // Las tareas antiguas ya completadas y sin fecha permanecen sin fecha (sin inventar).
+  const completedAt = !isCompleted ? '' : (wasCompleted ? (previous.completedAt||'') : todayString());
+  // Semana ISO del vencimiento, o semana de registro si no hay fecha límite.
+  // Al editar, se respeta la semana previa salvo que cambie la fecha límite.
+  const plannedWeek = (previous && previous.deadline===deadline && previous.plannedWeek)
+    || isoWeekKey(new Date((deadline||todayString())+'T12:00:00'));
+  return {plannedWeek,completedAt};
+}
 function saveEditor(e){
   e.preventDefault();
   const statusVal = $('#f-status').value;
+  const previous = editingId ? tasks.find(t=>t.id===editingId) : null;
+  const deadline = $('#f-deadline').value;
   const obj = {
     id: editingId || nextId(),
     title: $('#f-title').value.trim(),
@@ -3185,11 +3189,10 @@ function saveEditor(e){
     owner: $('#f-owner').value.trim(),
     priority: $('#f-priority').value,
     lod: $('#f-lod').value,
-    deadline: $('#f-deadline').value,
+    deadline,
     status: statusVal,
     support: $('#f-support').value.trim(),
-    plannedWeek: $('#f-plannedWeek').value,
-    completedAt: $('#f-completedAt').value,
+    ...taskWeeklyMetadata(previous,statusVal,deadline),
     progress: progressFromStatus(statusVal)
   };
   if(!obj.title || !obj.package || !obj.team || !obj.owner || !obj.priority || !obj.status){
@@ -3197,12 +3200,6 @@ function saveEditor(e){
     return;
   }
   const wasEditing = Boolean(editingId);
-  const oldTask=wasEditing?tasks.find(t=>t.id===editingId):null;
-  // Registrar finalización únicamente cuando se completa por primera vez.
-  // Una tarea antigua ya completada sin fecha sigue como dato no verificable.
-  if(categoryOf(obj.status)==='done' && !obj.completedAt && (!wasEditing||categoryOf(oldTask?.status)!=='done'))obj.completedAt=todayString();
-  if(categoryOf(obj.status)!=='done')obj.completedAt='';
-  if(obj.completedAt&&obj.completedAt>todayString()){toast('La finalización real no puede ser una fecha futura.');return;}
   if(wasEditing){
     tasks = tasks.map(t => t.id===editingId ? {
       ...t, ...obj,
@@ -3450,15 +3447,7 @@ function refreshEditorDeadlinePreview(){
   preview.textContent=`EN PLAZO — restan ${days} día(s)`;preview.classList.add('ok');
 }
 $('#f-deadline').addEventListener('change',refreshEditorDeadlinePreview);
-$('#f-status').addEventListener('change',()=>{
-  const current=$('#f-status').value;
-  if(categoryOf(current)==='done' && !$('#f-completedAt').value){
-    const previous=editingId?tasks.find(t=>t.id===editingId):null;
-    if(!previous||categoryOf(previous.status)!=='done')$('#f-completedAt').value=todayString();
-  }
-  if(categoryOf(current)!=='done')$('#f-completedAt').value='';
-  refreshEditorDeadlinePreview();
-});
+$('#f-status').addEventListener('change',refreshEditorDeadlinePreview);
 function exportData(){
   const record={format:'aec-obsidian-bim',version:3,exportedAt:new Date().toISOString(),
     tasks:JSON.parse(JSON.stringify(tasks)),catalogs:JSON.parse(JSON.stringify(catalogs)),weeklySnapshots:JSON.parse(JSON.stringify(weeklySnapshots))};
@@ -3653,7 +3642,7 @@ function renderWeekly(){
   const compareTxt=compared?(past.ppc===null?'— Sin referencia anterior':'— Con comparación semanal'):'';
   info.innerHTML=`<span>${m.closed?'<b>Semana cerrada:</b> indicadores archivados y no modificables.':
     m.planned?'<b>Semana abierta:</b> indicadores provisionales, hasta guardar su cierre.':
-    '<b>Sin compromisos registrados:</b> asigna una semana a los entregables para habilitar el PPC.'}
+    '<b>Sin compromisos registrados:</b> registra tareas con fecha límite para habilitar el PPC de esa semana.'}
     ${compared?esc(compareTxt):''}</span><span class="status-side">${esc(weekShort(selectedWeek))} — ${m.planned} compromiso${m.planned!==1?'s':''}</span>`;
   $('#weekly-close-btn').disabled=selectedClosed||!overallWeek.rows.length;
   $('#weekly-close-btn').textContent=selectedClosed?'V Semana cerrada':'V Cerrar semana';
@@ -3716,4 +3705,4 @@ renderAll();
 syncThemeButton();
 </script>
 </body>
-</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}async function load(){let[a,c,w]=await Promise.all([d.from('bim_tasks').select('*').order('id'),d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1),d.from('bim_weekly_snapshots').select('*').order('week')]);check(a,'Tareas');check(c,'Catálogos');check(w,'Semanas');tasks=a.data.map(f);ids=new Set(tasks.map(x=>x.id));if(c.data?.[0]?.data)catalogs=normalizeCatalogs(c.data[0].data);weeklySnapshots=w.data.map(x=>({week:x.week,createdAt:x.created_at,rows:x.rows||[]}));syncCatalogsWithTasks();ready=1;renderAll();if(pendingSave){pendingSave=false;save()}}async function save(){if(!ready){pendingSave=true;return}if(lock)return;lock=1;try{let now=new Set(tasks.map(x=>x.id)),gone=[...ids].filter(x=>!now.has(x));if(gone.length){let r=await d.from('bim_tasks').delete().in('id',gone);check(r,'Eliminar tareas')}if(tasks.length){let r=await d.from('bim_tasks').upsert(tasks.map(g),{onConflict:'user_id,id'});check(r,'Guardar tareas')}let cr=await d.from('bim_catalogs').upsert({user_id:sharedUser,data:catalogs});check(cr,'Guardar catálogos');if(weeklySnapshots.length){let wr=await d.from('bim_weekly_snapshots').upsert(weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]})),{onConflict:'user_id,week'});check(wr,'Guardar semanas')}ids=now;toast('Cambios sincronizados en Supabase')}catch(e){console.error(e);toast('Error Supabase: '+e.message)}finally{lock=0}}let old=persist;persist=()=>{old();save()};load().catch(e=>{console.error(e);toast('Error al cargar Supabase: '+e.message)});setInterval(()=>{if(!lock)load().catch(e=>toast('Error Supabase: '+e.message))},10000)})();</script>
+</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}async function load(){let[a,c,w]=await Promise.all([d.from('bim_tasks').select('*').order('id'),d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1),d.from('bim_weekly_snapshots').select('*').order('week')]);check(a,'Tareas');check(c,'Catálogos');check(w,'Semanas');tasks=a.data.map(f);ids=new Set(tasks.map(x=>x.id));if(c.data?.[0]?.data)catalogs=normalizeCatalogs(c.data[0].data);weeklySnapshots=w.data.map(x=>({week:x.week,createdAt:x.created_at,rows:x.rows||[]}));syncCatalogsWithTasks();ready=1;renderAll();if(pendingSave){pendingSave=false;save()}}async function save(){if(!ready){pendingSave=true;return}if(lock){pendingSave=true;return}lock=1;try{let now=new Set(tasks.map(x=>x.id)),gone=[...ids].filter(x=>!now.has(x));if(gone.length){let r=await d.from('bim_tasks').delete().in('id',gone);check(r,'Eliminar tareas')}if(tasks.length){let r=await d.from('bim_tasks').upsert(tasks.map(g),{onConflict:'user_id,id'});check(r,'Guardar tareas')}let cr=await d.from('bim_catalogs').upsert({user_id:sharedUser,data:catalogs});check(cr,'Guardar catálogos');if(weeklySnapshots.length){let wr=await d.from('bim_weekly_snapshots').upsert(weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]})),{onConflict:'user_id,week'});check(wr,'Guardar semanas')}ids=now;toast('Cambios sincronizados en Supabase')}catch(e){console.error(e);toast('Error Supabase: '+e.message)}finally{lock=0;if(pendingSave){pendingSave=false;save()}}}let old=persist;persist=()=>{old();save()};load().catch(e=>{console.error(e);toast('Error al cargar Supabase: '+e.message)});setInterval(()=>{if(!lock&&!pendingSave)load().catch(e=>toast('Error Supabase: '+e.message))},10000)})();</script>
