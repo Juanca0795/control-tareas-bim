@@ -2429,6 +2429,67 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 @media(max-width:360px){
   #dashboard-view .stat-grid,#tasks-view .stat-grid{grid-template-columns:minmax(0,1fr)}
 }
+
+/* Control semanal ejecutivo: jerarquía de Stitch con paleta original AEC Obsidian */
+#weekly-view .weekly-filter-card{padding:19px 21px;margin-bottom:19px}
+#weekly-view .weekly-timeline-toolbar{padding-bottom:17px;border-bottom:1px solid var(--border-base);margin-bottom:8px}
+#weekly-view .weekly-timeline-head{flex-direction:row;align-items:center;gap:8px;flex-wrap:wrap}
+#weekly-view .weekly-timeline-head strong{color:var(--ink-primary);font-size:12px;letter-spacing:.025em}
+#weekly-view .weekly-timeline-head strong:before{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:#19c6dd;margin-right:8px}
+#weekly-view .weekly-timeline{padding:15px 2px 8px}
+#weekly-view .weekly-timeline-track{width:100%;justify-content:space-between}
+#weekly-view .weekly-timeline-track:before{top:20px;left:6%;right:6%}
+#weekly-view .weekly-time-step{min-width:104px;flex:1 0 104px;padding:4px 7px 12px;gap:5px;border-radius:9px}
+#weekly-view .weekly-time-step .weekly-time-dot{margin-bottom:7px}
+#weekly-view .weekly-time-step .weekly-time-name{font-size:12px}
+#weekly-view .weekly-time-step .weekly-time-ppc{order:3;border:0;background:none;font:700 12px var(--font-mono);color:var(--status-done-fg);padding:0}
+#weekly-view .weekly-time-step.current .weekly-time-ppc{color:#29cbe7}
+#weekly-view .weekly-time-step.future{opacity:.65}
+#weekly-view .weekly-time-step.selected{border:2px solid #1bc2e2;box-shadow:inset 0 0 0 1px rgba(27,194,226,.16);background:rgba(27,194,226,.05)}
+#weekly-view .weekly-time-step.selected:before{content:"SELECCIONADA";position:absolute;top:-11px;left:50%;transform:translateX(-50%);background:#1bc2e2;color:#081420;border-radius:15px;padding:3px 10px;font:bold 9px Inter,sans-serif;white-space:nowrap}
+#weekly-view .weekly-time-step.selected.current:before{content:"ACTUAL"}
+#weekly-view .weekly-timeline-legend{border-block:1px solid var(--border-base);padding:12px 4px;gap:15px}
+#weekly-view .weekly-timeline-legend .future i{background:var(--ink-muted)}
+#weekly-view .weekly-status-strip{border-left-width:4px;border-radius:7px;padding:14px 17px;margin-bottom:19px}
+#weekly-view .weekly-status-label{font-weight:800;color:var(--status-warn-fg)}
+#weekly-view .weekly-status-strip.done .weekly-status-label{color:var(--status-done-fg)}
+#weekly-view .weekly-kpis{gap:13px;margin-bottom:19px}
+#weekly-view .weekly-kpi{min-height:164px;padding:16px;gap:9px;border-radius:11px}
+#weekly-view .weekly-kpi:before{display:none}
+#weekly-view .weekly-kpi .number{font-size:clamp(26px,2.35vw,36px);font-weight:700}
+#weekly-view .weekly-kpi.positive .number{color:var(--status-done-fg)}
+#weekly-view .weekly-kpi.warning .number{color:var(--status-warn-fg)}
+#weekly-view .weekly-kpi.danger .number{color:var(--status-crit-fg)}
+#weekly-view .weekly-kpi.ppc-highlight{border:2px solid #14a2bd}
+#weekly-view .weekly-kpi.ppc-highlight .number{color:#25cde7}
+#weekly-view .weekly-kpi-header{display:flex;justify-content:space-between;gap:7px}
+#weekly-view .weekly-kpi-icon{border:1px solid var(--border-base);border-radius:6px;width:29px;height:29px;flex:0 0 29px;display:grid;place-items:center;font-size:16px;color:var(--accent-blue)}
+#weekly-view .weekly-kpi.positive .weekly-kpi-icon{color:var(--status-done-fg)}
+#weekly-view .weekly-kpi.warning .weekly-kpi-icon{color:var(--status-warn-fg)}
+#weekly-view .weekly-kpi.danger .weekly-kpi-icon{color:var(--status-crit-fg)}
+#weekly-view .weekly-kpi-value{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+#weekly-view .weekly-kpi-tag{font-size:10px;font-weight:700;color:var(--status-done-fg)}
+#weekly-view .weekly-kpi .foot{border-top:1px solid var(--border-base);padding-top:9px}
+#weekly-view .weekly-executive-row{display:grid;grid-template-columns:minmax(0,2.8fr) minmax(270px,1fr);gap:14px;align-items:stretch;margin-bottom:17px}
+#weekly-view .weekly-primary-trend,#weekly-view .weekly-cnc-card{grid-column:auto;min-height:430px;padding:18px}
+#weekly-view .weekly-primary-trend .weekly-chart-content{height:300px;min-height:300px}
+#weekly-view .weekly-trend-key{display:flex;gap:16px;margin-bottom:10px;color:var(--ink-secondary);font-size:10px}
+#weekly-view .weekly-trend-key span{display:flex;align-items:center;gap:6px}
+#weekly-view .weekly-trend-key i.achieved{width:8px;height:8px;border-radius:50%;background:#22c7df}
+#weekly-view .weekly-trend-key i.goal{width:19px;border-top:2px dashed var(--status-crit-fg)}
+#weekly-view .weekly-trend-footer{display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;font-size:10px;color:var(--ink-secondary);border-top:1px solid var(--border-base);margin-top:12px;padding-top:12px}
+#weekly-view .weekly-trend-footer strong{color:#22c7df}
+#weekly-view .weekly-cnc-content{display:flex;flex-direction:column;gap:10px;flex:1}
+#weekly-view .weekly-cnc-summary{color:var(--ink-secondary);font-size:11px;border-bottom:1px solid var(--border-base);padding-bottom:9px}
+#weekly-view .weekly-cnc-list{display:grid;gap:9px;max-height:255px;overflow:auto}
+#weekly-view .weekly-cnc-item{border:1px solid var(--border-base);background:var(--bg-subtle);border-radius:8px;padding:10px 12px}
+#weekly-view .weekly-cnc-item strong{display:block;margin-bottom:5px;color:var(--ink-primary);font-size:11px;line-height:1.4}
+#weekly-view .weekly-cnc-item p{margin:0;color:var(--ink-secondary);font-size:10px;line-height:1.5}
+#weekly-view .weekly-cnc-item small{display:block;color:var(--ink-muted);font-size:9px;margin-top:7px}
+#weekly-view .weekly-cnc-note{margin-top:auto;border:1px solid var(--border-strong);border-radius:7px;padding:11px;color:var(--ink-secondary);font-size:10px;line-height:1.5}
+#weekly-view .weekly-cnc-note strong{color:var(--accent-blue)}
+@media(max-width:1100px){#weekly-view .weekly-executive-row{grid-template-columns:minmax(0,1fr)}#weekly-view .weekly-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}#weekly-view .weekly-primary-trend,#weekly-view .weekly-cnc-card{min-height:0}}
+@media(max-width:650px){#weekly-view .weekly-filter-card{padding:12px}#weekly-view .weekly-timeline-track{justify-content:start}#weekly-view .weekly-time-step{flex:0 0 105px;min-width:105px}#weekly-view .weekly-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#weekly-view .weekly-kpi{min-height:145px;padding:12px}#weekly-view .weekly-primary-trend .weekly-chart-content{height:235px;min-height:235px}#weekly-view .weekly-primary-trend,#weekly-view .weekly-cnc-card{padding:12px}}
 </style>
 </head>
 <body>
@@ -2570,9 +2631,10 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
         <div id="weekly-timeline-track" class="weekly-timeline-track"></div>
       </div>
       <div class="weekly-timeline-legend" aria-hidden="true">
-        <span><i></i>Con registros</span>
-        <span class="archived"><i></i>Archivada</span>
+        <span class="archived"><i></i>Semana archivada</span>
+        <span><i></i>Con datos PPC</span>
         <span class="current"><i></i>Semana actual</span>
+        <span class="future"><i></i>Semanas futuras</span>
       </div>
       <div class="weekly-filter-row">
         <div class="select-wrap"><select id="weekly-package" aria-label="Filtrar paquete" onchange="renderWeekly()"><option value="">Todos los paquetes</option></select></div>
@@ -2587,14 +2649,22 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
     <section class="weekly-status-strip" id="weekly-info" role="status" aria-live="polite"></section>
     <section class="weekly-kpis" id="weekly-kpis" aria-label="Resultados KPI semanales"></section>
 
-    <section class="weekly-charts-grid">
-      <article class="card weekly-chart-card weekly-chart-wide">
+    <section class="weekly-executive-row" aria-label="Evolución PPC y análisis de causas">
+      <article class="card weekly-chart-card weekly-primary-trend">
         <div class="weekly-card-head">
-          <div><h2>EVOLUCIÓN DEL CUMPLIMIENTO PPC</h2><p>Porcentaje de compromisos cerrados a tiempo en la semana planificada</p></div>
+          <div><h2>EVOLUCIÓN DEL CUMPLIMIENTO PPC</h2><p>Porcentaje de compromisos cumplidos en la semana planificada · Meta 85%</p></div>
           <span class="weekly-mini-badge">Últimas 8 semanas</span>
         </div>
+        <div class="weekly-trend-key"><span><i class="achieved"></i> PPC logrado</span><span><i class="goal"></i> Meta 85%</span></div>
         <div id="weekly-trend-chart" class="weekly-chart-content"></div>
+        <div class="weekly-trend-footer" id="weekly-trend-footer"></div>
       </article>
+      <article class="card weekly-chart-card weekly-cnc-card" aria-label="Análisis de causas de incumplimiento">
+        <div class="weekly-card-head"><div><h2>ANÁLISIS DE CAUSAS (CNC)</h2><p>Compromisos pendientes y causas verificadas</p></div><span class="weekly-mini-badge" id="weekly-cnc-count">Sin datos</span></div>
+        <div id="weekly-cnc" class="weekly-cnc-content" aria-live="polite"></div>
+      </article>
+    </section>
+    <section class="weekly-charts-grid weekly-secondary-charts" aria-label="Indicadores complementarios">
       <article class="card weekly-chart-card weekly-chart-wide">
         <div class="weekly-card-head"><div><h2>PLANIFICADOS VS. COMPLETADOS</h2><p>Compromisos según fecha límite y finalizaciones verificadas, por semana</p></div></div>
         <div id="weekly-plan-chart" class="weekly-chart-content"></div>
