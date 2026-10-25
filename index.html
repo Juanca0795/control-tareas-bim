@@ -2097,6 +2097,48 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
 .weekly-is-empty .weekly-empty{min-height:95px;height:auto;padding:12px 14px}
 .weekly-is-empty .weekly-card-head{margin-bottom:9px}
 @media(max-width:680px){#dash-scope-heading{width:100%;font-size:9px}}
+
+/* Dashboard sin datos: los estados vacíos ocupan el área útil completa.
+   Evita un recuadro pequeño dentro de una tarjeta grande. */
+.ui-empty-dashboard .executive-grid > .chart-card{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  min-height:215px!important;
+}
+.ui-empty-dashboard .radar-card #state-chart,
+.ui-empty-dashboard .owner-card #owner-chart,
+.ui-empty-dashboard .pulse-card #team-summary,
+.ui-empty-dashboard .attention-card #alerts-list{
+  display:flex!important;
+  flex-direction:column;
+  flex:1 1 auto;
+  min-height:0!important;
+  margin-top:12px;
+  align-items:stretch;
+}
+.ui-empty-dashboard .pulse-card #team-summary{
+  padding:0!important;
+  border:0;
+  margin-bottom:0;
+}
+.ui-empty-dashboard .pulse-card #package-chart{
+  display:none!important;
+}
+.ui-empty-dashboard .executive-grid .compact-empty{
+  display:flex;
+  flex:1 1 auto;
+  width:100%;
+  min-height:110px;
+  margin:0;
+  align-self:stretch;
+  justify-content:center;
+}
+/* En móviles, evitar tarjetas excesivamente altas cuando no existen datos. */
+@media(max-width:760px){
+  .ui-empty-dashboard .executive-grid > .chart-card{min-height:175px!important}
+  .ui-empty-dashboard .executive-grid .compact-empty{min-height:85px}
+}
 </style>
 </head>
 <body>
@@ -2995,7 +3037,7 @@ function renderDashboard(){
         <span class="deadline-alert ${deadline.kind}">${esc(deadline.text)}</span>
       </span>
     </button>`;
-  }).join('') : '<div class="empty">Sin tareas prioritarias ni vencimientos próximos en este alcance.</div>';
+  }).join('') : (a.length?'<div class="empty">Sin tareas prioritarias ni vencimientos próximos en este alcance.</div>':'<div class="compact-empty" role="status"><strong>Sin tareas prioritarias</strong><span>Los entregables que requieran atención aparecerán aquí.</span></div>');
 
   const tm = grouped(a, 'team');
   $('#team-summary').innerHTML = tm.length ? tm.map(t=>`
@@ -3004,7 +3046,7 @@ function renderDashboard(){
       <span class="who"><b>${esc(t.name)}</b><small>Avance ${ave(t.items).toFixed(0)}%</small></span>
       <span class="count">${t.items.length}</span>
     </button>
-  `).join('') : '<div class="empty">Sin disciplinas activas.</div>';
+  `).join('') : (a.length?'<div class="empty">Sin disciplinas activas.</div>':'<div class="compact-empty" role="status"><strong>Sin disciplinas registradas</strong><span>La distribución aparecerá al registrar entregables.</span></div>');
 
 
   renderDrill(a);
