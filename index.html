@@ -1861,6 +1861,35 @@ button.owner-item.selected {border-color:var(--accent-blue);background:var(--bg-
 .weekly-week-navigation input[type=week]{width:166px;max-width:100%;flex:0 0 166px;height:34px;color-scheme:dark}
 html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:light}
 .weekly-week-dates{font-family:var(--font-mono);font-size:10.5px;color:var(--ink-muted);white-space:nowrap}
+.weekly-timeline-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.weekly-timeline-head{display:flex;flex-direction:column;gap:5px;min-width:0}
+.weekly-timeline-head strong{color:var(--ink-primary);font-size:10.5px;letter-spacing:.07em}
+.weekly-timeline-controls{display:flex;align-items:center;gap:7px;flex:0 0 auto}
+.weekly-timeline-controls .btn{height:34px;font-size:10px}
+.weekly-timeline-controls label{font-size:10px;font-weight:600;color:var(--ink-secondary)}
+.weekly-timeline-controls input[type=week]{width:151px;flex:0 1 151px}
+.weekly-timeline{overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;padding:7px 3px 9px;overscroll-behavior-x:contain}
+.weekly-timeline-track{position:relative;display:flex;align-items:stretch;gap:7px;min-width:max-content;padding:2px 0}
+.weekly-timeline-track:before{content:'';position:absolute;left:43px;right:43px;top:15px;height:2px;background:var(--border-strong)}
+.weekly-time-step{position:relative;isolation:isolate;display:flex;flex-direction:column;justify-content:flex-start;align-items:center;gap:5px;min-width:104px;padding:0 8px 8px;border:1px solid transparent;border-radius:10px;background:transparent;cursor:pointer;color:var(--ink-muted);font:inherit;transition:background .16s,border-color .16s}
+.weekly-time-step:hover{background:var(--bg-hover);color:var(--ink-primary)}
+.weekly-time-step:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.weekly-time-step .weekly-time-dot{position:relative;z-index:1;width:17px;height:17px;box-sizing:border-box;border:4px solid var(--bg-panel);background:var(--border-strong);border-radius:50%;box-shadow:0 0 0 1px var(--border-strong)}
+.weekly-time-step.has-data .weekly-time-dot{background:var(--accent-blue);box-shadow:0 0 0 1px var(--accent-blue)}
+.weekly-time-step.archived .weekly-time-dot{background:var(--status-done-fg);box-shadow:0 0 0 1px var(--status-done-fg)}
+.weekly-time-step.current:not(.selected) .weekly-time-dot{background:var(--status-warn-fg);box-shadow:0 0 0 1px var(--status-warn-fg)}
+.weekly-time-step.selected{border-color:var(--accent-blue);background:var(--bg-selected);color:var(--ink-primary)}
+.weekly-time-step.selected .weekly-time-dot{background:var(--accent-blue);box-shadow:0 0 0 2px var(--accent-blue)}
+.weekly-time-step .weekly-time-name{font-family:var(--font-mono);font-size:11px;line-height:1.2;font-weight:700}
+.weekly-time-step .weekly-time-range{font-family:var(--font-mono);font-size:9px;white-space:nowrap}
+.weekly-time-step .weekly-time-status{font-size:9px;line-height:1.25;white-space:nowrap}
+.weekly-time-step.has-data .weekly-time-status{color:var(--ink-secondary)}
+.weekly-time-step.archived .weekly-time-status{color:var(--status-done-fg)}
+.weekly-timeline-legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:9px;color:var(--ink-muted);margin:0 0 11px;padding-left:4px}
+.weekly-timeline-legend span{display:inline-flex;align-items:center;gap:5px}
+.weekly-timeline-legend i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--accent-blue)}
+.weekly-timeline-legend .archived i{background:var(--status-done-fg)}
+.weekly-timeline-legend .current i{background:var(--status-warn-fg)}
 .weekly-filter-row{display:grid;grid-template-columns:repeat(3,minmax(125px,1fr)) auto auto;gap:9px;align-items:center}
 .weekly-filter-row select{width:100%}
 .weekly-compare{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--ink-secondary);white-space:nowrap;cursor:pointer}
@@ -1884,16 +1913,16 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
 .weekly-delta{font-size:10px;font-weight:700;color:var(--ink-muted)}
 .weekly-delta.up{color:var(--status-done-fg)}.weekly-delta.down{color:var(--status-crit-fg)}
 .weekly-charts-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:stretch}
-.weekly-chart-card{min-width:0;padding:16px 18px;min-height:270px;overflow:hidden}
+.weekly-chart-card{min-width:0;padding:16px 18px;min-height:270px;overflow:hidden;display:flex;flex-direction:column;align-items:stretch}
 .weekly-chart-wide{grid-column:1/-1;min-height:290px}
 .weekly-card-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:15px}
 .weekly-card-head h2{font-size:11px;font-weight:700;letter-spacing:.075em;margin:0;color:var(--ink-primary)}
 .weekly-card-head p{font-size:10.5px;line-height:1.5;margin:5px 0 0;color:var(--ink-muted)}
 .weekly-mini-badge{background:var(--bg-subtle);border:1px solid var(--border-base);border-radius:6px;color:var(--ink-secondary);font-size:10px;white-space:nowrap;padding:5px 7px}
-.weekly-chart-content{position:relative;width:100%;min-height:190px}
-.weekly-chart-wide .weekly-chart-content{height:230px}
+.weekly-chart-content{position:relative;display:flex;flex-direction:column;flex:1 1 auto;min-width:0;width:100%;min-height:215px}
+.weekly-chart-wide .weekly-chart-content{min-height:230px}
 .weekly-chart-content canvas{display:block!important;width:100%!important;height:100%!important}
-.weekly-empty{display:flex;align-items:center;justify-content:center;flex-direction:column;min-height:175px;padding:20px;color:var(--ink-muted);font-size:11.5px;text-align:center;line-height:1.6;border:1px dashed var(--border-strong);border-radius:9px;background:var(--bg-subtle)}
+.weekly-empty{display:flex;align-items:center;justify-content:center;flex-direction:column;flex:1 1 auto;box-sizing:border-box;width:100%;height:100%;min-height:215px;padding:20px;color:var(--ink-muted);font-size:11.5px;text-align:center;line-height:1.6;border:1px dashed var(--border-strong);border-radius:9px;background:var(--bg-subtle)}
 .weekly-empty strong{font-size:12px;color:var(--ink-primary)}
 .weekly-fallback{width:100%;display:grid;gap:12px;padding-top:6px}
 .weekly-fallback-row{display:grid;grid-template-columns:minmax(90px,160px) minmax(0,1fr) 55px;align-items:center;gap:10px;font-size:10.5px;color:var(--ink-secondary)}
@@ -1935,6 +1964,8 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
  .weekly-chart-card{min-height:245px}
  .weekly-filter-row{grid-template-columns:repeat(2,minmax(0,1fr))}
  .weekly-week-navigation{flex-wrap:wrap}
+ .weekly-timeline-toolbar{align-items:flex-start}
+ .weekly-timeline-controls{flex-wrap:wrap;justify-content:flex-start}
 }
 @media(max-width:610px){
  .sidebar nav{overflow-x:auto;justify-content:flex-start;max-width:100%;width:100%}
@@ -1944,10 +1975,14 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
  .weekly-title-actions{display:grid;grid-template-columns:1fr 1fr}
  .weekly-title-actions .btn{min-width:0;padding:0 6px;white-space:normal;font-size:10px}
  .weekly-filter-card{padding:11px}
- .weekly-week-navigation{gap:6px}
- .weekly-week-navigation label{width:100%}
- .weekly-week-navigation input[type=week]{flex:1 1 auto;min-width:125px}
+ .weekly-week-navigation{gap:8px}
+ .weekly-timeline-toolbar{flex-direction:column;align-items:stretch}
+ .weekly-timeline-controls{width:100%;flex-wrap:wrap;gap:6px}
+ .weekly-timeline-controls label{width:auto}
+ .weekly-timeline-controls input[type=week]{width:auto;flex:1 1 125px;min-width:125px}
  .weekly-week-dates{width:100%;margin-top:3px}
+ .weekly-time-step{min-width:93px}
+ .weekly-timeline-legend{gap:9px}
  .weekly-filter-row{grid-template-columns:minmax(0,1fr)}
  .weekly-compare{padding:5px 0}
  .weekly-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
@@ -1955,7 +1990,7 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
  .weekly-kpi .number{font-size:23px}
  .weekly-kpi .label{font-size:9px}
  .weekly-chart-card{padding:14px 12px}
- .weekly-chart-wide .weekly-chart-content{height:215px}
+ .weekly-chart-wide .weekly-chart-content{min-height:215px}
  .weekly-mini-badge{font-size:9px}
  .weekly-status-strip{flex-direction:column;align-items:flex-start}
  .weekly-status-strip .status-side{text-align:left}
@@ -2086,12 +2121,26 @@ html[data-theme=light] .weekly-week-navigation input[type=week]{color-scheme:lig
       </div>
     </section>
     <section class="card weekly-filter-card" aria-label="Filtros del control semanal">
-      <div class="weekly-week-navigation">
-        <button type="button" class="icon-btn" onclick="stepWeekly(-1)" aria-label="Semana anterior" title="Semana anterior"><</button>
-        <label for="weekly-week">Semana de análisis</label>
-        <input type="week" id="weekly-week" class="field-input" onchange="changeWeeklyWeek(this.value)">
-        <button type="button" class="icon-btn" onclick="stepWeekly(1)" aria-label="Semana siguiente" title="Semana siguiente">></button>
-        <span class="weekly-week-dates" id="weekly-period"></span>
+      <div class="weekly-week-navigation weekly-timeline-toolbar">
+        <div class="weekly-timeline-head">
+          <strong>LÍNEA DE TIEMPO · CONTROL SEMANAL</strong>
+          <span class="weekly-week-dates" id="weekly-period"></span>
+        </div>
+        <div class="weekly-timeline-controls">
+          <button type="button" class="icon-btn" onclick="stepWeekly(-1)" aria-label="Semana anterior" title="Semana anterior">‹</button>
+          <button type="button" class="btn small" onclick="goToCurrentWeek()">Esta semana</button>
+          <label for="weekly-week">Ir a semana:</label>
+          <input type="week" id="weekly-week" class="field-input" aria-label="Elegir semana de análisis" onchange="changeWeeklyWeek(this.value)">
+          <button type="button" class="icon-btn" onclick="stepWeekly(1)" aria-label="Semana siguiente" title="Semana siguiente">›</button>
+        </div>
+      </div>
+      <div id="weekly-timeline" class="weekly-timeline" aria-label="Selecciona una semana en la línea de tiempo" role="group">
+        <div id="weekly-timeline-track" class="weekly-timeline-track"></div>
+      </div>
+      <div class="weekly-timeline-legend" aria-hidden="true">
+        <span><i></i>Con registros</span>
+        <span class="archived"><i></i>Archivada</span>
+        <span class="current"><i></i>Semana actual</span>
       </div>
       <div class="weekly-filter-row">
         <div class="select-wrap"><select id="weekly-package" aria-label="Filtrar paquete" onchange="renderWeekly()"><option value="">Todos los paquetes</option></select></div>
@@ -3528,11 +3577,18 @@ function neighborWeek(week,delta){const d=weekStart(week);if(!d)return isoWeekKe
 function weekShort(week){return week?`S${Number(week.split('-W')[1])}`:'-';}
 function weeklySnapshot(week){return weeklySnapshots.find(s=>s.week===week)||null;}
 function weekDatesText(week){const start=weekStart(week);if(!start)return 'Semana no válida';return `${localISO(start).split('-').reverse().join('/')} - ${dateDisplay(weekEnd(week))}`;}
+function effectiveTaskWeek(t){
+  if(t.plannedWeek&&weekStart(t.plannedWeek))return t.plannedWeek;
+  // Compatibilidad con tareas anteriores, sin cambiar el registro almacenado.
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(t.deadline||''))return '';
+  const date=new Date(t.deadline+'T12:00:00');
+  return Number.isNaN(date.getTime())?'':isoWeekKey(date);
+}
 function weeklyRaw(week){
   const snap=weeklySnapshot(week);
   // Cierres: copiar el estado que existía al guardar la semana, sin reconstruirlo desde tareas editadas.
   if(snap)return {closed:true,createdAt:snap.createdAt,rows:snap.rows.map(t=>({...t})),week};
-  const rows=tasks.filter(t=>t.plannedWeek===week).map(t=>({
+  const rows=tasks.filter(t=>effectiveTaskWeek(t)===week).map(t=>({
     id:t.id,package:t.package,team:t.team,owner:t.owner,deadline:t.deadline||'',
     completedAt:t.completedAt||'',done:categoryOf(t.status)==='done',statusCategory:categoryOf(t.status)
   }));
@@ -3573,7 +3629,30 @@ function updateWeeklyFilters(){
   }
 }
 function stepWeekly(n){selectedWeek=neighborWeek(selectedWeek,n);renderWeekly();}
+function goToCurrentWeek(){selectedWeek=isoWeekKey(new Date());renderWeekly();}
 function changeWeeklyWeek(week){if(!weekStart(week)){toast('Semana ISO no válida');return;}selectedWeek=week;renderWeekly();}
+function renderWeeklyTimeline(){
+  const target=$('#weekly-timeline'),track=$('#weekly-timeline-track');
+  if(!target||!track)return;
+  const nowWeek=isoWeekKey(new Date());
+  const weeks=Array.from({length:11},(_,i)=>neighborWeek(selectedWeek,i-7));
+  track.innerHTML=weeks.map(week=>{
+    const start=dateDisplay(localISO(weekStart(week))).slice(0,5),end=dateDisplay(weekEnd(week)).slice(0,5);
+    const m=weeklyFiltered(week),hasData=m.rows.length>0,archived=m.closed;
+    const selected=week===selectedWeek,current=week===nowWeek;
+    const classes=['weekly-time-step',hasData?'has-data':'',archived?'archived':'',
+      selected?'selected':'',current?'current':''].filter(Boolean).join(' ');
+    const subtitle=archived?'Archivada':hasData?m.rows.length+' tarea'+(m.rows.length===1?'':'s'):current?'Actual':'Sin registros';
+    return `<button type="button" class="${classes}" onclick="changeWeeklyWeek('${week}')"
+      aria-pressed="${selected}" aria-label="Semana ${esc(week)} del ${start} al ${end}: ${esc(subtitle)}">
+      <span class="weekly-time-dot" aria-hidden="true"></span>
+      <span class="weekly-time-name">${esc(weekShort(week))} <small>${week.slice(0,4)}</small></span>
+      <span class="weekly-time-range">${start} – ${end}</span>
+      <span class="weekly-time-status">${esc(subtitle)}</span></button>`;
+  }).join('');
+  const active=track.querySelector('.selected');
+  if(active)target.scrollLeft=Math.max(0,active.offsetLeft-(target.clientWidth-active.offsetWidth)/2);
+}
 function resetWeeklyFilters(){for(const name of ['package','team','owner'])$('#weekly-'+name).value='';$('#weekly-compare').checked=true;renderWeekly();}
 function clearWeeklyFilter(name){$('#weekly-'+name).value='';renderWeekly();}
 function renderWeeklyChips(){
@@ -3605,11 +3684,11 @@ function weeklyChartOptions(){
   return {text:dark?'#bdcce4':'#50617c',grid:dark?'rgba(127,160,198,.16)':'rgba(65,85,122,.14)',
     blue:'#4da5ff',green:'#24cba5',pink:'#f25570',amber:'#f3bb67',muted:dark?'#75839b':'#a4adbd'};
 }
-function weeklyEmpty(el,msg){el.innerHTML=`<div class="weekly-empty"><strong>Sin datos para graficar</strong><span>${esc(msg)}</span></div>`;}
+function weeklyEmpty(el,msg){el.style.removeProperty('height');el.innerHTML=`<div class="weekly-empty"><strong>Sin datos para graficar</strong><span>${esc(msg)}</span></div>`;}
 function weeklyTrend(m){
   const node=$('#weekly-trend-chart'),weeks=weeklyHistoryWeeks();
   const vals=weeks.map(w=>weeklyMetrics(w).ppc);
-  if(vals.every(v=>v===null)){weeklyEmpty(node,'Asigna semanas comprometidas en Control de tareas para visualizar la evolución.');return;}
+  if(vals.every(v=>v===null)){weeklyEmpty(node,'No hay tareas con fecha límite o semana registrada en estos períodos. Selecciona otra semana en la línea de tiempo.');return;}
   if(typeof Chart!=='undefined'){
     const c=weeklyChartOptions();node.innerHTML='<canvas role="img" aria-label="Evolución del PPC en ocho semanas"></canvas>';
     WEEKLY_CHARTS.trend=new Chart(node.querySelector('canvas'),{
@@ -3739,12 +3818,13 @@ function renderWeekly(){
   if(currentView!=='weekly')return;
   disposeWeeklyCharts();
   $('#weekly-week').value=selectedWeek;
-  $('#weekly-period').textContent=weekDatesText(selectedWeek);
+  $('#weekly-period').textContent='Semana '+selectedWeek.split('-W')[1]+' · '+weekDatesText(selectedWeek);
   renderWeeklyChips();
+  renderWeeklyTimeline();
   const m=weeklyMetrics(selectedWeek),past=weeklyMetrics(neighborWeek(selectedWeek,-1));
   const compared=$('#weekly-compare').checked;
   const delta=compared&&m.ppc!==null&&past.ppc!==null?m.ppc-past.ppc:null;
-  const allMissing=tasks.filter(t=>!t.plannedWeek).length;
+  const allMissing=tasks.filter(t=>!effectiveTaskWeek(t)).length;
   const unknownCompletion=tasks.filter(t=>categoryOf(t.status)==='done'&&!t.completedAt).length;
   const info=$('#weekly-info');info.className='weekly-status-strip '+(m.closed?'done':m.planned?'':'warn');
   const overallWeek=weeklyRaw(selectedWeek);
