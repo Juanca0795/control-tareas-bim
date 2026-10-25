@@ -2490,6 +2490,16 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #weekly-view .weekly-cnc-note strong{color:var(--accent-blue)}
 @media(max-width:1100px){#weekly-view .weekly-executive-row{grid-template-columns:minmax(0,1fr)}#weekly-view .weekly-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}#weekly-view .weekly-primary-trend,#weekly-view .weekly-cnc-card{min-height:0}}
 @media(max-width:650px){#weekly-view .weekly-filter-card{padding:12px}#weekly-view .weekly-timeline-track{justify-content:start}#weekly-view .weekly-time-step{flex:0 0 105px;min-width:105px}#weekly-view .weekly-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#weekly-view .weekly-kpi{min-height:145px;padding:12px}#weekly-view .weekly-primary-trend .weekly-chart-content{height:235px;min-height:235px}#weekly-view .weekly-primary-trend,#weekly-view .weekly-cnc-card{padding:12px}}
+
+/* Franja de compromisos y vista semanal sin los paneles complementarios. */
+#weekly-view .weekly-status-context{color:var(--ink-muted);margin-left:6px;font-size:10px}
+#weekly-view .weekly-status-comparison{margin-left:8px;color:var(--status-done-fg);font-weight:700;white-space:nowrap}
+#weekly-view .weekly-primary-trend.weekly-is-empty{min-height:320px!important}
+#weekly-view .weekly-primary-trend.weekly-is-empty .weekly-chart-content{min-height:210px!important;height:auto}
+#weekly-view .weekly-primary-trend.weekly-is-empty .weekly-empty{min-height:210px}
+@media(max-width:700px){
+  #weekly-view .weekly-status-context,#weekly-view .weekly-status-comparison{display:block;margin:4px 0 0}
+}
 </style>
 </head>
 <body>
@@ -2662,36 +2672,6 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
       <article class="card weekly-chart-card weekly-cnc-card" aria-label="Análisis de causas de incumplimiento">
         <div class="weekly-card-head"><div><h2>ANÁLISIS DE CAUSAS (CNC)</h2><p>Compromisos pendientes y causas verificadas</p></div><span class="weekly-mini-badge" id="weekly-cnc-count">Sin datos</span></div>
         <div id="weekly-cnc" class="weekly-cnc-content" aria-live="polite"></div>
-      </article>
-    </section>
-    <section class="weekly-charts-grid weekly-secondary-charts" aria-label="Indicadores complementarios">
-      <article class="card weekly-chart-card weekly-chart-wide">
-        <div class="weekly-card-head"><div><h2>PLANIFICADOS VS. COMPLETADOS</h2><p>Compromisos según fecha límite y finalizaciones verificadas, por semana</p></div></div>
-        <div id="weekly-plan-chart" class="weekly-chart-content"></div>
-      </article>
-      <article class="card weekly-chart-card">
-        <div class="weekly-card-head"><div><h2>PRODUCTIVIDAD POR COLABORADOR</h2><p>Planificados frente a cumplidos — alcance filtrado</p></div></div>
-        <div id="weekly-owners-chart" class="weekly-chart-content"></div>
-      </article>
-      <article class="card weekly-chart-card">
-        <div class="weekly-card-head"><div><h2>ESTADO POR DISCIPLINA</h2><p>Distribución de entregables por situación operativa</p></div></div>
-        <div id="weekly-discipline-chart" class="weekly-chart-content"></div>
-      </article>
-      <article class="card weekly-chart-card">
-        <div class="weekly-card-head"><div><h2>CUMPLIMIENTO POR PAQUETE</h2><p>PPC porcentual por paquete de trabajo</p></div></div>
-        <div id="weekly-packages-chart" class="weekly-chart-content"></div>
-      </article>
-      <article class="card weekly-chart-card">
-        <div class="weekly-card-head"><div><h2>EVOLUCIÓN DEL ARRASTRE</h2><p>Entregables pendientes al cierre de cada semana transcurrida</p></div></div>
-        <div id="weekly-backlog-chart" class="weekly-chart-content"></div>
-      </article>
-      <article class="card weekly-chart-card">
-        <div class="weekly-card-head"><div><h2>LECTURA EJECUTIVA</h2><p>Resumen de resultados y desviaciones de la semana</p></div></div>
-        <div id="weekly-insights" class="weekly-chart-content weekly-insights"></div>
-      </article>
-      <article class="card weekly-chart-card">
-        <div class="weekly-card-head"><div><h2>CONFIABILIDAD DE LOS REGISTROS</h2><p>Qué información se utiliza para obtener un PPC verificable</p></div></div>
-        <div id="weekly-quality" class="weekly-chart-content weekly-quality"></div>
       </article>
     </section>
     <div class="weekly-help-line">
@@ -4536,8 +4516,7 @@ function weeklyBacklogChart(){
       <b>${values[i]===null?'-':values[i]}</b></div>`).join('')+'</div>';
 }
 function renderWeekly(){
-  if(!$('#weekly-view'))return;
-  if(currentView!=='weekly')return;
+  if(!$('#weekly-view')||currentView!=='weekly')return;
   disposeWeeklyCharts();
   document.querySelectorAll('.weekly-chart-card').forEach(card=>card.classList.remove('weekly-is-empty'));
   updateWeeklyFilters();
@@ -4545,49 +4524,32 @@ function renderWeekly(){
   $('#weekly-period').textContent='Semana '+selectedWeek.split('-W')[1]+' · '+weekDatesText(selectedWeek);
   renderWeeklyChips();
   renderWeeklyTimeline();
-  const m=weeklyMetrics(selectedWeek),past=weeklyMetrics(neighborWeek(selectedWeek,-1));
-  const compared=$('#weekly-compare').checked;
-  const delta=compared&&m.ppc!==null&&past.ppc!==null?m.ppc-past.ppc:null;
-  const allMissing=tasks.filter(t=>!effectiveTaskWeek(t)).length;
-  const unknownCompletion=tasks.filter(t=>categoryOf(t.status)==='done'&&!t.completedAt).length;
-  const info=$('#weekly-info');info.className='weekly-status-strip '+(m.closed?'done':m.planned?'':'warn');
-  const overallWeek=weeklyRaw(selectedWeek);
-  const selectedClosed=overallWeek.closed;
-  const compareTxt=compared?(past.ppc===null?'— Sin referencia anterior':'— Con comparación semanal'):'';
-  info.innerHTML=`<span>${m.closed?'<b>Semana cerrada:</b> indicadores archivados y no modificables.':
-    m.planned?'<b>Semana abierta:</b> indicadores provisionales, hasta guardar su cierre.':
-    '<b>Sin compromisos registrados:</b> registra tareas con fecha límite para habilitar el PPC de esa semana.'}
-    ${compared?esc(compareTxt):''}</span><span class="status-side">${esc(weekShort(selectedWeek))} — ${m.planned} compromiso${m.planned!==1?'s':''}</span>`;
-  $('#weekly-close-btn').disabled=selectedClosed||!overallWeek.rows.length;
-  $('#weekly-close-btn').textContent=selectedClosed?'V Semana cerrada':'V Cerrar semana';
+  const m=weeklyMetrics(selectedWeek),previous=weeklyMetrics(neighborWeek(selectedWeek,-1));
+  const compare=$('#weekly-compare').checked;
+  const delta=compare&&m.ppc!==null&&previous.ppc!==null?m.ppc-previous.ppc:null;
+  const status=$('#weekly-info'),overallWeek=weeklyRaw(selectedWeek);
+  status.className='weekly-status-strip '+(m.closed?'done':m.planned?'':'warn');
+  const comparison=delta===null?'':(delta>0?'↑ +':delta<0?'↓ −':'= ')+Math.abs(delta).toFixed(1)+' pp respecto a '+weekShort(previous.week);
+  const description=m.closed?'Semana archivada: resultados fijados al cierre.':
+    m.planned?'Semana abierta: resultados operativos provisionales.':
+    'No hay compromisos de esta semana en el alcance seleccionado.';
+  status.innerHTML=`<span><b class="weekly-status-label">COMPROMISOS REGISTRADOS:</b>
+    ${m.planned} tarea${m.planned!==1?'s':''} planificada${m.planned!==1?'s':''} para esta semana.
+    <span class="weekly-status-context">${esc(description)}</span>
+    ${comparison?`<span class="weekly-status-comparison">${esc(comparison)}</span>`:''}
+    </span><span class="status-side">${esc(weekShort(selectedWeek))} — ${m.planned} compromisos</span>`;
+  $('#weekly-close-btn').disabled=overallWeek.closed||!overallWeek.rows.length;
+  $('#weekly-close-btn').textContent=overallWeek.closed?'✓ Semana cerrada':'✓ Cerrar semana';
   $('#weekly-kpis').innerHTML=[
     weeklyKpiCard('COMPROMETIDAS',m.planned,'Base de planificación'),
-    weeklyKpiCard('CUMPLIDAS',m.completed,'Finalizadas hasta el domingo','positive'),
-    weeklyKpiCard('PPC SEMANAL',pct(m.ppc),'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<75?'warning':'positive',delta),
-    weeklyKpiCard(m.closed||weekEnd(selectedWeek)<todayString()?'ARRASTRE':'PENDIENTES',m.remaining,'Compromisos todavía sin cumplir',m.remaining?'warning':''),
-    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),'Cerradas antes de la fecha límite','positive'),
-    weeklyKpiCard('VENCIDAS',m.delayed,'Compromisos sin cierre al plazo',m.delayed?'danger':'')
+    weeklyKpiCard('CUMPLIDAS',m.completed,'Finalizadas durante la semana','positive'),
+    weeklyKpiCard('PPC SEMANAL',pct(m.ppc),'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
+    weeklyKpiCard('PENDIENTES',m.remaining,'Compromisos aún sin cumplir',m.remaining?'warning':''),
+    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),'Cerradas antes del plazo',m.punctuality!==null&&m.punctuality<85?'warning':''),
+    weeklyKpiCard('VENCIDAS',m.delayed,'Compromisos sin cierre al plazo',m.delayed?'danger':'positive')
   ].join('');
   weeklyTrend(m);
-  weeklyPlanChart();
-  const owners=groupForWeekly(m,'owner'),packages=groupForWeekly(m,'package');
-  weeklyGroupChart('weekly-owners-chart',owners,'owner');
-  weeklyDisciplineChart(m);
-  weeklyGroupChart('weekly-packages-chart',packages,'package');
-  weeklyBacklogChart();
-  const highest=packages.length?packages.map(g=>({...g,ppc:100*g.done/g.planned})).sort((a,b)=>a.ppc-b.ppc)[0]:null;
-  $('#weekly-insights').closest('.weekly-chart-card')?.classList.toggle('weekly-is-empty',m.ppc===null);
-  $('#weekly-insights').innerHTML=m.ppc===null?`<div class="weekly-empty"><strong>Primero registra los compromisos</strong><span>El control semanal muestra resultados verificables, nunca valores de demostración.</span></div>`:
-    `<div class="weekly-insight"><strong>Cumplimiento semanal</strong><div><span class="measure">${pct(m.ppc)}</span> de los compromisos planificados.</div></div>
-    <div class="weekly-insight"><strong>Brecha de planificación</strong><div><span class="measure">${m.remaining}</span> entrega(s) no cumplida(s) al cierre de la semana.</div></div>
-    <div class="weekly-insight"><strong>Paquete con mayor desviación</strong><div>${highest?esc(highest.label)+' — '+pct(highest.ppc):'Sin información'}</div></div>
-    <div class="weekly-insight"><strong>Entregables completados fuera de plazo</strong><div><span class="measure">${m.lateCompleted}</span> ${m.avgDelay===null?'sin retrasos verificables':`· promedio ${m.avgDelay.toFixed(1)} días de retraso`}</div></div>`;
-  $('#weekly-quality').innerHTML=`<div class="weekly-quality-line"><span>Compromisos de la semana analizada</span><strong>${m.planned}</strong></div>
-    <div class="weekly-quality-line"><span>Completadas sin fecha real en este alcance</span><strong>${m.unknownDate}</strong></div>
-    <div class="weekly-quality-line"><span>Tareas del sistema sin semana asignada</span><strong>${allMissing}</strong></div>
-    <div class="weekly-quality-line"><span>Tareas históricas completadas sin fecha real</span><strong>${unknownCompletion}</strong></div>
-    <div class="weekly-quality-line"><span>Completadas con fecha y plazo verificables</span><strong>${m.verifiableDate}</strong></div>
-    <p class="weekly-quality-note">La puntualidad solo usa cierres con fecha límite y fecha real. Los cierres de tareas sin fecha real no se atribuyen a ninguna semana. ${m.closed?'Este período utiliza su copia archivada.':'Sin cierre archivado, la lectura retrospectiva puede cambiar al editar registros.'}</p>`;
+  weeklyCncPanel(m);
 }
 function requestWeeklyClose(){
   if(weeklySnapshot(selectedWeek)){toast('Esta semana ya fue cerrada');return;}
