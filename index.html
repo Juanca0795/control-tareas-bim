@@ -2442,6 +2442,9 @@ const PACKAGES = ['Paquete BIM'];
 const KEY = 'bim-control-v1-tasks';
 const CATALOG_KEY = 'area-bim-catalogos-v1';
 const WEEKLY_KEY = 'area-bim-weekly-snapshots-v1';
+const EDITOR_DEFAULTS_KEY = 'area-bim-editor-preferences-v1';
+// Preferencias de este navegador: nunca se envían a Supabase ni dependen de la IP.
+const EDITOR_DEFAULT_FIELDS = ['package','team','owner','priority','lod','status'];
 const CATEGORY_LABELS = {pending:'No iniciada', progress:'En progreso', done:'Completada'};
 const CATALOG_SECTIONS = {
   packages: {title:'Paquetes de trabajo', help:'Se utilizarán para clasificar las actividades BIM.', placeholder:'Ej. Paquete 34', field:'package'},
@@ -3148,6 +3151,12 @@ function renameCatalogItem(index, newName, category){
   if(key==='statuses'){ item.name = name; item.category = CATEGORY_LABELS[category] ? category : item.category; }
   else items[index] = name;
   for(const task of tasks) if(task[field]===oldName) task[field] = name;
+  // Si cambia el nombre del catálogo, mantener vigente la última preferencia local.
+  const previousDefault=readEditorDefaults();
+  if(previousDefault[field]===oldName){
+    previousDefault[field]=name;
+    try{localStorage.setItem(EDITOR_DEFAULTS_KEY,JSON.stringify(previousDefault));}catch(e){}
+  }
   settingsEditing = null;
   persist(); renderSettingsList();
   toast('Nombre actualizado en tareas asociadas');
@@ -3184,6 +3193,23 @@ document.addEventListener('submit', e => {
   renameCatalogItem(Number(form.dataset.catalogRename), new FormData(form).get('newName')||'', new FormData(form).get('category')||'progress');
 });
 
+function readEditorDefaults(){
+  try{
+    const stored=JSON.parse(localStorage.getItem(EDITOR_DEFAULTS_KEY)||'{}');
+    return stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
+  }catch(e){return {};}
+}
+function rememberEditorDefaults(task){
+  // Solo tras guardar un entregable válido, nunca al cancelar ni solo cambiar un selector.
+  const values={};
+  for(const name of EDITOR_DEFAULT_FIELDS)values[name]=task[name]||'';
+  try{localStorage.setItem(EDITOR_DEFAULTS_KEY,JSON.stringify(values));}
+  catch(e){console.warn('No fue posible recordar preferencias en este navegador.',e);}
+}
+function keepValidEditorOption(field,value){
+  const select=$('#f-'+field);
+  return [...select.options].some(option=>option.value===value)?value:'';
+}
 function openEditor(id=null){
   editingId = id;
   const t = id ? tasks.find(x=>x.id===id) : null;
@@ -3191,10 +3217,18 @@ function openEditor(id=null){
   $('#modal-title').textContent = t ? `Editar entregable ${t.id}` : 'Registrar nuevo entregable BIM';
   $('#delete-in-editor').classList.toggle('hidden', !t);
   $('#save-button').textContent = t ? 'Guardar cambios' : 'Registrar entregable';
-  const v = t || {title:'', package:catalogs.packages[0]||'', team:catalogs.teams[0]||'', owner:'', priority:'Media', lod:'', deadline:todayString(), status:'En Progreso', support:''};
+  // Solo para un registro nuevo: recordar las últimas selecciones de este navegador.
+  // Editar un registro siempre muestra sus propios valores, sin aplicar preferencias.
+  const defaults=t?{}:readEditorDefaults();
+  const v = t || {
+    title:'',package:catalogs.packages[0]||'',team:catalogs.teams[0]||'',
+    owner:'',priority:'Media',lod:'',deadline:todayString(),status:'En Progreso',support:'',
+    ...Object.fromEntries(EDITOR_DEFAULT_FIELDS.filter(key=>typeof defaults[key]==='string').map(key=>[key,defaults[key]]))
+  };
   populateEditorSelects();
   for(const [name,prop] of [['title','title'],['package','package'],['team','team'],['owner','owner'],['priority','priority'],['lod','lod'],['deadline','deadline'],['status','status'],['support','support']]){
-    $('#f-'+name).value = v[prop] ?? '';
+    const value=v[prop]??'';
+    $('#f-'+name).value = EDITOR_DEFAULT_FIELDS.includes(name) ? keepValidEditorOption(name,value) : value;
   }
   $('#modal-back').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -3255,6 +3289,7 @@ function saveEditor(e){
       progress: t.status === obj.status ? (t.progress ?? progressFromStatus(obj.status)) : progressFromStatus(obj.status)
     } : t);
   } else tasks.push(obj);
+  rememberEditorDefaults(obj);
   closeEditor();
   persist();
   toast(wasEditing ? `Entregable ${obj.id} actualizado` : `Entregable ${obj.id} creado`);
