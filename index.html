@@ -2333,6 +2333,30 @@ button.risk-row:hover{transform:none}
   .weekly-kpi{padding:12px 11px;min-height:112px}
   .weekly-chart-card{padding:14px 12px}
 }
+
+/* KPI mensuales: secundarios discretos, semánticos, sin colores decorativos */
+#dashboard-view .stat{
+  min-height:148px;
+}
+#dashboard-view .stat .foot{
+  line-height:1.35;
+}
+#dashboard-view .stat-period-detail{
+  display:block;
+  font-size:10px;
+  line-height:1.4;
+  margin-top:5px;
+  font-weight:500;
+  color:var(--ink-muted);
+  min-height:14px;
+}
+#dashboard-view .stat-period-detail.positive{color:var(--status-done-fg)}
+#dashboard-view .stat-period-detail.negative{color:var(--status-crit-fg)}
+#dashboard-view .stat-period-detail.neutral{color:var(--ink-muted)}
+#dashboard-view .stat-meter{margin-top:auto}
+@media(max-width:760px){
+  #dashboard-view .stat{min-height:142px}
+}
 </style>
 </head>
 <body>
@@ -3026,9 +3050,12 @@ function refreshFilters(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
 }
 
-function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=false, proportion=null){
-  // Las barras solo reflejan proporciones calculadas de las tareas filtradas.
+function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=false, proportion=null, detail=null){
+  // Las barras reflejan únicamente proporciones de los entregables del alcance filtrado.
   const width=Number.isFinite(proportion)?Math.min(100,Math.max(0,proportion)):null;
+  const detailHtml=detail&&detail.text
+    ?`<span class="stat-period-detail ${['positive','negative','neutral'].includes(detail.kind)?detail.kind:'neutral'}" ${detail.help?`title="${esc(detail.help)}"`:''}>${esc(detail.text)}</span>`
+    :'';
   const body = `
     <div class="stat-head">
       <span class="label">${esc(label)}</span>
@@ -3036,24 +3063,50 @@ function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=fa
     </div>
     <div class="val">${esc(val)}</div>
     <div class="foot">${esc(foot)}</div>
+    ${detailHtml}
     ${width===null?'':`<span class="stat-meter" aria-hidden="true"><i style="width:${width}%"></i></span>`}
   `;
   return drill
     ? `<button type="button" class="stat stat-action${selected?' selected':''}" data-drill="${esc(drill)}" aria-pressed="${selected}" title="Filtrar por: ${esc(label)}">${body}</button>`
     : `<article class="stat">${body}</article>`;
 }
-
+// Los meses se basan en la FECHA LÍMITE, no en la creación del registro:
+// Supabase no dispone de un histórico mensual del avance global en el modelo utilizado.
+function deadlineMonthStats(rows,now=new Date()){
+  const month=new Date(now.getFullYear(),now.getMonth(),1);
+  const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+  const key=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  const rowsWithDeadline=keyMonth=>rows.filter(t=>typeof t.deadline==='string'&&t.deadline.slice(0,7)===keyMonth);
+  const current=rowsWithDeadline(key(month)),previous=rowsWithDeadline(key(prev));
+  const monthName=d=>new Intl.DateTimeFormat('es-PE',{month:'short'}).format(d).replace('.','');
+  return {current,previous,currentName:monthName(month),previousName:monthName(prev),
+    difference:current.length&&previous.length?ave(current)-ave(previous):null};
+}
 function makeStats(a, interactive=false){
-  const s = stats(a), d = interactive ? dashboardDrill : null;
-  const one = (label, n, foot, icon, accent, type, proportion=null) =>
-    statCard(label,n,foot,icon,accent,interactive?type:'',Boolean(d&&d.type===type),proportion);
+  const s=stats(a),d=interactive?dashboardDrill:null;
+  const month=deadlineMonthStats(a);
   const share=n=>s.total?100*n/s.total:0;
+  const detail=(text,kind='neutral',help='')=>({text,kind,help});
+  const comparison=month.difference;
+  const sign=comparison>0?'+':comparison<0?'−':'±';
+  const diffText=comparison===null?'Sin comparación mensual':
+    'Plazos '+month.currentName+'/'+month.previousName+': '+sign+Math.abs(comparison).toFixed(1)+' pp';
+  const trendKind=comparison===null||Math.abs(comparison)<.05?'neutral':comparison>0?'positive':'negative';
+  const monthlyHelp='Diferencia entre el avance medio de entregables con fecha límite en ambos meses; no representa la evolución histórica del mismo grupo de tareas.';
+  const one=(label,n,foot,icon,accent,type,proportion=null,secondary=null)=>
+    statCard(label,n,foot,icon,accent,interactive?type:'',Boolean(d&&d.type===type),proportion,secondary);
   return [
-    one('Total Entregables', s.total, 'Frentes registrados', SVG_ICONS.grid, '', 'all'),
-    one('Avance Promedio', s.avg.toFixed(1)+'%', 'Media del alcance', SVG_ICONS.gauge, 'blue', 'average',s.avg),
-    one('Completadas', s.done, 'Entregables cerrados', SVG_ICONS.check, 'green', 'completed',share(s.done)),
-    one('En Ejecución', s.inProgress, 'Modelado activo', SVG_ICONS.play, 'blue', 'inProgress',share(s.inProgress)),
-    one('Vencidas / Hoy', s.late, 'Atención inmediata', SVG_ICONS.alert, 'red', 'late',share(s.late))
+    one('Total Entregables',s.total,'Frentes registrados',SVG_ICONS.grid,'','all',null,
+      detail(month.current.length+' con plazo en '+month.currentName,'neutral','Cantidad con fecha límite en el mes actual; no equivale a tareas registradas este mes.')),
+    one('Avance Promedio',s.avg.toFixed(1)+'%','Media del alcance',SVG_ICONS.gauge,'blue','average',s.avg,
+      detail(diffText,trendKind,monthlyHelp)),
+    one('Completadas',s.done,s.done+' de '+s.total+' · '+share(s.done).toFixed(1)+'% del total',
+      SVG_ICONS.check,'green','completed',share(s.done),
+      detail(a.filter(t=>categoryOf(t.status)==='done'&&typeof t.completedAt==='string'&&
+        t.completedAt.slice(0,7)===todayString().slice(0,7)).length+' finalizadas este mes')),
+    one('En Ejecución',s.inProgress,s.inProgress+' de '+s.total+' · '+share(s.inProgress).toFixed(1)+'% del total',
+      SVG_ICONS.play,'blue','inProgress',share(s.inProgress)),
+    one('Vencidas / Hoy',s.late,'Atención inmediata',SVG_ICONS.alert,'red','late',share(s.late))
   ].join('');
 }
 
