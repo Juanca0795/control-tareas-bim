@@ -4279,25 +4279,27 @@ function renderWeeklyTimeline(){
   const target=$('#weekly-timeline'),track=$('#weekly-timeline-track');
   if(!target||!track)return;
   const nowWeek=isoWeekKey(new Date());
-  const weeks=Array.from({length:11},(_,i)=>neighborWeek(selectedWeek,i-7));
+  // Ocho semanas, incluidas dos posteriores a la selección, en la vista ejecutiva.
+  const weeks=Array.from({length:8},(_,i)=>neighborWeek(selectedWeek,i-5));
   track.innerHTML=weeks.map(week=>{
     const start=dateDisplay(localISO(weekStart(week))).slice(0,5),end=dateDisplay(weekEnd(week)).slice(0,5);
-    const m=weeklyMetrics(week),hasData=m.rows.length>0,archived=m.closed;
-    const selected=week===selectedWeek,current=week===nowWeek;
-    const scoreVisible=hasData&&(archived||weekEnd(week)<todayString()||current);
-    const score=scoreVisible&&m.ppc!==null?m.ppc.toFixed(0)+'%':'';
-    const performance=score?(m.ppc>=85?'good':m.ppc>=75?'mid':'low'):'';
+    const m=weeklyMetrics(week),archived=m.closed,hasData=m.planned>0;
+    const selected=week===selectedWeek,current=week===nowWeek,future=week>nowWeek&&!archived;
+    const published=archived||week<nowWeek;
+    const visible=hasData&&!future&&(published||current)&&m.ppc!==null;
+    const score=visible?m.ppc.toFixed(1)+'%':'';
     const classes=['weekly-time-step',hasData?'has-data':'',archived?'archived':'',
-      selected?'selected':'',current?'current':''].filter(Boolean).join(' ');
-    const subtitle=archived?'Archivada':current?'Semana actual':hasData?m.rows.length+' tarea'+(m.rows.length===1?'':'s'):'Sin registros';
-    const accessibility=score?' · PPC '+score+(current&&!archived?' provisional':''):'';
+      selected?'selected':'',current?'current':'',future?'future':''].filter(Boolean).join(' ');
+    const subtitle=archived?'Archivada':future?(hasData?'Programada':'Sin planificar'):current?'En curso':hasData?'Con compromisos':'Sin registros';
+    const amounts=hasData?(future?m.planned+' planificadas':m.completed+'/'+m.planned+' tareas'):'';
+    const accessibility='Semana '+week+', '+subtitle+(visible?', PPC '+score:'');
     return `<button type="button" class="${classes}" onclick="changeWeeklyWeek('${week}')"
-      aria-pressed="${selected}" aria-label="Semana ${esc(week)} del ${start} al ${end}: ${esc(subtitle+accessibility)}">
+      aria-pressed="${selected}" aria-label="${esc(accessibility)}">
       <span class="weekly-time-dot" aria-hidden="true"></span>
       <span class="weekly-time-name">${esc(weekShort(week))} <small>${week.slice(0,4)}</small></span>
       <span class="weekly-time-range">${start} – ${end}</span>
-      <span class="weekly-time-status">${esc(subtitle)}</span>
-      ${score?`<span class="weekly-time-ppc ${performance}" title="PPC operativo ${current&&!archived?'provisional':'de la semana'}">${score}</span>`:''}
+      <span class="weekly-time-ppc">${score|| (future&&hasData?m.planned+' planif.':'')}</span>
+      <span class="weekly-time-status">${esc(amounts||subtitle)}</span>
     </button>`;
   }).join('');
   const active=track.querySelector('.selected');
@@ -4313,8 +4315,16 @@ function renderWeeklyChips(){
   }).join('');
 }
 function weeklyKpiCard(title,value,foot,kind='',difference=null){
-  const delta=(difference!==null&&Number.isFinite(difference))?`<span class="weekly-delta ${difference>0?'up':difference<0?'down':''}">${difference>0?'+':''}${difference.toFixed(1)} pp vs anterior</span>`:'';
-  return `<article class="weekly-kpi ${kind}"><span class="label">${esc(title)}</span><strong class="number">${esc(value)}</strong>${delta}<span class="foot">${esc(foot)}</span></article>`;
+  const icon=title==='COMPROMETIDAS'?'▢':title==='CUMPLIDAS'?'✓':
+    title==='PPC SEMANAL'?'↗':title==='PENDIENTES'||title==='ARRASTRE'?'◷':
+    title==='PUNTUALIDAD'?'◉':'!';
+  const differenceLabel=(difference!==null&&Number.isFinite(difference))
+    ?(difference>0?'↑ +':difference<0?'↓ −':'= ')+Math.abs(difference).toFixed(1)+' pp vs anterior':'';
+  const tag=differenceLabel?`<span class="weekly-kpi-tag ${difference<0?'danger':''}">${esc(differenceLabel)}</span>`:'';
+  return `<article class="weekly-kpi ${kind} ${title==='PPC SEMANAL'?'ppc-highlight':''}">
+      <div class="weekly-kpi-header"><span class="label">${esc(title)}</span><span class="weekly-kpi-icon" aria-hidden="true">${icon}</span></div>
+      <div class="weekly-kpi-value"><strong class="number">${esc(value)}</strong>${tag}</div>
+      <span class="foot">${esc(foot)}</span></article>`;
 }
 function pct(v){return v===null?'-':`${v.toFixed(1)}%`;}
 function groupForWeekly(m,key){
@@ -4340,19 +4350,77 @@ function weeklyEmpty(el,msg){
   el.innerHTML=`<div class="weekly-empty"><strong>Sin datos para graficar</strong><span>${esc(msg)}</span></div>`;
 }
 function weeklyTrend(m){
-  const node=$('#weekly-trend-chart'),weeks=weeklyHistoryWeeks();
-  const vals=weeks.map(w=>weeklyMetrics(w).ppc);
-  if(vals.every(v=>v===null)){weeklyEmpty(node,'No hay tareas con fecha límite o semana registrada en estos períodos. Selecciona otra semana en la línea de tiempo.');return;}
+  const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer'),weeks=weeklyHistoryWeeks();
+  const nowWeek=isoWeekKey(new Date());
+  const vals=weeks.map(w=>{
+    const metric=weeklyMetrics(w);
+    return w>nowWeek&&!metric.closed?null:metric.ppc;
+  });
+  const known=vals.filter(Number.isFinite);
+  const mean=known.length?known.reduce((a,b)=>a+b,0)/known.length:null;
+  const delta=mean===null?null:mean-85;
+  footer.innerHTML=mean===null?
+    '<span>No hay resultados PPC verificables en las ocho semanas.</span>':
+    `<span>PPC medio del período: <strong>${mean.toFixed(1)}%</strong> · ${known.length} semana(s) con compromisos</span>
+    <span>${delta>=0?'↑ +':'↓ −'}${Math.abs(delta).toFixed(1)} pp ${delta>=0?'sobre':'bajo'} la meta de referencia (85%)</span>`;
+  if(!known.length){weeklyEmpty(node,'Aún no existen compromisos verificables en estas ocho semanas.');return;}
   if(typeof Chart!=='undefined'){
-    const c=weeklyChartOptions();node.innerHTML='<canvas role="img" aria-label="Evolución del PPC en ocho semanas"></canvas>';
+    const c=weeklyChartOptions();
+    node.innerHTML='<canvas role="img" aria-label="Evolución PPC con línea de meta 85 por ciento"></canvas>';
     WEEKLY_CHARTS.trend=new Chart(node.querySelector('canvas'),{
-      type:'line',data:{labels:weeks.map(w=>weekShort(w)),datasets:[{label:'PPC (%)',data:vals,borderColor:c.blue,backgroundColor:'rgba(77,165,255,.13)',fill:true,tension:.34,pointRadius:4,pointHoverRadius:7,spanGaps:false}]},
-      options:{maintainAspectRatio:false,responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:v=>v.parsed.y===null?'Sin datos':`PPC ${v.parsed.y.toFixed(1)}%`}}},scales:{x:{ticks:{color:c.text},grid:{display:false}},y:{min:0,max:100,ticks:{color:c.text,callback:v=>v+'%'},grid:{color:c.grid}}}}
+      type:'line',data:{labels:weeks.map(w=>weekShort(w)),datasets:[
+        {label:'PPC operativo (%)',data:vals,borderColor:'#25c7e5',backgroundColor:'rgba(37,199,229,.12)',
+          fill:true,tension:.28,pointRadius:4,pointHoverRadius:6,borderWidth:2.5,spanGaps:false},
+        {label:'Meta 85%',data:weeks.map(()=>85),borderColor:c.pink,borderDash:[5,5],borderWidth:1.5,
+          pointRadius:0,pointHoverRadius:0,fill:false}
+      ]},options:{
+        maintainAspectRatio:false,responsive:true,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{callbacks:{
+          label:ctx=>ctx.parsed.y===null?'Sin dato':ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+'%'
+        }}},
+        scales:{
+          x:{ticks:{color:c.text},grid:{display:false}},
+          y:{min:0,max:100,ticks:{color:c.text,callback:v=>v+'%'},grid:{color:c.grid}}
+        }
+      }
     });return;
   }
-  node.innerHTML=`<div class="weekly-fallback">${weeks.map((w,i)=>{
-    const val=vals[i];return `<div class="weekly-fallback-row"><span>${esc(weekShort(w))}</span><span class="weekly-track"><b style="width:${val===null?0:val}%"></b></span><b>${val===null?'-':val.toFixed(1)+'%'}</b></div>`;
-  }).join('')}</div>`;
+  node.innerHTML='<div class="weekly-fallback">'+weeks.map((w,i)=>`
+    <div class="weekly-fallback-row"><span>${esc(weekShort(w))}</span>
+    <span class="weekly-track"><b style="width:${vals[i]===null?0:vals[i]}%"></b></span>
+    <b>${vals[i]===null?'—':vals[i].toFixed(1)+'%'}</b></div>`).join('')+'</div>';
+}
+function weeklyCncPanel(m){
+  const container=$('#weekly-cnc'),count=$('#weekly-cnc-count');
+  if(!container||!count)return;
+  const end=weekEnd(m.week);
+  const pending=m.rows.filter(t=>!(t.done&&t.completedAt&&t.completedAt<=end));
+  count.textContent=pending.length+' pendiente'+(pending.length===1?'':'s');
+  if(!m.planned){
+    container.innerHTML='<div class="weekly-empty"><strong>Sin compromisos para analizar</strong><span>El panel se activa con registros reales de la semana elegida.</span></div>';
+    return;
+  }
+  if(!pending.length){
+    container.innerHTML='<div class="weekly-cnc-summary">Todos los compromisos de esta semana figuran como cumplidos.</div>'+
+      '<div class="weekly-cnc-note"><strong>Sin causas registradas</strong><div>No hay incumplimientos que clasificar para el alcance seleccionado.</div></div>';
+    return;
+  }
+  // El formulario actual no contiene una causa CNC estructurada.
+  // No deducir ni inventar interferencias, responsables de bloqueo o acciones correctivas.
+  const currentTasks=new Map(tasks.map(t=>[t.id,t]));
+  const list=pending.slice(0,5).map(t=>{
+    const live=!m.closed?currentTasks.get(t.id):null;
+    const caption=live?.title||t.title||t.id;
+    return `<div class="weekly-cnc-item">
+      <strong>${esc(caption)}</strong>
+      <p>Compromiso ${esc(t.id)} · ${esc(t.owner||'Sin responsable')}</p>
+      <small>${t.deadline?'Plazo: '+esc(dateDisplay(t.deadline)):'Sin fecha límite'} · Causa no clasificada</small>
+    </div>`;
+  }).join('');
+  container.innerHTML=`<div class="weekly-cnc-summary"><strong>${pending.length} de ${m.planned}</strong> compromisos sin cumplimiento verificado.</div>
+    <div class="weekly-cnc-list">${list}</div>
+    ${pending.length>5?'<p class="weekly-cnc-summary">+'+(pending.length-5)+' compromisos adicionales.</p>':''}
+    <div class="weekly-cnc-note"><strong>Causas por documentar</strong><div>El sistema aún no registra categorías CNC ni planes de acción estructurados. No se asignan causas automáticamente.</div></div>`;
 }
 function weeklyGroupChart(id,groups,mode){
   const node=$('#'+id);
