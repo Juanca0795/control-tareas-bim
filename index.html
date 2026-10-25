@@ -2828,10 +2828,54 @@ const SVG_ICONS = {
   gauge: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20a8 8 0 1 0 0-16 8 8 0 0 0 0 16Z"/><path d="M12 14a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z"/><path d="m13.4 10.6 3.1-3.1"/></svg>',
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>',
   play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>',
-  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+  alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 7-8"/><path d="M15 7h5v5"/></svg>'
 };
 
 function unique(a){ return Array.from(new Set(a.filter(Boolean))).sort((x,y)=>x.localeCompare(y,'es',{numeric:true})); }
+function normalizeMonthlyAnalytics(input){
+  const validDate=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+'T00:00:00Z'));
+  const dates=input?.createdAtByTask&&typeof input.createdAtByTask==='object'&&!Array.isArray(input.createdAtByTask)
+    ?Object.fromEntries(Object.entries(input.createdAtByTask).filter(([id,date])=>id&&validDate(date))):{};
+  const months={};
+  if(input?.monthlySnapshots&&typeof input.monthlySnapshots==='object'&&!Array.isArray(input.monthlySnapshots)){
+    for(const [month,row] of Object.entries(input.monthlySnapshots)){
+      if(!/^\d{4}-\d{2}$/.test(month)||!row||!Number.isFinite(row.avg)||!Number.isFinite(row.total)||!validDate(row.capturedOn))continue;
+      months[month]={avg:Math.max(0,Math.min(100,row.avg)),total:Math.max(0,Math.trunc(row.total)),capturedOn:row.capturedOn};
+    }
+  }
+  return {createdAtByTask:dates,monthlySnapshots:months};
+}
+function mergeMonthlyAnalytics(cloud,local){
+  const a=normalizeMonthlyAnalytics(cloud),b=normalizeMonthlyAnalytics(local);
+  const months={...a.monthlySnapshots};
+  for(const [key,val] of Object.entries(b.monthlySnapshots))
+    if(!months[key]||val.capturedOn>=months[key].capturedOn)months[key]=val;
+  return {createdAtByTask:{...a.createdAtByTask,...b.createdAtByTask},monthlySnapshots:months};
+}
+function taskCreationDate(t){
+  // Se acepta una fecha nativa real si Supabase ya la proporciona.
+  const local=catalogs.analytics?.createdAtByTask?.[t.id];
+  if(local)return local;
+  if(typeof t.createdAt==='string'&&/^\d{4}-\d{2}-\d{2}/.test(t.createdAt))return t.createdAt.slice(0,10);
+  return '';
+}
+function captureMonthlyStats(){
+  const state=catalogs.analytics||(catalogs.analytics=normalizeMonthlyAnalytics({}));
+  let changed=false;
+  for(const t of tasks){
+    if(!state.createdAtByTask[t.id]&&typeof t.createdAt==='string'&&/^\d{4}-\d{2}-\d{2}/.test(t.createdAt)){
+      state.createdAtByTask[t.id]=t.createdAt.slice(0,10);changed=true;
+    }
+  }
+  const today=todayString(),month=today.slice(0,7);
+  const next={avg:ave(tasks),total:tasks.length,capturedOn:today};
+  const old=state.monthlySnapshots[month];
+  if(!old||old.avg!==next.avg||old.total!==next.total||old.capturedOn!==next.capturedOn){
+    state.monthlySnapshots[month]=next;changed=true;
+  }
+  return changed;
+}
 function normalizeCatalogs(input){
   const result = {};
   for(const key of ['packages','owners','teams']){
@@ -2843,6 +2887,9 @@ function normalizeCatalogs(input){
     ? input.statuses.filter(v=>v&&typeof v.name==='string'&&v.name.trim()).map(v=>({name:v.name.trim(),category:CATEGORY_LABELS[v.category]?v.category:'progress'}))
     : DEFAULT_CATALOGS.statuses.map(v=>({...v}));
   result.statuses = result.statuses.filter((v,i,a)=>a.findIndex(x=>x.name.toLocaleLowerCase('es')===v.name.toLocaleLowerCase('es'))===i);
+  // Metadatos internos compatibles con el campo JSONB bim_catalogs.data existente.
+  // Sin migraciones: nunca se envían columnas no existentes a bim_tasks.
+  result.analytics=normalizeMonthlyAnalytics(input?.analytics);
   return result;
 }
 function readCatalogs(){
@@ -2916,6 +2963,7 @@ $('#confirm-accept-btn').addEventListener('click', () => {
 
 function persist(){
   syncCatalogsWithTasks();
+  captureMonthlyStats();
   try{
     localStorage.setItem(KEY, JSON.stringify(tasks));
     localStorage.setItem(CATALOG_KEY, JSON.stringify(catalogs));
@@ -3744,7 +3792,12 @@ function saveEditor(e){
       ...t, ...obj,
       progress: t.status === obj.status ? (t.progress ?? progressFromStatus(obj.status)) : progressFromStatus(obj.status)
     } : t);
-  } else tasks.push(obj);
+  } else {
+    tasks.push(obj);
+    // Fecha automática de alta, independiente de la fecha límite escogida.
+    // Se guarda en el JSONB sincronizado con Supabase y nunca aparece en el formulario.
+    catalogs.analytics.createdAtByTask[obj.id]=todayString();
+  }
   rememberEditorDefaults(obj);
   closeEditor();
   persist();
@@ -4356,7 +4409,7 @@ renderAll();
 syncThemeButton();
 </script>
 </body>
-</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
+</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
 async function load(){
   // El refresco automático no debe sobrescribir modificaciones locales aún no sincronizadas.
   if(loading||lock||(ready&&pendingSave))return;
@@ -4382,11 +4435,13 @@ async function load(){
         for(const key of ['packages','owners','teams'])merged[key]=unique([...fromCloud[key],...catalogs[key]]);
         merged.statuses=[...fromCloud.statuses,...catalogs.statuses].filter((x,i,all)=>
           all.findIndex(y=>y.name.toLocaleLowerCase('es')===x.name.toLocaleLowerCase('es'))===i);
+        merged.analytics=mergeMonthlyAnalytics(fromCloud.analytics,catalogs.analytics);
         catalogs=normalizeCatalogs(merged);
         ids=cloudIds;
         weeklySnapshots=cloudWeeks;
         syncCatalogsWithTasks();
-        ready=1;renderAll();
+        ready=1;
+        if(captureMonthlyStats())persist();else renderAll();
         if($('#settings-back')?.classList.contains('open')&&!settingsEditing)renderSettingsList();
       }
       return;
@@ -4394,7 +4449,8 @@ async function load(){
     tasks=cloudTasks;ids=cloudIds;
     if(c.data?.[0]?.data)catalogs=normalizeCatalogs(c.data[0].data);
     weeklySnapshots=cloudWeeks;
-    syncCatalogsWithTasks();ready=1;renderAll();
+    syncCatalogsWithTasks();ready=1;
+    if(captureMonthlyStats())persist();else renderAll();
     if($('#settings-back')?.classList.contains('open')&&!settingsEditing)renderSettingsList();
   }finally{
     loading=false;
