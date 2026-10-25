@@ -2634,20 +2634,54 @@ function options(sel, label, items){
   el.innerHTML = `<option value="">${esc(label)}</option>` + arr.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
   if(arr.includes(current)) el.value = current;
 }
+// Filtros cruzados (facetas): cada selector muestra únicamente valores compatibles
+// con TODOS los demás filtros activos. El propio selector se excluye de su cálculo,
+// lo que permite cambiar su valor sin tener que reiniciar los otros filtros.
+const TASK_CROSS_FIELDS=[
+  ['filter-package','package','Todos los paquetes'],
+  ['filter-owner','owner','Todos los colaboradores'],
+  ['filter-status','status','Todos los estados'],
+  ['filter-team','team','Todas las disciplinas']
+];
+const DASH_CROSS_FIELDS=[
+  ['dash-package','package','Todos los paquetes'],
+  ['dash-team','team','Todas las disciplinas'],
+  ['dash-owner','owner','Todos los colaboradores'],
+  ['dash-state','status','Todos los estados'],
+  ['dash-priority','priority','Todas las prioridades']
+];
+const WEEKLY_CROSS_FIELDS=[
+  ['weekly-package','package','Todos los paquetes'],
+  ['weekly-team','team','Todas las disciplinas'],
+  ['weekly-owner','owner','Todos los colaboradores']
+];
+function crossFilterOptions(fields,sourceRows){
+  // Capturar selecciones ANTES de modificar ningún select.
+  const selected=Object.fromEntries(fields.map(([id])=>[id,document.getElementById(id)?.value||'']));
+  for(const [id,field,label] of fields){
+    const el=document.getElementById(id);
+    if(!el)continue;
+    const rows=sourceRows.filter(row=>fields.every(([otherId,otherField])=>
+      otherId===id||!selected[otherId]||row[otherField]===selected[otherId]));
+    const available=unique(rows.map(row=>row[field]).filter(value=>typeof value==='string'));
+    const current=selected[id];
+    el.innerHTML='<option value="">'+esc(label)+'</option>'+
+      available.map(value=>'<option value="'+esc(value)+'">'+esc(value)+'</option>').join('');
+    // Si un registro desaparece por sincronización, mantener visible su filtro
+    // hasta que el usuario lo quite: nunca borrar selecciones silenciosamente.
+    if(current&&!available.includes(current))
+      el.insertAdjacentHTML('beforeend','<option value="'+esc(current)+'" disabled>'+esc(current)+' (sin coincidencias)</option>');
+    el.value=current;
+  }
+}
+function taskCrossSource(){
+  const query=$('#search').value.trim().toLocaleLowerCase('es');
+  return tasks.filter(t=>(!linkedTaskIds||linkedTaskIds.has(t.id))&&
+    (!query||[t.id,t.title,t.owner,t.package,t.support].join(' ').toLocaleLowerCase('es').includes(query)));
+}
 function refreshFilters(){
-  const pkg = [...catalogNames('packages'), ...tasks.map(t=>t.package)];
-  const owners = [...catalogNames('owners'), ...tasks.map(t=>t.owner)];
-  const teams = [...catalogNames('teams'), ...tasks.map(t=>t.team)];
-  const statuses = [...catalogNames('statuses'), ...tasks.map(t=>t.status)];
-  options('#filter-package','Todos los paquetes',pkg);
-  options('#filter-owner','Todos los colaboradores',owners);
-  options('#filter-status','Todos los estados',statuses);
-  options('#filter-team','Todas las disciplinas',teams);
-  options('#dash-package','Todos los paquetes',pkg);
-  options('#dash-owner','Todos los colaboradores',owners);
-  options('#dash-team','Todas las disciplinas',teams);
-  options('#dash-state','Todos los estados',statuses);
-  options('#dash-priority','Todas las prioridades',['Alta','Media','Baja',...tasks.map(t=>t.priority)]);
+  crossFilterOptions(TASK_CROSS_FIELDS,taskCrossSource());
+  crossFilterOptions(DASH_CROSS_FIELDS,tasks);
 }
 
 function statCard(label, val, foot, iconSvg='', accent='', drill='', selected=false){
@@ -2689,6 +2723,7 @@ function filteredTasks(){
 }
 
 function renderTasks(){
+  crossFilterOptions(TASK_CROSS_FIELDS,taskCrossSource());
   const a = filteredTasks();
   $('#task-stats').innerHTML = makeStats(a, false);
   $('#count-label').textContent = `${a.length} de ${tasks.length} entregables`;
@@ -2813,6 +2848,7 @@ function attentionDeadline(t){
 }
 
 function renderDashboard(){
+  crossFilterOptions(DASH_CROSS_FIELDS,tasks);
   const a = dashboardTasks(), s = stats(a);
   $('#dash-stats').innerHTML = makeStats(a, true);
   $('#state-chart').innerHTML = makeRadar(a);
@@ -3602,14 +3638,9 @@ function weeklyMetrics(week){
     verifiableDate,lateCompleted:lateRows.length,avgDelay:lateDays.length?lateDays.reduce((a,b)=>a+b,0)/lateDays.length:null};
 }
 function updateWeeklyFilters(){
-  const prev={};for(const x of ['package','team','owner'])prev[x]=$('#weekly-'+x).value;
-  const arr=[...tasks,...weeklySnapshots.flatMap(s=>s.rows)];
-  for(const [name,field,label] of [['package','package','Todos los paquetes'],['team','team','Todas las disciplinas'],['owner','owner','Todos los colaboradores']]){
-    const names=unique([...(catalogNames(name==='package'?'packages':name==='team'?'teams':'owners')||[]),...arr.map(t=>t[field])]);
-    const node=$('#weekly-'+name);
-    node.innerHTML='<option value="">'+label+'</option>'+names.map(x=>`<option value="${esc(x)}">${esc(x)}</option>`).join('');
-    node.value=names.includes(prev[name])?prev[name]:'';
-  }
+  // Semanas cerradas usan su snapshot, semanas abiertas sus tareas actuales.
+  // Las opciones dependen de la semana seleccionada y de los demás filtros activos.
+  crossFilterOptions(WEEKLY_CROSS_FIELDS,weeklyRaw(selectedWeek).rows);
 }
 function stepWeekly(n){selectedWeek=neighborWeek(selectedWeek,n);renderWeekly();}
 function goToCurrentWeek(){selectedWeek=isoWeekKey(new Date());renderWeekly();}
@@ -3800,6 +3831,7 @@ function renderWeekly(){
   if(!$('#weekly-view'))return;
   if(currentView!=='weekly')return;
   disposeWeeklyCharts();
+  updateWeeklyFilters();
   $('#weekly-week').value=selectedWeek;
   $('#weekly-period').textContent='Semana '+selectedWeek.split('-W')[1]+' · '+weekDatesText(selectedWeek);
   renderWeeklyChips();
