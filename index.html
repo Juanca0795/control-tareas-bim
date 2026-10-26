@@ -6045,6 +6045,12 @@ function saveEditor(e){
   const statusVal = $('#f-status').value;
   const previous = editingId ? tasks.find(t=>t.id===editingId) : null;
   const deadline = $('#f-deadline').value;
+  // Una reprogramación no debe ocultar un incumplimiento aún sin documentar.
+  if(previous && previous.deadline!==deadline && taskCncIncident(previous) &&
+      !cncFor(previous.id,previous.deadline)){
+    toast('Registra la causa CNC antes de cambiar la fecha de una actividad incumplida.');
+    return;
+  }
   const obj = {
     id: editingId || nextId(),
     title: $('#f-title').value.trim(),
