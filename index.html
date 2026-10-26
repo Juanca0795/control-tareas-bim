@@ -3179,6 +3179,35 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 }
 
 
+/* Backup: acción visible solo en Control Semanal, antes del Dashboard. */
+.sidebar nav>.weekly-backup-launch{
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  padding:7px 11px;border-radius:7px;border:1px solid var(--accent-blue);
+  background:var(--bg-panel);color:var(--accent-blue);
+  font-weight:700;font-size:11px;white-space:nowrap;cursor:pointer;
+}
+.sidebar nav>.weekly-backup-launch:hover{background:var(--bg-hover)}
+.sidebar nav>.weekly-backup-launch svg{width:15px;height:15px;flex:none}
+.sidebar nav>.weekly-backup-launch.hidden{display:none!important}
+.weekly-backup-modal{width:min(640px,calc(100vw - 24px));max-height:calc(100dvh - 32px);overflow:auto}
+.weekly-backup-lead{font-size:10.5px;color:var(--ink-muted);margin:6px 0 0;line-height:1.45}
+.weekly-backup-note{font-size:11px;line-height:1.5;color:var(--ink-secondary);margin:0 0 15px}
+.weekly-backup-actions{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.weekly-backup-feedback{font-size:11px;color:var(--ink-secondary);margin-top:12px;min-height:17px}
+.weekly-backup-feedback.error{color:var(--status-crit-fg)}
+.weekly-backup-list{display:flex;flex-direction:column;gap:8px;max-height:45vh;overflow-y:auto;margin-top:10px}
+.weekly-backup-item{
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  padding:11px;border:1px solid var(--border-base);border-radius:9px;background:var(--bg-subtle);
+}
+.weekly-backup-item strong{display:block;font-size:11px;color:var(--ink-primary)}
+.weekly-backup-item small{display:block;font-size:10px;color:var(--ink-secondary);margin-top:5px}
+.weekly-backup-item .btn{flex:none}
+@media(max-width:650px){
+  .weekly-backup-item{align-items:stretch;flex-direction:column}
+  .weekly-backup-item .btn{align-self:flex-end}
+  .sidebar nav>.weekly-backup-launch{padding:8px;font-size:10px}
+}
 /* Dashboard: matriz de paquetes y especialidades, sin cambiar el alto de la fila. */
 #dashboard-view .executive-grid>.pulse-card{
   display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;
@@ -3318,6 +3347,9 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   </div>
   <div class="nav-name">ESPACIO DE TRABAJO</div>
   <nav aria-label="Vistas del sistema" role="tablist">
+    <button type="button" id="weekly-backup-launch" class="weekly-backup-launch hidden" onclick="openWeeklyBackupDialog()" title="Respaldos en Supabase" aria-label="Abrir respaldos de Control Semanal">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3M5 7a8 8 0 0 1 14 0"/></svg> Backup
+    </button>
     <button class="nav-link active" id="nav-dashboard" type="button" role="tab" aria-selected="true" onclick="switchView('dashboard')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"></rect><rect x="10" y="7" width="4" height="14" rx="1"></rect><rect x="17" y="3" width="4" height="18" rx="1"></rect></svg>
       Dashboard
@@ -3620,6 +3652,26 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   </div>
 </div>
 
+<!-- RESPALDOS DE CONTROL SEMANAL EN SUPABASE -->
+<div class="modal-back" id="weekly-backup-back" onclick="if(event.target===this)closeWeeklyBackupDialog()">
+  <div class="modal weekly-backup-modal" role="dialog" aria-modal="true" aria-labelledby="weekly-backup-title">
+    <div class="modal-hd">
+      <div><h2 id="weekly-backup-title">BACKUP · CONTROL SEMANAL</h2>
+        <p class="weekly-backup-lead">Copias de tareas, catálogos y semanas archivadas guardadas en Supabase.</p></div>
+      <button type="button" class="close" onclick="closeWeeklyBackupDialog()" aria-label="Cerrar backups">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="weekly-backup-note">Cada copia conserva un estado completo independiente de las tareas actuales. Restaurar reemplazará los registros vigentes y requiere confirmación.</p>
+      <div class="weekly-backup-actions">
+        <button type="button" id="weekly-backup-create" class="btn primary" onclick="createWeeklyCloudBackup()">Crear backup en Supabase</button>
+        <button type="button" class="btn small" id="weekly-backup-refresh" onclick="refreshWeeklyCloudBackups()">Actualizar lista</button>
+      </div>
+      <div id="weekly-backup-feedback" class="weekly-backup-feedback" role="status" aria-live="polite"></div>
+      <div id="weekly-backup-list" class="weekly-backup-list" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CREAR / EDITAR TAREA -->
 <div class="modal-back" id="modal-back" onclick="if(event.target===this)closeEditor()">
   <div class="modal task-drawer" role="dialog" aria-modal="true" aria-labelledby="modal-title">
@@ -3818,6 +3870,11 @@ function normalizeCatalogs(input){
   // Metadatos internos compatibles con el campo JSONB bim_catalogs.data existente.
   // Sin migraciones: nunca se envían columnas no existentes a bim_tasks.
   result.analytics=normalizeMonthlyAnalytics(input?.analytics);
+  // Copias completas en el JSONB de bim_catalogs, sin cambiar el esquema.
+  // Nunca copiar backups dentro del payload de otro backup.
+  result.backups=Array.isArray(input?.backups)
+    ?input.backups.filter(x=>x&&typeof x.id==='string'&&x.payload&&Array.isArray(x.payload.tasks)&&Array.isArray(x.payload.weeklySnapshots))
+    :[];
   return result;
 }
 function readCatalogs(){
@@ -4654,6 +4711,7 @@ function switchView(v, authenticated=false){
     $('#nav-'+tab).classList.toggle('active',tab===v);
     $('#nav-'+tab).setAttribute('aria-selected',String(tab===v));
   }
+  $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
   window.scrollTo(0,0);
   if(v==='dashboard') renderDashboard();
   if(v==='weekly') renderWeekly();
@@ -5038,6 +5096,9 @@ document.addEventListener('keydown', e => {
     if($('#settings-back').classList.contains('open')){
       e.preventDefault();closeSettings();return;
     }
+    if($('#weekly-backup-back').classList.contains('open')){
+      e.preventDefault();closeWeeklyBackupDialog();return;
+    }
     if($('#modal-back').classList.contains('open')){
       e.preventDefault();closeEditor();return;
     }
@@ -5219,6 +5280,89 @@ function exportData(){
   setTimeout(()=>URL.revokeObjectURL(url),1000);
   toast(`Respaldo creado: ${tasks.length} registros`);
 }
+
+/* Backups en Supabase: acceso restringido visualmente a Control Semanal. */
+let weeklyBackupBusy=false,weeklyBackupsShown=[];
+function closeWeeklyBackupDialog(){
+  if(weeklyBackupBusy)return;
+  $('#weekly-backup-back').classList.remove('open');
+  document.body.style.overflow='';
+}
+function weeklyBackupFeedback(message,error=false){
+  const el=$('#weekly-backup-feedback');
+  el.textContent=message;
+  el.classList.toggle('error',error);
+}
+function weeklyBackupUiBusy(value){
+  weeklyBackupBusy=value;
+  for(const selector of ['#weekly-backup-create','#weekly-backup-refresh']){
+    const btn=$(selector);if(btn)btn.disabled=value;
+  }
+}
+async function openWeeklyBackupDialog(){
+  if(currentView!=='weekly')return;
+  $('#weekly-backup-back').classList.add('open');
+  document.body.style.overflow='hidden';
+  await refreshWeeklyCloudBackups();
+}
+async function refreshWeeklyCloudBackups(){
+  if(weeklyBackupBusy)return;
+  const api=window.bimCloudBackups;
+  if(!api){weeklyBackupFeedback('Conexión de respaldo no disponible. Actualiza la página.',true);return;}
+  weeklyBackupUiBusy(true);
+  weeklyBackupFeedback('Consultando respaldos en Supabase...');
+  try{
+    weeklyBackupsShown=await api.list();
+    $('#weekly-backup-list').innerHTML=weeklyBackupsShown.length
+      ?weeklyBackupsShown.map(x=>'<article class="weekly-backup-item"><div><strong>'+
+        esc(new Date(x.createdAt).toLocaleString('es-PE'))+' · '+esc(x.label||'Backup manual')+
+        '</strong><small>'+Number(x.tasksCount||0)+' tareas · '+Number(x.weeksCount||0)+
+        ' semanas archivadas</small></div><button type="button" class="btn small danger" data-backup-restore="'+
+        esc(x.id)+'">Restaurar</button></article>').join('')
+      :'<p class="weekly-backup-note">Todavía no hay backups. Crea el primero para poder restaurarlo después.</p>';
+    weeklyBackupFeedback(weeklyBackupsShown.length+' respaldo(s) en Supabase.');
+  }catch(err){weeklyBackupFeedback('No se pudo leer Supabase: '+err.message,true)}
+  finally{weeklyBackupUiBusy(false)}
+}
+async function createWeeklyCloudBackup(){
+  const api=window.bimCloudBackups;
+  if(weeklyBackupBusy||!api)return;
+  weeklyBackupUiBusy(true);
+  weeklyBackupFeedback('Guardando copia en Supabase...');
+  try{
+    const backup=await api.create();
+    weeklyBackupFeedback('Backup verificado: '+new Date(backup.createdAt).toLocaleString('es-PE')+'.');
+    toast('Backup creado y verificado en Supabase');
+  }catch(err){weeklyBackupFeedback('Backup no creado: '+err.message,true)}
+  finally{weeklyBackupUiBusy(false)}
+  if(!$('#weekly-backup-feedback').classList.contains('error'))await refreshWeeklyCloudBackups();
+}
+function confirmWeeklyCloudRestore(id){
+  if(weeklyBackupBusy)return;
+  const b=weeklyBackupsShown.find(x=>x.id===id);
+  if(!b)return;
+  openConfirm('Restaurar backup en Supabase',
+    'Se reemplazarán las tareas, catálogos y semanas archivadas por el estado del '+new Date(b.createdAt).toLocaleString('es-PE')+'. Se guardará primero una copia preventiva del estado actual. ¿Confirmar la restauración?',
+    ()=>restoreWeeklyCloudBackup(id));
+}
+async function restoreWeeklyCloudBackup(id){
+  const api=window.bimCloudBackups;
+  if(!api||weeklyBackupBusy)return;
+  weeklyBackupUiBusy(true);
+  weeklyBackupFeedback('Guardando copia preventiva y restaurando desde Supabase...');
+  try{
+    await api.restore(id);
+    weeklyBackupFeedback('Restauración verificada. Los indicadores se actualizaron.');
+    toast('Backup restaurado desde Supabase');
+    await refreshWeeklyCloudBackups();
+  }catch(err){weeklyBackupFeedback('No se completó la restauración: '+err.message,true)}
+  finally{weeklyBackupUiBusy(false)}
+}
+document.addEventListener('click',e=>{
+  const button=e.target.closest('[data-backup-restore]');
+  if(button&&$('#weekly-backup-back').classList.contains('open'))
+    confirmWeeklyCloudRestore(button.dataset.backupRestore);
+});
 /* ---------- CONTROL SEMANAL: fechas ISO, snapshots y KPIs ---------- */
 function isoWeekKey(date){
   const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
