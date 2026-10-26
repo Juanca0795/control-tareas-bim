@@ -4886,7 +4886,7 @@ function supportAreaMetrics(rows){
     total:rows.length,
     supported,
     percent:rows.length?100*supported/rows.length:0,
-    primaryArea:top?.name||'Sin apoyo registrado',
+    primaryArea:top?.name||'',
     areaHelp:top?(ties.length>1?'Empate entre áreas: '+ties.join(', '):
       top.name+' · '+top.count+' actividad'+(top.count===1?'':'es')+' con este apoyo'):
       'No hay actividades con apoyo registrado en el alcance seleccionado.'
@@ -4929,7 +4929,7 @@ function makeStats(rows,interactive=false){
     one('APOYO EN OTRAS ÁREAS',support.percent.toFixed(1)+'%',
       support.supported+' de '+support.total+' actividades con apoyo',
       SVG_ICONS.support,'blue','support','teal',support.percent,
-      badge(support.primaryArea,'neutral',support.areaHelp))
+      support.percent.toFixed(1)==='0.0'?null:badge(support.primaryArea,'neutral',support.areaHelp))
   ].join('');
 }
 
