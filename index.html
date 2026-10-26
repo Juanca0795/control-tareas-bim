@@ -5930,6 +5930,7 @@ async function load(){
         merged.statuses=[...fromCloud.statuses,...catalogs.statuses].filter((x,i,all)=>
           all.findIndex(y=>y.name.toLocaleLowerCase('es')===x.name.toLocaleLowerCase('es'))===i);
         merged.analytics=mergeMonthlyAnalytics(fromCloud.analytics,catalogs.analytics);
+        merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups);
         catalogs=normalizeCatalogs(merged);
         ids=cloudIds;
         weeklySnapshots=cloudWeeks;
@@ -5961,6 +5962,11 @@ async function save(){
     const gone=[...ids].filter(id=>!now.has(id));
     const rows=tasks.map(g);
     const catalogsToSave=normalizeCatalogs(catalogs);
+    // Mantener copias creadas desde otro navegador antes de sobrescribir data JSONB.
+    const latestCatalogs=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+    check(latestCatalogs,'Consultar copias en Supabase');
+    catalogsToSave.backups=mergeCloudBackupLists(latestCatalogs.data?.[0]?.data?.backups,catalogsToSave.backups);
+    catalogs.backups=catalogsToSave.backups;
     const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
     if(gone.length){
       const deleted=await d.from('bim_tasks').delete().in('id',gone);
@@ -5989,6 +5995,148 @@ async function save(){
     if(pendingSave&&savingRevision!==revision)save();
   }
 }
+
+// El backup está en bim_catalogs.data.backups (JSONB Supabase existente).
+// No necesita nuevas tablas: incluye tareas, catálogos sin backups y cierres.
+function mergeCloudBackupLists(remote,local){
+  const byId=new Map();
+  for(const backup of [...(Array.isArray(remote)?remote:[]),...(Array.isArray(local)?local:[])]){
+    if(backup&&typeof backup.id==='string'&&backup.payload&&
+        Array.isArray(backup.payload.tasks)&&Array.isArray(backup.payload.weeklySnapshots))
+      byId.set(backup.id,backup);
+  }
+  return [...byId.values()].sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
+}
+async function backupCloudState(){
+  const [a,c,w]=await Promise.all([
+    d.from('bim_tasks').select('*').eq('user_id',sharedUser).order('id'),
+    d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1),
+    d.from('bim_weekly_snapshots').select('*').eq('user_id',sharedUser).order('week')
+  ]);
+  check(a,'Leer tareas del backup');check(c,'Leer catálogos del backup');check(w,'Leer semanas del backup');
+  return {tasks:a.data||[],catalogs:c.data?.[0]?.data||normalizeCatalogs(DEFAULT_CATALOGS),
+    weeklySnapshots:w.data||[]};
+}
+async function backupStoreCloudCopy(state,label){
+  // Cada snapshot es autocontenido y jamás lleva copias anidadas.
+  const {backups:ignored,...catalogSnapshot}=state.catalogs;
+  const createdAt=new Date().toISOString();
+  const id=createdAt+'-'+Math.random().toString(36).slice(2,9);
+  const copy={
+    id,createdAt,label,tasksCount:state.tasks.length,weeksCount:state.weeklySnapshots.length,
+    payload:{tasks:state.tasks,catalogs:catalogSnapshot,weeklySnapshots:state.weeklySnapshots}
+  };
+  const backups=mergeCloudBackupLists(state.catalogs.backups,[copy]);
+  const result=await d.from('bim_catalogs').upsert({
+    user_id:sharedUser,data:{...state.catalogs,backups}
+  },{onConflict:'user_id'});
+  check(result,'Guardar backup en Supabase');
+  const verify=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+  check(verify,'Verificar backup en Supabase');
+  const recorded=verify.data?.[0]?.data?.backups;
+  if(!Array.isArray(recorded)||!recorded.some(x=>x.id===id))
+    throw Error('Supabase no confirmó el nuevo backup');
+  catalogs.backups=mergeCloudBackupLists(catalogs.backups,recorded);
+  try{localStorage.setItem(CATALOG_KEY,JSON.stringify(catalogs))}catch(e){}
+  return copy;
+}
+function cloudBackupMetadata(x){
+  return {id:x.id,createdAt:x.createdAt,label:x.label,
+    tasksCount:x.tasksCount,weeksCount:x.weeksCount};
+}
+async function cloudBackupReady(){
+  if(!ready)throw Error('Espera a que terminen de cargar los datos de Supabase');
+  if(lock||loading)throw Error('Hay una sincronización en curso; vuelve a intentarlo');
+  if(pendingSave){
+    await save();
+    if(pendingSave||lock)throw Error('Existen cambios sin sincronizar; verifica la conexión antes de respaldar');
+  }
+}
+window.bimCloudBackups={
+  async list(){
+    if(!ready)throw Error('Supabase todavía está cargando');
+    const res=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+    check(res,'Consultar backups');
+    return mergeCloudBackupLists(res.data?.[0]?.data?.backups,[])
+      .map(cloudBackupMetadata).reverse();
+  },
+  async create(){
+    await cloudBackupReady();
+    lock=1;
+    try{
+      const cloud=await backupCloudState();
+      return cloudBackupMetadata(await backupStoreCloudCopy(cloud,'Backup manual'));
+    }finally{lock=0}
+  },
+  async restore(id){
+    await cloudBackupReady();
+    lock=1;
+    try{
+      const current=await backupCloudState();
+      const backup=mergeCloudBackupLists(current.catalogs.backups,[]).find(x=>x.id===id);
+      if(!backup)throw Error('El backup elegido no existe en Supabase');
+      const data=backup.payload;
+      if(!Array.isArray(data.tasks)||!Array.isArray(data.weeklySnapshots)||
+        !data.catalogs||typeof data.catalogs!=='object')throw Error('Backup incompleto');
+      const validIds=rows=>rows.every(x=>x&&typeof x.id==='string'&&x.id.length>0&&x.user_id===sharedUser);
+      if(!validIds(data.tasks)||data.tasks.length!==new Set(data.tasks.map(x=>x.id)).size)
+        throw Error('El backup contiene tareas inválidas o duplicadas');
+      if(!data.weeklySnapshots.every(x=>x&&typeof x.week==='string'&&
+         /^\d{4}-W\d{2}$/.test(x.week)&&Array.isArray(x.rows)&&x.user_id===sharedUser))
+        throw Error('El backup contiene cierres semanales inválidos');
+      if(data.weeklySnapshots.length!==new Set(data.weeklySnapshots.map(x=>x.week)).size)
+        throw Error('El backup contiene semanas duplicadas');
+      // Punto de retorno: antes de cambiar cualquier registro crear otra copia en Supabase.
+      const rescue=await backupStoreCloudCopy(current,'Antes de restaurar '+id.slice(0,19));
+      const restoredTasks=data.tasks.map(x=>({...x,user_id:sharedUser}));
+      if(restoredTasks.length){
+        const res=await d.from('bim_tasks').upsert(restoredTasks,{onConflict:'user_id,id'});
+        check(res,'Restaurar tareas');
+      }
+      const retainedTasks=new Set(restoredTasks.map(x=>x.id));
+      const removedTasks=current.tasks.map(x=>x.id).filter(id=>!retainedTasks.has(id));
+      if(removedTasks.length){
+        const res=await d.from('bim_tasks').delete().eq('user_id',sharedUser).in('id',removedTasks);
+        check(res,'Eliminar tareas posteriores al backup');
+      }
+      const restoredWeeks=data.weeklySnapshots.map(x=>({...x,user_id:sharedUser}));
+      if(restoredWeeks.length){
+        const res=await d.from('bim_weekly_snapshots').upsert(restoredWeeks,{onConflict:'user_id,week'});
+        check(res,'Restaurar semanas');
+      }
+      const retainedWeeks=new Set(restoredWeeks.map(x=>x.week));
+      const removedWeeks=current.weeklySnapshots.map(x=>x.week).filter(week=>!retainedWeeks.has(week));
+      if(removedWeeks.length){
+        const res=await d.from('bim_weekly_snapshots').delete().eq('user_id',sharedUser).in('week',removedWeeks);
+        check(res,'Eliminar semanas posteriores al backup');
+      }
+      const cloudBackups=mergeCloudBackupLists(current.catalogs.backups,[rescue]);
+      const updatedCatalog=normalizeCatalogs({...data.catalogs,backups:cloudBackups});
+      const catalogResult=await d.from('bim_catalogs').upsert({
+        user_id:sharedUser,data:updatedCatalog
+      },{onConflict:'user_id'});
+      check(catalogResult,'Restaurar catálogos');
+      // Verificación real de datos antes de confirmar éxito y actualizar la UI.
+      const checkCloud=await backupCloudState();
+      if(checkCloud.tasks.length!==restoredTasks.length||
+         checkCloud.weeklySnapshots.length!==restoredWeeks.length||
+         checkCloud.tasks.some(t=>!retainedTasks.has(t.id))||
+         checkCloud.weeklySnapshots.some(x=>!retainedWeeks.has(x.week)))
+        throw Error('La verificación posterior no coincide con el backup; existe una copia preventiva');
+      tasks=checkCloud.tasks.map(f);
+      ids=new Set(tasks.map(x=>x.id));
+      weeklySnapshots=checkCloud.weeklySnapshots.map(x=>({
+        week:x.week,createdAt:x.created_at,rows:x.rows||[]
+      }));
+      catalogs=normalizeCatalogs(checkCloud.catalogs);
+      pendingSave=false;
+      revision++;
+      oldPersist(); // Sólo actualiza almacenamiento y vistas locales; no sobreescribe Supabase.
+      return cloudBackupMetadata(backup);
+    }finally{lock=0}
+  }
+};
+
 const oldPersist=persist;
 persist=()=>{revision++;oldPersist();pendingSave=true;save();};
 load().catch(err=>{console.error(err);toast('Error al cargar Supabase: '+err.message);});
