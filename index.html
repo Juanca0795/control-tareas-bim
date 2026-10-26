@@ -3090,6 +3090,39 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 @media(prefers-reduced-motion:reduce){
   #dashboard-view .health-ring-segment{transition:none}
 }
+
+/* LÍNEA DE TIEMPO: actual celeste y selección distinta en ámbar. */
+#weekly-view .weekly-time-step.current,
+#weekly-view .weekly-time-step.selected.current{
+  border:2px solid #1bc2e2;
+  background:rgba(27,194,226,.075);
+  box-shadow:inset 0 0 0 1px rgba(27,194,226,.20);
+  color:var(--ink-primary);
+}
+#weekly-view .weekly-time-step.current:before,
+#weekly-view .weekly-time-step.selected.current:before{
+  content:"ACTUAL";
+  position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+  background:#1bc2e2;color:#081420;border-radius:15px;
+  padding:3px 10px;font:bold 9px Inter,sans-serif;white-space:nowrap;
+}
+#weekly-view .weekly-time-step.selected:not(.current){
+  border:2px solid #f3bb67;
+  background:rgba(243,187,103,.095);
+  box-shadow:inset 0 0 0 1px rgba(243,187,103,.18);
+  color:var(--ink-primary);
+}
+#weekly-view .weekly-time-step.selected:not(.current):before{
+  content:"SELECCIONADA";
+  background:#f3bb67;color:#172130;
+}
+#weekly-view .weekly-time-step.selected:not(.current) .weekly-time-dot{
+  background:#f3bb67;box-shadow:0 0 0 2px #f3bb67;
+}
+#weekly-view .weekly-time-step.current .weekly-time-dot{
+  background:#1bc2e2;box-shadow:0 0 0 2px #1bc2e2;
+}
+#weekly-view .weekly-trend-key i.goal{border-top-width:.6px}
 </style>
 </head>
 <body>
@@ -5040,8 +5073,15 @@ function renderWeeklyTimeline(){
   const target=$('#weekly-timeline'),track=$('#weekly-timeline-track');
   if(!target||!track)return;
   const nowWeek=isoWeekKey(new Date());
-  // Ocho semanas, incluidas dos posteriores a la selección, en la vista ejecutiva.
-  const weeks=Array.from({length:8},(_,i)=>neighborWeek(selectedWeek,i-5));
+  // Mantener ocho semanas visibles; si la selección está a siete semanas
+  // o menos de la actual, ambas quedan dentro de la misma línea de tiempo.
+  // Si está más lejos, priorizar la selección y usar «Esta semana» para volver.
+  const selectedStart=neighborWeek(selectedWeek,-5);
+  const currentDistance=Math.round((weekStart(selectedWeek)-weekStart(nowWeek))/604800000);
+  const windowStart=Math.abs(currentDistance)>7?selectedStart:
+    currentDistance<0?neighborWeek(nowWeek,-7):
+    currentDistance>2?nowWeek:selectedStart;
+  const weeks=Array.from({length:8},(_,i)=>neighborWeek(windowStart,i));
   track.innerHTML=weeks.map(week=>{
     const start=dateDisplay(localISO(weekStart(week))).slice(0,5),end=dateDisplay(weekEnd(week)).slice(0,5);
     const m=weeklyMetrics(week),archived=m.closed,hasData=m.planned>0;
@@ -5154,7 +5194,7 @@ function weeklyTrend(m){
         fill:'origin',tension:.28,pointRadius:4,pointHoverRadius:6,
         borderWidth:2.6,spanGaps:false},
       {label:'Meta LPS (85%)',data:weeks.map(()=>goal),borderColor:c.pink,
-        borderWidth:1,pointRadius:0,pointHoverRadius:0,fill:false,tension:0}
+        borderWidth:0.6,pointRadius:0,pointHoverRadius:0,fill:false,tension:0}
     ];
     // La línea punteada es una referencia horizontal, no un PPC proyectado:
     // se oculta si la semana seleccionada no tiene compromisos verificables.
@@ -5168,19 +5208,54 @@ function weeklyTrend(m){
       afterDatasetsDraw(chart){
         const {ctx,chartArea,scales}=chart;
         if(!chartArea)return;
+        const points=chart.getDatasetMeta(0).data;
+        const goalY=scales.y.getPixelForValue(goal);
+        const pad=7;
+        const clamp=(v,low,high)=>Math.max(low,Math.min(high,v));
+        const labelsDrawn=[];
         ctx.save();
         ctx.font='600 10px Inter, sans-serif';
-        ctx.textAlign='center';
-        ctx.fillStyle=c.text;
-        chart.getDatasetMeta(0).data.forEach((point,i)=>{
-          if(!Number.isFinite(vals[i])||point.skip)return;
-          ctx.fillText(vals[i].toFixed(1)+'%',point.x,Math.max(chartArea.top+11,point.y-10));
-        });
-        // Etiqueta fija que diferencia la meta continua de la referencia punteada.
+        ctx.textBaseline='alphabetic';
+        // Primero la etiqueta de la meta, para reservar su espacio.
+        const goalText='Meta LPS 85%';
+        const goalWidth=ctx.measureText(goalText).width;
+        const goalX=chartArea.left+6;
+        const goalLabelY=clamp(goalY-9,chartArea.top+12,chartArea.bottom-5);
+        labelsDrawn.push({left:goalX-2,right:goalX+goalWidth+2,top:goalLabelY-11,bottom:goalLabelY+3});
         ctx.fillStyle=c.pink;
         ctx.textAlign='left';
-        ctx.fillText('Meta LPS 85%',chartArea.left+4,
-          Math.max(chartArea.top+12,scales.y.getPixelForValue(goal)-8));
+        ctx.fillText(goalText,goalX,goalLabelY);
+        ctx.fillStyle=c.text;
+        // Evitar que el primer valor choque con el eje Y, o que etiquetas
+        // próximas al 85% se superpongan con la referencia LPS.
+        points.forEach((point,i)=>{
+          if(!Number.isFinite(vals[i])||point.skip)return;
+          const label=vals[i].toFixed(1)+'%';
+          const width=ctx.measureText(label).width;
+          const isFirst=i===0, isLast=i===points.length-1;
+          let align=isFirst?'left':isLast?'right':'center';
+          let x=point.x+(isFirst?12:isLast?-12:0);
+          let left=x-(align==='center'?width/2:align==='right'?width:0);
+          left=clamp(left,chartArea.left+pad,Math.max(chartArea.left+pad,chartArea.right-pad-width));
+          let y=point.y-12;
+          if(y-11<chartArea.top)y=point.y+19;
+          if(y>chartArea.bottom-3)y=point.y-14;
+          y=clamp(y,chartArea.top+11,chartArea.bottom-4);
+          const occupied=v=>labelsDrawn.some(r=>left<r.right&&left+width>r.left&&v-11<r.bottom&&v+3>r.top);
+          if(occupied(y)){
+            const alternate=clamp(point.y+19,chartArea.top+11,chartArea.bottom-4);
+            if(!occupied(alternate))y=alternate;
+            else {
+              // No dibujar etiquetas encima de otras; el punto y su tooltip permanecen.
+              const above=clamp(point.y-19,chartArea.top+11,chartArea.bottom-4);
+              if(occupied(above))return;
+              y=above;
+            }
+          }
+          ctx.textAlign='left';
+          ctx.fillText(label,left,y);
+          labelsDrawn.push({left:left-2,right:left+width+2,top:y-11,bottom:y+3});
+        });
         ctx.restore();
       }
     };
