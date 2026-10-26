@@ -1684,9 +1684,9 @@ button.owner-item.selected {border-color:var(--accent-blue);background:var(--bg-
 .executive-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.12fr);gap:16px;align-items:stretch;margin:0 0 16px}
 .executive-grid>.chart-card{min-width:0}
 .executive-grid>.radar-card{grid-column:1;grid-row:1}
-.executive-grid>.pulse-card{grid-column:2;grid-row:1}
+.executive-grid>.pulse-card{grid-column:2;grid-row:2}
 .executive-grid>.owner-card{grid-column:1;grid-row:2}
-.executive-grid>.attention-card{grid-column:2;grid-row:2}
+.executive-grid>.attention-card{grid-column:2;grid-row:1}
 .attention-card .big-list{gap:8px}
 .attention-card .risk-row{grid-template-columns:3px minmax(0,1fr) auto}
 .pulse-card .control-team-summary{margin-top:0;padding-top:0;border-top:0}
@@ -3124,6 +3124,44 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   background:#1bc2e2;box-shadow:0 0 0 2px #1bc2e2;
 }
 #weekly-view .weekly-trend-key i.goal{border-top-width:.6px}
+
+/* Dashboard: la altura pertenece a la FILA, no al contenido intercambiado.
+   Fila superior: Salud BIM + Tareas prioritarias.
+   Fila inferior: Colaboradores + Pulso de paquetes. */
+@media(min-width:761px){
+  #dashboard-view .executive-grid>.attention-card{
+    grid-column:2;
+    grid-row:1;
+    display:flex;
+    flex-direction:column;
+    height:100%;
+    min-height:0;
+    overflow:hidden;
+  }
+  #dashboard-view .executive-grid>.pulse-card{
+    grid-column:2;
+    grid-row:2;
+    height:100%;
+    min-height:0;
+  }
+  /* El listado se ajusta al espacio de la fila superior sin forzar su altura.
+     Todos los registros siguen accesibles mediante scroll interno. */
+  #dashboard-view .attention-card #alerts-list{
+    height:0;
+    max-height:none;
+    min-height:0;
+    flex:1 1 0;
+    overflow-y:auto;
+    align-content:start;
+  }
+}
+@media(max-width:760px){
+  /* Mantener el orden visual y de teclado en pantallas de una sola columna. */
+  #dashboard-view .executive-grid>.radar-card{order:1}
+  #dashboard-view .executive-grid>.attention-card{order:2}
+  #dashboard-view .executive-grid>.owner-card{order:3}
+  #dashboard-view .executive-grid>.pulse-card{order:4}
+}
 </style>
 </head>
 <body>
@@ -3335,6 +3373,18 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
         <div id="state-chart"></div>
       </article>
 
+      <article class="card chart-card attention-card">
+        <div class="control-card-title dashboard-compact-heading">
+          <div>
+            <h2>TAREAS CON PRIORIDAD <span class="priority-dot" aria-hidden="true"></span></h2>
+            <p class="desc">Vencidas, próximas a vencer y de prioridad alta</p>
+          </div>
+          <div class="dashboard-heading-actions">
+            <div class="priority-headline" id="priority-headline" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="big-list" id="alerts-list" tabindex="0" role="region" aria-label="Listado desplazable de tareas con prioridad"></div>
+      </article>
       <article class="card chart-card owner-card">
         <div class="control-card-title dashboard-compact-heading">
           <div>
@@ -3352,18 +3402,6 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
         <div id="package-chart" class="control-package-summary h-bars"></div>
       </article>
 
-      <article class="card chart-card attention-card">
-        <div class="control-card-title dashboard-compact-heading">
-          <div>
-            <h2>TAREAS CON PRIORIDAD <span class="priority-dot" aria-hidden="true"></span></h2>
-            <p class="desc">Vencidas, próximas a vencer y de prioridad alta</p>
-          </div>
-          <div class="dashboard-heading-actions">
-            <div class="priority-headline" id="priority-headline" aria-live="polite"></div>
-          </div>
-        </div>
-        <div class="big-list" id="alerts-list" tabindex="0" role="region" aria-label="Listado desplazable de tareas con prioridad"></div>
-      </article>
     </section>
 
     <section id="dash-drill" class="card drill-card hidden" aria-live="polite"></section>
