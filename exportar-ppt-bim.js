@@ -238,43 +238,72 @@ function pptBimCover(pptx,week,groups,imageCount){
   pptBimAddText(slide,'ÁREA BIM · S&P',{x:.45,y:6.87,w:3.4,h:.16,
     fontSize:10,color:'FFFFFF',bold:true,align:'center'});
 }
-function pptBimEvidenceSlide(pptx,week,packageName,entries){
+/* Prioriza fotografías del mismo paquete, sin desperdiciar hojas:
+ * paquetes con 2 o 3 imágenes forman un bloque indivisible,
+ * y un espacio restante puede completarse con otro paquete.
+ */
+function pptBimPackSlides(items){
+  const groups=new Map();
+  for(const item of items){
+    const key=String(item.package||'Sin paquete');
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push(item);
+  }
+  const chunks=[];
+  let order=0;
+  for(const photos of groups.values()){
+    for(let i=0;i<photos.length;i+=3)
+      chunks.push({entries:photos.slice(i,i+3),order:order++});
+  }
+  // Bloques completos de 3, luego de 2 y de 1; no separar parejas de un paquete.
+  chunks.sort((a,b)=>b.entries.length-a.entries.length||a.order-b.order);
+  const pages=[];
+  for(const chunk of chunks){
+    let target=pages.find(page=>page.length+chunk.entries.length<=3);
+    if(!target){target=[];pages.push(target)}
+    target.push(...chunk.entries);
+  }
+  return pages;
+}
+function pptBimEvidenceSlide(pptx,week,entries){
+  if(!Array.isArray(entries)||entries.length<1||entries.length>3)
+    throw new Error('Cada diapositiva requiere entre 1 y 3 fotografías.');
   const S=pptx.ShapeType,slide=pptx.addSlide();
   pptBimMaster(slide,pptx);
   pptBimAddText(slide,'EVIDENCIAS BIM · SEMANA '+week.split('-W')[1],
     {x:.37,y:.80,w:11.9,h:.29,fontSize:18,bold:true});
-  const start=.28,top=1.13, widths=[4.267,4.198,4.336],redH=.673,picH=3.746,captionH=.961;
-  let x=start;
-  for(let k=0;k<3;k++){
-    const w=widths[k],e=entries[k];
+  const start=.28,totalWidth=12.801,top=1.13,redH=.673,picH=3.746,captionH=.961;
+  const gap=.015,slotWidth=(totalWidth-gap*(entries.length-1))/entries.length;
+  for(let k=0;k<entries.length;k++){
+    const e=entries[k],x=start+k*(slotWidth+gap),w=slotWidth;
     slide.addShape(S.rect,{x,y:top,w,h:redH,
       fill:{color:'C00000'},line:{color:'000000',width:.8}});
-    pptBimAddText(slide,packageName.toUpperCase(),
+    // Cada columna lleva SU propio paquete, incluso cuando la hoja mezcla paquetes.
+    pptBimAddText(slide,String(e.package||'Sin paquete').toUpperCase(),
       {x:x+.10,y:top+.13,w:w-.2,h:.37,fontSize:16,bold:true,color:'FFFFFF',align:'center',
         fit:'shrink'});
     slide.addShape(S.rect,{x,y:top+redH,w,h:picH,
       fill:{color:'FFFFFF'},line:{color:'000000',width:.8}});
     slide.addShape(S.rect,{x,y:top+redH+picH,w,h:captionH,
       fill:{color:'FFFFFF'},line:{color:'000000',width:.8}});
-    if(e){
-      const frame={x:x+.16,y:top+redH+.13,w:w-.32,h:picH-.26};
-      const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
-      slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
-        y:frame.y+(frame.h-sz.h)/2,w:sz.w,h:sz.h});
-      const caption=String(e.caption||e.title||'').replace(/\s+/g,' ').trim();
-      pptBimAddText(slide,caption,
-        {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
-          fontSize:caption.length>180?8:caption.length>95?10:13,
-          bold:true,align:'center',valign:'mid',fit:'shrink'});
-      pptBimAddText(slide,e.taskId+(e.team?' · '+e.team:''),
-        {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
-          color:'5A5A5A',align:'center'});
-    }
-    x+=w;
+    const frame={x:x+.16,y:top+redH+.13,w:w-.32,h:picH-.26};
+    const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
+    slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
+      y:frame.y+(frame.h-sz.h)/2,w:sz.w,h:sz.h});
+    const caption=String(e.caption||e.title||'').replace(/\s+/g,' ').trim();
+    pptBimAddText(slide,caption,
+      {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
+        fontSize:caption.length>180?8:caption.length>95?10:13,
+        bold:true,align:'center',valign:'mid',fit:'shrink'});
+    pptBimAddText(slide,e.taskId+(e.team?' · '+e.team:''),
+      {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
+        color:'5A5A5A',align:'center'});
   }
+  const packages=[...new Set(entries.map(e=>e.package||'Sin paquete'))];
+  const label=packages.length===1?packages[0]:packages.join(' / ');
   slide.addShape(S.rect,{x:0,y:6.8,w:4.1,h:.34,fill:{color:'FF0000'},line:{color:'FF0000'}});
-  pptBimAddText(slide,packageName+' · '+week.replace('-W',' / S'),
-    {x:.17,y:6.88,w:3.83,h:.16,fontSize:10,color:'FFFFFF',bold:true,align:'center'});
+  pptBimAddText(slide,label+' · '+week.replace('-W',' / S'),
+    {x:.17,y:6.88,w:3.83,h:.16,fontSize:10,color:'FFFFFF',bold:true,align:'center',fit:'shrink'});
 }
 async function pptBimDecodeImage(blob){
   // PPTX no admite WebP de manera fiable: normalizamos a JPG dentro del navegador.
@@ -310,29 +339,22 @@ async function exportBimPpt(){
     // PptxGenJS inserta company directamente en docProps/app.xml.
     // El ampersand debe escaparse para no invalidar todo el PowerPoint.
     pptx.company='ÁREA BIM | S&amp;P';
-    const groups=new Map();
-    included.forEach(item=>{
-      if(!groups.has(item.package))groups.set(item.package,[]);
-      groups.get(item.package).push(item);
-    });
+    const groups=new Set(included.map(item=>item.package||'Sin paquete'));
     pptBimCover(pptx,pptBimState.week,groups.size,included.length);
-    let completed=0;
-    for(const [packageName,photos] of groups){
-      const decoded=[];
-      for(const photo of photos){
-        if(runToken!==pptBimState.token)throw new Error('La exportación fue interrumpida');
-        const blob=await window.bimEvidenceCloud.download(photo.path);
-        const loaded=await pptBimDecodeImage(blob);
-        decoded.push({...photo,...loaded});
-        completed++;
-        if(status)status.textContent='Preparando imágenes '+completed+' de '+included.length+'…';
-      }
-      for(let i=0;i<decoded.length;i+=3){
-        pptBimEvidenceSlide(pptx,pptBimState.week,packageName,decoded.slice(i,i+3));
-      }
+    const decoded=[];
+    for(const photo of included){
+      if(runToken!==pptBimState.token)throw new Error('La exportación fue interrumpida');
+      const blob=await window.bimEvidenceCloud.download(photo.path);
+      const loaded=await pptBimDecodeImage(blob);
+      decoded.push({...photo,...loaded});
+      if(status)status.textContent='Preparando imágenes '+decoded.length+' de '+included.length+'…';
     }
+    // Se agrupan las evidencias en hojas de 1 a 3 imágenes, sin separar parejas
+    // o tríos de un mismo paquete y aprovechando las columnas disponibles.
+    const pages=pptBimPackSlides(decoded);
+    for(const entries of pages)pptBimEvidenceSlide(pptx,pptBimState.week,entries);
     if(status)status.textContent='Generando PPTX editable…';
-    const totalSlides=1+[...groups.values()].reduce((sum,images)=>sum+Math.ceil(images.length/3),0);
+    const totalSlides=1+pages.length;
     const generated=await pptx.write({outputType:'blob',compression:true});
     const blob=generated instanceof Blob?generated:new Blob([generated],
       {type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
