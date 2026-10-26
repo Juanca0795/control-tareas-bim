@@ -3580,12 +3580,14 @@ html[data-theme="light"]{--bim-interaction-glow:rgba(30,102,176,.12)}
   --bim-ambient-edge:.14;
 }
 html[data-theme="light"]{
+  /* Sobre fondo blanco hace falta más tinte para igualar la percepción
+     del resplandor en tarjetas oscuras, sin perder sutileza. */
   --bim-ambient-rgb:55,133,187;
-  --bim-ambient-low:.40;
-  --bim-ambient-high:.76;
-  --bim-ambient-core:.15;
-  --bim-ambient-halo:.065;
-  --bim-ambient-edge:.09;
+  --bim-ambient-low:.55;
+  --bim-ambient-high:.92;
+  --bim-ambient-core:.23;
+  --bim-ambient-halo:.09;
+  --bim-ambient-edge:.14;
 }
 @keyframes bimQuietPanelGlow{
   0%,100%{opacity:var(--bim-ambient-low)}
