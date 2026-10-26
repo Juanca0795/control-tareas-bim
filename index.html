@@ -3369,6 +3369,97 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
     height:auto;min-height:140px;max-height:324px;flex:0 1 auto;
   }
 }
+/* Ajustes exclusivos para tablets y celulares.
+   No alteran las reglas de escritorio (>= 901px). */
+@media (min-width:761px) and (max-width:900px){
+  /* Tablet vertical: un panel por fila, sin encoger los gráficos BIM. */
+  #dashboard-view .executive-grid{grid-template-columns:minmax(0,1fr)}
+  #dashboard-view .executive-grid>.radar-card,
+  #dashboard-view .executive-grid>.attention-card,
+  #dashboard-view .executive-grid>.owner-card,
+  #dashboard-view .executive-grid>.pulse-card{
+    grid-column:1!important;
+    grid-row:auto!important;
+    width:100%;
+    height:auto;
+  }
+  #dashboard-view .executive-grid>.attention-card,
+  #dashboard-view .executive-grid>.owner-card,
+  #dashboard-view .executive-grid>.pulse-card{min-height:320px}
+  #dashboard-view .attention-card #alerts-list{
+    height:300px;
+    max-height:300px;
+    min-height:0;
+    flex:1 1 auto;
+    grid-auto-rows:minmax(68px,max-content);
+  }
+  #dashboard-view .attention-card .priority-task{height:auto;min-height:68px}
+  #dashboard-view .operational-health{
+    grid-template-columns:minmax(200px,.85fr) minmax(0,1.15fr)
+  }
+  #dashboard-view .pulse-card #team-summary{
+    height:auto;min-height:180px;max-height:320px;flex:1 1 auto;
+  }
+}
+@media(max-width:650px){
+  /* Tres pestañas visibles sin desplazamiento lateral. El backup tiene
+     su propia fila en Control Semanal. */
+  .sidebar nav{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    width:100%;max-width:100%;
+    gap:4px;
+    justify-content:stretch;
+    overflow:visible;
+  }
+  .sidebar nav .nav-link,
+  .sidebar nav .nav-link.active{
+    width:100%;min-width:0;min-height:42px;
+    margin:0;padding:7px 4px;
+    display:flex;align-items:center;justify-content:center;gap:5px;
+    white-space:normal;overflow-wrap:anywhere;
+    font-size:10px;line-height:1.25;
+    text-align:center;
+  }
+  .sidebar nav .nav-link svg{width:14px;height:14px;flex:none}
+  .sidebar nav>.weekly-backup-launch:not(.hidden){
+    grid-column:1/-1;justify-self:start;
+  }
+  /* Sin scroll lateral innecesario cuando hay una sola disciplina.
+     Las matrices multidisciplina mantienen su desplazamiento propio. */
+  #dashboard-view .pulse-specialty-matrix.single-specialty{
+    width:100%;min-width:100%;table-layout:fixed;
+  }
+  #dashboard-view .pulse-specialty-matrix.single-specialty thead th:first-child,
+  #dashboard-view .pulse-specialty-matrix.single-specialty tbody th,
+  #dashboard-view .pulse-specialty-matrix.single-specialty tfoot th,
+  #dashboard-view .pulse-specialty-matrix.single-specialty thead th:last-child{
+    min-width:0;
+  }
+  #dashboard-view .pulse-specialty-matrix.single-specialty .pulse-matrix-package strong{
+    white-space:normal;overflow-wrap:anywhere;
+  }
+  #weekly-view .weekly-trend-key{flex-wrap:wrap;row-gap:7px}
+  #weekly-view .weekly-status-strip .status-side{white-space:normal}
+  #dashboard-view #dash-drill .table-wrap{overflow-x:auto}
+  #dashboard-view #dash-drill .drill-table{min-width:650px}
+}
+@media(max-width:380px){
+  /* Mantener la lectura comparativa 2×3 de los seis KPI. */
+  #weekly-view .weekly-kpis{
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:8px;
+  }
+  #weekly-view .weekly-kpis>.weekly-kpi{
+    min-width:0;min-height:165px;padding:11px 9px;
+  }
+  #weekly-view .weekly-kpi .number{font-size:clamp(19px,6.5vw,24px)}
+  #weekly-view .weekly-kpi .foot{overflow-wrap:anywhere}
+  #weekly-view .weekly-kpi-icon{
+    width:25px;height:25px;flex-basis:25px;
+  }
+}
+
 @media(max-width:760px){
   /* Mantener el orden visual y de teclado en pantallas de una sola columna. */
   #dashboard-view .executive-grid>.radar-card{order:1}
