@@ -4221,6 +4221,82 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   #weekly-view .proj-task-date{max-width:250px}
 }
 
+
+/* PROYECCIÓN · misma alineación, iluminación y respuestas que el resto del sistema. */
+#weekly-view .weekly-projection-kpis{
+  align-items:stretch;
+  grid-auto-rows:minmax(132px,auto);
+}
+#weekly-view .weekly-projection-kpis>.weekly-projection-kpi{
+  position:relative;align-self:stretch;justify-self:stretch;
+  box-sizing:border-box;min-width:0;min-height:132px;height:100%;
+  margin:0;transform:none;border-radius:11px;
+  transition:transform .22s cubic-bezier(.2,.75,.3,1),
+    box-shadow .22s ease,border-color .22s ease,background-color .22s ease;
+}
+#weekly-view .weekly-projection-kpi::after{
+  content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
+  box-sizing:border-box;border-radius:inherit;
+  background:radial-gradient(ellipse 93% 110% at 50% 111%,
+    rgba(var(--bim-ambient-rgb),var(--bim-ambient-core)) 0%,
+    rgba(var(--bim-ambient-rgb),var(--bim-ambient-halo)) 42%,
+    transparent 78%);
+  box-shadow:inset 0 0 0 1px rgba(var(--bim-ambient-rgb),var(--bim-ambient-edge)),
+    inset 0 -13px 20px -18px rgba(var(--bim-ambient-rgb),.35);
+  opacity:var(--bim-ambient-low);
+  animation:bimQuietPanelGlow 5.2s ease-in-out infinite;
+}
+#weekly-view .weekly-projection-kpi.projection-pending .proj-value{color:var(--status-warn-fg)}
+#weekly-view .proj-task{
+  transition:background-color .18s ease,box-shadow .18s ease,border-color .18s ease;
+}
+.sidebar .weekly-subtab{
+  position:relative;
+  transition:background-color .2s ease,border-color .2s ease,
+    box-shadow .2s ease,color .2s ease,filter .2s ease;
+}
+.sidebar .weekly-subtab.active{
+  box-shadow:0 0 0 1px rgba(78,157,240,.10),
+    0 4px 15px rgba(35,124,228,.16),inset 0 0 12px rgba(89,157,242,.08);
+}
+.sidebar .weekly-subtab.active::after{
+  content:"";position:absolute;bottom:2px;left:10px;right:10px;height:2px;
+  border-radius:99px;background:#72bdff;
+  animation:bimTabUnderlineBreath 2.9s ease-in-out infinite;
+}
+@media(hover:hover) and (pointer:fine){
+  #weekly-view .weekly-projection-kpi:hover{
+    transform:translateY(-2px);
+    border-color:var(--accent-blue);
+    box-shadow:0 13px 27px -15px var(--bim-interaction-glow),
+      0 8px 22px -14px rgba(0,0,0,.42),
+      inset 0 0 0 1px var(--bim-interaction-glow);
+  }
+  #weekly-view .weekly-projection-bar-card:hover{
+    transform:translateY(-2px);border-color:var(--border-strong);
+    box-shadow:0 15px 30px -19px rgba(0,0,0,.38),
+      0 0 0 1px var(--bim-interaction-glow);
+  }
+  #weekly-view .proj-task:hover{
+    background:var(--bg-hover);border-color:var(--border-strong);
+    box-shadow:inset 0 0 0 1px var(--bim-interaction-glow);
+  }
+  .sidebar .weekly-subtab:hover{
+    border-color:var(--border-strong);
+    box-shadow:0 0 0 1px var(--bim-interaction-glow);
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #weekly-view .weekly-projection-kpi{transition:none!important;transform:none!important}
+  #weekly-view .weekly-projection-kpi::after{animation:none!important;opacity:.76}
+  #weekly-view .proj-task,.sidebar .weekly-subtab{transition:none!important}
+  .sidebar .weekly-subtab.active::after{animation:none!important}
+}
+@media(max-width:680px){
+  #weekly-view .weekly-projection-kpis{grid-auto-rows:minmax(116px,auto)}
+  #weekly-view .weekly-projection-kpis>.weekly-projection-kpi{min-height:116px}
+}
+
 </style>
 <script src="cnc.js"></script>
 <script src="proyeccion.js"></script>
@@ -4887,7 +4963,13 @@ function readWeeklySnapshots(){
   try{const v=JSON.parse(localStorage.getItem(WEEKLY_KEY)||'[]');return Array.isArray(v)?v.filter(x=>x&&typeof x.week==='string'&&Array.isArray(x.rows)):[];}catch(e){return [];}
 }
 let weeklySnapshots = readWeeklySnapshots();
-let selectedWeek = isoWeekKey(new Date());
+let selectedWeek=(()=>{
+  const fallback=isoWeekKey(new Date());
+  try{
+    const saved=sessionStorage.getItem('area-bim-selected-week');
+    return saved&&weekStart(saved)?saved:fallback;
+  }catch(e){return fallback}
+})();
 function syncCatalogsWithTasks(){
   for(const t of tasks){
     for(const [key,field] of [['packages','package'],['owners','owner'],['teams','team']]){
@@ -5907,6 +5989,13 @@ function switchView(v, authenticated=false){
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
   $('#weekly-subtabs').classList.toggle('hidden',v!=='weekly');
   $('.sidebar').classList.toggle('weekly-subtabs-visible',v==='weekly');
+  // La sesión del navegador recuerda la vista, sin almacenar datos de tareas.
+  // Salir de Control Semanal revoca el acceso de esta pestaña; reentrar exige clave.
+  try{
+    sessionStorage.setItem('area-bim-active-view',v);
+    if(v==='weekly')sessionStorage.setItem('area-bim-weekly-session','authorized');
+    else sessionStorage.removeItem('area-bim-weekly-session');
+  }catch(e){}
   updateBimNavIndicator();
   window.scrollTo(0,0);
   if(v==='dashboard') renderDashboard();
@@ -5915,6 +6004,19 @@ function switchView(v, authenticated=false){
   if(previousView!==v)scheduleBimMetricsAnimation(v,true);
 }
 
+function restoreBimViewOnReload(){
+  // Solo restablecer Control Semanal si esa misma pestaña ya superó su acceso.
+  let saved='',authorized=false;
+  try{
+    saved=sessionStorage.getItem('area-bim-active-view')||'';
+    authorized=sessionStorage.getItem('area-bim-weekly-session')==='authorized';
+  }catch(e){}
+  if(saved==='tasks')switchView('tasks');
+  else if(saved==='weekly'){
+    if(authorized)switchView('weekly',true);
+    else showProtectedAuth('weeklyAccess');
+  }
+}
 function populateEditorSelects(){
   const pairs = [
     ['#f-package','packages','Seleccionar paquete'],
@@ -6678,17 +6780,20 @@ function ensureWeeklyTimelineWindow(week){
 }
 function stepWeekly(n){
   selectedWeek=neighborWeek(selectedWeek,n);
+  try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
   ensureWeeklyTimelineWindow(selectedWeek);
   renderWeekly();
 }
 function goToCurrentWeek(){
   selectedWeek=isoWeekKey(new Date());
+  try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
   weeklyTimelineWindowStart=neighborWeek(selectedWeek,-5);
   renderWeekly();
 }
 function changeWeeklyWeek(week){
   if(!weekStart(week)){toast('Semana ISO no válida');return;}
   selectedWeek=week;
+  try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
   ensureWeeklyTimelineWindow(week);
   renderWeekly();
 }
@@ -7141,6 +7246,7 @@ updateWeeklyFilters();
 renderAll();
 syncThemeButton();
 initBimNavIndicator();
+restoreBimViewOnReload();
 </script>
 </body>
 </html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{if(!window.supabase||typeof window.supabase.createClient!=='function'){cloudDataNotice('No se pudo cargar la biblioteca de Supabase. Revisa tu conexión y vuelve a cargar la página.',true);return;}const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
