@@ -3717,7 +3717,9 @@ html[data-theme="light"]{
   content:"";
   position:absolute;
   pointer-events:none;
-  left:18%;right:18%;bottom:2px;
+  /* Mantener el subrayado a lo largo de toda la pestaña activa:
+     cubre icono y etiqueta, incluso «Control de tareas» en pantalla ancha. */
+  left:9px;right:9px;bottom:2px;
   height:2px;
   border-radius:99px;
   background:#72bdff;
