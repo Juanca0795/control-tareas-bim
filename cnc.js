@@ -13,7 +13,9 @@ function normalizeCncRecords(input){
       category:String(raw.category).slice(0,100),description:String(raw.description).slice(0,1000),
       action:String(raw.action).slice(0,1000),proposedDate:String(raw.proposedDate||''),
       reporter:String(raw.reporter||'No identificado').slice(0,100),
-      owner:String(raw.owner||'').slice(0,100),createdAt:String(raw.createdAt)});
+      owner:String(raw.owner||'').slice(0,100),package:String(raw.package||'').slice(0,100),
+      team:String(raw.team||'').slice(0,100),title:String(raw.title||'').slice(0,200),
+      createdAt:String(raw.createdAt)});
   }
   return [...map.values()].sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
 }
@@ -31,24 +33,33 @@ function taskCncIncident(task){
 function cncFor(taskId,deadline){
   return (catalogs.cncRecords||[]).find(r=>r.taskId===taskId&&r.deadline===deadline)||null;
 }
+function cncHistory(taskId){
+  return (catalogs.cncRecords||[]).filter(r=>r.taskId===taskId)
+    .sort((a,b)=>a.createdAt.localeCompare(b.createdAt));
+}
 function taskCncButton(t,mobile=false){
-  const record=cncFor(t.id,t.deadline);
-  if(!record&&!taskCncIncident(t))return '';
+  const record=cncFor(t.id,t.deadline),history=cncHistory(t.id).filter(r=>r.deadline!==t.deadline);
+  if(!record&&!history.length&&!taskCncIncident(t))return '';
+  const cls='task-cnc-button'+(mobile?' task-mobile-cnc':'');
   const label=record?'Ver causa CNC':'Registrar causa CNC';
-  return '<button type="button" class="task-cnc-button'+(mobile?' task-mobile-cnc':'')+
-    '" data-cnc-id="'+esc(t.id)+'" aria-label="'+esc(label+' del entregable '+t.id)+'">'+label+'</button>';
+  const active=(record||taskCncIncident(t))
+    ?'<button type="button" class="'+cls+'" data-cnc-id="'+esc(t.id)+'" aria-label="'+esc(label+' de '+t.id)+'">'+label+'</button>':'';
+  const past=history.length?'<button type="button" class="'+cls+'" data-cnc-history-id="'+esc(t.id)+
+    '" aria-label="Ver historial CNC de '+esc(t.id)+'">Historial CNC ('+history.length+')</button>':'';
+  return active+past;
 }
 let cncOpenTaskId=null;
-function openCnc(id){
+function openCnc(id,historyOnly=false){
   const task=tasks.find(t=>t.id===id);if(!task)return;
-  const record=cncFor(task.id,task.deadline);
+  const past=cncHistory(task.id).filter(r=>r.deadline!==task.deadline);
+  const record=historyOnly?(past[past.length-1]||null):cncFor(task.id,task.deadline);
   if(!record&&!taskCncIncident(task)){toast('La actividad no presenta incumplimiento de plazo.');return;}
   cncOpenTaskId=id;
   $('#cnc-title').textContent=record?'CAUSA CNC REGISTRADA':'REGISTRAR CAUSA CNC';
   $('#cnc-task-context').innerHTML='<strong>'+esc(task.title)+'</strong>'+
     '<span>Entregable: '+esc(task.id)+' · Responsable: '+esc(task.owner||'Sin asignar')+'</span>'+
-    '<span>Fecha comprometida: '+esc(dateDisplay(task.deadline))+
-    ' · '+(categoryOf(task.status)==='done'?'Cierre fuera de plazo':'Vencida sin completar')+'</span>';
+    '<span>Fecha comprometida: '+esc(dateDisplay(record?.deadline||task.deadline))+
+    ' · '+(historyOnly?'Incumplimiento histórico':categoryOf(task.status)==='done'?'Cierre fuera de plazo':'Vencida sin completar')+'</span>';
   $('#cnc-form').classList.toggle('hidden',!!record);
   $('#cnc-existing').classList.toggle('hidden',!record);
   if(record){
@@ -78,15 +89,17 @@ function saveCnc(event){
   if(proposedDate&&proposedDate<todayString()){toast('La fecha propuesta no puede ser anterior a hoy.');return;}
   const record={id:task.id+'|'+task.deadline,taskId:task.id,deadline:task.deadline,
     week:effectiveTaskWeek(task),category,description,action,proposedDate,reporter,
-    owner:task.owner||'',createdAt:new Date().toISOString()};
+    owner:task.owner||'',package:task.package||'',team:task.team||'',title:task.title||'',
+    createdAt:new Date().toISOString()};
   catalogs.cncRecords=mergeCncRecords(catalogs.cncRecords,[record]);
   closeCnc();persist();
   toast('Causa registrada; pendiente de confirmar sincronización con Supabase.');
 }
 document.addEventListener('click',event=>{
-  const button=event.target.closest('[data-cnc-id]');
+  const button=event.target.closest('[data-cnc-id],[data-cnc-history-id]');
   if(!button)return;
-  event.preventDefault();event.stopPropagation();openCnc(button.dataset.cncId);
+  event.preventDefault();event.stopPropagation();
+  openCnc(button.dataset.cncHistoryId||button.dataset.cncId,Boolean(button.dataset.cncHistoryId));
 });
 function renderRegisteredWeeklyCnc(m){
   const container=$('#weekly-cnc'),count=$('#weekly-cnc-count');
@@ -97,9 +110,24 @@ function renderRegisteredWeeklyCnc(m){
     if(t.done&&t.completedAt)return t.completedAt>t.deadline;
     return t.deadline<cutoff;
   });
+  // Mantener visibles las CNC ya registradas de fechas reprogramadas o semanas archivadas.
+  const incidentIds=new Set(incidents.map(t=>t.id+'|'+t.deadline));
+  const filters={package:$('#weekly-package')?.value||'',team:$('#weekly-team')?.value||'',
+    owner:$('#weekly-owner')?.value||''};
+  const liveTasks=new Map(tasks.map(t=>[t.id,t]));
+  for(const record of catalogs.cncRecords||[]){
+    if(record.week!==m.week||incidentIds.has(record.id))continue;
+    const live=liveTasks.get(record.taskId);
+    if(filters.package&&(record.package||live?.package||'')!==filters.package)continue;
+    if(filters.team&&(record.team||live?.team||'')!==filters.team)continue;
+    if(filters.owner&&record.owner!==filters.owner)continue;
+    incidents.push({id:record.taskId,deadline:record.deadline,owner:record.owner,
+      title:record.title||live?.title||record.taskId,done:false,completedAt:'',cncHistorical:true});
+    incidentIds.add(record.id);
+  }
   const without=incidents.filter(t=>!cncFor(t.id,t.deadline));
   count.textContent=without.length+' sin causa';
-  if(!m.planned){
+  if(!m.planned&&!incidents.length){
     container.innerHTML='<div class="weekly-empty"><strong>Sin compromisos para analizar</strong><span>El panel se activa con registros reales de la semana elegida.</span></div>';
     return;
   }
@@ -110,11 +138,11 @@ function renderRegisteredWeeklyCnc(m){
   }
   const currentTasks=new Map(tasks.map(t=>[t.id,t]));
   const list=incidents.slice(0,5).map(t=>{
-    const record=cncFor(t.id,t.deadline),live=!m.closed?currentTasks.get(t.id):null;
+    const record=cncFor(t.id,t.deadline),live=currentTasks.get(t.id);
     const late=t.done&&t.completedAt&&t.completedAt>t.deadline;
     return '<div class="weekly-cnc-item"><strong>'+esc(live?.title||t.title||t.id)+'</strong>'+
       '<p>Compromiso '+esc(t.id)+' · '+esc(t.owner||'Sin responsable')+'</p>'+
-      '<small>Plazo: '+esc(dateDisplay(t.deadline))+' · '+(late?'Cierre tardío':'Sin cierre en plazo')+'</small>'+
+      '<small>Plazo: '+esc(dateDisplay(t.deadline))+' · '+(t.cncHistorical?'CNC histórico':late?'Cierre tardío':'Sin cierre en plazo')+'</small>'+
       (record?'<p class="cnc-cause">'+esc(record.category)+'</p><p>'+esc(record.description)+'</p>'+
         '<div class="cnc-action"><b>Acción:</b> '+esc(record.action)+'</div>'+
         (record.proposedDate?'<small>Fecha propuesta: '+esc(dateDisplay(record.proposedDate))+'</small>':''):
