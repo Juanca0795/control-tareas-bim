@@ -5979,10 +5979,10 @@ renderAll();
 syncThemeButton();
 </script>
 </body>
-</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
+</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
 async function load(){
   // El refresco automático no debe sobrescribir modificaciones locales aún no sincronizadas.
-  if(loading||lock||(ready&&pendingSave))return;
+  if(loading||lock||(ready&&pendingSave&&!cloudEmptyGuard))return;
   loading=true;
   const loadedAtRevision=revision;
   try{
@@ -5993,6 +5993,31 @@ async function load(){
     ]);
     check(a,'Tareas');check(c,'Catálogos');check(w,'Semanas');
     const cloudTasks=(a.data||[]).map(f);
+    const storedBackups=c.data?.[0]?.data?.backups;
+    const hasRecoverableBackup=Array.isArray(storedBackups)&&
+      storedBackups.some(b=>Number(b?.tasksCount)>0||b?.payload?.tasks?.length>0);
+    // Un SELECT que devuelve [] puede significar datos eliminados, RLS o
+    // un alcance equivocado. Jamás sustituir o volver a guardar el caché local
+    // cuando existían entregables anteriormente o hay backups con tareas.
+    if(!cloudTasks.length&&(tasks.length||ids.size||hasRecoverableBackup)){
+      cloudEmptyGuard=true;
+      ready=1; // La consulta de respaldos sigue accesible, pero se inhiben los guardados.
+      const localCount=tasks.length;
+      cloudDataNotice('ATENCIÓN: Supabase devolvió 0 tareas'+
+        (localCount?' (conservadas '+localCount+' tareas locales)':'')+
+        '. La sincronización de escritura queda detenida para proteger los datos. '+
+        (hasRecoverableBackup?'Hay respaldos; revísalos desde Control Semanal.':
+         'Verifica la conexión y los permisos de Supabase.'),true);
+      renderAll();
+      return;
+    }
+    if(cloudEmptyGuard&&pendingSave){
+      cloudDataNotice('Supabase ya responde con tareas, pero existen cambios locales sin sincronizar. '+
+        'No se han sobrescrito registros. Conserva la copia local y revisa la situación.',true);
+      return;
+    }
+    cloudEmptyGuard=false;
+    cloudDataNotice(cloudTasks.length?'':'Supabase respondió correctamente, pero el proyecto no contiene tareas. Revisa los respaldos o registros anteriores.');
     const cloudIds=new Set(cloudTasks.map(t=>t.id));
     const cloudWeeks=(w.data||[]).map(x=>({week:x.week,createdAt:x.created_at,rows:x.rows||[]}));
     if(loadedAtRevision!==revision){
@@ -6023,12 +6048,20 @@ async function load(){
     syncCatalogsWithTasks();ready=1;
     if(captureMonthlyStats())persist();else renderAll();
     if($('#settings-back')?.classList.contains('open')&&!settingsEditing)renderSettingsList();
+  }catch(err){
+    cloudDataNotice('No se pudo cargar Supabase. Los datos visibles pueden ser locales: '+err.message,true);
+    throw err;
   }finally{
     loading=false;
-    if(pendingSave&&ready)save();
+    if(pendingSave&&ready&&!cloudEmptyGuard)save();
   }
 }
 async function save(){
+  if(cloudEmptyGuard){
+    pendingSave=true;
+    cloudDataNotice('Escritura suspendida: Supabase devolvió 0 tareas y hay indicios de datos previos. No se reemplazarán.',true);
+    return;
+  }
   if(!ready||lock){pendingSave=true;return;}
   lock=1;
   const savingRevision=revision;
@@ -6216,6 +6249,8 @@ window.bimCloudBackups={
       }));
       catalogs=normalizeCatalogs(checkCloud.catalogs);
       pendingSave=false;
+      cloudEmptyGuard=false;
+      cloudDataNotice('');
       revision++;
       oldPersist(); // Sólo actualiza almacenamiento y vistas locales; no sobreescribe Supabase.
       return cloudBackupMetadata(backup);
@@ -6225,10 +6260,14 @@ window.bimCloudBackups={
 
 const oldPersist=persist;
 persist=()=>{revision++;oldPersist();pendingSave=true;save();};
-load().catch(err=>{console.error(err);toast('Error al cargar Supabase: '+err.message);});
+window.bimCloudRetry=()=>load().catch(err=>{
+  console.error(err);toast('Error Supabase: '+err.message);
+});
+cloudDataNotice('Conectando con Supabase y verificando tareas...');
+window.bimCloudRetry();
 setInterval(()=>{
   if(lock||loading)return;
-  if(pendingSave&&ready){save();return;}
-  load().catch(err=>{console.error(err);toast('Error Supabase: '+err.message);});
+  if(pendingSave&&ready&&!cloudEmptyGuard){save();return;}
+  window.bimCloudRetry();
 },10000);
 })();</script>
