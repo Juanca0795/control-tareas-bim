@@ -3880,6 +3880,163 @@ textarea,
   #tasks-view .kpi-reference .foot{font-size:10px}
 }
 
+
+/* UI/UX Pro Max · mejoras 2 y 8 de Control de tareas:
+   filas estables y modernas + tarjetas completas para móvil y tablet.
+   No se modifica la tabla, sus columnas, la paginación o las métricas. */
+#tasks-view .task-mobile-help{display:none}
+/* El td tiene fondo propio: el hover debe actuar sobre cada celda
+   para que el cambio de color sea visible sin mover columnas. */
+#tasks-view .task-table tbody tr[data-task-row] td{
+  transition:background-color .20s ease,box-shadow .20s ease,
+    border-color .20s ease,filter .20s ease;
+}
+#tasks-view .task-table tbody tr[data-task-row]:hover td{
+  background-color:var(--bg-hover);
+  box-shadow:inset 0 1px 0 rgba(93,167,255,.11),
+    inset 0 -1px 0 rgba(93,167,255,.11);
+}
+#tasks-view .task-table tbody tr[data-task-row]:hover td:first-child{
+  box-shadow:inset 3px 0 0 rgba(93,167,255,.65),
+    inset 0 1px 0 rgba(93,167,255,.11),
+    inset 0 -1px 0 rgba(93,167,255,.11);
+}
+#tasks-view .task-table tbody tr[data-task-row].task-row-selected td,
+#tasks-view .task-table tbody tr[data-task-row].task-row-selected:hover td{
+  background-color:var(--bg-selected);
+  box-shadow:inset 0 1px 0 rgba(93,167,255,.23),
+    inset 0 -1px 0 rgba(93,167,255,.23);
+}
+#tasks-view .task-table tbody tr[data-task-row].task-row-selected td:first-child{
+  box-shadow:inset 3px 0 0 var(--accent-blue),
+    inset 0 1px 0 rgba(93,167,255,.23),
+    inset 0 -1px 0 rgba(93,167,255,.23);
+}
+#tasks-view .task-table tbody tr.task-row-completed{
+  opacity:.84;
+  filter:saturate(.78);
+}
+#tasks-view .task-table tbody tr.task-row-completed:hover,
+#tasks-view .task-table tbody tr.task-row-completed.task-row-selected{
+  opacity:1;filter:none;
+}
+#tasks-view .task-table tbody tr.task-row-completed .task-name{
+  color:var(--ink-secondary);
+}
+/* Tarjetas de tarea: estado, información íntegra y lectura táctil. */
+#tasks-view .task-mobile-card{
+  position:relative;
+  overflow:hidden;
+  gap:0;
+  padding:15px;
+  border-radius:13px;
+  border-color:var(--border-base);
+  box-shadow:0 5px 18px rgba(0,0,0,.07);
+  background:var(--bg-panel);
+}
+#tasks-view .task-mobile-card::before{
+  content:"";position:absolute;top:0;left:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--accent-blue),transparent 85%);
+  pointer-events:none;
+}
+#tasks-view .task-mobile-card.task-mobile-completed::before{
+  background:linear-gradient(180deg,var(--status-done-fg),transparent 85%);
+}
+#tasks-view .task-mobile-card-head{
+  gap:10px;min-width:0;padding-bottom:10px;
+  border-bottom:1px solid var(--border-base);
+}
+#tasks-view .task-mobile-card-head .chip{
+  max-width:65%;white-space:normal;overflow-wrap:anywhere;text-align:center;
+}
+#tasks-view .task-mobile-card h3{
+  margin:12px 0 14px;
+  font-family:var(--font-display);
+  font-size:13px;
+  font-weight:600;
+  line-height:1.5;
+  color:var(--ink-primary);
+}
+#tasks-view .task-mobile-facts{
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  column-gap:13px;row-gap:11px;
+  padding:11px 0 13px;
+  border-top:1px solid var(--border-base);
+}
+#tasks-view .task-mobile-facts>div{
+  min-width:0;
+}
+#tasks-view .task-mobile-facts dt{
+  color:var(--ink-muted);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.04em;
+  line-height:1.4;
+  margin-bottom:5px;
+}
+#tasks-view .task-mobile-facts dd{
+  color:var(--ink-primary);
+  font-size:12px;
+  line-height:1.45;
+  overflow-wrap:anywhere;
+  min-width:0;
+}
+#tasks-view .task-mobile-facts .task-mobile-support-field{
+  grid-column:1 / -1;
+  padding:9px 10px;
+  background:var(--bg-subtle);
+  border:1px solid var(--border-base);
+  border-radius:8px;
+}
+#tasks-view .task-mobile-edit{
+  display:inline-flex;align-items:center;justify-content:center;
+  align-self:flex-end;
+  min-height:42px;
+  margin-top:auto;
+  padding:0 16px;
+  font-size:11.5px;
+}
+#tasks-view .task-mobile-card.task-mobile-completed{
+  border-color:var(--border-base);
+}
+@media(hover:hover) and (pointer:fine){
+  #tasks-view .task-mobile-card:hover{
+    border-color:rgba(93,167,255,.40);
+    box-shadow:0 9px 24px rgba(0,0,0,.13),
+      0 0 0 1px rgba(93,167,255,.12);
+  }
+}
+@media(max-width:1024px){
+  #tasks-view .table-wrap{display:none}
+  #tasks-view .task-mobile-cards{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    align-items:stretch;
+    gap:12px;
+    padding:12px;
+  }
+  #tasks-view .task-table-help,#tasks-view .tasks-shortcuts{display:none}
+  #tasks-view .task-mobile-help{display:block}
+}
+@media(max-width:700px){
+  #tasks-view .task-mobile-cards{
+    grid-template-columns:minmax(0,1fr);
+    padding:10px;
+    gap:11px;
+  }
+  #tasks-view .task-mobile-card{padding:13px}
+  #tasks-view .task-mobile-edit{min-height:44px}
+}
+@media(max-width:370px){
+  #tasks-view .task-mobile-facts{column-gap:8px}
+  #tasks-view .task-mobile-facts dt{font-size:9.5px}
+  #tasks-view .task-mobile-facts dd{font-size:11.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  #tasks-view .task-table tbody tr[data-task-row] td,
+  #tasks-view .task-mobile-card{transition:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -3959,6 +4116,7 @@ textarea,
       <div class="card-head">
         <div>
           <p class="desc task-table-help">Doble clic en una fila para editar — Selecciona una fila y pulsa Supr para eliminar.</p>
+          <p class="desc task-mobile-help">En celular o tablet, usa «Editar entregable» para modificar un registro. Todos los campos están visibles en su tarjeta.</p>
         </div>
         <div class="subtle" id="count-label"></div>
       </div>
@@ -4824,18 +4982,19 @@ function renderTasks(){
   // Vista compacta para móviles; reutiliza las mismas tareas y el editor existente.
   $('#tasks-mobile-cards').innerHTML=visible.length?visible.map(t=>{
     const alert=alertStatus(t);
-    return `<article class="task-mobile-card">
+    return `<article class="task-mobile-card${categoryOf(t.status)==='done'?' task-mobile-completed':''}" aria-label="Entregable ${esc(t.id)}">
       <div class="task-mobile-card-head"><span class="id">${esc(t.id)}</span><span class="chip ${clsStatus(t.status)}">${esc(t.status)}</span></div>
-      <h3 title="${esc(t.title)}">${esc(t.title)}</h3>
+      <h3 class="task-mobile-title" title="${esc(t.title)}">${esc(t.title)}</h3>
       <dl class="task-mobile-facts">
-        <div><dt>PAQUETE</dt><dd title="${esc(t.package)}">${esc(t.package)}</dd></div>
-        <div><dt>DISCIPLINA</dt><dd title="${esc(t.team)}">${esc(t.team)}</dd></div>
-        <div><dt>COLABORADOR</dt><dd title="${esc(t.owner)}">${esc(t.owner)}</dd></div>
+        <div><dt>LOI</dt><dd>${t.lod?`<span class="lod-badge">${esc(t.lod)}</span>`:'<span class="cell-empty">—</span>'}</dd></div>
+        <div><dt>PAQUETE</dt><dd title="${esc(t.package)}">${esc(t.package)||'—'}</dd></div>
+        <div><dt>RESPONSABLE</dt><dd title="${esc(t.owner)}">${esc(t.owner)||'—'}</dd></div>
+        <div><dt>DISCIPLINA</dt><dd title="${esc(t.team)}">${esc(t.team)||'—'}</dd></div>
         <div><dt>PRIORIDAD</dt><dd><span class="chip ${clsPriority(t.priority)}">${esc(t.priority)}</span></dd></div>
         <div><dt>VENCIMIENTO</dt><dd>${esc(dateDisplay(t.deadline))}</dd></div>
-        <div><dt>SITUACIÓN</dt><dd><span class="chip ${esc(alert.cls)}">${esc(alert.text)}</span></dd></div>
+        <div class="task-mobile-support-field"><dt>APOYO EN OTRAS ÁREAS</dt><dd>${t.support?esc(t.support):'<span class="cell-empty">—</span>'}</dd></div>
+        <div><dt>SITUACIÓN DEL PLAZO</dt><dd><span class="chip ${esc(alert.cls)}">${esc(alert.text)}</span></dd></div>
       </dl>
-      ${t.support?`<p class="task-mobile-support"><b>Apoyo:</b> ${esc(t.support)}</p>`:''}
       <button type="button" class="btn small task-mobile-edit" data-edit-id="${esc(t.id)}" aria-label="Editar entregable ${esc(t.id)}">Editar entregable</button>
     </article>`;
   }).join(''):'<div class="compact-empty">No hay entregables con los filtros seleccionados.</div>';
