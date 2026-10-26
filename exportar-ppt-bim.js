@@ -3,19 +3,22 @@
  * PPT_Reunion_Semanal_020626.pptx (sin fotografías, textos ni etiquetas antiguas).
  * No usa IA ni inventa nombres de sectores, elementos o estados.
  */
-const PPT_BIM_VERSION='3.12.0';
+// Versión probada para exportar PPTX OOXML válido (no usar el bundle 3.x anterior).
+const PPT_BIM_VERSION='4.0.0';
+const PPT_BIM_ZIP_VERSION='3.10.1';
 let pptBimScriptPromise=null;
 let pptBimState={items:[],week:'',busy:false,token:0};
 
 function pptBimLib(){
-  return window.pptxgen||window.PptxGenJS||null;
+  const ctor=window.pptxgen||window.PptxGenJS;
+  return typeof ctor==='function'?ctor:null;
 }
 async function pptBimEnsureLib(){
   if(pptBimLib())return pptBimLib();
   if(!pptBimScriptPromise){
     pptBimScriptPromise=new Promise((resolve,reject)=>{
       const script=document.createElement('script');
-      script.src='https://cdn.jsdelivr.net/gh/gitbrent/pptxgenjs@'+PPT_BIM_VERSION+'/dist/pptxgen.bundle.js';
+      script.src='https://cdn.jsdelivr.net/npm/pptxgenjs@'+PPT_BIM_VERSION+'/dist/pptxgen.bundle.js';
       script.onload=()=>pptBimLib()?resolve(pptBimLib()):reject(new Error('No se inicializó PptxGenJS'));
       script.onerror=()=>reject(new Error('No se pudo cargar la biblioteca de PowerPoint'));
       document.head.appendChild(script);
@@ -23,6 +26,63 @@ async function pptBimEnsureLib(){
   }
   return pptBimScriptPromise;
 }
+
+// Comprobación del ZIP/OOXML real antes de ofrecer el archivo al usuario.
+// No basta con que la biblioteca informe éxito: PowerPoint debe poder leerlo.
+let pptBimZipPromise=null;
+async function pptBimEnsureZip(){
+  if(window.JSZip)return window.JSZip;
+  if(!pptBimZipPromise){
+    pptBimZipPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement('script');
+      script.src='https://cdn.jsdelivr.net/npm/jszip@'+PPT_BIM_ZIP_VERSION+'/dist/jszip.min.js';
+      script.onload=()=>window.JSZip?resolve(window.JSZip):reject(new Error('JSZip no se inicializó'));
+      script.onerror=()=>reject(new Error('No se pudo cargar el verificador del archivo PPTX'));
+      document.head.appendChild(script);
+    }).catch(e=>{pptBimZipPromise=null;throw e});
+  }
+  return pptBimZipPromise;
+}
+async function pptBimValidateBlob(blob,slideCount,imageCount){
+  if(!(blob instanceof Blob)||blob.size<1000)throw new Error('La presentación está vacía');
+  const magic=new Uint8Array(await blob.slice(0,4).arrayBuffer());
+  if(magic[0]!==0x50||magic[1]!==0x4b)
+    throw new Error('La exportación no produjo un archivo ZIP de PowerPoint');
+  const JSZip=await pptBimEnsureZip();
+  // Los CRC ayudan a detectar bytes corruptos aun si el PPTX empieza por PK.
+  const zip=await JSZip.loadAsync(blob,{checkCRC32:true});
+  const mustHave=['[Content_Types].xml','_rels/.rels','ppt/presentation.xml',
+    'ppt/_rels/presentation.xml.rels'];
+  for(const path of mustHave)if(!zip.file(path))
+    throw new Error('PPTX incompleto: falta '+path);
+  const slides=Object.keys(zip.files).filter(p=>/^ppt\/slides\/slide\d+\.xml$/.test(p));
+  if(slides.length!==slideCount)
+    throw new Error('PPTX incompleto: '+slides.length+' de '+slideCount+' diapositivas');
+  const media=Object.keys(zip.files).filter(p=>/^ppt\/media\/.+\.(png|jpe?g)$/i.test(p));
+  if(media.length<imageCount)
+    throw new Error('PPTX incompleto: faltan fotografías incrustadas');
+  const parser=new DOMParser();
+  // Verificar que cada parte XML y las relaciones sean parseables.
+  for(const [path,file] of Object.entries(zip.files)){
+    if(file.dir||!(/\.xml$/.test(path)||/\.rels$/.test(path)||path==='[Content_Types].xml'))continue;
+    const xml=await file.async('string');
+    const root=parser.parseFromString(xml,'application/xml');
+    if(root.getElementsByTagName('parsererror').length)
+      throw new Error('XML inválido dentro de la presentación: '+path);
+  }
+  return {slideCount:slides.length,imageCount:media.length};
+}
+function pptBimDownloadBlob(blob,fileName){
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  a.href=url;a.download=fileName;a.hidden=true;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  // Evitar liberar la URL antes de que el navegador termine de descargar.
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+
 function pptBimItemsForWeek(week){
   if(typeof weeklyFiltered!=='function')return [];
   const snapshot=weeklyFiltered(week);
@@ -270,8 +330,13 @@ async function exportBimPpt(){
       }
     }
     if(status)status.textContent='Generando PPTX editable…';
-    await pptx.writeFile({fileName:'Reporte_BIM_'+pptBimState.week.replace('-','_')+'.pptx'});
     const totalSlides=1+[...groups.values()].reduce((sum,images)=>sum+Math.ceil(images.length/3),0);
+    const generated=await pptx.write({outputType:'blob',compression:true});
+    const blob=generated instanceof Blob?generated:new Blob([generated],
+      {type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
+    if(status)status.textContent='Validando integridad del archivo PowerPoint…';
+    await pptBimValidateBlob(blob,totalSlides,included.length);
+    pptBimDownloadBlob(blob,'Reporte_BIM_'+pptBimState.week.replace('-','_')+'.pptx');
     if(status)status.textContent='Presentación generada: '+totalSlides+' diapositivas.';
     toast('Presentación PPTX generada correctamente.');
   }catch(err){
