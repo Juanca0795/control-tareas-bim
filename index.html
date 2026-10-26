@@ -4123,9 +4123,9 @@ textarea,
 #weekly-view .weekly-subtab.active{background:var(--bg-panel);border-color:var(--border-strong);
   color:var(--accent-blue);box-shadow:0 2px 10px rgba(0,0,0,.08)}
 #weekly-view .weekly-subtab:hover{color:var(--ink-primary);background:var(--bg-hover)}
-#weekly-view .weekly-projection-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+#weekly-view .weekly-projection-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(124px,auto);align-items:stretch;gap:10px;margin-bottom:12px}
 #weekly-view .weekly-projection-kpi{display:flex;flex-direction:column;gap:7px;min-width:0;
-  padding:16px;border-radius:10px;border:1px solid var(--border-base);background:var(--bg-panel)}
+  padding:16px;border-radius:10px;border:1px solid var(--border-base);background:var(--bg-panel);box-sizing:border-box;height:100%}
 #weekly-view .weekly-projection-kpi .proj-label{color:var(--ink-secondary);font-size:9px;font-weight:750;letter-spacing:.065em}
 #weekly-view .weekly-projection-kpi .proj-value{font-family:var(--font-mono);font-size:29px;font-weight:750;
   letter-spacing:-.05em;color:var(--ink-primary);line-height:1.25}
@@ -4138,26 +4138,38 @@ textarea,
 #weekly-view .proj-stack{display:flex;width:100%;height:12px;overflow:hidden;background:var(--bg-subtle);border-radius:10px}
 #weekly-view .proj-part{display:block;height:100%;min-width:0;transition:width .25s ease}
 #weekly-view .proj-part.done{background:#24cba5}
-#weekly-view .proj-part.forecast{background:#f3bb67}
+#weekly-view .proj-part.forecast{background:#e8783c}
 #weekly-view .proj-part.remaining{background:var(--border-strong)}
 #weekly-view .proj-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;color:var(--ink-secondary);font-size:10px}
 #weekly-view .proj-legend span{display:inline-flex;align-items:center;gap:6px}
 #weekly-view .proj-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--border-strong)}
 #weekly-view .proj-legend i.done{background:#24cba5}
-#weekly-view .proj-legend i.forecast{background:#f3bb67}
-#weekly-view .weekly-projection-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,1fr);gap:12px;align-items:stretch}
-#weekly-view .weekly-projection-layout>.card{min-width:0;padding:17px}
+#weekly-view .proj-legend i.forecast{background:#e8783c}
+#weekly-view .weekly-projection-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,1fr);
+  grid-auto-rows:410px;gap:12px;align-items:stretch}
+#weekly-view .weekly-projection-layout>.card{
+  display:flex;flex-direction:column;align-self:stretch;
+  box-sizing:border-box;width:100%;height:100%;min-width:0;min-height:0;
+  padding:17px;overflow:hidden;
+}
 #weekly-view .weekly-projection-layout .weekly-card-head{align-items:start}
 #weekly-view .weekly-projection-layout .weekly-card-head h2{font-size:11px}
 #weekly-view .weekly-projection-layout .weekly-card-head p{line-height:1.5}
-#weekly-view #weekly-projection-chart{height:285px;min-height:285px;position:relative;margin-top:14px}
-#weekly-view .proj-chart-legend{display:flex;gap:13px;flex-wrap:wrap;font-size:10px;color:var(--ink-secondary)}
+#weekly-view #weekly-projection-chart{
+  position:relative;box-sizing:border-box;
+  width:100%;height:0;min-height:0;flex:1 1 0;
+  margin-top:12px;
+}
+#weekly-view .proj-chart-legend{display:flex;justify-content:center;gap:14px;flex-wrap:wrap;flex:0 0 auto;margin-top:13px;font-size:10px;color:var(--ink-secondary)}
 #weekly-view .proj-chart-legend span{display:inline-flex;align-items:center;gap:6px}
 #weekly-view .proj-chart-legend i{display:inline-block;width:16px;border-top:2px solid #4da5ff}
 #weekly-view .proj-chart-legend i.real{border-color:#24cba5}
-#weekly-view .proj-chart-legend i.forecast{border-color:#f3bb67;border-top-style:dashed}
+#weekly-view .proj-chart-legend i.forecast{border-color:#e8783c;border-top-style:solid}
 #weekly-view #weekly-projection-status{font-size:10px;color:var(--ink-secondary);line-height:1.5;margin:9px 0 12px}
-#weekly-view #weekly-projection-tasks{max-height:285px;overflow-y:auto;scrollbar-width:thin}
+#weekly-view #weekly-projection-tasks{
+  flex:1 1 0;min-width:0;min-height:0;max-height:none;
+  overflow-y:auto;scrollbar-width:thin;overscroll-behavior:contain;
+}
 #weekly-view .proj-list{display:grid;gap:8px}
 #weekly-view .proj-task{display:grid;grid-template-columns:minmax(0,1fr) 154px;gap:12px;align-items:center;
   border:1px solid var(--border-base);border-radius:8px;background:var(--bg-subtle);padding:11px}
@@ -4184,6 +4196,7 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   #weekly-view .weekly-subtabs{width:100%}
   #weekly-view .weekly-subtab{flex:1;padding:10px 8px;font-size:10px}
   #weekly-view .weekly-projection-layout>.card{padding:13px}
+  #weekly-view .weekly-projection-layout{grid-auto-rows:425px}
   #weekly-view .proj-task{grid-template-columns:minmax(0,1fr)}
   #weekly-view .proj-task-date{max-width:250px}
 }
@@ -4396,14 +4409,15 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
       <section class="weekly-projection-layout" aria-label="Curva acumulada y fechas estimadas">
         <article class="card weekly-chart-card weekly-projection-graph">
           <div class="weekly-card-head">
-            <div><h2>EVOLUCIÓN ACUMULADA DE ACTIVIDADES</h2>
-              <p>Programado según plazos · Real verificado · Proyección basada en fechas estimadas</p></div>
-          </div>
-          <div class="proj-chart-legend" aria-hidden="true">
-            <span><i></i> Programado</span><span><i class="real"></i> Real</span>
-            <span><i class="forecast"></i> Proyectado</span>
+            <div><h2>CURVA S · EVOLUCIÓN SEMANAL ACUMULADA</h2>
+              <p>Programado acumulado · Cumplido real · Proyección según fechas estimadas</p></div>
           </div>
           <div id="weekly-projection-chart" aria-label="Gráfico de evolución acumulada"></div>
+          <div class="proj-chart-legend" aria-hidden="true">
+            <span><i></i> Programado acumulado</span>
+            <span><i class="real"></i> Cumplido real</span>
+            <span><i class="forecast"></i> Proyección al cierre</span>
+          </div>
         </article>
         <article class="card weekly-chart-card">
           <div class="weekly-card-head">
