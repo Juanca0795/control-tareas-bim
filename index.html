@@ -5710,12 +5710,12 @@ function renderWeekly(){
   $('#weekly-close-btn').disabled=overallWeek.closed||!overallWeek.rows.length;
   $('#weekly-close-btn').textContent=overallWeek.closed?'✓ Semana cerrada':'✓ Cerrar semana';
   $('#weekly-kpis').innerHTML=[
-    weeklyKpiCard('COMPROMETIDAS',m.planned,'Base de planificación'),
-    weeklyKpiCard('CUMPLIDAS',m.completed,'Finalizadas durante la semana','positive'),
-    weeklyKpiCard('PPC SEMANAL',pct(m.ppc),'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
-    weeklyKpiCard('PENDIENTES',m.remaining,'Compromisos aún sin cumplir',m.remaining?'warning':''),
-    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),'Cerradas antes del plazo',m.punctuality!==null&&m.punctuality<85?'warning':''),
-    weeklyKpiCard('VENCIDAS',m.delayed,'Compromisos sin cierre al plazo',m.delayed?'danger':'positive')
+    weeklyKpiCard('COMPROMETIDAS',m.planned,m.closed?'Base archivada del período':'Plan semanal · provisional'),
+    weeklyKpiCard('CUMPLIDAS',m.completed,'Cierres verificados hasta el corte','positive'),
+    weeklyKpiCard('PPC SEMANAL',pct(m.ppc),m.ppc===null&&selectedWeek>isoWeekKey(new Date())?'Semana aún no iniciada':'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
+    weeklyKpiCard('PENDIENTES',m.remaining,'Sin cierre verificado al corte',m.remaining?'warning':''),
+    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?m.onTime+'/'+m.punctualityBase+' evaluables (incluye hoy)':'Sin plazos evaluables al corte',m.punctuality!==null&&m.punctuality<85?'warning':''),
+    weeklyKpiCard('VENCIDAS',m.delayed,m.dueAtCutoff+' al corte · '+m.lateCompleted+' cierres tardíos',m.delayed?'danger':m.dueAtCutoff?'warning':'positive')
   ].join('');
   weeklyTrend(m);
   weeklyCncPanel(m);
@@ -5740,8 +5740,11 @@ function confirmWeeklyClose(){
 function downloadWeeklyCSV(){
   const m=weeklyMetrics(selectedWeek);
   const columns=[['Semana',selectedWeek],['Estado',m.closed?'Cerrada':'Abierta'],['Comprometidas',m.planned],
-    ['Cumplidas',m.completed],['PPC (%)',m.ppc===null?'':m.ppc.toFixed(1)],['Arrastre',m.remaining],
-    ['Puntualidad (%)',m.punctuality===null?'':m.punctuality.toFixed(1)],['Vencidas',m.delayed]];
+    ['Cumplidas',m.completed],['PPC (%)',m.ppc===null?'':m.ppc.toFixed(1)],['Pendientes',m.remaining],
+    ['Puntualidad (%)',m.punctuality===null?'':m.punctuality.toFixed(1)],
+    ['Compromisos evaluables',m.punctualityBase],['Cierres a tiempo',m.onTime],
+    ['Vencidas sin cierre',m.delayed],['Pendientes al corte',m.dueAtCutoff],
+    ['Cierres tardíos',m.lateCompleted],['Completadas sin fecha verificada',m.unknownDate]];
   const csv=['Indicador;Valor',...columns.map(([k,v])=>`"${String(k).replace(/"/g,'""')}";"${String(v).replace(/"/g,'""')}"`),'',
     'Colaborador;Comprometidas;Cumplidas',...groupForWeekly(m,'owner').map(g=>`"${String(g.label).replace(/"/g,'""')}";${g.planned};${g.done}`),'',
     'Paquete;Comprometidas;Cumplidas;PPC (%)',...groupForWeekly(m,'package').map(g=>`"${String(g.label).replace(/"/g,'""')}";${g.planned};${g.done};${(100*g.done/g.planned).toFixed(1)}`)].join('\r\n');
