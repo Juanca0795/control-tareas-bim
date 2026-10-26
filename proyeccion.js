@@ -36,8 +36,11 @@ function mergeWeeklyForecasts(remote,local){
 }
 // Mantener la subpestaña actual al recargar esta misma sesión del navegador.
 let weeklyInnerTab=(()=>{
-  try{return sessionStorage.getItem('area-bim-weekly-subtab')==='proyeccion'?'proyeccion':'seguimiento'}
-  catch(e){return 'seguimiento'}
+  try{
+    const saved=sessionStorage.getItem('area-bim-weekly-subtab')||
+      (typeof history!=='undefined'?history.state?.bimWeeklySubtab:'');
+    return saved==='proyeccion'?'proyeccion':'seguimiento';
+  }catch(e){return 'seguimiento'}
 })();
 function syncWeeklySubtab(){
   const tracking=$('#weekly-seguimiento'),forecast=$('#weekly-proyeccion');
@@ -59,8 +62,9 @@ function switchWeeklySubtab(mode){
   if(!['seguimiento','proyeccion'].includes(mode))return;
   weeklyInnerTab=mode;
   try{sessionStorage.setItem('area-bim-weekly-subtab',mode)}catch(e){}
+  if(typeof rememberBimViewInHistory==='function')rememberBimViewInHistory();
   syncWeeklySubtab();
-  renderWeekly();
+  renderWeekly(true);
 }
 function weeklyProjectionModel(m,today=todayString()){
   const start=localISO(weekStart(m.week)),end=weekEnd(m.week);
