@@ -3630,6 +3630,71 @@ html[data-theme="light"]{
   }
 }
 
+
+/* UI/UX Pro Max · Premium moderno: identidad S&P y navegación continua.
+   Solo transform/opacity: sin saltos de layout, con movimiento reducido. */
+@keyframes bimLogoIgnition{
+  0%,100%{filter:brightness(1)}
+  48%{filter:brightness(1.45)}
+}
+.brand-mark svg .bim-logo-tile{
+  animation:bimLogoIgnition .52s ease-in-out 1 both;
+}
+.brand-mark svg .bim-logo-amp{animation-delay:.13s}
+.brand-mark svg .bim-logo-p{animation-delay:.26s}
+@keyframes bimBrandTitleGlow{
+  0%{text-shadow:none}
+  45%{text-shadow:0 0 9px rgba(111,195,255,.28)}
+  100%{text-shadow:none}
+}
+.brand > div:last-child > strong{
+  animation:bimBrandTitleGlow .92s ease-out .26s 1 both;
+}
+@keyframes bimLogoReflectionSweep{
+  0%,10%{transform:translateX(0)}
+  22%,100%{transform:translateX(225px)}
+}
+.brand-mark svg .bim-logo-reflection{
+  animation:bimLogoReflectionSweep 7.2s cubic-bezier(.25,.62,.32,1) 1.25s infinite;
+  will-change:transform;
+}
+/* El indicador se desliza por detrás de cada botón, incluido el cambio
+   de distribución cuando aparece Backup en Control Semanal. */
+.sidebar nav[role="tablist"]{position:relative;isolation:isolate}
+.sidebar nav .bim-nav-indicator{
+  position:absolute;
+  left:0;top:0;
+  width:var(--bim-tab-width,0px);
+  height:var(--bim-tab-height,0px);
+  transform:translate3d(var(--bim-tab-x,0px),var(--bim-tab-y,0px),0);
+  background:var(--bg-panel);
+  border:1px solid var(--border-strong);
+  border-radius:8px;
+  box-shadow:0 3px 14px rgba(0,0,0,.11);
+  z-index:0;
+  opacity:0;
+  pointer-events:none;
+  transition:transform .30s cubic-bezier(.22,.78,.25,1),
+    width .30s cubic-bezier(.22,.78,.25,1),
+    height .30s cubic-bezier(.22,.78,.25,1);
+}
+.sidebar nav.bim-nav-motion-ready .bim-nav-indicator{opacity:1}
+.sidebar nav.bim-nav-motion-ready .nav-link{position:relative;z-index:1}
+.sidebar nav.bim-nav-motion-ready .nav-link.active{
+  background:transparent!important;
+  border-color:transparent!important;
+  box-shadow:none!important;
+}
+.sidebar nav.bim-nav-motion-ready .nav-link.active:hover{
+  background:transparent!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .brand-mark svg .bim-logo-tile,
+  .brand-mark svg .bim-logo-reflection,
+  .brand > div:last-child > strong{animation:none!important;will-change:auto}
+  .sidebar nav .bim-nav-indicator{transition:none!important}
+}
+
 </style>
 </head>
 <body>
@@ -3637,12 +3702,27 @@ html[data-theme="light"]{
   <div class="brand">
     <div class="brand-mark" aria-label="Logo S&amp;P">
       <svg viewBox="0 0 150 44" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-hidden="true">
-        <rect x="0" y="0" width="44" height="44" rx="4" fill="#D71920"/>
-        <rect x="50" y="0" width="44" height="44" rx="4" fill="#D71920"/>
-        <rect x="100" y="0" width="44" height="44" rx="4" fill="#D71920"/>
+        <defs>
+          <clipPath id="bim-logo-tile-clip">
+            <rect x="0" y="0" width="44" height="44" rx="4"/>
+            <rect x="50" y="0" width="44" height="44" rx="4"/>
+            <rect x="100" y="0" width="44" height="44" rx="4"/>
+          </clipPath>
+          <linearGradient id="bim-logo-reflection" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
+            <stop offset="48%" stop-color="#ffffff" stop-opacity=".30"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect class="bim-logo-tile bim-logo-s" x="0" y="0" width="44" height="44" rx="4" fill="#D71920"/>
+        <rect class="bim-logo-tile bim-logo-amp" x="50" y="0" width="44" height="44" rx="4" fill="#D71920"/>
+        <rect class="bim-logo-tile bim-logo-p" x="100" y="0" width="44" height="44" rx="4" fill="#D71920"/>
         <text x="22" y="31" text-anchor="middle" fill="#FFFFFF" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="26">S</text>
         <text x="72" y="31" text-anchor="middle" fill="#FFFFFF" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="26">&amp;</text>
         <text x="122" y="31" text-anchor="middle" fill="#FFFFFF" font-family="Inter, system-ui, sans-serif" font-weight="800" font-size="26">P</text>
+        <g clip-path="url(#bim-logo-tile-clip)" pointer-events="none" aria-hidden="true">
+          <path class="bim-logo-reflection" d="M-68 0H-40L-8 44H-36Z" fill="url(#bim-logo-reflection)"/>
+        </g>
       </svg>
     </div>
     <div><strong>ÁREA BIM</strong><small>Control operativo</small></div>
@@ -3664,6 +3744,7 @@ html[data-theme="light"]{
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 9h18M8 14h3M14 14h3M8 18h3"/></svg>
       Control semanal
     </button>
+    <span class="bim-nav-indicator" aria-hidden="true"></span>
   </nav>
   <div class="top-actions" aria-label="Acciones generales">
     <button class="icon-btn theme-toggle" type="button" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
@@ -5156,6 +5237,38 @@ function scheduleBimMetricsAnimation(viewName,force=false){
   });
 }
 
+
+/* El indicador sigue la posición de la pestaña activa (flex en escritorio,
+   grid en móvil), sin interceptar clics ni modificar la autenticación. */
+let bimNavResizeObserver;
+function updateBimNavIndicator(){
+  const nav=document.querySelector('.sidebar nav[role="tablist"]');
+  const indicator=nav?.querySelector('.bim-nav-indicator');
+  const active=nav?.querySelector('.nav-link.active');
+  if(!nav||!indicator||!active)return;
+  const first=!nav.classList.contains('bim-nav-motion-ready');
+  if(first)indicator.style.transition='none';
+  nav.style.setProperty('--bim-tab-x',active.offsetLeft+'px');
+  nav.style.setProperty('--bim-tab-y',active.offsetTop+'px');
+  nav.style.setProperty('--bim-tab-width',active.offsetWidth+'px');
+  nav.style.setProperty('--bim-tab-height',active.offsetHeight+'px');
+  if(first){
+    nav.classList.add('bim-nav-motion-ready');
+    requestAnimationFrame(()=>indicator.style.removeProperty('transition'));
+  }
+}
+function initBimNavIndicator(){
+  updateBimNavIndicator();
+  const nav=document.querySelector('.sidebar nav[role="tablist"]');
+  if(!nav)return;
+  if(typeof ResizeObserver!=='undefined'){
+    bimNavResizeObserver=new ResizeObserver(()=>requestAnimationFrame(updateBimNavIndicator));
+    bimNavResizeObserver.observe(nav);
+  }
+  window.addEventListener('resize',()=>requestAnimationFrame(updateBimNavIndicator),{passive:true});
+  if(document.fonts?.ready)document.fonts.ready.then(updateBimNavIndicator);
+}
+
 function switchView(v, authenticated=false){
   // Solicitar credenciales cada vez que se entra desde otra vista.
   if(v==='weekly' && currentView!=='weekly' && !authenticated){
@@ -5170,6 +5283,7 @@ function switchView(v, authenticated=false){
     $('#nav-'+tab).setAttribute('aria-selected',String(tab===v));
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
+  updateBimNavIndicator();
   window.scrollTo(0,0);
   if(v==='dashboard') renderDashboard();
   if(v==='weekly') renderWeekly();
@@ -6388,6 +6502,7 @@ updateWeeklyFilters();
 
 renderAll();
 syncThemeButton();
+initBimNavIndicator();
 </script>
 </body>
 </html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{if(!window.supabase||typeof window.supabase.createClient!=='function'){cloudDataNotice('No se pudo cargar la biblioteca de Supabase. Revisa tu conexión y vuelve a cargar la página.',true);return;}const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
