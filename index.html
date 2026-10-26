@@ -2580,10 +2580,10 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   justify-content:center;gap:10px;padding:16px 10px;text-align:center;
 }
 #dashboard-view .health-ring{
-  --health-percent:0;--health-color:#16c79b;
+  --health-stop:0%;--health-color:#16c79b;
   width:min(155px,70%);aspect-ratio:1;position:relative;border-radius:50%;
   display:grid;place-items:center;
-  background:conic-gradient(var(--health-color) calc(var(--health-percent) * 1%),var(--border-strong) 0);
+  background:conic-gradient(var(--health-color) var(--health-stop),var(--border-strong) 0);
 }
 #dashboard-view .health-ring:before{
   content:"";position:absolute;inset:17px;background:var(--bg-subtle);border-radius:50%;
@@ -2663,7 +2663,10 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #dashboard-view .priority-dot{margin-left:6px}
 #dashboard-view .priority-blink{margin-right:7px;animation:criticalPulse 1.35s ease-in-out infinite}
 @keyframes criticalPulse{0%,100%{opacity:1;box-shadow:0 0 0 1px rgba(241,74,117,.3)}50%{opacity:.4;box-shadow:0 0 0 6px rgba(241,74,117,.08)}}
-@media(prefers-reduced-motion:reduce){#dashboard-view .priority-blink{animation:none}}
+#dashboard-view .attention-card.has-urgent .priority-dot{animation:criticalPulse 1.35s ease-in-out infinite}
+@media(prefers-reduced-motion:reduce){
+  #dashboard-view .priority-blink,#dashboard-view .attention-card.has-urgent .priority-dot{animation:none}
+}
 #dashboard-view .attention-card #alerts-list{display:grid!important;gap:9px;align-content:start;min-width:0}
 #dashboard-view .priority-task{
   display:flex;flex-direction:column;gap:9px;min-width:0;width:100%;
@@ -3469,7 +3472,7 @@ function makeStats(rows,interactive=false){
     one('AVANCE PROMEDIO',s.avg.toFixed(1)+'%','Media del alcance actual',SVG_ICONS.gauge,'blue','average','cyan',s.avg,trend),
     one('COMPLETADAS',s.done,'Entregables cerrados',SVG_ICONS.check,'green','completed','green',share(s.done),
       badge('/ '+s.total+' tot.','neutral'),share(s.done).toFixed(1)+'%'),
-    one('EN EJECUCIÓN',s.inProgress,'Modelado activo',SVG_ICONS.play,'blue','inProgress','blue',share(s.inProgress),
+    one('EN EJECUCIÓN',s.inProgress,'Tareas en progreso',SVG_ICONS.play,'blue','inProgress','blue',share(s.inProgress),
       badge(onSchedule+' en plazo','neutral'),share(s.inProgress).toFixed(1)+'%'),
     one('VENCIDAS / HOY',s.late,'Requieren atención',SVG_ICONS.alert,'red','late','pink',share(s.late),
       badge(s.late?'ATENCIÓN':'SIN ALERTAS',s.late?'attention':'neutral'),share(s.late).toFixed(1)+'%'),
@@ -3609,7 +3612,7 @@ function makeRadar(a){
     {label:'Vencidas / hoy', short:'Vencidas', count:a.filter(t=>alertStatus(t).sort<=1).length, type:'late', color:'#ef4444', bg:'rgba(239,68,68,0.16)', bd:'rgba(239,68,68,0.35)', help:'Atención inmediata'},
     {label:'Próximas = 3 días', short:'Próximas', count:a.filter(t=>alertStatus(t).sort===2).length, type:'soon', color:'#f59e0b', bg:'rgba(245,158,11,0.16)', bd:'rgba(245,158,11,0.35)', help:'Vencimiento cercano'},
     {label:'Completadas', short:'Completadas', count:a.filter(t=>categoryOf(t.status)==='done').length, type:'completed', color:'#10b981', bg:'rgba(16,185,129,0.16)', bd:'rgba(16,185,129,0.35)', help:'Entregables cerrados'},
-    {label:'En progreso', short:'En progreso', count:a.filter(t=>categoryOf(t.status)==='progress').length, type:'inProgress', color:'#8b5cf6', bg:'rgba(139,92,246,0.16)', bd:'rgba(139,92,246,0.35)', help:'En modelado / revisión'},
+    {label:'En progreso', short:'En progreso', count:a.filter(t=>categoryOf(t.status)==='progress').length, type:'inProgress', color:'#8b5cf6', bg:'rgba(139,92,246,0.16)', bd:'rgba(139,92,246,0.35)', help:'Tareas en progreso'},
     {label:'Prioridad alta', short:'Prioridad Alta', count:a.filter(t=>t.priority==='Alta').length, type:'high', color:'#3b82f6', bg:'rgba(59,130,246,0.16)', bd:'rgba(59,130,246,0.35)', help:'Impacto crítico en ruta'}
   ];
   const cx=150, cy=130, r=92, max=Math.max(1, ...axes.map(x=>x.count));
@@ -3699,7 +3702,7 @@ function renderOperationalHealth(rows){
   return `<div class="operational-health">
     <div class="health-panel">
       <div class="health-ring" role="img" aria-label="${percent.toFixed(1)} por ciento sin vencimiento crítico"
-        style="--health-percent:${percent.toFixed(2)};--health-color:${tone}">
+        style="--health-stop:${percent.toFixed(2)}%;--health-color:${tone}">
         <div class="health-ring-center"><strong>${percent.toFixed(1)}%</strong><small>SIN ALERTA CRÍTICA</small></div>
       </div>
       <strong class="health-caption">${clear} de ${rows.length} sin vencimiento crítico</strong>
@@ -3786,6 +3789,8 @@ function renderDashboard(){
   $('#team-summary').innerHTML=renderPackagePulse(rows);
   $('#package-chart').replaceChildren();
   $('#alerts-list').innerHTML=renderPriorityTasks(rows);
+  $('#dashboard-view .attention-card').classList.toggle('has-urgent',
+    rows.some(t=>categoryOf(t.status)!=='done'&&alertStatus(t).sort<=1));
   renderDrill(rows);
   renderActiveFilterChips('dash');
 }
