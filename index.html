@@ -5350,13 +5350,15 @@ async function restoreWeeklyCloudBackup(id){
   if(!api||weeklyBackupBusy)return;
   weeklyBackupUiBusy(true);
   weeklyBackupFeedback('Guardando copia preventiva y restaurando desde Supabase...');
+  let restored=false;
   try{
     await api.restore(id);
+    restored=true;
     weeklyBackupFeedback('Restauración verificada. Los indicadores se actualizaron.');
     toast('Backup restaurado desde Supabase');
-    await refreshWeeklyCloudBackups();
   }catch(err){weeklyBackupFeedback('No se completó la restauración: '+err.message,true)}
   finally{weeklyBackupUiBusy(false)}
+  if(restored)await refreshWeeklyCloudBackups();
 }
 document.addEventListener('click',e=>{
   const button=e.target.closest('[data-backup-restore]');
@@ -6123,6 +6125,16 @@ window.bimCloudBackups={
          checkCloud.tasks.some(t=>!retainedTasks.has(t.id))||
          checkCloud.weeklySnapshots.some(x=>!retainedWeeks.has(x.week)))
         throw Error('La verificación posterior no coincide con el backup; existe una copia preventiva');
+      const restoredTaskById=new Map(restoredTasks.map(t=>[t.id,t]));
+      const taskFields=['title','package','team','owner','priority','lod','deadline',
+        'status','support','planned_week','completed_at','progress'];
+      if(checkCloud.tasks.some(t=>taskFields.some(key=>
+           String(t[key]??'')!==String(restoredTaskById.get(t.id)?.[key]??''))))
+        throw Error('La validación del contenido restaurado de tareas falló');
+      const restoredWeekById=new Map(restoredWeeks.map(x=>[x.week,x]));
+      if(checkCloud.weeklySnapshots.some(x=>
+           JSON.stringify(x.rows||[])!==JSON.stringify(restoredWeekById.get(x.week)?.rows||[])))
+        throw Error('La validación de los cierres semanales restaurados falló');
       tasks=checkCloud.tasks.map(f);
       ids=new Set(tasks.map(x=>x.id));
       weeklySnapshots=checkCloud.weeklySnapshots.map(x=>({
