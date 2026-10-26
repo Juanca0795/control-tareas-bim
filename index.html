@@ -4366,6 +4366,35 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   .task-drawer .bim-evidence-item:hover{border-color:var(--accent-blue)}
 }
 
+
+/* Datos y fotografías: dos pestañas compactas en el mismo editor de entregables BIM. */
+.task-drawer .bim-editor-tabs{display:flex;gap:5px;flex:0 0 auto;align-items:center;padding:8px 22px;
+  background:var(--bg-panel);border-bottom:1px solid var(--border-base)}
+.task-drawer .bim-editor-tab{display:inline-flex;position:relative;align-items:center;justify-content:center;gap:8px;
+  min-height:37px;padding:8px 13px;border:1px solid transparent;border-radius:8px;white-space:nowrap;
+  color:var(--ink-secondary);background:transparent;cursor:pointer;font-size:10px;font-weight:700;letter-spacing:.045em;
+  transition:background-color .2s ease,color .2s ease,border-color .2s ease,box-shadow .2s ease}
+.task-drawer .bim-editor-tab svg{width:15px;height:15px;flex:0 0 15px}
+.task-drawer .bim-editor-tab:hover{background:var(--bg-hover);color:var(--ink-primary)}
+.task-drawer .bim-editor-tab.active{background:var(--bg-selected);color:var(--accent-blue);border-color:var(--border-strong);
+  box-shadow:inset 0 -2px 0 var(--accent-blue),0 5px 16px -10px var(--bim-interaction-glow)}
+.task-drawer .bim-editor-tab:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.task-drawer .bim-editor-tab-count{display:inline-flex;align-items:center;justify-content:center;min-width:18px;
+  min-height:18px;padding:1px 5px;border:1px solid var(--border-base);border-radius:6px;background:var(--bg-subtle);
+  color:var(--accent-blue);font-size:10px;line-height:1}
+.task-drawer .bim-editor-panel{min-width:0}
+.task-drawer #bim-panel-photos{min-height:170px}
+.task-drawer .bim-editor-photo-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:18px}
+.task-drawer .bim-editor-photo-heading h3{font-size:11px;color:var(--ink-primary);font-weight:700;letter-spacing:.075em;margin:0 0 5px}
+.task-drawer .bim-editor-photo-heading p{font-size:10.5px;color:var(--ink-muted);line-height:1.5;margin:0}
+.task-drawer .bim-editor-photo-tag{display:inline-flex;flex:0 0 auto;padding:5px 7px;border:1px solid var(--border-base);
+  border-radius:6px;color:var(--accent-blue);background:var(--bg-subtle);font-size:9px;font-weight:700}
+@media(max-width:680px){.task-drawer .bim-editor-tabs{padding:7px 12px}
+  .task-drawer .bim-editor-tab{flex:1 1 0;min-width:0;font-size:9px;padding:8px 5px;gap:4px;letter-spacing:0}
+  .task-drawer .bim-editor-tab svg{width:13px;height:13px;flex-basis:13px}
+  .task-drawer .bim-editor-photo-tag{display:none}}
+@media(prefers-reduced-motion:reduce){.task-drawer .bim-editor-tab{transition:none}}
+
 </style>
 <script src="evidencias.js"></script>
 <script src="cnc.js"></script>
@@ -4779,7 +4808,22 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
       <button class="close" type="button" onclick="closeEditor()" aria-label="Cerrar">×</button>
     </div>
     <form id="task-form" onsubmit="saveEditor(event)">
-      <div class="modal-body">
+      <div class="bim-editor-tabs" role="tablist" aria-label="Secciones del entregable">
+        <button type="button" class="bim-editor-tab active" id="bim-tab-details"
+          role="tab" aria-selected="true" aria-controls="bim-panel-details"
+          onclick="switchBimEditorTab('details')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          DATOS DEL ENTREGABLE
+        </button>
+        <button type="button" class="bim-editor-tab" id="bim-tab-photos"
+          role="tab" aria-selected="false" aria-controls="bim-panel-photos" tabindex="-1"
+          onclick="switchBimEditorTab('photos')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="3"/><circle cx="9" cy="9" r="1.5"/><path d="m4 17 5-5 3 3 3-3 5 5"/></svg>
+          FOTOGRAFÍAS <span id="bim-tab-photo-count" class="bim-editor-tab-count hidden" aria-label="Fotografías añadidas">0</span>
+        </button>
+      </div>
+      <div class="modal-body" id="bim-editor-scroll">
+        <div id="bim-panel-details" class="bim-editor-panel" role="tabpanel" aria-labelledby="bim-tab-details">
         <div class="form-section-head"><span class="section-index">01</span><div><h3>DATOS DEL ENTREGABLE</h3><p>Identificación y alcance de la tarea</p></div></div>
         <div class="form-grid">
           <div class="form-field wide">
@@ -4840,8 +4884,12 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
             <input id="f-support" class="field-input" type="text" autocomplete="off" placeholder="Ej.: Interferencias, Hidráulica, Estructuras, Geotecnia.">
           </div>
         </div>
-
-        <div class="form-section-head"><span class="section-index">04</span><div><h3>FOTOGRAFÍAS / EVIDENCIAS</h3><p>Imágenes opcionales para documentar la actividad BIM</p></div></div>
+        </div>
+        <div id="bim-panel-photos" class="bim-editor-panel hidden" role="tabpanel" aria-labelledby="bim-tab-photos">
+          <div class="bim-editor-photo-heading">
+            <div><h3>FOTOGRAFÍAS / EVIDENCIAS</h3><p>Añade capturas o imágenes de la actividad BIM. Este apartado es opcional.</p></div>
+            <span class="bim-editor-photo-tag">EVIDENCIAS</span>
+          </div>
         <div class="bim-evidence-section">
           <div class="bim-evidence-drop" id="bim-evidence-drop" tabindex="0" aria-label="Zona para añadir o pegar imágenes">
             <input type="file" id="bim-evidence-input" accept="image/jpeg,image/png,image/webp" multiple hidden>
@@ -4856,6 +4904,7 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
           <div id="bim-evidence-status" class="bim-evidence-status" aria-live="polite"></div>
           <div id="bim-evidence-list" class="bim-evidence-list" aria-live="polite"></div>
           <p class="bim-evidence-help">Las fotografías se almacenan en Supabase Storage al guardar la tarea. No son obligatorias.</p>
+        </div>
         </div>
       </div>
       <div class="modal-ft">
@@ -6360,6 +6409,48 @@ function keepValidEditorOption(field,value){
   const select=$('#f-'+field);
   return [...select.options].some(option=>option.value===value)?value:'';
 }
+
+/* El cambio de pestaña no recrea los campos ni elimina fotografías en espera. */
+let bimEditorActiveTab='details';
+function switchBimEditorTab(mode,{focus=false}={}){
+  if(!['details','photos'].includes(mode))return;
+  bimEditorActiveTab=mode;
+  for(const key of ['details','photos']){
+    const btn=$('#bim-tab-'+key),panel=$('#bim-panel-'+key);
+    if(!btn||!panel)continue;
+    const active=key===mode;
+    btn.classList.toggle('active',active);
+    btn.setAttribute('aria-selected',String(active));
+    btn.tabIndex=active?0:-1;
+    panel.classList.toggle('hidden',!active);
+    panel.setAttribute('aria-hidden',String(!active));
+  }
+  const scroller=$('#bim-editor-scroll');
+  if(scroller)scroller.scrollTop=0;
+  if(focus)$('#bim-tab-'+mode)?.focus();
+}
+function updateBimEditorPhotoCount(){
+  const badge=$('#bim-tab-photo-count');
+  if(!badge||typeof visibleEvidenceCount!=='function')return;
+  const count=visibleEvidenceCount();
+  badge.textContent=String(count);
+  badge.classList.toggle('hidden',!count);
+  badge.setAttribute('aria-label',count+' fotografías añadidas');
+}
+$('#task-form').addEventListener('invalid',event=>{
+  if($('#modal-back')?.classList.contains('open')&&$('#bim-panel-details')?.contains(event.target)){
+    switchBimEditorTab('details');
+  }
+},true);
+$('#task-form').addEventListener('keydown',event=>{
+  const target=event.target.closest('.bim-editor-tab');
+  if(!target||!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+  event.preventDefault();
+  const next=event.key==='Home'?'details':event.key==='End'?'photos':
+    bimEditorActiveTab==='details'?'photos':'details';
+  switchBimEditorTab(next,{focus:true});
+});
+
 function openEditor(id=null){
   editingId = id;
   const t = id ? tasks.find(x=>x.id===id) : null;
@@ -6383,6 +6474,8 @@ function openEditor(id=null){
   $('#modal-back').classList.add('open');
   document.body.style.overflow = 'hidden';
   startEvidenceEditor(t);
+  switchBimEditorTab('details');
+  updateBimEditorPhotoCount();
   refreshEditorDeadlinePreview();
   $('#f-title').focus();
 }
