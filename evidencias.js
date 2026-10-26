@@ -85,6 +85,8 @@ function renderEvidenceEditor(){
   const zone=document.getElementById('bim-evidence-drop');
   if(zone)zone.classList.toggle('is-full',visibleEvidenceCount()>=BIM_EVIDENCE_MAX);
   if(active.length)loadEvidencePreviews(active,bimEvidenceEditor.token);
+  // Badge del tab: refleja imágenes existentes, pegadas y removidas al instante.
+  if(typeof updateBimEditorPhotoCount==='function')updateBimEditorPhotoCount();
 }
 async function loadEvidencePreviews(records,token){
   if(!window.bimEvidenceCloud)return;
