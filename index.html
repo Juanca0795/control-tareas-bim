@@ -2887,16 +2887,7 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #dashboard-view .attention-card .priority-task-status{font-size:9px}
 #dashboard-view .owner-card #owner-chart,
 #dashboard-view .attention-card #alerts-list{min-height:0}
-#dashboard-view .executive-grid.dashboard-list-expanded>.owner-card,
-#dashboard-view .executive-grid.dashboard-list-expanded>.attention-card{
-  align-self:start;height:auto;
-}
-#dashboard-view .owner-card.is-expanded .collaborator-list,
-#dashboard-view .attention-card.is-expanded #alerts-list{
-  max-height:min(65vh,720px);overflow-y:auto;overscroll-behavior:contain;
-  padding-right:4px;
-}
-#dashboard-view .owner-card.is-expanded #owner-chart{flex:none}
+
 @media(max-width:760px){
   #dashboard-view .owner-card .collaborator-row{
     grid-template-columns:32px minmax(0,1fr) minmax(75px,110px) 37px;
@@ -2916,6 +2907,67 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 }
 #weekly-view .weekly-trend-key [hidden]{display:none!important}
 #weekly-view .weekly-trend-key #weekly-trend-progress-key{align-items:center;gap:6px}
+
+/* Dashboard: slider vertical dentro de los dos paneles; altura exterior uniforme. */
+#dashboard-view .executive-grid>.owner-card,
+#dashboard-view .executive-grid>.attention-card{
+  align-self:stretch;
+  height:auto;
+  min-width:0;
+  overflow:hidden;
+}
+/* 5 filas compactas visibles (5 x 65px + 4 separaciones x 9px). */
+#dashboard-view .owner-card #owner-chart,
+#dashboard-view .attention-card #alerts-list{
+  flex:0 1 auto;
+  min-height:0;
+}
+#dashboard-view .owner-card .collaborator-list,
+#dashboard-view .attention-card #alerts-list{
+  box-sizing:border-box;
+  height:361px;
+  max-height:361px;
+  flex:0 0 361px;
+  overflow-x:hidden;
+  overflow-y:auto;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border-strong) transparent;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  touch-action:pan-y;
+  padding-right:6px;
+  display:grid;
+  grid-auto-rows:minmax(65px,max-content);
+  align-content:start;
+  gap:9px;
+}
+#dashboard-view .owner-card .collaborator-list::-webkit-scrollbar,
+#dashboard-view .attention-card #alerts-list::-webkit-scrollbar{width:6px}
+#dashboard-view .owner-card .collaborator-list::-webkit-scrollbar-thumb,
+#dashboard-view .attention-card #alerts-list::-webkit-scrollbar-thumb{
+  border-radius:10px;background:var(--border-strong);
+}
+#dashboard-view .owner-card .collaborator-list::-webkit-scrollbar-track,
+#dashboard-view .attention-card #alerts-list::-webkit-scrollbar-track{background:transparent}
+#dashboard-view .owner-card .collaborator-list:focus-visible,
+#dashboard-view .attention-card #alerts-list:focus-visible{
+  outline:2px solid var(--accent-blue);
+  outline-offset:2px;
+}
+/* Cuando no hay registros, conservar un mensaje limpio sin un gran espacio vacío. */
+#dashboard-view .owner-card #owner-chart>.compact-empty,
+#dashboard-view .attention-card #alerts-list>.compact-empty{
+  width:100%;
+  min-height:0;
+  align-self:center;
+}
+@media(max-width:760px){
+  #dashboard-view .owner-card .collaborator-list,
+  #dashboard-view .attention-card #alerts-list{
+    height:361px;max-height:361px;
+    grid-auto-rows:minmax(65px,max-content);
+  }
+}
 </style>
 </head>
 <body>
@@ -3121,7 +3173,6 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
             <h2>CARGA Y DESEMPEÑO POR COLABORADOR BIM</h2>
             <p class="desc">Entregables asignados, completados y porcentaje de cierre</p>
           </div>
-          <button id="dashboard-all-owners" type="button" class="dashboard-open-all" onclick="toggleDashboardList('owners')" hidden>Ver equipo completo</button>
         </div>
         <div id="owner-chart" class="h-bars"></div>
       </article>
@@ -3141,10 +3192,9 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
           </div>
           <div class="dashboard-heading-actions">
             <div class="priority-headline" id="priority-headline" aria-live="polite"></div>
-            <button id="dashboard-all-priority" type="button" class="dashboard-open-all" onclick="toggleDashboardList('priority')" hidden>Ver todas</button>
           </div>
         </div>
-        <div class="big-list" id="alerts-list"></div>
+        <div class="big-list" id="alerts-list" tabindex="0" role="region" aria-label="Listado desplazable de tareas con prioridad"></div>
       </article>
     </section>
 
@@ -3951,13 +4001,12 @@ function collaboratorInitials(name){
   const words=String(name||'').trim().split(/\s+/).filter(Boolean);
   return (words.length>1?words[0][0]+words[1][0]:(words[0]||'?').slice(0,2)).toLocaleUpperCase('es');
 }
-const DASHBOARD_PREVIEW_COUNT=5;
-function renderCollaboratorLoad(rows,limit=DASHBOARD_PREVIEW_COUNT){
+function renderCollaboratorLoad(rows){
   if(!rows.length)return '<div class="compact-empty" role="status"><strong>Sin colaboradores asignados</strong><span>Asigna responsables para visualizar sus entregables.</span></div>';
   const groups=grouped(rows.filter(t=>t.owner),'owner').sort((a,b)=>b.items.length-a.items.length||a.name.localeCompare(b.name,'es'));
   if(!groups.length)return '<div class="compact-empty">Sin responsables asignados.</div>';
   const colors=['#498ef6','#20c8db','#38c6a5','#a48dff'];
-  return '<div class="collaborator-list">'+groups.slice(0,limit).map((g,i)=>{
+  return '<div class="collaborator-list" tabindex="0" role="region" aria-label="Listado desplazable de colaboradores">'+groups.map((g,i)=>{
     const total=g.items.length,done=g.items.filter(t=>categoryOf(t.status)==='done').length,pct=100*done/total;
     const clr=colors[i%colors.length];
     return `<button type="button" class="collaborator-row${selectedDrill('owner',g.name)?' selected':''}"
@@ -3977,12 +4026,12 @@ function priorityWarningTasks(rows){
       (a.priority==='Alta'?0:1)-(b.priority==='Alta'?0:1)||
       (a.deadline||'9999').localeCompare(b.deadline||'9999'));
 }
-function renderPriorityTasks(rows,limit=DASHBOARD_PREVIEW_COUNT){
+function renderPriorityTasks(rows){
   const warnings=priorityWarningTasks(rows);
   $('#priority-headline').innerHTML=warnings.length?`<span class="priority-urgent-count">${warnings.length} requiriendo atención</span>`:
     '<span class="priority-none">Sin alertas prioritarias</span>';
   if(!warnings.length)return '<div class="compact-empty"><strong>Sin tareas que requieran atención</strong><span>Los vencimientos y prioridades aparecerán aquí.</span></div>';
-  return warnings.slice(0,limit).map(t=>{
+  return warnings.map(t=>{
     const alert=alertStatus(t),critical=alert.sort<=1,soon=alert.sort===2;
     const tone=critical?'critical':soon?'warning':'normal';
     const deadline=critical?(dueDays(t.deadline)===0?'VENCE HOY':'VENCIDA'):
@@ -3998,15 +4047,6 @@ function renderPriorityTasks(rows,limit=DASHBOARD_PREVIEW_COUNT){
     </button>`;
   }).join('');
 }
-// Ver completo expande el mismo panel; no se abre otra ventana.
-let dashboardExpandedOwners=false;
-let dashboardExpandedPriority=false;
-function toggleDashboardList(type){
-  if(type==='owners')dashboardExpandedOwners=!dashboardExpandedOwners;
-  else if(type==='priority')dashboardExpandedPriority=!dashboardExpandedPriority;
-  else return;
-  renderDashboard();
-}
 function renderDashboard(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
   const rows=dashboardTasks();
@@ -4015,25 +4055,16 @@ function renderDashboard(){
   $('#dash-stats').innerHTML=makeStats(rows,true);
   $('#state-chart').innerHTML=renderOperationalHealth(rows);
   $('#radar-count').textContent=rows.length+' entregable'+(rows.length===1?'':'s');
-  $('#owner-chart').innerHTML=renderCollaboratorLoad(rows,dashboardExpandedOwners?Infinity:DASHBOARD_PREVIEW_COUNT);
-  const ownerPanel=$('#dashboard-view .owner-card');
-  ownerPanel.classList.toggle('is-expanded',dashboardExpandedOwners);
-  const collaboratorCount=new Set(rows.filter(t=>t.owner).map(t=>t.owner)).size;
-  const ownerButton=$('#dashboard-all-owners');
-  ownerButton.hidden=collaboratorCount<=DASHBOARD_PREVIEW_COUNT&&!dashboardExpandedOwners;
-  ownerButton.textContent=dashboardExpandedOwners?'Ver menos':'Ver equipo completo ('+collaboratorCount+')';
-  ownerButton.setAttribute('aria-expanded',String(dashboardExpandedOwners));
+  // Mantener el punto de desplazamiento si se actualizan las métricas del Dashboard.
+  const previousOwnerScroll=$('#owner-chart .collaborator-list')?.scrollTop||0;
+  const previousPriorityScroll=$('#alerts-list')?.scrollTop||0;
+  $('#owner-chart').innerHTML=renderCollaboratorLoad(rows);
+  const ownerList=$('#owner-chart .collaborator-list');
+  if(ownerList)ownerList.scrollTop=previousOwnerScroll;
   $('#team-summary').innerHTML=renderPackagePulse(rows);
   $('#package-chart').replaceChildren();
-  $('#alerts-list').innerHTML=renderPriorityTasks(rows,dashboardExpandedPriority?Infinity:DASHBOARD_PREVIEW_COUNT);
-  const priorityPanel=$('#dashboard-view .attention-card');
-  priorityPanel.classList.toggle('is-expanded',dashboardExpandedPriority);
-  const priorityCount=priorityWarningTasks(rows).length;
-  const priorityButton=$('#dashboard-all-priority');
-  priorityButton.hidden=priorityCount<=DASHBOARD_PREVIEW_COUNT&&!dashboardExpandedPriority;
-  priorityButton.textContent=dashboardExpandedPriority?'Ver menos':'Ver todas ('+priorityCount+')';
-  priorityButton.setAttribute('aria-expanded',String(dashboardExpandedPriority));
-  $('#dashboard-view .executive-grid').classList.toggle('dashboard-list-expanded',dashboardExpandedOwners||dashboardExpandedPriority);
+  $('#alerts-list').innerHTML=renderPriorityTasks(rows);
+  $('#alerts-list').scrollTop=previousPriorityScroll;
   $('#dashboard-view .attention-card').classList.toggle('has-urgent',
     rows.some(t=>categoryOf(t.status)!=='done'&&alertStatus(t).sort<=1));
   renderDrill(rows);
