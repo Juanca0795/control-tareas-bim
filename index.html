@@ -7,7 +7,7 @@
 <meta name="theme-color" content="#090D16">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
 <script>
 (function(){
   try {
@@ -3756,6 +3756,130 @@ html[data-theme="light"] .sidebar nav.bim-nav-motion-ready .nav-link.active::aft
   .sidebar nav .bim-nav-indicator,
   .brand-mark svg{transition:none!important}
 }
+
+/* UI/UX Pro Max · Sistema tipográfico Tech Premium para Control BIM.
+   Space Grotesk = identidad y encabezados; Inter = interfaz y lectura;
+   JetBrains Mono = KPI y códigos. Solo presentación, sin cambios de layout. */
+:root{
+  --font-display:'Space Grotesk','Inter',ui-sans-serif,system-ui,sans-serif;
+  --font-sans:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+.brand > div:last-child > strong{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:clamp(13px,1.12vw,17px);
+  letter-spacing:-.025em;
+  line-height:1.16;
+}
+.brand > div:last-child > small{
+  font-family:var(--font-sans);
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:.105em;
+  line-height:1.4;
+}
+.topbar h1,
+.card h2,
+.weekly-card-head h2,
+.weekly-timeline-head strong,
+.form-section-head h3,
+.settings-section-head h3,
+.modal-hd h2,
+.drill-hd h2{
+  font-family:var(--font-display);
+  font-weight:600;
+  letter-spacing:.005em;
+}
+.card h2,.weekly-card-head h2{
+  font-size:12px;
+  line-height:1.35;
+  overflow-wrap:anywhere;
+}
+#weekly-view .weekly-timeline-head strong{
+  font-family:var(--font-display);
+  font-size:12.5px;
+  letter-spacing:.005em;
+}
+.sidebar nav .nav-link,
+.sidebar nav .weekly-backup-launch,
+.top-actions button,
+.btn,
+.field-input,
+select,
+textarea,
+.task-table,
+.weekly-time-step,
+.weekly-kpi .label,
+.kpi-reference .label{
+  font-family:var(--font-sans);
+}
+.sidebar nav .nav-link{
+  font-size:12.5px;
+  letter-spacing:-.012em;
+}
+.stat .val,
+#dashboard-view .kpi-reference .val,
+#tasks-view .kpi-reference .val,
+.weekly-kpi .number,
+.weekly-time-step .weekly-time-ppc,
+.kpi-reference .stat-right{
+  font-family:var(--font-mono);
+  font-variant-numeric:tabular-nums lining-nums;
+}
+#dashboard-view .kpi-reference .label,
+#tasks-view .kpi-reference .label,
+#weekly-view .weekly-kpi .label{
+  font-size:10.5px;
+  letter-spacing:.04em;
+  line-height:1.35;
+}
+#dashboard-view .kpi-reference .foot,
+#tasks-view .kpi-reference .foot{
+  font-size:10.5px;
+  line-height:1.4;
+  overflow-wrap:anywhere;
+}
+.kpi-reference .stat-kpi-badge,
+.kpi-reference .stat-right{
+  font-size:10px;
+}
+#weekly-view .weekly-kpi .foot{
+  font-size:10.5px;
+  line-height:1.42;
+  overflow-wrap:anywhere;
+}
+.card .desc,
+.weekly-card-head p{
+  font-family:var(--font-sans);
+  font-size:11.5px;
+  line-height:1.45;
+}
+.task-table th{
+  font-family:var(--font-sans);
+  font-size:10.25px;
+  letter-spacing:.035em;
+}
+.task-table td,.task-name{
+  font-family:var(--font-sans);
+  font-size:11.75px;
+  line-height:1.45;
+}
+@media(max-width:1300px){
+  .sidebar nav .nav-link{font-size:11px;letter-spacing:-.018em}
+}
+@media(max-width:650px){
+  .brand > div:last-child > strong{font-size:13px;letter-spacing:-.015em}
+  .brand > div:last-child > small{font-size:9px;letter-spacing:.07em}
+  .sidebar nav .nav-link{font-size:10px;letter-spacing:-.025em}
+  .card h2,.weekly-card-head h2{font-size:11.5px}
+  #dashboard-view .kpi-reference .label,
+  #tasks-view .kpi-reference .label,
+  #weekly-view .weekly-kpi .label{font-size:10px}
+  #dashboard-view .kpi-reference .foot,
+  #tasks-view .kpi-reference .foot{font-size:10px}
+}
+
 </style>
 </head>
 <body>
