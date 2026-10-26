@@ -4297,6 +4297,27 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   #weekly-view .weekly-projection-kpis>.weekly-projection-kpi{min-height:116px}
 }
 
+
+/* Proyección: exponer valores reales y ausencia de pronóstico sin series fantasma. */
+#weekly-view .proj-chart-status{
+  display:flex;align-items:center;justify-content:center;gap:14px;
+  flex:0 0 auto;flex-wrap:wrap;min-height:19px;
+  margin-top:5px;margin-bottom:1px;color:var(--ink-secondary);font-size:10px;
+  line-height:1.4;text-align:center;
+}
+#weekly-view .proj-chart-reality{display:inline-flex;align-items:center;gap:6px}
+#weekly-view .proj-chart-reality i{
+  width:8px;height:8px;flex:0 0 8px;border-radius:50%;background:#24cba5;
+  box-shadow:0 0 0 2px rgba(36,203,165,.12);
+}
+#weekly-view .proj-chart-reality strong{color:#24cba5;font-weight:750}
+#weekly-view .proj-chart-unestimated{color:var(--ink-muted)}
+#weekly-view .proj-chart-unestimated::before{
+  content:"";display:inline-block;width:7px;height:7px;margin-right:6px;
+  border:1px solid #e8783c;border-radius:50%;
+}
+#weekly-view #weekly-projection-legend-forecast{font:inherit}
+
 </style>
 <script src="cnc.js"></script>
 <script src="proyeccion.js"></script>
@@ -4510,10 +4531,11 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
               <p>Programado acumulado · Cumplido real · Proyección según fechas estimadas</p></div>
           </div>
           <div id="weekly-projection-chart" aria-label="Gráfico de evolución acumulada"></div>
+          <div id="weekly-projection-chart-status" class="proj-chart-status" role="status" aria-live="polite"></div>
           <div class="proj-chart-legend" aria-hidden="true">
             <span><i></i> Programado acumulado</span>
             <span><i class="real"></i> Cumplido real</span>
-            <span><i class="forecast"></i> Proyección al cierre</span>
+            <span><i class="forecast"></i> <span id="weekly-projection-legend-forecast">Proyección al cierre</span></span>
           </div>
         </article>
         <article class="card weekly-chart-card">
