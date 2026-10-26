@@ -5376,7 +5376,14 @@ async function createWeeklyBackupAndOpen(){
     weeklyBackupFeedback('No está disponible la conexión de respaldo en Supabase.',true);
     return;
   }
-  // El botón crea la copia inmediatamente; el modal permite restaurar otras.
+  // Si la nube devolvió cero pero antes existían registros, no guardar un
+  // backup vacío. Mostrar copias existentes para restauración manual.
+  if(window.bimCloudBackups.isRecoveryMode()){
+    await refreshWeeklyCloudBackups();
+    weeklyBackupFeedback('Respaldo nuevo suspendido: Supabase devolvió 0 tareas. '+
+      'Selecciona un respaldo anterior para restaurar únicamente si confirmas sus datos.',true);
+    return;
+  }
   await createWeeklyCloudBackup();
 }
 async function refreshWeeklyCloudBackups(){
@@ -5979,7 +5986,7 @@ renderAll();
 syncThemeButton();
 </script>
 </body>
-</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
+</html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{if(!window.supabase||typeof window.supabase.createClient!=='function'){cloudDataNotice('No se pudo cargar la biblioteca de Supabase. Revisa tu conexión y vuelve a cargar la página.',true);return;}const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
 async function load(){
   // El refresco automático no debe sobrescribir modificaciones locales aún no sincronizadas.
   if(loading||lock||(ready&&pendingSave&&!cloudEmptyGuard))return;
@@ -6162,6 +6169,7 @@ async function cloudBackupReady(){
   }
 }
 window.bimCloudBackups={
+  isRecoveryMode(){return cloudEmptyGuard},
   async list(){
     if(!ready)throw Error('Supabase todavía está cargando');
     const res=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
@@ -6171,9 +6179,13 @@ window.bimCloudBackups={
   },
   async create(){
     await cloudBackupReady();
+    if(cloudEmptyGuard)throw Error('No se permite crear respaldos durante una alerta de datos vacíos');
     lock=1;
     try{
       const cloud=await backupCloudState();
+      if(!cloud.tasks.length&&mergeCloudBackupLists(cloud.catalogs.backups,[])
+          .some(b=>Number(b.tasksCount)>0||b.payload?.tasks?.length>0))
+        throw Error('Supabase no tiene tareas, pero existen respaldos con registros. No se creó copia vacía');
       return cloudBackupMetadata(await backupStoreCloudCopy(cloud,'Backup manual'));
     }finally{lock=0}
   },
