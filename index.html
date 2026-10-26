@@ -4045,6 +4045,14 @@ textarea,
   #tasks-view .task-mobile-card{transition:none!important}
 }
 
+
+/* UI/UX Pro Max · el nombre del área más frecuente se adapta al ancho
+   disponible en la tarjeta sin modificar alturas fijas ni ocultar cifras. */
+#dashboard-view .kpi-reference .stat-kpi-badge,
+#tasks-view .kpi-reference .stat-kpi-badge{
+  max-width:100%;min-width:0;overflow-wrap:anywhere;
+}
+
 </style>
 </head>
 <body>
@@ -4547,7 +4555,8 @@ const SVG_ICONS = {
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>',
   play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>',
   alert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
-  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 7-8"/><path d="M15 7h5v5"/></svg>'
+  trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17l6-6 4 4 7-8"/><path d="M15 7h5v5"/></svg>',
+  support: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m2 12 4-4 4 4"/><path d="m22 12-4-4-4 4"/><path d="m6 8 3-3 4 2 3-2 3 3"/><path d="m6 12 5 5 3-1 4-4"/><path d="m10 13 3 3"/><path d="M9 16l2 2 3-2"/></svg>'
 };
 
 function unique(a){ return Array.from(new Set(a.filter(Boolean))).sort((x,y)=>x.localeCompare(y,'es',{numeric:true})); }
@@ -4857,6 +4866,32 @@ function currentWeekPerformance(rows){
   const done=planned.filter(t=>categoryOf(t.status)==='done'&&t.completedAt&&t.completedAt<=end).length;
   return {week,planned:planned.length,done,ppc:planned.length?100*done/planned.length:null};
 }
+// Cada actividad con apoyo informado se contabiliza una vez en el alcance.
+function supportAreaMetrics(rows){
+  const groups=new Map();
+  let supported=0;
+  for(const task of rows){
+    const name=String(task.support??'').trim().replace(/\s+/g,' ');
+    if(!name)continue;
+    supported++;
+    const key=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
+    const previous=groups.get(key);
+    if(previous)previous.count++;
+    else groups.set(key,{name,count:1});
+  }
+  const ranking=[...groups.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'es'));
+  const top=ranking[0]||null;
+  const ties=top?ranking.filter(group=>group.count===top.count).map(group=>group.name):[];
+  return {
+    total:rows.length,
+    supported,
+    percent:rows.length?100*supported/rows.length:0,
+    primaryArea:top?.name||'Sin apoyo registrado',
+    areaHelp:top?(ties.length>1?'Empate entre áreas: '+ties.join(', '):
+      top.name+' · '+top.count+' actividad'+(top.count===1?'':'es')+' con este apoyo'):
+      'No hay actividades con apoyo registrado en el alcance seleccionado.'
+  };
+}
 function makeStats(rows,interactive=false){
   const s=stats(rows),selected=interactive?dashboardDrill:null,now=todayString(),month=now.slice(0,7);
   const share=n=>s.total?100*n/s.total:0;
@@ -4879,7 +4914,7 @@ function makeStats(rows,interactive=false){
     statCard(label,value,foot,icon,accent,interactive?drill:'',Boolean(selected&&selected.type===drill),pct,mark,tone,right);
   const running=rows.filter(t=>categoryOf(t.status)==='progress');
   const onSchedule=running.filter(t=>!t.deadline||dueDays(t.deadline)>0).length;
-  const current=currentWeekPerformance(rows);
+  const support=supportAreaMetrics(rows);
   return [
     one('TOTAL ENTREGABLES',s.total,'Entregables del alcance',SVG_ICONS.grid,'','all','neutral',null,
       badge('+'+createdThisMonth+' este mes','positive',
@@ -4891,10 +4926,10 @@ function makeStats(rows,interactive=false){
       badge(onSchedule+' en plazo','neutral'),share(s.inProgress).toFixed(1)+'%'),
     one('VENCIDAS / HOY',s.late,'Requieren atención',SVG_ICONS.alert,'red','late','pink',share(s.late),
       badge(s.late?'ATENCIÓN':'SIN ALERTAS',s.late?'attention':'neutral'),share(s.late).toFixed(1)+'%'),
-    one('PPC SEMANAL',current.ppc===null?'—':current.ppc.toFixed(1)+'%','Cumplimiento '+weekShort(current.week),
-      SVG_ICONS.trend,'blue','','teal',current.ppc,
-      badge(current.planned?current.done+'/'+current.planned+' cumplidas':'Sin compromisos','neutral',
-        'Calculado a partir de la fecha límite y la fecha real de finalización de cada tarea.'))
+    one('APOYO EN OTRAS ÁREAS',support.percent.toFixed(1)+'%',
+      support.supported+' de '+support.total+' actividades con apoyo',
+      SVG_ICONS.support,'blue','support','teal',support.percent,
+      badge(support.primaryArea,'neutral',support.areaHelp))
   ].join('');
 }
 
@@ -5325,6 +5360,7 @@ function drillTitle(type, value=''){
     completed:'Entregables completados',
     inProgress:'Entregables en ejecución',
     late:'Entregables vencidos o con límite hoy',
+    support:'Entregables con apoyo registrado en otras áreas',
     soon:'Entregables próximos a vencer (= 3 días)',
     high:'Entregables de Alta Prioridad',
     pending:'Entregables no iniciados',
@@ -5353,6 +5389,7 @@ function drillTasks(a){
     case 'onTime': return a.filter(t=>categoryOf(t.status)!=='done'&&dueDays(t.deadline)>3);
     case 'noDeadline': return a.filter(t=>categoryOf(t.status)!=='done'&&dueDays(t.deadline)===null);
     case 'late': return a.filter(t=>alertStatus(t).sort<=1);
+    case 'support': return a.filter(t=>String(t.support??'').trim().length>0);
     case 'soon': return a.filter(t=>alertStatus(t).sort===2);
     case 'high': return a.filter(t=>t.priority==='Alta');
     case 'status': return a.filter(t=>t.status===v);
