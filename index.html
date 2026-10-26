@@ -2626,86 +2626,86 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #dashboard-view .package-pulse-value{display:flex;gap:8px;align-items:baseline;flex:none}
 #dashboard-view .package-pulse-value strong{font:700 14px var(--font-mono);color:var(--ink-primary)}
 #dashboard-view .package-pulse-value small{font:500 10px var(--font-mono);color:var(--ink-muted)}
-#dashboard-view .package-pulse-track,#dashboard-view .collaborator-track{
+#dashboard-view .package-pulse-track,:is(#dashboard-view,#dashboard-list-back) .collaborator-track{
   display:block;height:7px;border-radius:99px;overflow:hidden;
   background:var(--bg-subtle);border:1px solid var(--border-base);
 }
-#dashboard-view .package-pulse-track i,#dashboard-view .collaborator-track i{
+#dashboard-view .package-pulse-track i,:is(#dashboard-view,#dashboard-list-back) .collaborator-track i{
   display:block;height:100%;border-radius:99px;
 }
-#dashboard-view .collaborator-list{display:grid;gap:9px;margin-top:12px}
-#dashboard-view .collaborator-row{
+:is(#dashboard-view,#dashboard-list-back) .collaborator-list{display:grid;gap:9px;margin-top:12px}
+:is(#dashboard-view,#dashboard-list-back) .collaborator-row{
   display:grid;grid-template-columns:36px minmax(0,1fr) minmax(86px,125px) 43px;
   gap:10px;align-items:center;min-width:0;width:100%;
   border:1px solid var(--border-base);border-radius:9px;
   padding:12px;background:var(--bg-subtle);text-align:left;color:var(--ink-primary);cursor:pointer;
 }
-#dashboard-view .collaborator-row:hover,#dashboard-view .collaborator-row.selected{border-color:var(--accent-blue)}
-#dashboard-view .collaborator-avatar{
+:is(#dashboard-view,#dashboard-list-back) .collaborator-row:hover,:is(#dashboard-view,#dashboard-list-back) .collaborator-row.selected{border-color:var(--accent-blue)}
+:is(#dashboard-view,#dashboard-list-back) .collaborator-avatar{
   display:grid;place-items:center;border:1px solid var(--avatar-color);border-radius:50%;
   width:36px;height:36px;color:var(--avatar-color);font:600 11px var(--font-mono);
 }
-#dashboard-view .collaborator-name{font-size:11px;font-weight:650;overflow-wrap:anywhere}
-#dashboard-view .collaborator-progress{display:flex;flex-direction:column;gap:6px}
-#dashboard-view .collaborator-count{font:500 9px var(--font-mono);color:var(--ink-muted)}
-#dashboard-view .collaborator-track{height:6px}
-#dashboard-view .collaborator-percent{font:700 12px var(--font-mono);text-align:right}
+:is(#dashboard-view,#dashboard-list-back) .collaborator-name{font-size:11px;font-weight:650;overflow-wrap:anywhere}
+:is(#dashboard-view,#dashboard-list-back) .collaborator-progress{display:flex;flex-direction:column;gap:6px}
+:is(#dashboard-view,#dashboard-list-back) .collaborator-count{font:500 9px var(--font-mono);color:var(--ink-muted)}
+:is(#dashboard-view,#dashboard-list-back) .collaborator-track{height:6px}
+:is(#dashboard-view,#dashboard-list-back) .collaborator-percent{font:700 12px var(--font-mono);text-align:right}
 #dashboard-view .priority-headline{display:flex;justify-content:flex-end;margin:-2px 0 9px}
 #dashboard-view .priority-urgent-count{
   font-size:11px;font-weight:700;color:var(--status-crit-fg);
   padding:4px 8px;border-radius:6px;border:1px solid var(--status-crit-bd);background:var(--status-crit-bg);
 }
 #dashboard-view .priority-none{color:var(--ink-muted);font-size:10px}
-#dashboard-view .priority-dot,#dashboard-view .priority-blink{
+#dashboard-view .priority-dot,:is(#dashboard-view,#dashboard-list-back) .priority-blink{
   display:inline-block;width:9px;height:9px;border-radius:50%;background:#f14a75;
   box-shadow:0 0 0 3px rgba(241,74,117,.1);vertical-align:middle;
 }
 #dashboard-view .priority-dot{margin-left:6px}
-#dashboard-view .priority-blink{margin-right:7px;animation:criticalPulse 1.35s ease-in-out infinite}
+:is(#dashboard-view,#dashboard-list-back) .priority-blink{margin-right:7px;animation:criticalPulse 1.35s ease-in-out infinite}
 @keyframes criticalPulse{0%,100%{opacity:1;box-shadow:0 0 0 1px rgba(241,74,117,.3)}50%{opacity:.4;box-shadow:0 0 0 6px rgba(241,74,117,.08)}}
 #dashboard-view .attention-card.has-urgent .priority-dot{animation:criticalPulse 1.35s ease-in-out infinite}
 @media(prefers-reduced-motion:reduce){
-  #dashboard-view .priority-blink,#dashboard-view .attention-card.has-urgent .priority-dot{animation:none}
+  :is(#dashboard-view,#dashboard-list-back) .priority-blink,#dashboard-view .attention-card.has-urgent .priority-dot{animation:none}
 }
 #dashboard-view .attention-card #alerts-list{display:grid!important;gap:9px;align-content:start;min-width:0}
-#dashboard-view .priority-task{
+:is(#dashboard-view,#dashboard-list-back) .priority-task{
   display:flex;flex-direction:column;gap:9px;min-width:0;width:100%;
   border:1px solid var(--border-base);border-left:4px solid #548fff;
   border-radius:8px;background:var(--bg-subtle);text-align:left;
   padding:10px 13px;color:var(--ink-primary);cursor:pointer;
 }
-#dashboard-view .priority-task.critical{border-left-color:#f14a75}
-#dashboard-view .priority-task.warning{border-left-color:#ffb83a}
-#dashboard-view .priority-task:hover,#dashboard-view .priority-task.selected{background:var(--bg-hover);border-top-color:var(--accent-blue);border-right-color:var(--accent-blue);border-bottom-color:var(--accent-blue)}
-#dashboard-view .priority-task-top,#dashboard-view .priority-task-bottom{display:flex;justify-content:space-between;align-items:center;gap:9px}
-#dashboard-view .priority-task-code{font:700 10px var(--font-mono);color:#36c9eb;display:inline-flex;align-items:center}
-#dashboard-view .priority-deadline{
+:is(#dashboard-view,#dashboard-list-back) .priority-task.critical{border-left-color:#f14a75}
+:is(#dashboard-view,#dashboard-list-back) .priority-task.warning{border-left-color:#ffb83a}
+:is(#dashboard-view,#dashboard-list-back) .priority-task:hover,:is(#dashboard-view,#dashboard-list-back) .priority-task.selected{background:var(--bg-hover);border-top-color:var(--accent-blue);border-right-color:var(--accent-blue);border-bottom-color:var(--accent-blue)}
+:is(#dashboard-view,#dashboard-list-back) .priority-task-top,:is(#dashboard-view,#dashboard-list-back) .priority-task-bottom{display:flex;justify-content:space-between;align-items:center;gap:9px}
+:is(#dashboard-view,#dashboard-list-back) .priority-task-code{font:700 10px var(--font-mono);color:#36c9eb;display:inline-flex;align-items:center}
+:is(#dashboard-view,#dashboard-list-back) .priority-deadline{
   border:1px solid var(--border-strong);border-radius:5px;
   padding:3px 6px;font:700 10px var(--font-mono);white-space:nowrap;
 }
-#dashboard-view .priority-task.critical .priority-deadline{color:var(--status-crit-fg);border-color:var(--status-crit-bd);background:var(--status-crit-bg)}
-#dashboard-view .priority-task.warning .priority-deadline{color:var(--status-warn-fg);border-color:var(--status-warn-bd);background:var(--status-warn-bg)}
-#dashboard-view .priority-task-title{font-size:12px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}
-#dashboard-view .priority-task-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:10px;color:var(--ink-secondary)}
-#dashboard-view .priority-lod{padding:3px 7px;border-radius:5px;background:var(--bg-hover);color:var(--ink-secondary)}
-#dashboard-view .priority-task-status{font-size:10px;font-weight:600;text-align:right;color:var(--accent-blue);overflow-wrap:anywhere}
-#dashboard-view .priority-task.critical .priority-task-status{color:var(--ink-primary)}
-#dashboard-view .priority-more{color:var(--ink-muted);font-size:10px;margin:3px 0}
+:is(#dashboard-view,#dashboard-list-back) .priority-task.critical .priority-deadline{color:var(--status-crit-fg);border-color:var(--status-crit-bd);background:var(--status-crit-bg)}
+:is(#dashboard-view,#dashboard-list-back) .priority-task.warning .priority-deadline{color:var(--status-warn-fg);border-color:var(--status-warn-bd);background:var(--status-warn-bg)}
+:is(#dashboard-view,#dashboard-list-back) .priority-task-title{font-size:12px;font-weight:650;line-height:1.4;overflow-wrap:anywhere}
+:is(#dashboard-view,#dashboard-list-back) .priority-task-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:10px;color:var(--ink-secondary)}
+:is(#dashboard-view,#dashboard-list-back) .priority-lod{padding:3px 7px;border-radius:5px;background:var(--bg-hover);color:var(--ink-secondary)}
+:is(#dashboard-view,#dashboard-list-back) .priority-task-status{font-size:10px;font-weight:600;text-align:right;color:var(--accent-blue);overflow-wrap:anywhere}
+:is(#dashboard-view,#dashboard-list-back) .priority-task.critical .priority-task-status{color:var(--ink-primary)}
+:is(#dashboard-view,#dashboard-list-back) .priority-more{color:var(--ink-muted);font-size:10px;margin:3px 0}
 @media(max-width:1050px){
   #dashboard-view .operational-health{grid-template-columns:minmax(0,1fr)}
   #dashboard-view .health-ring{width:130px}
 }
 @media(max-width:760px){
   #dashboard-view .operational-health{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  #dashboard-view .collaborator-row{grid-template-columns:32px minmax(0,1fr) minmax(80px,115px) 37px;gap:7px;padding:9px}
-  #dashboard-view .collaborator-avatar{height:32px;width:32px}
+  :is(#dashboard-view,#dashboard-list-back) .collaborator-row{grid-template-columns:32px minmax(0,1fr) minmax(80px,115px) 37px;gap:7px;padding:9px}
+  :is(#dashboard-view,#dashboard-list-back) .collaborator-avatar{height:32px;width:32px}
 }
 @media(max-width:510px){
   #dashboard-view .operational-health{grid-template-columns:minmax(0,1fr)}
-  #dashboard-view .priority-task-bottom{align-items:start;flex-direction:column}
-  #dashboard-view .priority-task-status{text-align:left}
-  #dashboard-view .collaborator-row{grid-template-columns:32px minmax(0,1fr) 38px}
-  #dashboard-view .collaborator-progress{grid-column:2/4;grid-row:2}
+  :is(#dashboard-view,#dashboard-list-back) .priority-task-bottom{align-items:start;flex-direction:column}
+  :is(#dashboard-view,#dashboard-list-back) .priority-task-status{text-align:left}
+  :is(#dashboard-view,#dashboard-list-back) .collaborator-row{grid-template-columns:32px minmax(0,1fr) 38px}
+  :is(#dashboard-view,#dashboard-list-back) .collaborator-progress{grid-column:2/4;grid-row:2}
 }
 
 /* DASHBOARD AEC OBSIDIAN — estados vacíos integrados en la tarjeta exterior.
@@ -2805,6 +2805,79 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 }
 @media(max-width:380px){
   #weekly-view .weekly-kpis{grid-template-columns:minmax(0,1fr)}
+}
+
+/* DASHBOARD: previsualizaciones limitadas y paneles gemelos */
+#dashboard-view .executive-grid > .owner-card,
+#dashboard-view .executive-grid > .attention-card{
+  display:flex;flex-direction:column;align-self:stretch;
+  min-width:0;min-height:0;
+}
+#dashboard-view .dashboard-compact-heading{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:12px;min-height:67px;flex:0 0 auto;
+  border-bottom:1px solid var(--border-base);
+  padding-bottom:11px;margin-bottom:14px;
+}
+#dashboard-view .dashboard-compact-heading>div:first-child{min-width:0}
+#dashboard-view .dashboard-heading-actions{
+  display:flex;flex-direction:column;align-items:flex-end;gap:7px;
+  flex:0 0 auto;white-space:nowrap;
+}
+#dashboard-view .dashboard-open-all{
+  border:0;padding:5px 1px;background:none;
+  color:var(--accent-blue);font-size:10px;font-weight:700;
+  cursor:pointer;white-space:nowrap;
+}
+#dashboard-view .dashboard-open-all:hover{text-decoration:underline;color:var(--ink-primary)}
+#dashboard-view .dashboard-open-all[hidden]{display:none!important}
+#dashboard-view .attention-card .priority-headline{
+  margin:0;display:flex;justify-content:flex-end;
+}
+#dashboard-view .owner-card #owner-chart{
+  flex:1 1 auto;margin:0;display:flex!important;flex-direction:column;
+}
+#dashboard-view .owner-card .collaborator-list{
+  grid-auto-rows:minmax(88px,auto);margin:0;flex:1 1 auto;
+}
+#dashboard-view .attention-card #alerts-list{
+  flex:1 1 auto;grid-auto-rows:minmax(88px,auto);margin:0;
+}
+#dashboard-view .owner-card .collaborator-row,
+#dashboard-view .attention-card .priority-task{
+  min-height:88px;
+}
+#dashboard-list-back{z-index:90}
+#dashboard-list-back .dashboard-list-modal{
+  width:min(750px,calc(100vw - 28px));
+  max-height:min(86dvh,850px);
+  display:flex;flex-direction:column;overflow:hidden;
+}
+#dashboard-list-back .dashboard-list-summary{
+  color:var(--ink-muted);padding:10px 20px 0;margin:0;
+  font-size:11px;flex:0 0 auto;
+}
+#dashboard-list-back .dashboard-list-scroll{
+  padding:14px 20px 20px;overflow-y:auto;min-height:0;
+  flex:1 1 auto;overscroll-behavior:contain;
+}
+#dashboard-list-back .collaborator-list,
+#dashboard-list-back .dashboard-priority-full{
+  display:grid;gap:10px;margin:0;
+}
+#dashboard-list-back .collaborator-row,
+#dashboard-list-back .priority-task{width:100%;min-height:68px}
+@media(max-width:760px){
+  #dashboard-view .dashboard-compact-heading{flex-wrap:wrap;min-height:0}
+  #dashboard-view .dashboard-heading-actions{flex-direction:row;flex-wrap:wrap}
+  #dashboard-view .owner-card .collaborator-list,
+  #dashboard-view .attention-card #alerts-list{grid-auto-rows:minmax(75px,auto)}
+  #dashboard-view .owner-card .collaborator-row,
+  #dashboard-view .attention-card .priority-task{min-height:75px}
+  #dashboard-list-back .dashboard-list-scroll{padding:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  #dashboard-list-back *{scroll-behavior:auto}
 }
 </style>
 </head>
@@ -3006,8 +3079,13 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
       </article>
 
       <article class="card chart-card owner-card">
-        <h2>CARGA Y DESEMPEÑO POR COLABORADOR BIM</h2>
-        <p class="desc">Entregables asignados, completados y porcentaje de cierre</p>
+        <div class="control-card-title dashboard-compact-heading">
+          <div>
+            <h2>CARGA Y DESEMPEÑO POR COLABORADOR BIM</h2>
+            <p class="desc">Entregables asignados, completados y porcentaje de cierre</p>
+          </div>
+          <button id="dashboard-all-owners" type="button" class="dashboard-open-all" onclick="openDashboardList('owners')" hidden>Ver equipo completo</button>
+        </div>
         <div id="owner-chart" class="h-bars"></div>
       </article>
 
@@ -3019,13 +3097,16 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
       </article>
 
       <article class="card chart-card attention-card">
-        <div class="control-card-title">
+        <div class="control-card-title dashboard-compact-heading">
           <div>
             <h2>TAREAS CON PRIORIDAD <span class="priority-dot" aria-hidden="true"></span></h2>
             <p class="desc">Vencidas, próximas a vencer y de prioridad alta</p>
           </div>
+          <div class="dashboard-heading-actions">
+            <div class="priority-headline" id="priority-headline" aria-live="polite"></div>
+            <button id="dashboard-all-priority" type="button" class="dashboard-open-all" onclick="openDashboardList('priority')" hidden>Ver todas</button>
+          </div>
         </div>
-        <div class="priority-headline" id="priority-headline" aria-live="polite"></div>
         <div class="big-list" id="alerts-list"></div>
       </article>
     </section>
@@ -3034,6 +3115,19 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
     <footer>Indicadores calculados a partir de los registros del tablero compartido.</footer>
   </div>
 </main>
+
+<!-- MODAL: LISTA COMPLETA DEL DASHBOARD (SOLO LECTURA) -->
+<div class="modal-back" id="dashboard-list-back" onclick="if(event.target===this)closeDashboardList()">
+  <div class="modal dashboard-list-modal" role="dialog" aria-modal="true" aria-labelledby="dashboard-list-title">
+    <div class="modal-hd">
+      <h2 id="dashboard-list-title">Lista completa</h2>
+      <button type="button" class="close" onclick="closeDashboardList()" aria-label="Cerrar lista completa">×</button>
+    </div>
+    <p class="dashboard-list-summary" id="dashboard-list-summary"></p>
+    <div class="dashboard-list-scroll" id="dashboard-list-scroll"></div>
+    <div class="modal-ft"><div><button type="button" class="btn" onclick="closeDashboardList()">Cerrar</button></div></div>
+  </div>
+</div>
 
 <!-- MODAL: ACCESO A CONFIGURACIÓN -->
 <div class="modal-back" id="settings-auth-back" onclick="if(event.target===this)closeSettingsAuth()">
@@ -3833,12 +3927,13 @@ function collaboratorInitials(name){
   const words=String(name||'').trim().split(/\s+/).filter(Boolean);
   return (words.length>1?words[0][0]+words[1][0]:(words[0]||'?').slice(0,2)).toLocaleUpperCase('es');
 }
-function renderCollaboratorLoad(rows){
+const DASHBOARD_PREVIEW_COUNT=5;
+function renderCollaboratorLoad(rows,limit=DASHBOARD_PREVIEW_COUNT){
   if(!rows.length)return '<div class="compact-empty" role="status"><strong>Sin colaboradores asignados</strong><span>Asigna responsables para visualizar sus entregables.</span></div>';
   const groups=grouped(rows.filter(t=>t.owner),'owner').sort((a,b)=>b.items.length-a.items.length||a.name.localeCompare(b.name,'es'));
   if(!groups.length)return '<div class="compact-empty">Sin responsables asignados.</div>';
   const colors=['#498ef6','#20c8db','#38c6a5','#a48dff'];
-  return '<div class="collaborator-list">'+groups.map((g,i)=>{
+  return '<div class="collaborator-list">'+groups.slice(0,limit).map((g,i)=>{
     const total=g.items.length,done=g.items.filter(t=>categoryOf(t.status)==='done').length,pct=100*done/total;
     const clr=colors[i%colors.length];
     return `<button type="button" class="collaborator-row${selectedDrill('owner',g.name)?' selected':''}"
@@ -3851,16 +3946,19 @@ function renderCollaboratorLoad(rows){
     </button>`;
   }).join('')+'</div>';
 }
-function renderPriorityTasks(rows){
-  const warnings=rows.filter(t=>categoryOf(t.status)!=='done'&&
+function priorityWarningTasks(rows){
+  return rows.filter(t=>categoryOf(t.status)!=='done'&&
     (t.priority==='Alta'||alertStatus(t).sort<=2))
     .sort((a,b)=>alertStatus(a).sort-alertStatus(b).sort||
       (a.priority==='Alta'?0:1)-(b.priority==='Alta'?0:1)||
       (a.deadline||'9999').localeCompare(b.deadline||'9999'));
+}
+function renderPriorityTasks(rows,limit=DASHBOARD_PREVIEW_COUNT){
+  const warnings=priorityWarningTasks(rows);
   $('#priority-headline').innerHTML=warnings.length?`<span class="priority-urgent-count">${warnings.length} requiriendo atención</span>`:
     '<span class="priority-none">Sin alertas prioritarias</span>';
   if(!warnings.length)return '<div class="compact-empty"><strong>Sin tareas que requieran atención</strong><span>Los vencimientos y prioridades aparecerán aquí.</span></div>';
-  return warnings.slice(0,8).map(t=>{
+  return warnings.slice(0,limit).map(t=>{
     const alert=alertStatus(t),critical=alert.sort<=1,soon=alert.sort===2;
     const tone=critical?'critical':soon?'warning':'normal';
     const deadline=critical?(dueDays(t.deadline)===0?'VENCE HOY':'VENCIDA'):
@@ -3874,7 +3972,29 @@ function renderPriorityTasks(rows){
       <span class="priority-task-bottom"><span class="priority-task-meta">${lod}<span>Resp: ${esc(t.owner||'Sin asignar')}</span></span>
         <span class="priority-task-status" title="Estado operativo configurado">${esc(t.status)}</span></span>
     </button>`;
-  }).join('')+(warnings.length>8?`<p class="priority-more">+${warnings.length-8} entregables adicionales que requieren atención. Usa los filtros para acotar el alcance.</p>`:'');
+  }).join('');
+}
+let dashboardListFocusReturn=null;
+function openDashboardList(type){
+  if(currentView!=='dashboard'||!['owners','priority'].includes(type))return;
+  const rows=dashboardTasks();
+  const isOwners=type==='owners';
+  const count=isOwners?new Set(rows.filter(t=>t.owner).map(t=>t.owner)).size:priorityWarningTasks(rows).length;
+  if(!count)return;
+  dashboardListFocusReturn=document.activeElement;
+  $('#dashboard-list-title').textContent=isOwners?'EQUIPO BIM COMPLETO':'TODAS LAS TAREAS CON PRIORIDAD';
+  $('#dashboard-list-summary').textContent=count+(isOwners?' colaboradores con entregables':' entregables que requieren atención')+' · Alcance filtrado del Dashboard';
+  const host=$('#dashboard-list-scroll');
+  host.innerHTML=isOwners?renderCollaboratorLoad(rows,Infinity):'<div class="dashboard-priority-full">'+renderPriorityTasks(rows,Infinity)+'</div>';
+  host.scrollTop=0;
+  $('#dashboard-list-back').classList.add('open');
+  $('#dashboard-list-back .close').focus();
+}
+function closeDashboardList(){
+  $('#dashboard-list-back').classList.remove('open');
+  $('#dashboard-list-scroll').replaceChildren();
+  if(dashboardListFocusReturn?.isConnected)dashboardListFocusReturn.focus({preventScroll:true});
+  dashboardListFocusReturn=null;
 }
 function renderDashboard(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
@@ -3885,9 +4005,17 @@ function renderDashboard(){
   $('#state-chart').innerHTML=renderOperationalHealth(rows);
   $('#radar-count').textContent=rows.length+' entregable'+(rows.length===1?'':'s');
   $('#owner-chart').innerHTML=renderCollaboratorLoad(rows);
+  const collaboratorCount=new Set(rows.filter(t=>t.owner).map(t=>t.owner)).size;
+  const ownerButton=$('#dashboard-all-owners');
+  ownerButton.hidden=collaboratorCount<=DASHBOARD_PREVIEW_COUNT;
+  ownerButton.textContent='Ver equipo completo ('+collaboratorCount+')';
   $('#team-summary').innerHTML=renderPackagePulse(rows);
   $('#package-chart').replaceChildren();
   $('#alerts-list').innerHTML=renderPriorityTasks(rows);
+  const priorityCount=priorityWarningTasks(rows).length;
+  const priorityButton=$('#dashboard-all-priority');
+  priorityButton.hidden=priorityCount<=DASHBOARD_PREVIEW_COUNT;
+  priorityButton.textContent='Ver todas ('+priorityCount+')';
   $('#dashboard-view .attention-card').classList.toggle('has-urgent',
     rows.some(t=>categoryOf(t.status)!=='done'&&alertStatus(t).sort<=1));
   renderDrill(rows);
@@ -4011,6 +4139,13 @@ function clearLinkedTasks(){
 }
 
 document.addEventListener('click', e => {
+  const expandedItem=e.target.closest('#dashboard-list-back [data-drill]');
+  if(expandedItem){
+    const type=expandedItem.dataset.drill,value=expandedItem.dataset.value||'';
+    closeDashboardList();
+    setDrill(type,value);
+    return;
+  }
   const edit = e.target.closest('[data-edit-id]');
   if(edit){ e.stopPropagation(); openEditor(edit.dataset.editId); return; }
   const drill = e.target.closest('#dashboard-view [data-drill]');
@@ -4024,6 +4159,7 @@ function switchView(v, authenticated=false){
     showProtectedAuth('weeklyAccess');
     return;
   }
+  if(v!=='dashboard'&&$('#dashboard-list-back').classList.contains('open'))closeDashboardList();
   currentView = v;
   for(const tab of ['tasks','dashboard','weekly']){
     $('#'+tab+'-view').classList.toggle('hidden',tab!==v);
@@ -4404,6 +4540,9 @@ taskTableBody.addEventListener('dblclick', e => {
 
 document.addEventListener('keydown', e => {
   if(e.key==='Escape'){
+    if($('#dashboard-list-back').classList.contains('open')){
+      e.preventDefault();closeDashboardList();return;
+    }
     // Esc cancela el diálogo superior sin enviar formularios ni ejecutar confirmaciones.
     if($('#settings-auth-back').classList.contains('open')){
       e.preventDefault();closeSettingsAuth();return;
