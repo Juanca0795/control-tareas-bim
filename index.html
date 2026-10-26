@@ -6387,7 +6387,7 @@ function openEditor(id=null){
   $('#f-title').focus();
 }
 function closeEditor(){
-  if(bimEvidenceEditor.busy){toast('Espera a que termine la carga de imágenes.');return;}
+  if(bimEvidenceEditor.busy||bimTaskEditorSubmitting){toast('Espera a que termine el guardado.');return;}
   // Esc y Cancelar descartan las fotografías pendientes, sin enviarlas al servidor.
   cleanupEvidenceEditor();
   $('#modal-back').classList.remove('open');
@@ -6412,8 +6412,10 @@ function taskWeeklyMetadata(previous, status, deadline){
     || isoWeekKey(new Date((deadline||todayString())+'T12:00:00'));
   return {plannedWeek,completedAt};
 }
+let bimTaskEditorSubmitting=false;
 async function saveEditor(e){
   e.preventDefault();
+  if(bimTaskEditorSubmitting)return;
   const statusVal = $('#f-status').value;
   const previous = editingId ? tasks.find(t=>t.id===editingId) : null;
   const deadline = $('#f-deadline').value;
@@ -6441,12 +6443,18 @@ async function saveEditor(e){
     toast('Completa todos los campos obligatorios.');
     return;
   }
-  // Si el almacenamiento de evidencias falla no se graba una tarea con fotos rotas.
-  try{await commitEvidenceEditor(obj.id)}
-  catch(err){
+  // Una sola transacción de formulario: evita dobles clics durante la carga asíncrona.
+  bimTaskEditorSubmitting=true;
+  $('#save-button').disabled=true;
+  try{
+    await commitEvidenceEditor(obj.id);
+  }catch(err){
     console.error('No se pudieron guardar fotografías:',err);
     toast('Fotografías no guardadas: '+err.message);
     return;
+  }finally{
+    bimTaskEditorSubmitting=false;
+    $('#save-button').disabled=false;
   }
   const wasEditing = Boolean(editingId);
   if(wasEditing){
