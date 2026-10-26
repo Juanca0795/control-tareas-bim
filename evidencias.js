@@ -12,6 +12,7 @@ function normalizeEvidenceByTask(input){
       const id=String(x.id||''),path=String(x.path||''),mime=String(x.mime||'');
       if(!/^[a-zA-Z0-9_-]{6,96}$/.test(id)||
          !/^bim-tasks\/BIM-[A-Za-z0-9_-]{1,64}\/[a-zA-Z0-9_-]{6,96}\.(jpg|png|webp)$/.test(path)||
+         !path.startsWith('bim-tasks/'+taskId+'/')||
          !BIM_EVIDENCE_TYPES.has(mime))continue;
       const entry={id,path,mime,name:String(x.name||'Imagen').slice(0,120),
         addedAt:String(x.addedAt||''),updatedAt:String(x.updatedAt||x.addedAt||''),
@@ -48,6 +49,8 @@ let bimEvidenceEditor={taskId:'',existing:[],pending:[],removed:new Set(),busy:f
 const bimEvidenceSigned=new Map();
 function startEvidenceEditor(t){
   cleanupEvidenceEditor();
+  // Signed URLs caducan: volver a solicitarlas al reabrir el formulario.
+  bimEvidenceSigned.clear();
   bimEvidenceEditor={taskId:t?.id||'',existing:t?taskEvidenceRecords(t.id).map(x=>({...x})):[],
     pending:[],removed:new Set(),busy:false,token:bimEvidenceEditor.token+1};
   renderEvidenceEditor();
