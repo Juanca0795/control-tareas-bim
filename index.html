@@ -3631,35 +3631,45 @@ html[data-theme="light"]{
 }
 
 
-/* UI/UX Pro Max · Premium moderno: identidad S&P y navegación continua.
-   Solo transform/opacity: sin saltos de layout, con movimiento reducido. */
+/* UI/UX Pro Max · Marca S&P y tabs PREMIUM: visibilidad equilibrada.
+   Reglas motion.csv: respuestas 150-250 ms en hover, estados claros,
+   continuidad entre pestañas, transform/opacidad y reduced-motion. */
 @keyframes bimLogoIgnition{
-  0%,100%{filter:brightness(1)}
-  48%{filter:brightness(1.45)}
+  0%,6%,28%,100%{filter:brightness(1)}
+  12%{filter:brightness(1.35)}
 }
 .brand-mark svg .bim-logo-tile{
-  animation:bimLogoIgnition .52s ease-in-out 1 both;
+  animation:bimLogoIgnition 4.6s ease-in-out infinite;
 }
 .brand-mark svg .bim-logo-amp{animation-delay:.13s}
 .brand-mark svg .bim-logo-p{animation-delay:.26s}
 @keyframes bimBrandTitleGlow{
-  0%{text-shadow:none}
-  45%{text-shadow:0 0 9px rgba(111,195,255,.28)}
-  100%{text-shadow:none}
+  0%,14%,78%,100%{text-shadow:0 0 0 transparent}
+  37%,55%{text-shadow:0 0 10px rgba(110,194,255,.66)}
 }
 .brand > div:last-child > strong{
-  animation:bimBrandTitleGlow .92s ease-out .26s 1 both;
+  animation:bimBrandTitleGlow 4.6s ease-in-out 1s infinite;
 }
 @keyframes bimLogoReflectionSweep{
-  0%,10%{transform:translateX(0)}
-  22%,100%{transform:translateX(225px)}
+  0%,5%{transform:translateX(0);opacity:0}
+  11%{opacity:.90}
+  27%{transform:translateX(245px);opacity:.90}
+  33%,100%{transform:translateX(245px);opacity:0}
 }
 .brand-mark svg .bim-logo-reflection{
-  animation:bimLogoReflectionSweep 7.2s cubic-bezier(.25,.62,.32,1) 1.25s infinite;
-  will-change:transform;
+  animation:bimLogoReflectionSweep 4.6s cubic-bezier(.25,.62,.32,1) 1.1s infinite;
+  will-change:transform,opacity;
 }
-/* El indicador se desliza por detrás de cada botón, incluido el cambio
-   de distribución cuando aparece Backup en Control Semanal. */
+.brand-mark svg{
+  transition:filter .24s ease;
+}
+@media(hover:hover) and (pointer:fine){
+  .brand:hover .brand-mark svg{
+    filter:drop-shadow(0 0 6px rgba(245,70,80,.42));
+  }
+}
+/* El fondo activo se desplaza de un botón al siguiente sin cambiar sus
+   tamaños ni la funcionalidad del control de acceso semanal. */
 .sidebar nav[role="tablist"]{position:relative;isolation:isolate}
 .sidebar nav .bim-nav-indicator{
   position:absolute;
@@ -3667,34 +3677,83 @@ html[data-theme="light"]{
   width:var(--bim-tab-width,0px);
   height:var(--bim-tab-height,0px);
   transform:translate3d(var(--bim-tab-x,0px),var(--bim-tab-y,0px),0);
-  background:var(--bg-panel);
-  border:1px solid var(--border-strong);
+  background:linear-gradient(180deg,rgba(67,131,202,.18),var(--bg-panel));
+  border:1px solid rgba(102,177,255,.68);
   border-radius:8px;
-  box-shadow:0 3px 14px rgba(0,0,0,.11);
+  box-shadow:
+    0 0 0 1px rgba(79,152,243,.10),
+    0 4px 15px rgba(35,124,228,.20),
+    inset 0 0 14px rgba(89,157,242,.09);
   z-index:0;
   opacity:0;
   pointer-events:none;
-  transition:transform .30s cubic-bezier(.22,.78,.25,1),
-    width .30s cubic-bezier(.22,.78,.25,1),
-    height .30s cubic-bezier(.22,.78,.25,1);
+  transition:
+    transform .42s cubic-bezier(.22,.78,.25,1),
+    width .42s cubic-bezier(.22,.78,.25,1),
+    height .42s cubic-bezier(.22,.78,.25,1);
 }
 .sidebar nav.bim-nav-motion-ready .bim-nav-indicator{opacity:1}
-.sidebar nav.bim-nav-motion-ready .nav-link{position:relative;z-index:1}
-.sidebar nav.bim-nav-motion-ready .nav-link.active{
+.sidebar nav.bim-nav-motion-ready .nav-link{
+  position:relative;
+  z-index:1;
+  transition:color .20s ease,background-color .20s ease,filter .20s ease;
+}
+.sidebar nav.bim-nav-motion-ready .nav-link.active,
+.sidebar nav.bim-nav-motion-ready .nav-link.active:hover{
   background:transparent!important;
   border-color:transparent!important;
   box-shadow:none!important;
+  color:var(--ink-primary);
 }
-.sidebar nav.bim-nav-motion-ready .nav-link.active:hover{
-  background:transparent!important;
+.sidebar nav .nav-link.active svg{
+  color:#73bcff;
+  filter:drop-shadow(0 0 3px rgba(97,174,255,.35));
+}
+@keyframes bimTabUnderlineBreath{
+  0%,100%{opacity:.65;box-shadow:0 0 5px rgba(71,157,255,.4)}
+  50%{opacity:1;box-shadow:0 0 11px rgba(84,172,255,.77)}
+}
+.sidebar nav.bim-nav-motion-ready .nav-link.active::after{
+  content:"";
+  position:absolute;
+  pointer-events:none;
+  left:18%;right:18%;bottom:2px;
+  height:2px;
+  border-radius:99px;
+  background:#72bdff;
+  animation:bimTabUnderlineBreath 2.9s ease-in-out infinite;
+}
+@media(hover:hover) and (pointer:fine){
+  .sidebar nav.bim-nav-motion-ready .nav-link:not(.active):hover{
+    background:rgba(90,157,239,.14);
+    color:var(--ink-primary);
+    box-shadow:inset 0 0 0 1px rgba(109,181,255,.20);
+  }
+  .sidebar nav.bim-nav-motion-ready .nav-link:not(.active):hover svg{
+    color:#86c7ff;
+    filter:drop-shadow(0 0 4px rgba(100,180,255,.45));
+  }
+}
+/* Modo claro: conservar contraste semántico, sin brillo excesivo. */
+html[data-theme="light"] .sidebar nav .bim-nav-indicator{
+  background:linear-gradient(180deg,rgba(80,161,239,.13),var(--bg-panel));
+  border-color:rgba(47,115,200,.48);
+  box-shadow:0 0 0 1px rgba(47,115,200,.08),0 4px 13px rgba(47,115,200,.10);
+}
+html[data-theme="light"] .sidebar nav .nav-link.active svg{color:#2563aa}
+html[data-theme="light"] .sidebar nav.bim-nav-motion-ready .nav-link.active::after{
+  background:#397bc1;
 }
 @media(prefers-reduced-motion:reduce){
   .brand-mark svg .bim-logo-tile,
   .brand-mark svg .bim-logo-reflection,
-  .brand > div:last-child > strong{animation:none!important;will-change:auto}
-  .sidebar nav .bim-nav-indicator{transition:none!important}
+  .brand > div:last-child > strong,
+  .sidebar nav .nav-link.active::after{
+    animation:none!important;will-change:auto;
+  }
+  .sidebar nav .bim-nav-indicator,
+  .brand-mark svg{transition:none!important}
 }
-
 </style>
 </head>
 <body>
@@ -3710,7 +3769,7 @@ html[data-theme="light"]{
           </clipPath>
           <linearGradient id="bim-logo-reflection" x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stop-color="#ffffff" stop-opacity="0"/>
-            <stop offset="48%" stop-color="#ffffff" stop-opacity=".30"/>
+            <stop offset="48%" stop-color="#ffffff" stop-opacity=".55"/>
             <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
           </linearGradient>
         </defs>
