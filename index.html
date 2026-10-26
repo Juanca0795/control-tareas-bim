@@ -5857,7 +5857,7 @@ function animateViewMetrics(viewName){
   if(!view||view.classList.contains('hidden'))return;
   const token=bimMotionToken;
   const nodes=view.querySelectorAll([
-    '.stat .val','.weekly-kpi .number','.health-ring-center strong',
+    '.stat .val','.weekly-kpi .number','.weekly-projection-kpi .proj-value','.health-ring-center strong',
     '.health-metric-value','.collaborator-percent','.priority-urgent-count',
     '.pulse-specialty-matrix tbody strong','.weekly-time-ppc'
   ].join(','));
@@ -5931,7 +5931,7 @@ function scheduleBimMetricsAnimation(viewName,force=false){
     if(!view||view.classList.contains('hidden'))return;
     // Restaurar una animación anterior antes de leer valores calculados.
     stopBimMetricsAnimation();
-    const kpis=[...view.querySelectorAll('.stat .val,.weekly-kpi .number')];
+    const kpis=[...view.querySelectorAll('.stat .val,.weekly-kpi .number,.weekly-projection-kpi .proj-value')];
     const bars=[...view.querySelectorAll('.stat-meter i,.collaborator-track i,.weekly-fallback .weekly-track b')];
     const fingerprint=kpis.map(n=>n.textContent.trim()).join('|')+'::'+
       bars.map(n=>n.getAttribute('style')||'').join('|');
