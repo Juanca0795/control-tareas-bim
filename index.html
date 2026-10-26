@@ -4395,8 +4395,59 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   .task-drawer .bim-editor-photo-tag{display:none}}
 @media(prefers-reduced-motion:reduce){.task-drawer .bim-editor-tab{transition:none}}
 
+
+/* Generación de PPTX con cabeceras rojas y 3 columnas del modelo de reunión semanal. */
+.sidebar .weekly-ppt-launch{
+  display:inline-flex;align-items:center;gap:6px;min-height:33px;padding:7px 10px;
+  border:1px solid var(--border-strong);border-radius:7px;background:var(--bg-subtle);
+  color:var(--accent-blue);font-size:10px;font-weight:700;white-space:nowrap;cursor:pointer;
+  transition:background-color .2s ease,border-color .2s ease,box-shadow .2s ease;
+}
+.sidebar .weekly-ppt-launch svg{width:14px;height:14px;flex:none}
+.sidebar .weekly-ppt-launch:hover{
+  background:var(--bg-hover);border-color:var(--accent-blue);
+  box-shadow:0 0 0 1px var(--bim-interaction-glow);
+}
+.sidebar .weekly-ppt-launch.hidden{display:none!important}
+.bim-ppt-dialog{width:min(740px,calc(100vw - 24px));max-height:calc(100dvh - 34px)}
+.bim-ppt-dialog .modal-body{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:auto}
+.bim-ppt-subtitle{font-size:11px;color:var(--ink-secondary);line-height:1.5;margin:0}
+.bim-ppt-note{font-size:10px;color:var(--ink-muted);padding:10px 12px;border:1px solid var(--border-base);
+  border-radius:8px;background:var(--bg-subtle);line-height:1.5}
+.bim-ppt-list{display:grid;gap:12px;min-height:0}
+.bim-ppt-group{border:1px solid var(--border-base);border-radius:10px;overflow:hidden;background:var(--bg-panel)}
+.bim-ppt-group h3{display:flex;gap:8px;align-items:center;justify-content:space-between;margin:0;
+  padding:11px 13px;border-bottom:1px solid var(--border-base);font-size:11px;color:var(--ink-primary)}
+.bim-ppt-group h3 span{font-size:10px;color:var(--ink-muted);font-weight:500}
+.bim-ppt-items{display:grid;gap:0}
+.bim-ppt-item{display:grid;grid-template-columns:110px minmax(0,1fr);gap:12px;
+  border-bottom:1px solid var(--border-base);padding:12px}
+.bim-ppt-item:last-child{border-bottom:0}
+.bim-ppt-thumb{display:grid;place-items:center;min-width:0;height:92px;border:1px solid var(--border-strong);
+  border-radius:7px;background:var(--bg-subtle);font-size:10px;color:var(--ink-muted);overflow:hidden}
+.bim-ppt-thumb img{width:100%;height:100%;object-fit:contain}
+.bim-ppt-fields{min-width:0}
+.bim-ppt-item-title{display:flex;justify-content:space-between;gap:10px;align-items:center;
+  font-size:10px;color:var(--ink-secondary);margin-bottom:7px}
+.bim-ppt-item-title label{display:inline-flex;align-items:center;gap:6px;font-weight:650;color:var(--ink-primary)}
+.bim-ppt-item-title span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bim-ppt-caption-label{display:block;font-size:9px;font-weight:650;color:var(--ink-secondary);margin-bottom:5px}
+.bim-ppt-fields textarea{width:100%;min-width:0;resize:vertical;min-height:56px;border:1px solid var(--border-strong);
+  border-radius:7px;background:var(--bg-subtle);color:var(--ink-primary);font:11px Inter,sans-serif;
+  line-height:1.4;padding:8px}
+.bim-ppt-fields textarea:focus{outline:1px solid var(--accent-blue)}
+.bim-ppt-selection{color:var(--ink-secondary);font-size:10px}
+.bim-ppt-progress{font-size:10px;color:var(--accent-blue);line-height:1.5;min-height:16px}
+@media(max-width:680px){
+  .bim-ppt-item{grid-template-columns:83px minmax(0,1fr);gap:8px;padding:9px}
+  .bim-ppt-thumb{height:80px}
+  .bim-ppt-dialog .modal-ft{flex-wrap:wrap;gap:9px}
+}
+@media(prefers-reduced-motion:reduce){.sidebar .weekly-ppt-launch{transition:none}}
+
 </style>
 <script src="evidencias.js"></script>
+<script src="exportar-ppt-bim.js"></script>
 <script src="cnc.js"></script>
 <script src="proyeccion.js"></script>
 </head>
@@ -4437,6 +4488,13 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
     <button type="button" id="weekly-tab-proyeccion" class="weekly-subtab" role="tab" aria-selected="false" aria-controls="weekly-proyeccion" tabindex="-1" onclick="switchWeeklySubtab('proyeccion')">PROYECCIÓN</button>
   </div>
   <nav aria-label="Vistas del sistema" role="tablist">
+    <button type="button" id="weekly-ppt-launch" class="weekly-ppt-launch hidden"
+      onclick="openBimPptExport()" title="Exportar las fotografías de la semana a una presentación PowerPoint"
+      aria-label="Exportar evidencias BIM a PowerPoint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M12 14v5m-3-3 3 3 3-3"/>
+      </svg> Exportar PPT
+    </button>
     <button type="button" id="weekly-backup-launch" class="weekly-backup-launch hidden" onclick="createWeeklyBackupAndOpen()" title="Crear backup en Supabase y consultar respaldos" aria-label="Abrir respaldos de Control Semanal">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3M5 7a8 8 0 0 1 14 0"/></svg> Backup
     </button>
@@ -4938,6 +4996,34 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
         <p class="cnc-explainer">La fecha original no se modifica. El registro será de solo lectura.</p>
         <div class="modal-ft"><div><button type="button" class="btn" onclick="closeCnc()">Cancelar</button><button type="submit" class="btn primary">Guardar causa CNC</button></div></div>
       </form>
+    </div>
+  </div>
+</div>
+
+
+<!-- EXPORTACIÓN PPTX BIM: solo Control Semanal, agrupado por paquete. -->
+<div class="modal-back" id="bim-ppt-back" onclick="if(event.target===this)closeBimPptExport()">
+  <div class="modal bim-ppt-dialog" role="dialog" aria-modal="true" aria-labelledby="bim-ppt-title">
+    <div class="modal-hd">
+      <h2 id="bim-ppt-title">EXPORTAR EVIDENCIAS BIM A POWERPOINT</h2>
+      <button type="button" class="close" onclick="closeBimPptExport()" aria-label="Cerrar exportación">×</button>
+    </div>
+    <div class="modal-body">
+      <p class="bim-ppt-subtitle" id="bim-ppt-week-label"></p>
+      <p class="bim-ppt-note">
+        Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores.
+        Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía
+        antes de exportar. Solo se incluyen evidencias guardadas de la semana y filtros actuales.
+      </p>
+      <div id="bim-ppt-list" class="bim-ppt-list"></div>
+      <p id="bim-ppt-progress" class="bim-ppt-progress" role="status" aria-live="polite"></p>
+    </div>
+    <div class="modal-ft">
+      <span class="bim-ppt-selection" id="bim-ppt-selection"></span>
+      <div>
+        <button type="button" class="btn" onclick="closeBimPptExport()">Cancelar</button>
+        <button type="button" class="btn primary" id="bim-ppt-download" onclick="exportBimPpt()">Descargar PPTX</button>
+      </div>
     </div>
   </div>
 </div>
@@ -6147,6 +6233,7 @@ function switchView(v, authenticated=false){
     $('#nav-'+tab).setAttribute('aria-selected',String(tab===v));
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
+  $('#weekly-ppt-launch').classList.toggle('hidden',v!=='weekly');
   $('#weekly-subtabs').classList.toggle('hidden',v!=='weekly');
   $('.sidebar').classList.toggle('weekly-subtabs-visible',v==='weekly');
   // La sesión del navegador recuerda la vista, sin almacenar datos de tareas.
@@ -6638,6 +6725,9 @@ document.addEventListener('keydown', e => {
     }
     if($('#weekly-backup-back').classList.contains('open')){
       e.preventDefault();closeWeeklyBackupDialog();return;
+    }
+    if($('#bim-ppt-back').classList.contains('open')){
+      e.preventDefault();closeBimPptExport();return;
     }
     if($('#cnc-back').classList.contains('open')){
       e.preventDefault();closeCnc();return;
@@ -7505,6 +7595,12 @@ window.bimEvidenceCloud={
     const {data,error}=await d.storage.from(EVIDENCE_BUCKET).createSignedUrl(path,60*30);
     if(error||!data?.signedUrl)throw Error(error?.message||'No se pudo abrir imagen');
     return data.signedUrl;
+  },
+  async download(path){
+    if(!ready||cloudEmptyGuard)throw Error('Supabase Storage no está disponible');
+    const {data,error}=await d.storage.from(EVIDENCE_BUCKET).download(path);
+    if(error||!data)throw Error(error?.message||'No se descargó la fotografía');
+    return data;
   },
   async remove(paths){
     if(!Array.isArray(paths)||!paths.length)return;
