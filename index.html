@@ -4966,7 +4966,8 @@ let weeklySnapshots = readWeeklySnapshots();
 let selectedWeek=(()=>{
   const fallback=isoWeekKey(new Date());
   try{
-    const saved=sessionStorage.getItem('area-bim-selected-week');
+    const saved=sessionStorage.getItem('area-bim-selected-week')||
+      (typeof history!=='undefined'?history.state?.bimSelectedWeek:'');
     return saved&&weekStart(saved)?saved:fallback;
   }catch(e){return fallback}
 })();
@@ -5850,13 +5851,17 @@ function formatBimAnimatedNumber(entry,value){
   if(entry.sep===',')formatted=formatted.replace('.',',');
   return entry.leading+formatted+entry.suffix;
 }
+function bimMotionPanel(viewName,view){
+  return viewName==='weekly'?($('#weekly-'+weeklyInnerTab)||view):view;
+}
 function animateViewMetrics(viewName){
   stopBimMetricsAnimation();
   if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
   const view=$('#'+viewName+'-view');
   if(!view||view.classList.contains('hidden'))return;
+  const motionRoot=bimMotionPanel(viewName,view);
   const token=bimMotionToken;
-  const nodes=view.querySelectorAll([
+  const nodes=motionRoot.querySelectorAll([
     '.stat .val','.weekly-kpi .number','.weekly-projection-kpi .proj-value','.health-ring-center strong',
     '.health-metric-value','.collaborator-percent','.priority-urgent-count',
     '.pulse-specialty-matrix tbody strong','.weekly-time-ppc'
@@ -5868,10 +5873,10 @@ function animateViewMetrics(viewName){
   }
   // El ancho real sigue siendo el definido por las métricas. Solo se escala
   // visualmente desde cero sin modificar el layout ni la base de datos.
-  const tracks=view.querySelectorAll([
+  const tracks=motionRoot.querySelectorAll([
     '.stat-meter i','.collaborator-track i','.package-pulse-track i',
     '.weekly-track b','.weekly-dual-track b','.weekly-stacked-track b',
-    '.pulse-specialty-matrix .pulse-matrix-bar i'
+    '.pulse-specialty-matrix .pulse-matrix-bar i','.proj-stack .proj-part'
   ].join(','));
   if(typeof Element!=='undefined'&&Element.prototype.animate){
     for(const track of tracks){
@@ -5880,13 +5885,28 @@ function animateViewMetrics(viewName){
         {transform:'scaleX(1)',transformOrigin:'left center'}
       ],{duration:760,easing:'cubic-bezier(.22,.76,.24,1)'}));
     }
-    for(const ring of view.querySelectorAll('.health-ring-segment')){
+    for(const ring of motionRoot.querySelectorAll('.health-ring-segment')){
       const final=ring.getAttribute('stroke-dasharray');
       if(!final)continue;
       bimMotionBarAnimations.push(ring.animate([
         {strokeDasharray:'0 100'},
         {strokeDasharray:final}
       ],{duration:800,easing:'cubic-bezier(.22,.76,.24,1)'}));
+    }
+    if(viewName==='weekly'){
+      // Incluso un 0 se revela visualmente sin falsear el valor mostrado.
+      for(const value of motionRoot.querySelectorAll('.weekly-kpi .number,.weekly-projection-kpi .proj-value')){
+        bimMotionBarAnimations.push(value.animate([
+          {opacity:.30,filter:'brightness(.72)'},{opacity:1,filter:'brightness(1)'}
+        ],{duration:700,easing:'cubic-bezier(.22,.76,.24,1)'}));
+      }
+      // Revelado horizontal de las líneas reales de Chart.js y sus alternativas HTML.
+      for(const plot of motionRoot.querySelectorAll('#weekly-trend-chart canvas,#weekly-projection-chart canvas,#weekly-trend-chart .weekly-fallback,#weekly-projection-chart .proj-fallback')){
+        bimMotionBarAnimations.push(plot.animate([
+          {clipPath:'inset(0 100% 0 0)',opacity:.65},
+          {clipPath:'inset(0 0 0 0)',opacity:1}
+        ],{duration:900,easing:'cubic-bezier(.22,.76,.24,1)'}));
+      }
     }
   }
   const duration=670,start=performance.now();
@@ -5931,12 +5951,14 @@ function scheduleBimMetricsAnimation(viewName,force=false){
     if(!view||view.classList.contains('hidden'))return;
     // Restaurar una animación anterior antes de leer valores calculados.
     stopBimMetricsAnimation();
-    const kpis=[...view.querySelectorAll('.stat .val,.weekly-kpi .number,.weekly-projection-kpi .proj-value')];
-    const bars=[...view.querySelectorAll('.stat-meter i,.collaborator-track i,.weekly-fallback .weekly-track b')];
+    const root=bimMotionPanel(viewName,view);
+    const kpis=[...root.querySelectorAll('.stat .val,.weekly-kpi .number,.weekly-projection-kpi .proj-value')];
+    const bars=[...root.querySelectorAll('.stat-meter i,.collaborator-track i,.weekly-fallback .weekly-track b,.proj-stack .proj-part')];
     const fingerprint=kpis.map(n=>n.textContent.trim()).join('|')+'::'+
       bars.map(n=>n.getAttribute('style')||'').join('|');
-    if(!force&&bimMetricSignatures[viewName]===fingerprint)return;
-    bimMetricSignatures[viewName]=fingerprint;
+    const key=viewName==='weekly'?viewName+':'+weeklyInnerTab:viewName;
+    if(!force&&bimMetricSignatures[key]===fingerprint)return;
+    bimMetricSignatures[key]=fingerprint;
     animateViewMetrics(viewName);
   });
 }
@@ -5996,19 +6018,31 @@ function switchView(v, authenticated=false){
     if(v==='weekly')sessionStorage.setItem('area-bim-weekly-session','authorized');
     else sessionStorage.removeItem('area-bim-weekly-session');
   }catch(e){}
+  rememberBimViewInHistory();
   updateBimNavIndicator();
   window.scrollTo(0,0);
   if(v==='dashboard') renderDashboard();
-  if(v==='weekly') renderWeekly();
-  // Anima los valores reales dentro de la pestaña, sin revelar ni mover paneles.
-  if(previousView!==v)scheduleBimMetricsAnimation(v,true);
+  if(v==='weekly') renderWeekly(previousView!==v);
+  // La carga semanal se programa dentro de renderWeekly para evitar una segunda animación.
+  if(previousView!==v&&v!=='weekly')scheduleBimMetricsAnimation(v,true);
+}
+
+function rememberBimViewInHistory(){
+  // Se guardan solo preferencias de navegación, nunca credenciales.
+  try{
+    if(typeof history==='undefined'||typeof history.replaceState!=='function')return;
+    const previous=history.state&&typeof history.state==='object'?history.state:{};
+    history.replaceState({...previous,bimView:currentView,
+      bimWeeklySubtab:weeklyInnerTab,bimSelectedWeek:selectedWeek},'');
+  }catch(e){}
 }
 
 function restoreBimViewOnReload(){
   // Solo restablecer Control Semanal si esa misma pestaña ya superó su acceso.
   let saved='',authorized=false;
   try{
-    saved=sessionStorage.getItem('area-bim-active-view')||'';
+    saved=sessionStorage.getItem('area-bim-active-view')||
+      (typeof history!=='undefined'?history.state?.bimView:'')||'';
     authorized=sessionStorage.getItem('area-bim-weekly-session')==='authorized';
   }catch(e){}
   if(saved==='tasks')switchView('tasks');
@@ -7183,7 +7217,7 @@ function weeklyBacklogChart(){
       <b style="width:${values[i]===null?0:100*values[i]/max}%;background:${c.amber}"></b></span>
       <b>${values[i]===null?'-':values[i]}</b></div>`).join('')+'</div>';
 }
-function renderWeekly(){
+function renderWeekly(forceMotion=false){
   if(!$('#weekly-view')||currentView!=='weekly')return;
   syncWeeklySubtab();
   disposeWeeklyCharts();
@@ -7222,7 +7256,7 @@ function renderWeekly(){
     weeklyCncPanel(m);
   }
   renderWeeklyProjection(m);
-  scheduleBimMetricsAnimation('weekly');
+  scheduleBimMetricsAnimation('weekly',forceMotion);
 }
 function requestWeeklyClose(){
   if(weeklySnapshot(selectedWeek)){toast('Esta semana ya fue cerrada');return;}
