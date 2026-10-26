@@ -3314,7 +3314,10 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 }
 #dashboard-view .pulse-specialty-matrix thead th:last-child{min-width:55px}
 #dashboard-view .pulse-specialty-matrix .pulse-matrix-specialty span{
-  display:block;overflow:hidden;text-overflow:ellipsis;max-width:105px;
+  /* Centrar el título en SU columna, no en una caja de 105 px a la izquierda. */
+  display:block;width:max-content;max-width:min(100%,105px);
+  margin-inline:auto;text-align:center;
+  overflow:hidden;text-overflow:ellipsis;
   color:rgb(var(--matrix-rgb));
 }
 #dashboard-view .pulse-specialty-matrix tbody th,
@@ -3339,7 +3342,10 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   font-size:9px;font-weight:400;color:var(--ink-muted);
 }
 #dashboard-view .pulse-matrix-count{
+  /* Números de 1, 2, 3 o más cifras centrados dentro de la misma celda. */
+  display:inline-flex;align-items:center;justify-content:center;
   min-width:27px;min-height:25px;padding:4px 6px;font-weight:700!important;
+  font-variant-numeric:tabular-nums;
   background:rgba(var(--matrix-rgb),.13);
   color:rgb(var(--matrix-rgb));border:1px solid transparent;
 }
@@ -3361,6 +3367,8 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 }
 #dashboard-view .pulse-specialty-matrix tfoot th{background:var(--bg-subtle)}
 #dashboard-view .pulse-matrix-total{
+  display:inline-flex;align-items:center;justify-content:center;
+  min-width:27px;min-height:25px;font-variant-numeric:tabular-nums;
   background:transparent;color:rgb(var(--matrix-rgb));
   border:1px solid transparent;padding:4px 6px;font-weight:700!important;
 }
