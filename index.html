@@ -2838,46 +2838,75 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   flex:1 1 auto;margin:0;display:flex!important;flex-direction:column;
 }
 #dashboard-view .owner-card .collaborator-list{
-  grid-auto-rows:minmax(88px,auto);margin:0;flex:1 1 auto;
+  grid-auto-rows:minmax(65px,auto);margin:0;flex:1 1 auto;
 }
 #dashboard-view .attention-card #alerts-list{
-  flex:1 1 auto;grid-auto-rows:minmax(88px,auto);margin:0;
+  flex:1 1 auto;grid-auto-rows:minmax(65px,auto);margin:0;
 }
 #dashboard-view .owner-card .collaborator-row,
 #dashboard-view .attention-card .priority-task{
-  min-height:88px;
+  min-height:65px;
 }
-#dashboard-list-back{z-index:90}
-#dashboard-list-back .dashboard-list-modal{
-  width:min(750px,calc(100vw - 28px));
-  max-height:min(86dvh,850px);
-  display:flex;flex-direction:column;overflow:hidden;
-}
-#dashboard-list-back .dashboard-list-summary{
-  color:var(--ink-muted);padding:10px 20px 0;margin:0;
-  font-size:11px;flex:0 0 auto;
-}
-#dashboard-list-back .dashboard-list-scroll{
-  padding:14px 20px 20px;overflow-y:auto;min-height:0;
-  flex:1 1 auto;overscroll-behavior:contain;
-}
-#dashboard-list-back .collaborator-list,
-#dashboard-list-back .dashboard-priority-full{
-  display:grid;gap:10px;margin:0;
-}
-#dashboard-list-back .collaborator-row,
-#dashboard-list-back .priority-task{width:100%;min-height:68px}
 @media(max-width:760px){
   #dashboard-view .dashboard-compact-heading{flex-wrap:wrap;min-height:0}
   #dashboard-view .dashboard-heading-actions{flex-direction:row;flex-wrap:wrap}
   #dashboard-view .owner-card .collaborator-list,
-  #dashboard-view .attention-card #alerts-list{grid-auto-rows:minmax(75px,auto)}
+  #dashboard-view .attention-card #alerts-list{grid-auto-rows:minmax(65px,auto)}
   #dashboard-view .owner-card .collaborator-row,
-  #dashboard-view .attention-card .priority-task{min-height:75px}
-  #dashboard-list-back .dashboard-list-scroll{padding:12px}
+  #dashboard-view .attention-card .priority-task{min-height:65px}
+
 }
 @media(prefers-reduced-motion:reduce){
   #dashboard-list-back *{scroll-behavior:auto}
+}
+
+/* PPC: diferencia porcentual con semántica inequívoca */
+#weekly-view .weekly-trend-footer .weekly-benchmark{
+  display:inline-flex;align-items:center;gap:4px;font-weight:700;
+}
+#weekly-view .weekly-trend-footer .weekly-benchmark.above{color:var(--status-done-fg)}
+#weekly-view .weekly-trend-footer .weekly-benchmark.below{color:var(--status-crit-fg)}
+#weekly-view .weekly-trend-footer .weekly-benchmark.at-goal{color:var(--ink-secondary)}
+/* Dashboard: paneles compactos, lista completa desplegable EN la propia tarjeta */
+#dashboard-view .owner-card .collaborator-row{
+  min-height:65px;padding:8px 10px;gap:7px;
+  grid-template-columns:32px minmax(0,1fr) minmax(78px,120px) 38px;
+}
+#dashboard-view .owner-card .collaborator-avatar{height:32px;width:32px;font-size:10px}
+#dashboard-view .owner-card .collaborator-name{font-size:10.5px}
+#dashboard-view .owner-card .collaborator-count{font-size:9px}
+#dashboard-view .owner-card .collaborator-track{height:5px}
+#dashboard-view .attention-card .priority-task{
+  min-height:65px;padding:7px 10px;gap:5px;
+}
+#dashboard-view .attention-card .priority-task-title{font-size:11px;line-height:1.3}
+#dashboard-view .attention-card .priority-task-code,
+#dashboard-view .attention-card .priority-deadline{font-size:9px}
+#dashboard-view .attention-card .priority-deadline{padding:2px 5px}
+#dashboard-view .attention-card .priority-task-meta,
+#dashboard-view .attention-card .priority-task-status{font-size:9px}
+#dashboard-view .owner-card #owner-chart,
+#dashboard-view .attention-card #alerts-list{min-height:0}
+#dashboard-view .executive-grid.dashboard-list-expanded>.owner-card,
+#dashboard-view .executive-grid.dashboard-list-expanded>.attention-card{
+  align-self:start;height:auto;
+}
+#dashboard-view .owner-card.is-expanded .collaborator-list,
+#dashboard-view .attention-card.is-expanded #alerts-list{
+  max-height:min(65vh,720px);overflow-y:auto;overscroll-behavior:contain;
+  padding-right:4px;
+}
+#dashboard-view .owner-card.is-expanded #owner-chart{flex:none}
+@media(max-width:760px){
+  #dashboard-view .owner-card .collaborator-row{
+    grid-template-columns:32px minmax(0,1fr) minmax(75px,110px) 37px;
+    padding:7px 9px;
+  }
+}
+@media(max-width:510px){
+  #dashboard-view .owner-card .collaborator-row{
+    grid-template-columns:30px minmax(0,1fr) 38px;
+  }
 }
 </style>
 </head>
@@ -3084,7 +3113,7 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
             <h2>CARGA Y DESEMPEÑO POR COLABORADOR BIM</h2>
             <p class="desc">Entregables asignados, completados y porcentaje de cierre</p>
           </div>
-          <button id="dashboard-all-owners" type="button" class="dashboard-open-all" onclick="openDashboardList('owners')" hidden>Ver equipo completo</button>
+          <button id="dashboard-all-owners" type="button" class="dashboard-open-all" onclick="toggleDashboardList('owners')" hidden>Ver equipo completo</button>
         </div>
         <div id="owner-chart" class="h-bars"></div>
       </article>
@@ -3104,7 +3133,7 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
           </div>
           <div class="dashboard-heading-actions">
             <div class="priority-headline" id="priority-headline" aria-live="polite"></div>
-            <button id="dashboard-all-priority" type="button" class="dashboard-open-all" onclick="openDashboardList('priority')" hidden>Ver todas</button>
+            <button id="dashboard-all-priority" type="button" class="dashboard-open-all" onclick="toggleDashboardList('priority')" hidden>Ver todas</button>
           </div>
         </div>
         <div class="big-list" id="alerts-list"></div>
@@ -3115,19 +3144,6 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
     <footer>Indicadores calculados a partir de los registros del tablero compartido.</footer>
   </div>
 </main>
-
-<!-- MODAL: LISTA COMPLETA DEL DASHBOARD (SOLO LECTURA) -->
-<div class="modal-back" id="dashboard-list-back" onclick="if(event.target===this)closeDashboardList()">
-  <div class="modal dashboard-list-modal" role="dialog" aria-modal="true" aria-labelledby="dashboard-list-title">
-    <div class="modal-hd">
-      <h2 id="dashboard-list-title">Lista completa</h2>
-      <button type="button" class="close" onclick="closeDashboardList()" aria-label="Cerrar lista completa">×</button>
-    </div>
-    <p class="dashboard-list-summary" id="dashboard-list-summary"></p>
-    <div class="dashboard-list-scroll" id="dashboard-list-scroll"></div>
-    <div class="modal-ft"><div><button type="button" class="btn" onclick="closeDashboardList()">Cerrar</button></div></div>
-  </div>
-</div>
 
 <!-- MODAL: ACCESO A CONFIGURACIÓN -->
 <div class="modal-back" id="settings-auth-back" onclick="if(event.target===this)closeSettingsAuth()">
@@ -3974,27 +3990,14 @@ function renderPriorityTasks(rows,limit=DASHBOARD_PREVIEW_COUNT){
     </button>`;
   }).join('');
 }
-let dashboardListFocusReturn=null;
-function openDashboardList(type){
-  if(currentView!=='dashboard'||!['owners','priority'].includes(type))return;
-  const rows=dashboardTasks();
-  const isOwners=type==='owners';
-  const count=isOwners?new Set(rows.filter(t=>t.owner).map(t=>t.owner)).size:priorityWarningTasks(rows).length;
-  if(!count)return;
-  dashboardListFocusReturn=document.activeElement;
-  $('#dashboard-list-title').textContent=isOwners?'EQUIPO BIM COMPLETO':'TODAS LAS TAREAS CON PRIORIDAD';
-  $('#dashboard-list-summary').textContent=count+(isOwners?' colaboradores con entregables':' entregables que requieren atención')+' · Alcance filtrado del Dashboard';
-  const host=$('#dashboard-list-scroll');
-  host.innerHTML=isOwners?renderCollaboratorLoad(rows,Infinity):'<div class="dashboard-priority-full">'+renderPriorityTasks(rows,Infinity)+'</div>';
-  host.scrollTop=0;
-  $('#dashboard-list-back').classList.add('open');
-  $('#dashboard-list-back .close').focus();
-}
-function closeDashboardList(){
-  $('#dashboard-list-back').classList.remove('open');
-  $('#dashboard-list-scroll').replaceChildren();
-  if(dashboardListFocusReturn?.isConnected)dashboardListFocusReturn.focus({preventScroll:true});
-  dashboardListFocusReturn=null;
+// Ver completo expande el mismo panel; no se abre otra ventana.
+let dashboardExpandedOwners=false;
+let dashboardExpandedPriority=false;
+function toggleDashboardList(type){
+  if(type==='owners')dashboardExpandedOwners=!dashboardExpandedOwners;
+  else if(type==='priority')dashboardExpandedPriority=!dashboardExpandedPriority;
+  else return;
+  renderDashboard();
 }
 function renderDashboard(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
@@ -4004,18 +4007,25 @@ function renderDashboard(){
   $('#dash-stats').innerHTML=makeStats(rows,true);
   $('#state-chart').innerHTML=renderOperationalHealth(rows);
   $('#radar-count').textContent=rows.length+' entregable'+(rows.length===1?'':'s');
-  $('#owner-chart').innerHTML=renderCollaboratorLoad(rows);
+  $('#owner-chart').innerHTML=renderCollaboratorLoad(rows,dashboardExpandedOwners?Infinity:DASHBOARD_PREVIEW_COUNT);
+  const ownerPanel=$('#dashboard-view .owner-card');
+  ownerPanel.classList.toggle('is-expanded',dashboardExpandedOwners);
   const collaboratorCount=new Set(rows.filter(t=>t.owner).map(t=>t.owner)).size;
   const ownerButton=$('#dashboard-all-owners');
-  ownerButton.hidden=collaboratorCount<=DASHBOARD_PREVIEW_COUNT;
-  ownerButton.textContent='Ver equipo completo ('+collaboratorCount+')';
+  ownerButton.hidden=collaboratorCount<=DASHBOARD_PREVIEW_COUNT&&!dashboardExpandedOwners;
+  ownerButton.textContent=dashboardExpandedOwners?'Ver menos':'Ver equipo completo ('+collaboratorCount+')';
+  ownerButton.setAttribute('aria-expanded',String(dashboardExpandedOwners));
   $('#team-summary').innerHTML=renderPackagePulse(rows);
   $('#package-chart').replaceChildren();
-  $('#alerts-list').innerHTML=renderPriorityTasks(rows);
+  $('#alerts-list').innerHTML=renderPriorityTasks(rows,dashboardExpandedPriority?Infinity:DASHBOARD_PREVIEW_COUNT);
+  const priorityPanel=$('#dashboard-view .attention-card');
+  priorityPanel.classList.toggle('is-expanded',dashboardExpandedPriority);
   const priorityCount=priorityWarningTasks(rows).length;
   const priorityButton=$('#dashboard-all-priority');
-  priorityButton.hidden=priorityCount<=DASHBOARD_PREVIEW_COUNT;
-  priorityButton.textContent='Ver todas ('+priorityCount+')';
+  priorityButton.hidden=priorityCount<=DASHBOARD_PREVIEW_COUNT&&!dashboardExpandedPriority;
+  priorityButton.textContent=dashboardExpandedPriority?'Ver menos':'Ver todas ('+priorityCount+')';
+  priorityButton.setAttribute('aria-expanded',String(dashboardExpandedPriority));
+  $('#dashboard-view .executive-grid').classList.toggle('dashboard-list-expanded',dashboardExpandedOwners||dashboardExpandedPriority);
   $('#dashboard-view .attention-card').classList.toggle('has-urgent',
     rows.some(t=>categoryOf(t.status)!=='done'&&alertStatus(t).sort<=1));
   renderDrill(rows);
@@ -4139,13 +4149,6 @@ function clearLinkedTasks(){
 }
 
 document.addEventListener('click', e => {
-  const expandedItem=e.target.closest('#dashboard-list-back [data-drill]');
-  if(expandedItem){
-    const type=expandedItem.dataset.drill,value=expandedItem.dataset.value||'';
-    closeDashboardList();
-    setDrill(type,value);
-    return;
-  }
   const edit = e.target.closest('[data-edit-id]');
   if(edit){ e.stopPropagation(); openEditor(edit.dataset.editId); return; }
   const drill = e.target.closest('#dashboard-view [data-drill]');
@@ -4159,7 +4162,6 @@ function switchView(v, authenticated=false){
     showProtectedAuth('weeklyAccess');
     return;
   }
-  if(v!=='dashboard'&&$('#dashboard-list-back').classList.contains('open'))closeDashboardList();
   currentView = v;
   for(const tab of ['tasks','dashboard','weekly']){
     $('#'+tab+'-view').classList.toggle('hidden',tab!==v);
@@ -4540,9 +4542,6 @@ taskTableBody.addEventListener('dblclick', e => {
 
 document.addEventListener('keydown', e => {
   if(e.key==='Escape'){
-    if($('#dashboard-list-back').classList.contains('open')){
-      e.preventDefault();closeDashboardList();return;
-    }
     // Esc cancela el diálogo superior sin enviar formularios ni ejecutar confirmaciones.
     if($('#settings-auth-back').classList.contains('open')){
       e.preventDefault();closeSettingsAuth();return;
@@ -4885,11 +4884,11 @@ function weeklyTrend(m){
   const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer'),weeks=weeklyHistoryWeeks();
   const range=$('#weekly-trend-range');
   if(range)range.textContent=!weeks.length?'Sin semanas registradas':
-    weeks.length===8?'Últimas 8 semanas':'Desde '+weekShort(weeks[0])+' · '+weeks.length+' semana'+(weeks.length===1?'':'s');
+    'Desde '+weekShort(weeks[0])+' · '+weeks.length+' semana'+(weeks.length===1?'':'s');
   const nowWeek=isoWeekKey(new Date());
   const vals=weeks.map(w=>{
     const metric=weeklyMetrics(w);
-    return w>nowWeek&&!metric.closed?null:metric.ppc;
+    return w>nowWeek?null:metric.ppc;
   });
   const known=vals.filter(Number.isFinite);
   const mean=known.length?known.reduce((a,b)=>a+b,0)/known.length:null;
@@ -4897,7 +4896,7 @@ function weeklyTrend(m){
   footer.innerHTML=mean===null?
     '<span>No existen compromisos PPC verificables en el período seleccionado.</span>':
     `<span>PPC medio del período: <strong>${mean.toFixed(1)}%</strong> · ${known.length} semana(s) con compromisos</span>
-    <span>${delta>=0?'↑ +':'↓ −'}${Math.abs(delta).toFixed(1)} pp ${delta>=0?'sobre':'bajo'} la meta de referencia (85%)</span>`;
+    <span class="weekly-benchmark ${delta>0?'above':delta<0?'below':'at-goal'}">${delta>0?'↑ +':delta<0?'↓ −':'= '}${Math.abs(delta).toFixed(1)} pp ${delta>0?'por encima de':delta<0?'por debajo de':'en'} la meta de referencia (85%)</span>`;
   if(!known.length){weeklyEmpty(node,'Todavía no existen compromisos verificables hasta la semana seleccionada.');return;}
   if(typeof Chart!=='undefined'){
     const c=weeklyChartOptions();
@@ -4983,19 +4982,26 @@ function weeklyGroupChart(id,groups,mode){
 /* Visualizaciones semanales: se usa Chart.js cuando está disponible; de lo contrario,
    se representa una alternativa HTML con exactamente los mismos datos. */
 function weeklyHistoryWeeks(){
-  // El período empieza en la primera semana CON COMPROMISOS verificables,
-  // nunca en semanas anteriores vacías. Máximo ocho semanas hasta la seleccionada.
-  const presentWeek=isoWeekKey(new Date());
-  const endingWeek=selectedWeek<=presentWeek?selectedWeek:presentWeek;
+  // La primera semana proviene de compromisos verificables con los filtros activos.
+  // Se muestran también semanas futuras SIN inventar un resultado PPC.
+  const today=isoWeekKey(new Date());
+  const anchor=selectedWeek>today?selectedWeek:today;
   const candidates=[...new Set([
     ...tasks.map(t=>effectiveTaskWeek(t)),
     ...weeklySnapshots.map(snapshot=>snapshot.week)
-  ])].filter(w=>typeof w==='string'&&weekStart(w)&&w<=endingWeek).sort();
-  // Usar métricas filtradas y snapshots archivados; sin fabricar PPC para semanas vacías.
+  ])].filter(w=>typeof w==='string'&&weekStart(w)&&w<=anchor).sort();
   const earliest=candidates.find(w=>weeklyMetrics(w).planned>0);
   if(!earliest)return [];
-  return Array.from({length:8},(_,i)=>neighborWeek(endingWeek,i-7))
-    .filter(w=>w>=earliest);
+  // Priorizar ocho semanas desde el primer registro. Cuando se superan, deslizar
+  // la ventana hasta la semana elegida y continuar con proyecciones vacías.
+  const span=[];
+  let week=earliest;
+  for(let i=0;i<8;i++){
+    span.push(week);
+    week=neighborWeek(week,1);
+  }
+  if(anchor<=span[7])return span;
+  return Array.from({length:8},(_,i)=>neighborWeek(anchor,i-7));
 }
 function weeklyPlanChart(){
   const node=$('#weekly-plan-chart'),weeks=weeklyHistoryWeeks(),metrics=weeks.map(weeklyMetrics);
