@@ -3467,6 +3467,101 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   #dashboard-view .executive-grid>.owner-card{order:3}
   #dashboard-view .executive-grid>.pulse-card{order:4}
 }
+
+/* AEC OBSIDIAN · Microinteracciones de tablero y transición de pestañas.
+   Solo composición visual: no modifica métricas, tamaños ni persistencia. */
+:root{--bim-interaction-glow:rgba(46,191,230,.16)}
+html[data-theme="light"]{--bim-interaction-glow:rgba(30,102,176,.12)}
+:is(#dashboard-view,#tasks-view,#weekly-view){
+  position:relative;
+}
+@keyframes bimViewReveal{
+  0%{opacity:.26;transform:translateY(7px);clip-path:inset(0 100% 0 0)}
+  65%{opacity:1}
+  100%{opacity:1;transform:translateY(0);clip-path:inset(0 0 0 0)}
+}
+@keyframes bimViewSweep{
+  from{transform:translateX(-115%);opacity:.95}
+  to{transform:translateX(115%);opacity:0}
+}
+:is(#dashboard-view,#tasks-view,#weekly-view).bim-view-enter{
+  animation:bimViewReveal .43s cubic-bezier(.2,.72,.25,1) both;
+}
+:is(#dashboard-view,#tasks-view,#weekly-view).bim-view-enter::after{
+  content:"";position:absolute;inset:0;z-index:6;
+  pointer-events:none;
+  background:linear-gradient(90deg,transparent 8%,var(--bim-interaction-glow) 49%,transparent 92%);
+  animation:bimViewSweep .48s cubic-bezier(.16,.7,.3,1) both;
+}
+:is(#dashboard-view,#tasks-view,#weekly-view) .card,
+:is(#dashboard-view,#tasks-view) .stat,
+#weekly-view .weekly-kpi,
+#tasks-view .task-mobile-card{
+  transition:transform .22s cubic-bezier(.2,.75,.3,1),
+    box-shadow .22s ease,border-color .22s ease,background-color .22s ease;
+}
+:is(#dashboard-view,#weekly-view) .card,
+#tasks-view .card{transform-origin:center top}
+@media (hover:hover) and (pointer:fine){
+  /* Las tarjetas completas se elevan sin modificar la altura de sus filas. */
+  #dashboard-view .stat.kpi-reference:hover,
+  #tasks-view .stat.kpi-reference:hover,
+  #weekly-view .weekly-kpi:hover{
+    transform:translateY(-3px)!important;
+    border-color:var(--accent-blue)!important;
+    box-shadow:0 13px 27px -15px var(--bim-interaction-glow),
+      0 8px 22px -14px rgba(0,0,0,.42),
+      inset 0 0 0 1px var(--bim-interaction-glow)!important;
+  }
+  #dashboard-view .executive-grid>.chart-card:hover,
+  #weekly-view .weekly-chart-card:hover,
+  #weekly-view .weekly-filter-card:hover,
+  #tasks-view>.card:hover,
+  #tasks-view .task-mobile-card:hover{
+    transform:translateY(-2px);
+    border-color:var(--border-strong);
+    box-shadow:0 15px 30px -19px rgba(0,0,0,.38),
+      0 0 0 1px var(--bim-interaction-glow);
+  }
+  /* Filas interactivas: resalte contenido sin mover columnas ni scroll. */
+  #dashboard-view .priority-task,
+  #dashboard-view .collaborator-row,
+  #dashboard-view .pulse-specialty-matrix tbody tr,
+  #tasks-view .task-table tbody tr,
+  #weekly-view .weekly-time-step{
+    transition:background-color .18s ease,
+      box-shadow .18s ease,border-color .18s ease,filter .18s ease;
+  }
+  #dashboard-view .priority-task:hover,
+  #dashboard-view .collaborator-row:hover,
+  #weekly-view .weekly-time-step:hover{
+    box-shadow:0 0 0 1px var(--bim-interaction-glow),
+      0 6px 15px -12px rgba(0,0,0,.40);
+    filter:brightness(1.07);
+  }
+  #dashboard-view .pulse-specialty-matrix tbody tr:hover,
+  #tasks-view .task-table tbody tr:hover{
+    background:var(--bg-hover);
+    box-shadow:inset 0 0 0 1px var(--bim-interaction-glow);
+  }
+  /* Controles principales: una respuesta visual leve al apuntarlos. */
+  .sidebar nav .nav-link:hover,
+  #weekly-view .weekly-time-step:hover{
+    transition:background-color .18s ease,border-color .18s ease,
+      box-shadow .18s ease,color .18s ease;
+  }
+}
+@media (prefers-reduced-motion:reduce){
+  :is(#dashboard-view,#tasks-view,#weekly-view).bim-view-enter,
+  :is(#dashboard-view,#tasks-view,#weekly-view).bim-view-enter::after{
+    animation:none!important;
+  }
+  :is(#dashboard-view,#tasks-view,#weekly-view) .card,
+  :is(#dashboard-view,#tasks-view) .stat,
+  #weekly-view .weekly-kpi,#tasks-view .task-mobile-card{
+    transform:none!important;transition:none!important;
+  }
+}
 </style>
 </head>
 <body>
@@ -4859,6 +4954,7 @@ function switchView(v, authenticated=false){
     showProtectedAuth('weeklyAccess');
     return;
   }
+  const previousView=currentView;
   currentView = v;
   for(const tab of ['tasks','dashboard','weekly']){
     $('#'+tab+'-view').classList.toggle('hidden',tab!==v);
@@ -4869,6 +4965,14 @@ function switchView(v, authenticated=false){
   window.scrollTo(0,0);
   if(v==='dashboard') renderDashboard();
   if(v==='weekly') renderWeekly();
+  // Revelado rápido de izquierda a derecha al entrar en otra pestaña.
+  // No se ejecuta con cada filtro ni al refrescar los datos de Supabase.
+  if(previousView!==v && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+    const view=$('#'+v+'-view');
+    view.classList.remove('bim-view-enter');
+    void view.offsetWidth;
+    view.classList.add('bim-view-enter');
+  }
 }
 
 function populateEditorSelects(){
