@@ -4053,6 +4053,47 @@ textarea,
   max-width:100%;min-width:0;overflow-wrap:anywhere;
 }
 
+
+/* Dashboard: dos paneles inferiores de altura dinámica y emparejada.
+   El grid iguala sus tarjetas; cada lista crece solo hasta el límite de scroll. */
+#dashboard-view .executive-grid>.owner-card,
+#dashboard-view .executive-grid>.pulse-card{
+  height:auto;
+  min-height:0;
+  align-self:stretch;
+}
+#dashboard-view .owner-card #owner-chart{
+  flex:0 1 auto;
+  min-height:0;
+}
+#dashboard-view .owner-card .collaborator-list{
+  height:auto;
+  max-height:324px;
+  flex:0 1 auto;
+  overflow-y:auto;
+  align-content:start;
+}
+#dashboard-view .pulse-card #team-summary{
+  height:auto;
+  min-height:0;
+  max-height:324px;
+  flex:0 1 auto;
+  overflow-x:auto;
+  overflow-y:auto;
+}
+@media (min-width:761px) and (max-width:900px){
+  #dashboard-view .executive-grid>.owner-card,
+  #dashboard-view .executive-grid>.pulse-card{
+    min-height:0;
+  }
+}
+@media (max-width:760px){
+  #dashboard-view .pulse-card #team-summary{
+    min-height:0;
+    max-height:324px;
+  }
+}
+
 </style>
 </head>
 <body>
