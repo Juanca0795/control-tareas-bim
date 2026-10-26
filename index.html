@@ -4113,7 +4113,6 @@ textarea,
 .cnc-readonly b{font-size:10px;color:var(--ink-secondary)}
 .cnc-readonly p{margin:0;color:var(--ink-primary);font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
 #weekly-view .weekly-cnc-item .cnc-cause{color:var(--accent-blue);font-weight:650}
-#weekly-view .weekly-cnc-item .cnc-action{color:var(--ink-secondary);font-size:10px;line-height:1.5;margin-top:5px}
 
 </style>
 <script src="cnc.js"></script>
@@ -4577,11 +4576,9 @@ textarea,
           <option>Cambios de alcance o diseño</option><option>Falta de recursos</option>
           <option>Dependencia de otra área</option><option>Problemas de planificación</option><option>Otros</option>
         </select></div>
-        <div class="form-field"><label for="cnc-description">Descripción de lo sucedido *</label><textarea id="cnc-description" maxlength="1000" required placeholder="¿Qué impidió cumplir el compromiso?"></textarea></div>
-        <div class="form-field"><label for="cnc-action">Acción correctiva *</label><textarea id="cnc-action" maxlength="1000" required placeholder="¿Qué se hará para corregir el incumplimiento?"></textarea></div>
+        <div class="form-field"><label for="cnc-description">Descripción *</label><textarea id="cnc-description" maxlength="1000" required placeholder="¿Qué impidió cumplir el compromiso?"></textarea></div>
         <div class="form-field"><label for="cnc-date">Nueva fecha propuesta (opcional)</label><input type="date" id="cnc-date"></div>
-        <div class="form-field"><label for="cnc-reporter">Nombre de quien registra *</label><input id="cnc-reporter" class="field-input" maxlength="100" required autocomplete="name" placeholder="Nombre y apellidos"></div>
-        <p class="cnc-explainer">La fecha original no se modifica. El registro será de solo lectura. El nombre declarado no constituye autenticación verificada.</p>
+        <p class="cnc-explainer">La fecha original no se modifica. El registro será de solo lectura.</p>
         <div class="modal-ft"><div><button type="button" class="btn" onclick="closeCnc()">Cancelar</button><button type="submit" class="btn primary">Guardar causa CNC</button></div></div>
       </form>
     </div>
