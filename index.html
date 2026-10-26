@@ -6815,12 +6815,14 @@ function ensureWeeklyTimelineWindow(week){
 function stepWeekly(n){
   selectedWeek=neighborWeek(selectedWeek,n);
   try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
+  rememberBimViewInHistory();
   ensureWeeklyTimelineWindow(selectedWeek);
   renderWeekly();
 }
 function goToCurrentWeek(){
   selectedWeek=isoWeekKey(new Date());
   try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
+  rememberBimViewInHistory();
   weeklyTimelineWindowStart=neighborWeek(selectedWeek,-5);
   renderWeekly();
 }
@@ -6828,6 +6830,7 @@ function changeWeeklyWeek(week){
   if(!weekStart(week)){toast('Semana ISO no válida');return;}
   selectedWeek=week;
   try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
+  rememberBimViewInHistory();
   ensureWeeklyTimelineWindow(week);
   renderWeekly();
 }
