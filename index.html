@@ -2979,6 +2979,50 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #dashboard-view .attention-card #alerts-list{
   min-width:0;
 }
+
+/* SALUD OPERATIVA BIM: distribución real por situación de plazo */
+#dashboard-view .health-card-heading{
+  align-items:center;gap:12px;flex-wrap:wrap;
+  border-bottom:1px solid var(--border-base);
+  padding-bottom:11px;margin-bottom:14px;
+}
+#dashboard-view .health-card-heading-main{flex:1 1 210px;min-width:0}
+#dashboard-view .health-title-line{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+#dashboard-view .health-title-line h2{margin:0}
+#dashboard-view .health-title-line .control-count{padding:3px 8px;white-space:nowrap}
+#dashboard-view .health-card-heading-main .desc{margin:5px 0 0}
+#dashboard-view .health-quick-actions{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end}
+#dashboard-view .health-summary-button{
+  display:inline-flex;align-items:center;gap:5px;
+  min-height:29px;padding:4px 8px;border:1px solid var(--border-strong);
+  background:var(--bg-subtle);border-radius:6px;
+  color:var(--ink-primary);font-size:10px;font-weight:500;
+  cursor:pointer;white-space:nowrap;
+}
+#dashboard-view .health-summary-button i{width:8px;height:8px;border-radius:50%;flex:none}
+#dashboard-view .health-summary-button.complete i{background:#31cba7}
+#dashboard-view .health-summary-button.outstanding i{background:#ffbf43}
+#dashboard-view .health-summary-button.complete strong{color:var(--status-done-fg)}
+#dashboard-view .health-summary-button.outstanding strong{color:var(--status-warn-fg)}
+#dashboard-view .health-summary-button:hover,
+#dashboard-view .health-summary-button.selected{border-color:var(--accent-blue);background:var(--bg-hover)}
+#dashboard-view .health-summary-button:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:2px;
+}
+#dashboard-view .health-ring-legend{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:center;
+  gap:5px 11px;max-width:100%;font-size:9px;color:var(--ink-muted);
+}
+#dashboard-view .health-legend-item{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}
+#dashboard-view .health-legend-item i{height:7px;width:7px;border-radius:50%;flex:none}
+#dashboard-view .health-legend-item strong{color:var(--ink-secondary);font-weight:650}
+#dashboard-view .health-caption.health-needs-attention{color:var(--status-crit-fg)}
+#dashboard-view .health-metric.blue .health-metric-label i{background:#4da5ff}
+#dashboard-view .health-metric.blue .health-metric-value{color:#4da5ff}
+@media(max-width:800px){
+  #dashboard-view .health-card-heading{align-items:flex-start}
+  #dashboard-view .health-quick-actions{justify-content:flex-start}
+}
 </style>
 </head>
 <body>
@@ -3168,12 +3212,24 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 
     <section class="executive-grid">
       <article class="card chart-card radar-card">
-        <div class="control-card-title">
-          <div>
-            <h2>SALUD OPERATIVA BIM</h2>
-            <p class="desc">Porcentaje de entregables sin vencimiento crítico, calculado sobre el alcance filtrado</p>
+        <div class="control-card-title health-card-heading">
+          <div class="health-card-heading-main">
+            <div class="health-title-line">
+              <h2>SALUD OPERATIVA BIM</h2>
+              <span class="control-count" id="radar-count"></span>
+            </div>
+            <p class="desc">Entregables sin vencimiento crítico · Alcance filtrado</p>
           </div>
-          <span class="control-count" id="radar-count"></span>
+          <div class="health-quick-actions" aria-label="Desglose de entregables">
+            <button type="button" class="health-summary-button complete" data-drill="completed"
+              id="health-done-button" aria-pressed="false" title="Consultar todos los entregables completados">
+              <i aria-hidden="true"></i> Completadas: <strong id="health-done-count">0</strong>
+            </button>
+            <button type="button" class="health-summary-button outstanding" data-drill="notCompleted"
+              id="health-outstanding-button" aria-pressed="false" title="Consultar entregables aún sin completar, incluidos los que están en progreso">
+              <i aria-hidden="true"></i> Pendientes: <strong id="health-outstanding-count">0</strong>
+            </button>
+          </div>
         </div>
         <div id="state-chart"></div>
       </article>
@@ -3962,29 +4018,62 @@ function attentionDeadline(t){
 }
 
 // Indicadores basados exclusivamente en las tareas existentes; sin datos de clashes ficticios.
+// Los grupos del anillo son EXCLUYENTES y cubren el 100% de los entregables.
+// Prioridad alta es una condición transversal: se muestra en el panel lateral,
+// pero no se suma otra vez al gráfico circular.
+function operationalHealthCounts(rows){
+  const counts={critical:0,soon:0,done:0,other:0};
+  for(const task of rows){
+    if(categoryOf(task.status)==='done'){counts.done++;continue;}
+    const urgency=alertStatus(task).sort;
+    if(urgency<=1)counts.critical++;
+    else if(urgency===2)counts.soon++;
+    else counts.other++;
+  }
+  return counts;
+}
 function renderOperationalHealth(rows){
   if(!rows.length)return '<div class="compact-empty" role="status"><strong>Sin entregables</strong><span>Registra tareas para visualizar la situación operativa.</span></div>';
-  const urgent=rows.filter(t=>alertStatus(t).sort<=1).length;
-  const soon=rows.filter(t=>alertStatus(t).sort===2).length;
+  const groups=operationalHealthCounts(rows);
+  const urgent=groups.critical,soon=groups.soon,done=groups.done;
   const high=rows.filter(t=>t.priority==='Alta'&&categoryOf(t.status)!=='done').length;
-  const done=rows.filter(t=>categoryOf(t.status)==='done').length;
   const clear=rows.length-urgent;
   const percent=100*clear/rows.length;
-  const tone=urgent?'#f14a75':'#16c79b';
+  // Segmentos: rojo (críticas), ámbar (próximas), verde (completadas),
+  // azul (restantes sin urgencia). Nunca se inventan clashes.
+  const distribution=[
+    {title:'Vencidas / hoy',count:groups.critical,color:'#f14a75'},
+    {title:'Próximas 3 días',count:groups.soon,color:'#ffbf43'},
+    {title:'Completadas',count:groups.done,color:'#31cba7'},
+    {title:'Otras pendientes',count:groups.other,color:'#4da5ff'}
+  ];
+  let offset=0;
+  const slices=[];
+  for(const group of distribution){
+    if(!group.count)continue;
+    const next=offset+group.count/rows.length*100;
+    slices.push(group.color+' '+offset.toFixed(4)+'% '+next.toFixed(4)+'%');
+    offset=next;
+  }
+  const gradient='conic-gradient('+slices.join(',')+')';
+  const legend=distribution.map(group=>`<span class="health-legend-item" title="${esc(group.title+': '+group.count)}">
+    <i style="background:${group.color}" aria-hidden="true"></i>${esc(group.title)}: <strong>${group.count}</strong>
+  </span>`).join('');
   const metrics=[
     {title:'Vencidas / hoy',value:urgent,kind:'critical',drill:'late',detail:'Atención inmediata'},
     {title:'Próximas 3 días',value:soon,kind:'warning',drill:'soon',detail:'Vencimiento cercano'},
-    {title:'Prioridad alta',value:high,kind:'blue',drill:'high',detail:'No completadas'},
+    {title:'Prioridad alta',value:high,kind:'blue',drill:'high',detail:'No completadas · No se suma al anillo'},
     {title:'Completadas',value:done,kind:'success',drill:'completed',detail:'Entregables cerrados'}
   ];
   return `<div class="operational-health">
     <div class="health-panel">
-      <div class="health-ring" role="img" aria-label="${percent.toFixed(1)} por ciento sin vencimiento crítico"
-        style="--health-stop:${percent.toFixed(2)}%;--health-color:${tone}">
+      <div class="health-ring" role="img" aria-label="${percent.toFixed(1)}% sin vencimiento crítico. ${distribution.map(g=>g.title+': '+g.count).join('; ')}"
+        style="background:${gradient}">
         <div class="health-ring-center"><strong>${percent.toFixed(1)}%</strong><small>SIN ALERTA CRÍTICA</small></div>
       </div>
-      <strong class="health-caption">${clear} de ${rows.length} sin vencimiento crítico</strong>
-      <span class="health-explain">Indicador de plazos; no evalúa interferencias BIM.</span>
+      <strong class="health-caption${percent<85?' health-needs-attention':''}">${clear} de ${rows.length} sin vencimiento crítico</strong>
+      <div class="health-ring-legend" aria-label="Distribución de entregables">${legend}</div>
+      <span class="health-explain">Estado de plazos; no representa interferencias BIM.</span>
     </div>
     <div class="health-metrics">${metrics.map(m=>`<button type="button" class="health-metric ${m.kind}${selectedDrill(m.drill)?' selected':''}"
       data-drill="${m.drill}" aria-pressed="${selectedDrill(m.drill)}">
@@ -4066,6 +4155,16 @@ function renderDashboard(){
   $('#dash-stats').innerHTML=makeStats(rows,true);
   $('#state-chart').innerHTML=renderOperationalHealth(rows);
   $('#radar-count').textContent=rows.length+' entregable'+(rows.length===1?'':'s');
+  const completedCount=rows.filter(t=>categoryOf(t.status)==='done').length;
+  const remainingCount=rows.length-completedCount;
+  $('#health-done-count').textContent=completedCount;
+  $('#health-outstanding-count').textContent=remainingCount;
+  for(const [type,selector] of [['completed','#health-done-button'],['notCompleted','#health-outstanding-button']]){
+    const button=$(selector);
+    const active=selectedDrill(type);
+    button.setAttribute('aria-pressed',String(active));
+    button.classList.toggle('selected',active);
+  }
   // Mantener el punto de desplazamiento si se actualizan las métricas del Dashboard.
   const previousOwnerScroll=$('#owner-chart .collaborator-list')?.scrollTop||0;
   const previousPriorityScroll=$('#alerts-list')?.scrollTop||0;
@@ -4095,6 +4194,7 @@ function drillTitle(type, value=''){
     soon:'Entregables próximos a vencer (= 3 días)',
     high:'Entregables de Alta Prioridad',
     pending:'Entregables no iniciados',
+    notCompleted:'Entregables pendientes de completar',
     status:`Estado: ${value}`,
     package:`Paquete: ${value}`,
     owner:`Colaborador: ${value}`,
@@ -4112,6 +4212,7 @@ function drillTasks(a){
     case 'completed': return a.filter(t=>categoryOf(t.status)==='done');
     case 'inProgress': return a.filter(t=>categoryOf(t.status)==='progress');
     case 'pending': return a.filter(t=>categoryOf(t.status)==='pending');
+    case 'notCompleted': return a.filter(t=>categoryOf(t.status)!=='done');
     case 'late': return a.filter(t=>alertStatus(t).sort<=1);
     case 'soon': return a.filter(t=>alertStatus(t).sort===2);
     case 'high': return a.filter(t=>t.priority==='Alta');
