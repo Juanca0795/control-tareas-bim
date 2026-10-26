@@ -3568,6 +3568,57 @@ html[data-theme="light"]{--bim-interaction-glow:rgba(30,102,176,.12)}
     transition:none!important;
   }
 }
+
+/* UI/UX Pro Max · resplandor ambiental de baja intensidad.
+   Se anima solo la opacidad: sin reflujo, sin movimiento de tarjetas ni brillo excesivo.
+   La luz nace debajo del contenido y respeta el estado claro/oscuro. */
+:root{
+  --bim-ambient-rgb:76,164,224;
+  --bim-ambient-low:.36;
+  --bim-ambient-high:.72;
+}
+html[data-theme="light"]{
+  --bim-ambient-rgb:60,137,198;
+  --bim-ambient-low:.20;
+  --bim-ambient-high:.43;
+}
+@keyframes bimQuietPanelGlow{
+  0%,100%{opacity:var(--bim-ambient-low)}
+  50%{opacity:var(--bim-ambient-high)}
+}
+:is(#dashboard-view,#tasks-view,#weekly-view):not(.hidden)
+  :is(.card,.stat.kpi-reference,.weekly-kpi,.weekly-status-strip,
+      .task-mobile-card,.weekly-time-step){
+  position:relative;
+}
+:is(#dashboard-view,#tasks-view,#weekly-view):not(.hidden)
+  :is(.card,.stat.kpi-reference,.weekly-kpi,.weekly-status-strip,
+      .task-mobile-card,.weekly-time-step)::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:2;
+  box-sizing:border-box;
+  border-radius:inherit;
+  pointer-events:none;
+  background:radial-gradient(ellipse 98% 73% at 50% 120%,
+    rgba(var(--bim-ambient-rgb),.085) 0%,
+    rgba(var(--bim-ambient-rgb),.027) 44%,
+    transparent 80%);
+  box-shadow:inset 0 0 0 1px rgba(var(--bim-ambient-rgb),.065),
+    inset 0 -8px 18px -15px rgba(var(--bim-ambient-rgb),.15);
+  opacity:var(--bim-ambient-low);
+  animation:bimQuietPanelGlow 5.6s ease-in-out infinite;
+}
+@media(prefers-reduced-motion:reduce){
+  :is(#dashboard-view,#tasks-view,#weekly-view):not(.hidden)
+    :is(.card,.stat.kpi-reference,.weekly-kpi,.weekly-status-strip,
+        .task-mobile-card,.weekly-time-step)::after{
+    animation:none!important;
+    opacity:var(--bim-ambient-low);
+  }
+}
+
 </style>
 </head>
 <body>
