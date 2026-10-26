@@ -153,6 +153,19 @@ function renderWeeklyProjection(m){
         '" aria-label="Fecha estimada de '+esc(t.id)+'" />'+
         (invalid?'<small class="proj-invalid">Fecha anterior fuera del período válido; actualízala</small>':'')+'</div></div>';
     }).join('')+'</div>';
+  const chartStatus=$('#weekly-projection-chart-status');
+  if(chartStatus){
+    const lastReal=[...p.actual].reverse().find(Number.isFinite);
+    const real=lastReal===undefined?null:lastReal;
+    chartStatus.innerHTML=
+      '<span class="proj-chart-reality"><i aria-hidden="true"></i>'+
+        (real===null?'Cumplido real: sin corte registrado':'Cumplido real al corte: <strong>'+real+'</strong>')+'</span>'+
+      (!p.projectionReady&&p.pending.length?
+        '<span class="proj-chart-unestimated">Proyección pendiente · Sin fecha estimada</span>':'');
+  }
+  const projectionLegend=$('#weekly-projection-legend-forecast');
+  if(projectionLegend)projectionLegend.textContent=
+    p.projectionReady?'Proyección al cierre':'Proyección pendiente';
   renderWeeklyProjectionChart(p);
 }
 function renderWeeklyProjectionChart(p){
@@ -164,8 +177,41 @@ function renderWeeklyProjectionChart(p){
   }
   const labels=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   const c=weeklyChartOptions();
-  // Curva S: unir registros acumulados entre días, sin escalones ni áreas rellenas.
+  // Margen proporcional, incluso con 1 único compromiso, para que 0 y 1 no se corten.
+  const upper=Math.max(1,p.m.planned,...p.planned,
+    ...p.actual.filter(Number.isFinite),...p.projected.filter(Number.isFinite));
+  const margin=Math.max(.16,upper*.09);
   const projectionColor='#e8783c';
+  // La anotación verde se dibuja al final para no quedar oculta bajo el azul
+  // cuando ambos puntos coinciden en 0.
+  const realMarker={
+    id:'weeklyProjectionRealMarker',
+    afterDatasetsDraw(chart){
+      const index=p.actual.findLastIndex(Number.isFinite);
+      if(index<0)return;
+      const point=chart.getDatasetMeta(1)?.data?.[index],ctx=chart.ctx;
+      if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
+      const x=point.x,y=point.y,area=chart.chartArea;
+      const label='Cumplido: '+p.actual[index];
+      ctx.save();
+      ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);
+      ctx.fillStyle=c.green;ctx.fill();
+      ctx.lineWidth=2;ctx.strokeStyle=
+        document.documentElement.dataset.theme==='light'?'#ffffff':'#111b2a';
+      ctx.stroke();
+      ctx.font='600 10px Inter, sans-serif';
+      const width=ctx.measureText(label).width+16,height=21;
+      const left=Math.max(area.left,Math.min(x+12,area.right-width));
+      const top=Math.max(area.top+2,Math.min(y-31,area.bottom-height-2));
+      ctx.fillStyle=document.documentElement.dataset.theme==='light'?
+        'rgba(255,255,255,.95)':'rgba(16,25,42,.95)';
+      ctx.fillRect(left,top,width,height);
+      ctx.strokeStyle=c.green;ctx.lineWidth=1;ctx.strokeRect(left,top,width,height);
+      ctx.fillStyle=c.green;ctx.textBaseline='middle';
+      ctx.fillText(label,left+8,top+height/2);
+      ctx.restore();
+    }
+  };
   if(typeof Chart!=='undefined'&&weeklyInnerTab==='proyeccion'){
     node.innerHTML='<canvas role="img" aria-label="Curvas acumuladas de actividades programadas, completadas y previstas"></canvas>';
     WEEKLY_CHARTS.projection=new Chart(node.querySelector('canvas'),{
@@ -174,18 +220,23 @@ function renderWeeklyProjectionChart(p){
           tension:0,stepped:false,fill:false,borderWidth:2.3,pointRadius:3,pointHoverRadius:5,
           borderCapStyle:'round',borderJoinStyle:'round'},
         {label:'Cumplido real',data:p.actual,borderColor:c.green,backgroundColor:c.green,
-          tension:0,stepped:false,fill:false,borderWidth:2.5,pointRadius:3,pointHoverRadius:5,
+          tension:0,stepped:false,fill:false,borderWidth:2.5,pointRadius:4,pointHoverRadius:6,
           borderCapStyle:'round',borderJoinStyle:'round',spanGaps:false},
-        {label:'Proyección al cierre',data:p.projected,borderColor:projectionColor,backgroundColor:projectionColor,
+        ...(p.projectionReady?[{
+          label:'Proyección al cierre',data:p.projected,borderColor:projectionColor,backgroundColor:projectionColor,
           tension:0,stepped:false,fill:false,borderWidth:2.5,pointRadius:3,pointHoverRadius:5,
-          borderCapStyle:'round',borderJoinStyle:'round',spanGaps:false}
+          borderCapStyle:'round',borderJoinStyle:'round',spanGaps:false
+        }]:[])
       ]},
+      plugins:[realMarker],
       options:{...weeklyChartMotionOptions(),responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:10,bottom:4,left:10,right:12}},
         interaction:{intersect:false,mode:'index'},
         plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y===null?'Sin dato':ctx.dataset.label+': '+ctx.parsed.y+' entregables'}}},
         scales:{x:{ticks:{color:c.text},grid:{display:false}},
-          y:{min:0,max:Math.max(1,p.m.planned),ticks:{color:c.text,precision:0,maxTicksLimit:6},
-            grid:{color:c.grid}}}}
+          y:{min:-margin,max:upper+margin,
+            ticks:{color:c.text,stepSize:1,callback:v=>Number.isInteger(v)&&v>=0&&v<=upper?v:''},
+            grid:{color:ctx=>Number.isInteger(ctx.tick.value)&&ctx.tick.value>=0?c.grid:'transparent'}}}}
     });
     return;
   }
