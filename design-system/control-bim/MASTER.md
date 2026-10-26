@@ -9,7 +9,7 @@
 - **Patrones de la skill:** `Data-Dense Dashboard` + `Drill-Down Analytics`. Conservar todos los KPI, filtros, fechas, gráficos y tablas existentes.
 - **Estilo:** AEC Obsidian oscuro corporativo, minimalismo funcional, alta densidad legible. No sustituir el sistema por una landing page o decoración sin función.
 - **Paleta semántica existente** (no imponer nuevos valores sin revisión): fondo oscuro `#090d16`, superficie `#111726`, borde `#253048`, acento `#5da7ff`, positivo `#54e1b7`, advertencia `#ffc773`, crítico `#ff8b98`.
-- **Tipografía:** Inter para etiquetas y textos; JetBrains Mono para cifras y códigos BIM. Corregir discrepancias de tamaño dentro de un mismo rol; no reducir indiscriminadamente los microtextos.
+- **Tipografía · Tech Premium (UI/UX Pro Max):** Space Grotesk 600–700 para identidad y títulos, Inter 400–700 para navegación, controles, etiquetas y tablas, y JetBrains Mono 500–700 con cifras tabulares para KPI, porcentajes y códigos BIM. Escala principal: marca 13–17 px responsive; títulos de tarjetas ~12 px; tabs 10–12.5 px responsive; KPI 23–36 px; etiquetas y ayudas 10–11.5 px. No reducir microtextos arbitrariamente y verificar siempre anchura de pestañas, tablas y dispositivos móviles.
 
 ## 2. Componentes y contenido no negociables
 
