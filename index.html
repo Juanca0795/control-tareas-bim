@@ -4115,14 +4115,34 @@ textarea,
 #weekly-view .weekly-cnc-item .cnc-cause{color:var(--accent-blue);font-weight:650}
 
 
-/* CONTROL SEMANAL — subpestañas internas, sin modificar la navegación principal. */
-#weekly-view .weekly-subtabs{display:flex;gap:5px;width:fit-content;max-width:100%;padding:4px;margin:0 0 15px;
-  background:var(--bg-subtle);border:1px solid var(--border-base);border-radius:10px}
-#weekly-view .weekly-subtab{border:1px solid transparent;background:transparent;color:var(--ink-secondary);
-  font-size:11px;font-weight:700;letter-spacing:.035em;padding:10px 18px;border-radius:7px;cursor:pointer}
-#weekly-view .weekly-subtab.active{background:var(--bg-panel);border-color:var(--border-strong);
-  color:var(--accent-blue);box-shadow:0 2px 10px rgba(0,0,0,.08)}
-#weekly-view .weekly-subtab:hover{color:var(--ink-primary);background:var(--bg-hover)}
+/* CONTROL SEMANAL — subpestañas exclusivas del encabezado superior. */
+.sidebar.weekly-subtabs-visible nav[role="tablist"]{margin-left:0}
+.sidebar .weekly-subtabs{
+  display:flex;gap:4px;flex:0 0 auto;align-items:center;justify-content:center;
+  width:max-content;max-width:100%;padding:4px;margin:0 0 0 auto;
+  background:var(--bg-subtle);border:1px solid var(--border-base);border-radius:9px;
+}
+.sidebar .weekly-subtab{
+  border:1px solid transparent;background:transparent;color:var(--ink-secondary);
+  font-size:10px;font-weight:700;letter-spacing:.025em;padding:8px 12px;
+  min-height:34px;border-radius:6px;cursor:pointer;white-space:nowrap;
+}
+.sidebar .weekly-subtab.active{
+  background:var(--bg-panel);border-color:var(--border-strong);
+  color:var(--accent-blue);box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+.sidebar .weekly-subtab:hover{color:var(--ink-primary);background:var(--bg-hover)}
+.sidebar .weekly-subtab:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+@media(max-width:1320px){
+  .sidebar.weekly-subtabs-visible{height:auto;min-height:0;flex-wrap:wrap;padding-block:9px}
+  .sidebar.weekly-subtabs-visible .weekly-subtabs{
+    order:5;flex:1 1 100%;width:100%;margin:0;justify-content:center;
+  }
+}
+@media(max-width:760px){
+  .sidebar.weekly-subtabs-visible .weekly-subtabs{order:4}
+  .sidebar .weekly-subtab{flex:1 1 0;max-width:200px}
+}
 #weekly-view .weekly-projection-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-rows:minmax(124px,auto);align-items:stretch;gap:10px;margin-bottom:12px}
 #weekly-view .weekly-projection-kpi{display:flex;flex-direction:column;gap:7px;min-width:0;
   padding:16px;border-radius:10px;border:1px solid var(--border-base);background:var(--bg-panel);box-sizing:border-box;height:100%}
@@ -4236,6 +4256,11 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
     <div><strong>ÁREA BIM</strong><small>Control operativo</small></div>
   </div>
   <div class="nav-name">ESPACIO DE TRABAJO</div>
+  <!-- Subnavegación exclusiva de Control Semanal, ubicada en el encabezado superior -->
+  <div id="weekly-subtabs" class="weekly-subtabs hidden" role="tablist" aria-label="Secciones de Control Semanal">
+    <button type="button" id="weekly-tab-seguimiento" class="weekly-subtab active" role="tab" aria-selected="true" aria-controls="weekly-seguimiento" onclick="switchWeeklySubtab('seguimiento')">SEGUIMIENTO</button>
+    <button type="button" id="weekly-tab-proyeccion" class="weekly-subtab" role="tab" aria-selected="false" aria-controls="weekly-proyeccion" tabindex="-1" onclick="switchWeeklySubtab('proyeccion')">PROYECCIÓN</button>
+  </div>
   <nav aria-label="Vistas del sistema" role="tablist">
     <button type="button" id="weekly-backup-launch" class="weekly-backup-launch hidden" onclick="createWeeklyBackupAndOpen()" title="Crear backup en Supabase y consultar respaldos" aria-label="Abrir respaldos de Control Semanal">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3M5 7a8 8 0 0 1 14 0"/></svg> Backup
@@ -4376,10 +4401,6 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
       <div id="weekly-filter-chips" class="active-filters"></div>
     </section>
 
-    <div class="weekly-subtabs" role="tablist" aria-label="Secciones de Control Semanal">
-      <button type="button" id="weekly-tab-seguimiento" class="weekly-subtab active" role="tab" aria-selected="true" aria-controls="weekly-seguimiento" onclick="switchWeeklySubtab('seguimiento')">SEGUIMIENTO</button>
-      <button type="button" id="weekly-tab-proyeccion" class="weekly-subtab" role="tab" aria-selected="false" aria-controls="weekly-proyeccion" tabindex="-1" onclick="switchWeeklySubtab('proyeccion')">PROYECCIÓN</button>
-    </div>
     <div id="weekly-seguimiento" role="tabpanel" aria-labelledby="weekly-tab-seguimiento">
     <section class="weekly-status-strip" id="weekly-info" role="status" aria-live="polite"></section>
     <section class="weekly-kpis" id="weekly-kpis" aria-label="Resultados KPI semanales"></section>
@@ -5884,6 +5905,8 @@ function switchView(v, authenticated=false){
     $('#nav-'+tab).setAttribute('aria-selected',String(tab===v));
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
+  $('#weekly-subtabs').classList.toggle('hidden',v!=='weekly');
+  $('.sidebar').classList.toggle('weekly-subtabs-visible',v==='weekly');
   updateBimNavIndicator();
   window.scrollTo(0,0);
   if(v==='dashboard') renderDashboard();
