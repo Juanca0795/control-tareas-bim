@@ -3178,6 +3178,107 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   }
 }
 
+
+/* Dashboard: matriz de paquetes y especialidades, sin cambiar el alto de la fila. */
+#dashboard-view .executive-grid>.pulse-card{
+  display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;
+}
+#dashboard-view .pulse-matrix-heading{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  gap:8px;min-width:0;flex:0 0 auto;
+  padding-bottom:9px;border-bottom:1px solid var(--border-base);
+}
+#dashboard-view .pulse-matrix-heading>div{min-width:0}
+#dashboard-view .pulse-matrix-heading h2{margin:0;line-height:1.35}
+#dashboard-view .pulse-matrix-heading .desc{margin:5px 0 0}
+#dashboard-view .pulse-matrix-heading .control-count{
+  flex:none;white-space:nowrap;padding:4px 7px;font-size:9px;color:var(--accent-blue);
+}
+#dashboard-view .pulse-card #team-summary{
+  display:block!important;flex:1 1 0;height:0;min-height:0;max-height:100%;
+  overflow:auto;overscroll-behavior:contain;
+  margin:10px 0 0!important;padding:0 0 3px!important;
+  scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent;
+}
+#dashboard-view .pulse-card #team-summary:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:-2px;
+}
+#dashboard-view .pulse-specialty-matrix{
+  width:100%;min-width:max(100%,calc(165px + var(--matrix-cols)*65px));
+  border-collapse:separate;border-spacing:0;
+  font-size:10px;text-align:center;line-height:1.3;
+}
+#dashboard-view .pulse-specialty-matrix th,
+#dashboard-view .pulse-specialty-matrix td{
+  border-bottom:1px solid var(--border-base);
+  padding:8px 5px;text-align:center;vertical-align:middle;white-space:nowrap;
+}
+#dashboard-view .pulse-specialty-matrix thead th{
+  position:sticky;top:0;z-index:2;background:var(--bg-panel);
+  color:var(--ink-secondary);font-size:9px;font-weight:700;
+  text-transform:uppercase;letter-spacing:.025em;
+  border-bottom:1px solid var(--border-strong);
+}
+#dashboard-view .pulse-specialty-matrix thead th:first-child{
+  text-align:left;left:0;z-index:4;min-width:112px;
+}
+#dashboard-view .pulse-specialty-matrix thead th:last-child{min-width:55px}
+#dashboard-view .pulse-specialty-matrix .pulse-matrix-specialty span{
+  display:block;overflow:hidden;text-overflow:ellipsis;max-width:105px;
+  color:rgb(var(--matrix-rgb));
+}
+#dashboard-view .pulse-specialty-matrix tbody th,
+#dashboard-view .pulse-specialty-matrix tfoot th{
+  position:sticky;left:0;z-index:1;background:var(--bg-panel);
+  text-align:left;min-width:112px;
+}
+#dashboard-view .pulse-specialty-matrix tbody tr:hover td,
+#dashboard-view .pulse-specialty-matrix tbody tr:hover th{background:var(--bg-hover)}
+#dashboard-view .pulse-specialty-matrix button{
+  font:inherit;border-radius:5px;cursor:pointer;
+}
+#dashboard-view .pulse-matrix-package{
+  display:flex;flex-direction:column;align-items:flex-start;gap:3px;
+  max-width:150px;width:100%;padding:2px 3px;border:1px solid transparent;
+  background:transparent;text-align:left;color:var(--ink-primary);
+}
+#dashboard-view .pulse-matrix-package strong{
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px;
+}
+#dashboard-view .pulse-matrix-package small{
+  font-size:9px;font-weight:400;color:var(--ink-muted);
+}
+#dashboard-view .pulse-matrix-count{
+  min-width:27px;min-height:25px;padding:4px 6px;font-weight:700!important;
+  background:rgba(var(--matrix-rgb),.13);
+  color:rgb(var(--matrix-rgb));border:1px solid transparent;
+}
+#dashboard-view .pulse-matrix-zero{color:var(--ink-muted);opacity:.55}
+#dashboard-view .pulse-matrix-package:hover,
+#dashboard-view .pulse-matrix-package.selected,
+#dashboard-view .pulse-matrix-count:hover,
+#dashboard-view .pulse-matrix-count.selected,
+#dashboard-view .pulse-matrix-total:hover{border-color:var(--accent-blue)}
+#dashboard-view .pulse-matrix-package.selected,
+#dashboard-view .pulse-matrix-count.selected{background:var(--bg-selected)}
+#dashboard-view .pulse-matrix-percent{
+  font:700 11px var(--font-mono);color:var(--ink-primary);
+}
+#dashboard-view .pulse-specialty-matrix tfoot th,
+#dashboard-view .pulse-specialty-matrix tfoot td{
+  background:var(--bg-subtle);border-top:1px solid var(--border-strong);
+  border-bottom:0;font-size:10px;font-weight:700;
+}
+#dashboard-view .pulse-specialty-matrix tfoot th{background:var(--bg-subtle)}
+#dashboard-view .pulse-matrix-total{
+  background:transparent;color:rgb(var(--matrix-rgb));
+  border:1px solid transparent;padding:4px 6px;font-weight:700!important;
+}
+@media(max-width:760px){
+  #dashboard-view .pulse-card #team-summary{
+    height:auto;min-height:140px;max-height:324px;flex:0 1 auto;
+  }
+}
 @media(max-width:760px){
   /* Mantener el orden visual y de teclado en pantallas de una sola columna. */
   #dashboard-view .executive-grid>.radar-card{order:1}
@@ -3419,10 +3520,10 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
       </article>
 
       <article class="card chart-card pulse-card">
-        <h2>PULSO DE PAQUETES</h2>
-        <p class="desc">Proporción de entregables completados en cada paquete</p>
-        <div id="team-summary" class="control-team-summary"></div>
-        <div id="package-chart" class="control-package-summary h-bars"></div>
+        <div class="pulse-matrix-heading"><div><h2>PULSO DE PAQUETES / ESPECIALIDAD</h2>
+          <p class="desc">Entregables por especialidad · cierre según tareas completadas</p></div>
+          <span class="control-count" id="pulse-package-count"></span></div>
+        <div id="team-summary" class="control-team-summary" tabindex="0" role="region" aria-label="Matriz desplazable de paquetes y especialidades"></div>
       </article>
 
     </section>
@@ -4252,20 +4353,58 @@ function renderOperationalHealth(rows){
     <div class="health-metrics">${metrics}</div>
   </div>`;
 }
-function renderPackagePulse(rows){
-  if(!rows.length)return '<div class="compact-empty" role="status"><strong>Sin paquetes con entregables</strong><span>Los resultados aparecerán al registrar tareas.</span></div>';
-  const colors=['#4999ff','#16c7dd','#3bd3a4','#ffbb42','#9b90ff','#f476a1'];
-  const groups=grouped(rows,'package').sort((a,b)=>b.items.length-a.items.length||a.name.localeCompare(b.name,'es'));
-  return '<div class="package-pulse-list">'+groups.map((g,i)=>{
-    const done=g.items.filter(t=>categoryOf(t.status)==='done').length;
-    const pct=100*done/g.items.length,clr=colors[i%colors.length];
-    return `<button class="package-pulse-row${selectedDrill('package',g.name)?' selected':''}" type="button"
-      data-drill="package" data-value="${esc(g.name)}" aria-pressed="${selectedDrill('package',g.name)}">
-      <span class="package-pulse-top"><span class="package-pulse-name"><i aria-hidden="true" style="background:${clr}"></i><b>${esc(g.name)}</b></span>
-      <span class="package-pulse-value"><strong>${pct.toFixed(0)}%</strong><small>(${done}/${g.items.length})</small></span></span>
-      <span class="package-pulse-track"><i style="width:${pct.toFixed(2)}%;background:${clr}"></i></span>
-    </button>`;
-  }).join('')+'</div>';
+function pulsePairValue(packageName,specialty){
+  return encodeURIComponent(packageName)+'|'+encodeURIComponent(specialty);
+}
+function pulsePairParts(value){
+  const [packageName='',specialty='']=String(value||'').split('|');
+  try{return [decodeURIComponent(packageName),decodeURIComponent(specialty)]}
+  catch(e){return ['','']}
+}
+function pulsePercent(done,total){
+  return total?(100*done/total).toFixed(1).replace(/\.0$/,'')+'%':'0%';
+}
+function renderPackageSpecialtyMatrix(rows){
+  if(!rows.length)return '<div class="compact-empty" role="status"><strong>Sin entregables para mostrar</strong><span>Registra tareas o modifica los filtros para visualizar la matriz.</span></div>';
+  // La matriz consume los mismos entregables (y filtros) que Control de Tareas.
+  // Las especialidades proceden del campo "team"; el cierre procede del estado real.
+  const specialties=unique(rows.map(t=>t.team||'Sin especialidad'));
+  const packages=unique(rows.map(t=>t.package||'Sin paquete'))
+    .map(name=>({name,items:rows.filter(t=>(t.package||'Sin paquete')===name)}));
+  const rgb=['34,211,238','129,140,248','52,211,153','251,191,36','192,132,252','251,113,133'];
+  const completed=items=>items.filter(t=>categoryOf(t.status)==='done').length;
+  const header=specialties.map((name,i)=>
+    `<th scope="col" class="pulse-matrix-specialty" style="--matrix-rgb:${rgb[i%rgb.length]}" title="${esc(name)}"><span>${esc(name)}</span></th>`
+  ).join('');
+  const body=packages.map(group=>{
+    const n=group.items.length,done=completed(group.items);
+    const packageActive=selectedDrill('package',group.name);
+    const cells=specialties.map((specialty,i)=>{
+      const related=group.items.filter(t=>(t.team||'Sin especialidad')===specialty);
+      if(!related.length)return '<td><span class="pulse-matrix-zero" aria-label="Sin entregables">—</span></td>';
+      const closed=completed(related),value=pulsePairValue(group.name,specialty);
+      const active=selectedDrill('packageTeam',value);
+      const tooltip=group.name+' / '+specialty+': '+related.length+' entregables, '+closed+' completados';
+      return `<td><button type="button" class="pulse-matrix-count${active?' selected':''}" style="--matrix-rgb:${rgb[i%rgb.length]}"
+        data-drill="packageTeam" data-value="${esc(value)}" aria-pressed="${active}"
+        aria-label="${esc(tooltip)}" title="${esc(tooltip)}">${related.length}</button></td>`;
+    }).join('');
+    return `<tr><th scope="row"><button type="button" class="pulse-matrix-package${packageActive?' selected':''}"
+        data-drill="package" data-value="${esc(group.name)}" aria-pressed="${packageActive}" title="Ver entregables de ${esc(group.name)}">
+        <strong title="${esc(group.name)}">${esc(group.name)}</strong><small>${n} entregables</small></button></th>
+        ${cells}<td><strong class="pulse-matrix-percent" title="${done} completados de ${n}">${pulsePercent(done,n)}</strong></td></tr>`;
+  }).join('');
+  const totalBySpecialty=specialties.map((specialty,i)=>{
+    const count=rows.filter(t=>(t.team||'Sin especialidad')===specialty).length;
+    return `<td><button type="button" class="pulse-matrix-total" style="--matrix-rgb:${rgb[i%rgb.length]}"
+      data-drill="team" data-value="${esc(specialty)}" aria-label="Ver ${count} entregables de ${esc(specialty)}">${count}</button></td>`;
+  }).join('');
+  const done=completed(rows);
+  return `<table class="pulse-specialty-matrix" style="--matrix-cols:${specialties.length}" aria-label="Entregables por paquete y especialidad, con porcentaje completado">
+    <thead><tr><th scope="col">PAQUETE</th>${header}<th scope="col">CIERRE</th></tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr><th scope="row">TOTAL</th>${totalBySpecialty}<td><strong class="pulse-matrix-percent" title="${done} completados de ${rows.length}">${pulsePercent(done,rows.length)}</strong></td></tr></tfoot>
+  </table>`;
 }
 function collaboratorInitials(name){
   const words=String(name||'').trim().split(/\s+/).filter(Boolean);
@@ -4338,11 +4477,15 @@ function renderDashboard(){
   // Mantener el punto de desplazamiento si se actualizan las métricas del Dashboard.
   const previousOwnerScroll=$('#owner-chart .collaborator-list')?.scrollTop||0;
   const previousPriorityScroll=$('#alerts-list')?.scrollTop||0;
+  const previousPulseScrollTop=$('#team-summary')?.scrollTop||0;
+  const previousPulseScrollLeft=$('#team-summary')?.scrollLeft||0;
   $('#owner-chart').innerHTML=renderCollaboratorLoad(rows);
   const ownerList=$('#owner-chart .collaborator-list');
   if(ownerList)ownerList.scrollTop=previousOwnerScroll;
-  $('#team-summary').innerHTML=renderPackagePulse(rows);
-  $('#package-chart').replaceChildren();
+  $('#pulse-package-count').textContent=unique(rows.map(t=>t.package||'Sin paquete')).length+' paquetes';
+  $('#team-summary').innerHTML=renderPackageSpecialtyMatrix(rows);
+  $('#team-summary').scrollTop=previousPulseScrollTop;
+  $('#team-summary').scrollLeft=previousPulseScrollLeft;
   $('#alerts-list').innerHTML=renderPriorityTasks(rows);
   $('#alerts-list').scrollTop=previousPriorityScroll;
   $('#dashboard-view .attention-card').classList.toggle('has-urgent',
@@ -4371,7 +4514,8 @@ function drillTitle(type, value=''){
     package:`Paquete: ${value}`,
     owner:`Colaborador: ${value}`,
     team:`Disciplina: ${value}`,
-    task:`Detalle de entregable: ${value}`
+    task:`Detalle de entregable: ${value}`,
+    packageTeam:`Paquete: ${pulsePairParts(value)[0]} · Especialidad: ${pulsePairParts(value)[1]}`
   };
   return titles[type] || 'Desglose de entregables';
 }
@@ -4391,9 +4535,14 @@ function drillTasks(a){
     case 'soon': return a.filter(t=>alertStatus(t).sort===2);
     case 'high': return a.filter(t=>t.priority==='Alta');
     case 'status': return a.filter(t=>t.status===v);
-    case 'package': return a.filter(t=>t.package===v);
+    case 'package': return a.filter(t=>(t.package||'Sin paquete')===v);
+    case 'packageTeam': {
+      const [packageName,specialty]=pulsePairParts(v);
+      return a.filter(t=>(t.package||'Sin paquete')===packageName &&
+        (t.team||'Sin especialidad')===specialty);
+    }
     case 'owner': return a.filter(t=>t.owner===v);
-    case 'team': return a.filter(t=>t.team===v);
+    case 'team': return a.filter(t=>(t.team||'Sin especialidad')===v);
     case 'task': return a.filter(t=>t.id===v);
     default: return [];
   }
