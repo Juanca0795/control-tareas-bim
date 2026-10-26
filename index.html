@@ -7387,6 +7387,31 @@ restoreBimViewOnReload();
 </script>
 </body>
 </html><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script><script>(()=>{if(!window.supabase||typeof window.supabase.createClient!=='function'){cloudDataNotice('No se pudo cargar la biblioteca de Supabase. Revisa tu conexión y vuelve a cargar la página.',true);return;}const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
+
+/* Archivos binarios en Supabase Storage; únicamente referencias en bim_catalogs.data.
+   Depósito privado. Las políticas de acceso deben configurarse en Supabase SQL Editor. */
+const EVIDENCE_BUCKET='bim-evidencias';
+window.bimEvidenceCloud={
+  ready:()=>ready>0&&!cloudEmptyGuard,
+  async upload(path,file){
+    if(!ready||cloudEmptyGuard)throw Error('Supabase todavía no está disponible. Verifica la conexión.');
+    const {error}=await d.storage.from(EVIDENCE_BUCKET).upload(path,file,{
+      contentType:file.type,upsert:false,cacheControl:'3600'
+    });
+    if(error)throw Error(error.message+' (revisa el bucket '+EVIDENCE_BUCKET+')');
+  },
+  async url(path){
+    const {data,error}=await d.storage.from(EVIDENCE_BUCKET).createSignedUrl(path,60*30);
+    if(error||!data?.signedUrl)throw Error(error?.message||'No se pudo abrir imagen');
+    return data.signedUrl;
+  },
+  async remove(paths){
+    if(!Array.isArray(paths)||!paths.length)return;
+    const {error}=await d.storage.from(EVIDENCE_BUCKET).remove(paths);
+    if(error)throw Error(error.message);
+  }
+};
+
 async function load(){
   // El refresco automático no debe sobrescribir modificaciones locales aún no sincronizadas.
   if(loading||lock||(ready&&pendingSave&&!cloudEmptyGuard))return;
@@ -7427,6 +7452,7 @@ async function load(){
         merged.analytics=mergeMonthlyAnalytics(fromCloud.analytics,catalogs.analytics);
         merged.cncRecords=mergeCncRecords(fromCloud.cncRecords,catalogs.cncRecords);
         merged.weeklyForecasts=mergeWeeklyForecasts(fromCloud.weeklyForecasts,catalogs.weeklyForecasts);
+        merged.evidenceByTask=mergeEvidenceByTask(fromCloud.evidenceByTask,catalogs.evidenceByTask);
         merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups);
         catalogs=normalizeCatalogs(merged);
         ids=cloudIds;
@@ -7476,6 +7502,8 @@ async function save(){
     catalogs.cncRecords=catalogsToSave.cncRecords;
     catalogsToSave.weeklyForecasts=mergeWeeklyForecasts(latestCatalogs.data?.[0]?.data?.weeklyForecasts,catalogsToSave.weeklyForecasts);
     catalogs.weeklyForecasts=catalogsToSave.weeklyForecasts;
+    catalogsToSave.evidenceByTask=mergeEvidenceByTask(latestCatalogs.data?.[0]?.data?.evidenceByTask,catalogsToSave.evidenceByTask);
+    catalogs.evidenceByTask=catalogsToSave.evidenceByTask;
     const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
     if(gone.length){
       const deleted=await d.from('bim_tasks').delete().in('id',gone);
