@@ -14,7 +14,7 @@
 ## 2. Componentes y contenido no negociables
 
 1. Barra de navegación **superior**, tres pestañas (Dashboard, Control de tareas, Control semanal), botón claro/oscuro, configuración, nueva tarea y respaldo exclusivo de Control Semanal.
-2. Dashboard y Control de tareas comparten los **seis indicadores**: total entregables, avance promedio, completadas, en ejecución, vencidas/hoy y PPC semanal.
+2. Dashboard y Control de tareas comparten los **seis indicadores**: total entregables, avance promedio, completadas, en ejecución, vencidas/hoy y **Apoyo en otras áreas**. Este último mide tareas con apoyo informado / tareas del alcance y muestra la especialidad de apoyo más frecuente. **PPC semanal se conserva en Control Semanal**.
 3. Dashboard conserva Salud Operativa BIM, Tareas con Prioridad, Carga y Desempeño por Colaborador BIM y Matriz Operativa: Paquetes × Disciplina, incluidos sus desgloses.
 4. Salud BIM diferencia categorías por **color + nombre + valor**, incluidos los vencidos; no ocultar estados para simplificar el donut.
 5. Control de tareas: filtros arriba y tabla detallada a ancho disponible; en móvil, representación accesible en tarjetas.
