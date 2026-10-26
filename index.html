@@ -3208,6 +3208,54 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   .weekly-backup-item .btn{align-self:flex-end}
   .sidebar nav>.weekly-backup-launch{padding:8px;font-size:10px}
 }
+
+/* Estado vacío: centrar los cuatro mensajes en el área útil, sin alterar paneles. 
+   Especificidad superior a las reglas display:block/grid !important previas. */
+#dashboard-view.ui-empty-dashboard .radar-card #state-chart,
+#dashboard-view.ui-empty-dashboard .attention-card #alerts-list,
+#dashboard-view.ui-empty-dashboard .owner-card #owner-chart,
+#dashboard-view.ui-empty-dashboard .pulse-card #team-summary{
+  display:flex!important;
+  flex:1 1 auto!important;
+  flex-direction:column!important;
+  justify-content:center!important;
+  align-items:center!important;
+  align-content:center!important;
+  min-width:0!important;
+  min-height:0!important;
+  width:100%!important;
+  height:auto!important;
+  max-height:none!important;
+  overflow:hidden!important;
+  margin:0!important;
+  padding:0!important;
+}
+#dashboard-view.ui-empty-dashboard .executive-grid .compact-empty{
+  box-sizing:border-box;
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  flex:0 0 auto!important;
+  margin:0!important;
+  padding:12px 10px!important;
+  align-self:center!important;
+  text-align:center!important;
+  background:transparent!important;
+  border:0!important;
+}
+#cloud-data-notice{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;margin:0 0 13px;
+  padding:11px 13px;border:1px solid var(--status-warn-bd);
+  border-radius:9px;background:var(--status-warn-bg);
+  color:var(--status-warn-fg);font-size:11px;line-height:1.45;
+}
+#cloud-data-notice.error{
+  background:var(--status-crit-bg);border-color:var(--status-crit-bd);
+  color:var(--status-crit-fg);
+}
+#cloud-data-notice .btn{flex:none}
+
 /* Dashboard: matriz de paquetes y especialidades, sin cambiar el alto de la fila. */
 #dashboard-view .executive-grid>.pulse-card{
   display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;
@@ -3379,6 +3427,10 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 </aside>
 
 <main class="main">
+  <div id="cloud-data-notice" class="hidden" role="status" aria-live="polite">
+    <span id="cloud-data-message"></span>
+    <button type="button" class="btn small" id="cloud-retry-btn" onclick="retryCloudDataLoad()">Reintentar conexión</button>
+  </div>
   <!-- VISTA: CONTROL DE TAREAS (10 columnas, sin columna de acción) -->
   <div id="tasks-view" class="hidden">
     <section id="task-stats" class="stat-grid" aria-label="Indicadores de tareas"></section>
@@ -3959,6 +4011,17 @@ function persist(){
   renderAll();
 }
 function $(s){ return document.querySelector(s); }
+function cloudDataNotice(message='',isError=false){
+  const notice=$('#cloud-data-notice');
+  if(!notice)return;
+  notice.classList.toggle('hidden',!message);
+  notice.classList.toggle('error',!!isError);
+  $('#cloud-data-message').textContent=message;
+  $('#cloud-retry-btn').disabled=!window.bimCloudRetry;
+}
+function retryCloudDataLoad(){
+  if(window.bimCloudRetry)window.bimCloudRetry();
+}
 
 function syncThemeButton(){
   const dark = document.documentElement.dataset.theme === 'dark';
