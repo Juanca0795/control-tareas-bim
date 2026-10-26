@@ -307,7 +307,9 @@ async function exportBimPpt(){
     pptx.subject='Reporte de evidencias BIM, '+pptBimState.week;
     pptx.title='Reporte fotográfico BIM '+pptBimState.week;
     pptx.lang='es-PE';
-    pptx.company='ÁREA BIM | S&P';
+    // PptxGenJS inserta company directamente en docProps/app.xml.
+    // El ampersand debe escaparse para no invalidar todo el PowerPoint.
+    pptx.company='ÁREA BIM | S&amp;P';
     const groups=new Map();
     included.forEach(item=>{
       if(!groups.has(item.package))groups.set(item.package,[]);
