@@ -4986,10 +4986,12 @@ function weeklyHistoryWeeks(){
   // Se muestran también semanas futuras SIN inventar un resultado PPC.
   const today=isoWeekKey(new Date());
   const anchor=selectedWeek>today?selectedWeek:today;
+  // Una semana comprometida que todavía es futura también es un registro real
+  // y debe poder iniciar la escala, aunque su PPC permanezca sin valor.
   const candidates=[...new Set([
     ...tasks.map(t=>effectiveTaskWeek(t)),
     ...weeklySnapshots.map(snapshot=>snapshot.week)
-  ])].filter(w=>typeof w==='string'&&weekStart(w)&&w<=anchor).sort();
+  ])].filter(w=>typeof w==='string'&&weekStart(w)).sort();
   const earliest=candidates.find(w=>weeklyMetrics(w).planned>0);
   if(!earliest)return [];
   // Priorizar ocho semanas desde el primer registro. Cuando se superan, deslizar
