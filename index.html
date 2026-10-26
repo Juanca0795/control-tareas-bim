@@ -5270,20 +5270,27 @@ function weeklyFiltered(week){
   return base;
 }
 function weeklyMetrics(week){
-  const data=weeklyFiltered(week),end=weekEnd(week);
+  const data=weeklyFiltered(week),end=weekEnd(week),today=todayString();
+  const closedOn=data.closed&&data.createdAt?data.createdAt.slice(0,10):null;
+  const cutoff=end<today?end:closedOn&&closedOn<end?closedOn:today;
+  const future=week>isoWeekKey(new Date())&&!data.closed;
   const planned=data.rows.length;
-  // Cumplida únicamente si hay fecha real y cierre verificado dentro o antes del domingo seleccionado.
-  const completed=data.rows.filter(t=>t.done&&t.completedAt&&t.completedAt<=end).length;
+  const verified=t=>t.done&&t.completedAt&&t.completedAt<=cutoff;
+  const completedRows=data.rows.filter(verified),completed=completedRows.length;
+  const pending=data.rows.filter(t=>!verified(t));
   const unknownDate=data.rows.filter(t=>t.done&&!t.completedAt).length;
-  const observedUntil=data.closed||end<todayString()?end:todayString();
-  const delayed=data.rows.filter(t=>!(t.done&&t.completedAt&&t.completedAt<=end)&&t.deadline&&t.deadline<observedUntil).length;
-  const onTime=data.rows.filter(t=>t.done&&t.completedAt&&t.completedAt<=end&&t.deadline&&t.completedAt<=t.deadline).length;
-  const verifiableDate=data.rows.filter(t=>t.done&&t.completedAt&&t.completedAt<=end&&t.deadline).length;
-  const lateRows=data.rows.filter(t=>t.done&&t.completedAt&&t.completedAt<=end&&t.deadline&&t.completedAt>t.deadline);
+  const delayed=pending.filter(t=>t.deadline&&t.deadline<cutoff).length;
+  const dueAtCutoff=pending.filter(t=>t.deadline&&t.deadline===cutoff).length;
+  const onTime=completedRows.filter(t=>t.deadline&&t.completedAt<=t.deadline).length;
+  const lateRows=completedRows.filter(t=>t.deadline&&t.completedAt>t.deadline);
+  const verifiableDate=onTime+lateRows.length;
+  const punctualityBase=verifiableDate+delayed+dueAtCutoff;
   const lateDays=lateRows.map(t=>(Date.parse(t.completedAt+'T00:00:00Z')-Date.parse(t.deadline+'T00:00:00Z'))/86400000).filter(Number.isFinite);
-  return {...data,planned,completed,remaining:Math.max(0,planned-completed),unknownDate,delayed,onTime,
-    ppc:planned?100*completed/planned:null,punctuality:verifiableDate?100*onTime/verifiableDate:null,
-    verifiableDate,lateCompleted:lateRows.length,avgDelay:lateDays.length?lateDays.reduce((a,b)=>a+b,0)/lateDays.length:null};
+  return {...data,planned,completed,remaining:planned-completed,unknownDate,delayed,dueAtCutoff,onTime,
+    observedUntil:cutoff,lateCompleted:lateRows.length,verifiableDate,punctualityBase,
+    ppc:future?null:(planned?100*completed/planned:null),
+    punctuality:future||!punctualityBase?null:100*onTime/punctualityBase,
+    avgDelay:lateDays.length?lateDays.reduce((a,b)=>a+b,0)/lateDays.length:null};
 }
 function updateWeeklyFilters(){
   // Semanas cerradas usan su snapshot, semanas abiertas sus tareas actuales.
