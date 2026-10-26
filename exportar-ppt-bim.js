@@ -201,10 +201,10 @@ function pptBimEvidenceSlide(pptx,week,packageName,entries){
       const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
       slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
         y:frame.y+(frame.h-sz.h)/2,w:sz.w,h:sz.h});
-      let caption=String(e.caption||e.title||'').replace(/\s+/g,' ').trim();
-      if(caption.length>170)caption=caption.slice(0,167)+'…';
+      const caption=String(e.caption||e.title||'').replace(/\s+/g,' ').trim();
       pptBimAddText(slide,caption,
-        {x:x+.13,y:top+redH+picH+.11,w:w-.26,h:.52,fontSize:caption.length>95?10:13,
+        {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
+          fontSize:caption.length>180?8:caption.length>95?10:13,
           bold:true,align:'center',valign:'mid',fit:'shrink'});
       pptBimAddText(slide,e.taskId+(e.team?' · '+e.team:''),
         {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
@@ -271,7 +271,8 @@ async function exportBimPpt(){
     }
     if(status)status.textContent='Generando PPTX editable…';
     await pptx.writeFile({fileName:'Reporte_BIM_'+pptBimState.week.replace('-','_')+'.pptx'});
-    if(status)status.textContent='Presentación generada: '+(pptx._slides?.length||'')+' diapositivas.';
+    const totalSlides=1+[...groups.values()].reduce((sum,images)=>sum+Math.ceil(images.length/3),0);
+    if(status)status.textContent='Presentación generada: '+totalSlides+' diapositivas.';
     toast('Presentación PPTX generada correctamente.');
   }catch(err){
     console.error('Exportación PPT:',err);
