@@ -3536,6 +3536,38 @@ html[data-theme="light"]{--bim-interaction-glow:rgba(30,102,176,.12)}
     transform:none!important;transition:none!important;
   }
 }
+
+/* UI/UX Pro Max · Control BIM: focos visibles y respuestas por tipo de puntero.
+   Los paneles permanecen estáticos; los datos y las barras son los que animan. */
+:is(#dashboard-view,#tasks-view,#weekly-view) button:focus-visible,
+:is(#dashboard-view,#tasks-view,#weekly-view) select:focus-visible,
+:is(#dashboard-view,#tasks-view,#weekly-view) input:focus-visible,
+.sidebar :is(.nav-link,.icon-btn,.weekly-backup-launch):focus-visible,
+#tasks-view tr[data-task-row]:focus-visible,
+#dashboard-view .pulse-matrix-package:focus-visible{
+  outline:2px solid var(--accent-blue)!important;
+  outline-offset:3px;
+}
+@media(hover:hover) and (pointer:fine){
+  #dashboard-view .stat.kpi-reference:hover,
+  #tasks-view .stat.kpi-reference:hover,
+  #weekly-view .weekly-kpi:hover{
+    transform:translateY(-2px)!important;
+  }
+  #dashboard-view .pulse-specialty-matrix tbody tr:hover{
+    background:var(--bg-hover);
+  }
+}
+@media(hover:none),(pointer:coarse){
+  :is(#dashboard-view,#tasks-view,#weekly-view) button:active{
+    filter:brightness(1.06);
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  :is(#dashboard-view,#tasks-view,#weekly-view) button:active{
+    transition:none!important;
+  }
+}
 </style>
 </head>
 <body>
@@ -4479,6 +4511,7 @@ function renderTasks(){
       <button type="button" class="btn small task-mobile-edit" data-edit-id="${esc(t.id)}" aria-label="Editar entregable ${esc(t.id)}">Editar entregable</button>
     </article>`;
   }).join(''):'<div class="compact-empty">No hay entregables con los filtros seleccionados.</div>';
+  scheduleBimMetricsAnimation('tasks');
 }
 
 function dashboardTasks(){
@@ -4784,6 +4817,7 @@ function renderDashboard(){
     rows.some(t=>categoryOf(t.status)!=='done'&&alertStatus(t).sort<=1));
   renderDrill(rows);
   renderActiveFilterChips('dash');
+  scheduleBimMetricsAnimation('dashboard');
 }
 
 function selectedDrill(type, value=''){
@@ -5033,6 +5067,33 @@ function animateViewMetrics(viewName){
   if(bimMotionEntries.length)bimMotionFrame=requestAnimationFrame(tick);
 }
 
+
+/* UI/UX Pro Max · animaciones ligadas al cambio real de información.
+   - Primera carga o cambio de filtros: animar solamente los datos modificados.
+   - Navegación de pestaña: reproducir el llenado aunque sean los mismos KPI.
+   - Sin layout-shift ni efectos de aparición sobre las tarjetas completas. */
+let bimMetricSchedule=0;
+const bimMetricSignatures=Object.create(null);
+function scheduleBimMetricsAnimation(viewName,force=false){
+  if(currentView!==viewName)return;
+  if(bimMetricSchedule)cancelAnimationFrame(bimMetricSchedule);
+  bimMetricSchedule=requestAnimationFrame(()=>{
+    bimMetricSchedule=0;
+    if(currentView!==viewName)return;
+    const view=$('#'+viewName+'-view');
+    if(!view||view.classList.contains('hidden'))return;
+    // Restaurar una animación anterior antes de leer valores calculados.
+    stopBimMetricsAnimation();
+    const kpis=[...view.querySelectorAll('.stat .val,.weekly-kpi .number')];
+    const bars=[...view.querySelectorAll('.stat-meter i,.collaborator-track i,.weekly-fallback .weekly-track b')];
+    const fingerprint=kpis.map(n=>n.textContent.trim()).join('|')+'::'+
+      bars.map(n=>n.getAttribute('style')||'').join('|');
+    if(!force&&bimMetricSignatures[viewName]===fingerprint)return;
+    bimMetricSignatures[viewName]=fingerprint;
+    animateViewMetrics(viewName);
+  });
+}
+
 function switchView(v, authenticated=false){
   // Solicitar credenciales cada vez que se entra desde otra vista.
   if(v==='weekly' && currentView!=='weekly' && !authenticated){
@@ -5051,7 +5112,7 @@ function switchView(v, authenticated=false){
   if(v==='dashboard') renderDashboard();
   if(v==='weekly') renderWeekly();
   // Anima los valores reales dentro de la pestaña, sin revelar ni mover paneles.
-  if(previousView!==v)animateViewMetrics(v);
+  if(previousView!==v)scheduleBimMetricsAnimation(v,true);
 }
 
 function populateEditorSelects(){
@@ -5888,6 +5949,12 @@ function groupForWeekly(m,key){
 }
 let WEEKLY_CHARTS={};
 function disposeWeeklyCharts(){for(const c of Object.values(WEEKLY_CHARTS)){try{c.destroy()}catch(e){}}WEEKLY_CHARTS={};}
+function weeklyChartMotionOptions(){
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ?{animation:false}
+    :{animation:{duration:760,easing:'easeOutCubic'},
+      transitions:{active:{animation:{duration:130}}}};
+}
 function weeklyChartOptions(){
   const dark=document.documentElement.dataset.theme==='dark';
   return {text:dark?'#bdcce4':'#50617c',grid:dark?'rgba(127,160,198,.16)':'rgba(65,85,122,.14)',
@@ -6010,7 +6077,7 @@ function weeklyTrend(m){
     WEEKLY_CHARTS.trend=new Chart(node.querySelector('canvas'),{
       type:'line',data:{labels:weeks.map(weekShort),datasets},
       plugins:[pointLabels],
-      options:{
+      options:{...weeklyChartMotionOptions(),
         maintainAspectRatio:false,responsive:true,interaction:{mode:'index',intersect:false},
         plugins:{legend:{display:false},tooltip:{
           // No presentar la referencia constante como dato real de una semana futura.
@@ -6078,7 +6145,7 @@ function weeklyGroupChart(id,groups,mode){
         [{label:'Comprometidas',data:items.map(x=>x.planned),backgroundColor:'rgba(77,165,255,.35)',borderColor:theme.blue,borderWidth:1,borderRadius:5},
          {label:'Cumplidas',data:items.map(x=>x.done),backgroundColor:theme.green,borderRadius:5}]:
         [{label:'PPC (%)',data:items.map(x=>100*x.done/x.planned),backgroundColor:theme.blue,borderRadius:6}]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:mode==='owner',position:'bottom',labels:{color:theme.text,boxWidth:9,font:{size:10}}},tooltip:{callbacks:{label: ctx=>mode==='owner'?`${ctx.dataset.label}: ${ctx.parsed.x}`:`PPC ${ctx.parsed.x.toFixed(1)}%`}}},scales:{x:{beginAtZero:true,max:mode==='package'?100:undefined,grid:{color:theme.grid},ticks:{color:theme.text,precision:0}},y:{ticks:{color:theme.text,font:{size:10},autoSkip:false},grid:{display:false}}}}
+      options:{...weeklyChartMotionOptions(),indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:mode==='owner',position:'bottom',labels:{color:theme.text,boxWidth:9,font:{size:10}}},tooltip:{callbacks:{label: ctx=>mode==='owner'?`${ctx.dataset.label}: ${ctx.parsed.x}`:`PPC ${ctx.parsed.x.toFixed(1)}%`}}},scales:{x:{beginAtZero:true,max:mode==='package'?100:undefined,grid:{color:theme.grid},ticks:{color:theme.text,precision:0}},y:{ticks:{color:theme.text,font:{size:10},autoSkip:false},grid:{display:false}}}}
     });return;
   }
   node.style.height='auto';node.innerHTML=`<div class="weekly-fallback">${items.map(x=>{
@@ -6125,7 +6192,7 @@ function weeklyPlanChart(){
       type:'bar',data:{labels:weeks.map(weekShort),datasets:[
         {label:'Planificados',data:planned,backgroundColor:'rgba(77,165,255,.48)',borderColor:c.blue,borderWidth:1,borderRadius:5,maxBarThickness:28},
         {label:'Completados',data:done,backgroundColor:c.green,borderRadius:5,maxBarThickness:28}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{
+      options:{...weeklyChartMotionOptions(),responsive:true,maintainAspectRatio:false,plugins:{
         legend:{display:true,position:'bottom',labels:{color:c.text,boxWidth:10,font:{size:10}}},
         tooltip:{callbacks:{title:items=>weeks[items[0]?.dataIndex]||'',label:ctx=>ctx.dataset.label+': '+ctx.parsed.y}}},
         scales:{x:{grid:{display:false},ticks:{color:c.text,maxRotation:0}},
@@ -6162,7 +6229,7 @@ function weeklyDisciplineChart(m){
     WEEKLY_CHARTS.discipline=new Chart(node.querySelector('canvas'),{
       type:'bar',data:{labels:items.map(x=>x.name),datasets:categories.map(([label,key,color])=>({
         label,data:items.map(x=>x[key]),backgroundColor:color,borderRadius:3,maxBarThickness:25}))},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{
+      options:{...weeklyChartMotionOptions(),indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{
         legend:{display:true,position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:9}}},
         tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.x}}},
         scales:{x:{stacked:true,beginAtZero:true,grid:{color:c.grid},ticks:{color:c.text,precision:0}},
@@ -6188,7 +6255,7 @@ function weeklyBacklogChart(){
     WEEKLY_CHARTS.backlog=new Chart(node.querySelector('canvas'),{
       type:'bar',data:{labels:weeks.map(weekShort),datasets:[
         {label:'Arrastre',data:values,backgroundColor:c.amber,borderRadius:5,maxBarThickness:30}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      options:{...weeklyChartMotionOptions(),responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
         tooltip:{callbacks:{title:items=>weeks[items[0]?.dataIndex]||'',label:ctx=>'Pendientes: '+ctx.parsed.y}}},
         scales:{x:{grid:{display:false},ticks:{color:c.text,maxRotation:0}},
           y:{beginAtZero:true,grid:{color:c.grid},ticks:{color:c.text,precision:0}}}}
@@ -6236,6 +6303,7 @@ function renderWeekly(){
   ].join('');
   weeklyTrend(m);
   weeklyCncPanel(m);
+  scheduleBimMetricsAnimation('weekly');
 }
 function requestWeeklyClose(){
   if(weeklySnapshot(selectedWeek)){toast('Esta semana ya fue cerrada');return;}
