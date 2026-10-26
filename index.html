@@ -5714,7 +5714,7 @@ function renderWeekly(){
     weeklyKpiCard('CUMPLIDAS',m.completed,'Cierres verificados hasta el corte','positive'),
     weeklyKpiCard('PPC SEMANAL',pct(m.ppc),m.ppc===null&&selectedWeek>isoWeekKey(new Date())?'Semana aún no iniciada':'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
     weeklyKpiCard('PENDIENTES',m.remaining,'Sin cierre verificado al corte',m.remaining?'warning':''),
-    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?m.onTime+'/'+m.punctualityBase+' evaluables (incluye hoy)':'Sin plazos evaluables al corte',m.punctuality!==null&&m.punctuality<85?'warning':''),
+    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?m.onTime+'/'+m.punctualityBase+' evaluables · '+(m.observedUntil===todayString()?'incluye hoy':'al corte'):'Sin plazos evaluables al corte',m.punctuality!==null&&m.punctuality<85?'warning':''),
     weeklyKpiCard('VENCIDAS',m.delayed,m.dueAtCutoff+(m.observedUntil===todayString()?' vencen hoy':' al corte')+' · '+m.lateCompleted+' cierres tardíos',m.delayed?'danger':m.dueAtCutoff?'warning':'positive')
   ].join('');
   weeklyTrend(m);
