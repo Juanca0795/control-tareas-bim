@@ -155,22 +155,27 @@ function renderWeeklyProjectionChart(p){
   }
   const labels=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
   const c=weeklyChartOptions();
+  // Curva S: unir registros acumulados entre días, sin escalones ni áreas rellenas.
+  const projectionColor='#e8783c';
   if(typeof Chart!=='undefined'&&weeklyInnerTab==='proyeccion'){
     node.innerHTML='<canvas role="img" aria-label="Curvas acumuladas de actividades programadas, completadas y previstas"></canvas>';
     WEEKLY_CHARTS.projection=new Chart(node.querySelector('canvas'),{
       type:'line',data:{labels,datasets:[
         {label:'Programado acumulado',data:p.planned,borderColor:c.blue,backgroundColor:c.blue,
-          tension:0,stepped:true,borderWidth:2,pointRadius:3},
+          tension:0,stepped:false,fill:false,borderWidth:2.3,pointRadius:3,pointHoverRadius:5,
+          borderCapStyle:'round',borderJoinStyle:'round'},
         {label:'Cumplido real',data:p.actual,borderColor:c.green,backgroundColor:c.green,
-          tension:0,stepped:true,borderWidth:2.5,pointRadius:3,spanGaps:false},
-        {label:'Proyección al cierre',data:p.projected,borderColor:c.amber,backgroundColor:c.amber,
-          tension:0,stepped:true,borderWidth:2,borderDash:[6,4],pointRadius:3,spanGaps:false}
+          tension:0,stepped:false,fill:false,borderWidth:2.5,pointRadius:3,pointHoverRadius:5,
+          borderCapStyle:'round',borderJoinStyle:'round',spanGaps:false},
+        {label:'Proyección al cierre',data:p.projected,borderColor:projectionColor,backgroundColor:projectionColor,
+          tension:0,stepped:false,fill:false,borderWidth:2.5,pointRadius:3,pointHoverRadius:5,
+          borderCapStyle:'round',borderJoinStyle:'round',spanGaps:false}
       ]},
       options:{...weeklyChartMotionOptions(),responsive:true,maintainAspectRatio:false,
         interaction:{intersect:false,mode:'index'},
         plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.parsed.y===null?'Sin dato':ctx.dataset.label+': '+ctx.parsed.y+' entregables'}}},
         scales:{x:{ticks:{color:c.text},grid:{display:false}},
-          y:{min:0,max:Math.max(1,p.m.planned),ticks:{color:c.text,precision:0,stepSize:1},
+          y:{min:0,max:Math.max(1,p.m.planned),ticks:{color:c.text,precision:0,maxTicksLimit:6},
             grid:{color:c.grid}}}}
     });
     return;
