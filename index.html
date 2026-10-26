@@ -3347,7 +3347,7 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   </div>
   <div class="nav-name">ESPACIO DE TRABAJO</div>
   <nav aria-label="Vistas del sistema" role="tablist">
-    <button type="button" id="weekly-backup-launch" class="weekly-backup-launch hidden" onclick="openWeeklyBackupDialog()" title="Respaldos en Supabase" aria-label="Abrir respaldos de Control Semanal">
+    <button type="button" id="weekly-backup-launch" class="weekly-backup-launch hidden" onclick="createWeeklyBackupAndOpen()" title="Crear backup en Supabase y consultar respaldos" aria-label="Abrir respaldos de Control Semanal">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3M5 7a8 8 0 0 1 14 0"/></svg> Backup
     </button>
     <button class="nav-link active" id="nav-dashboard" type="button" role="tab" aria-selected="true" onclick="switchView('dashboard')">
@@ -5304,6 +5304,17 @@ async function openWeeklyBackupDialog(){
   $('#weekly-backup-back').classList.add('open');
   document.body.style.overflow='hidden';
   await refreshWeeklyCloudBackups();
+}
+async function createWeeklyBackupAndOpen(){
+  if(currentView!=='weekly'||weeklyBackupBusy)return;
+  $('#weekly-backup-back').classList.add('open');
+  document.body.style.overflow='hidden';
+  if(!window.bimCloudBackups){
+    weeklyBackupFeedback('No está disponible la conexión de respaldo en Supabase.',true);
+    return;
+  }
+  // El botón crea la copia inmediatamente; el modal permite restaurar otras.
+  await createWeeklyCloudBackup();
 }
 async function refreshWeeklyCloudBackups(){
   if(weeklyBackupBusy)return;
