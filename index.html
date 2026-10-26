@@ -3569,18 +3569,23 @@ html[data-theme="light"]{--bim-interaction-glow:rgba(30,102,176,.12)}
   }
 }
 
-/* UI/UX Pro Max · resplandor ambiental de baja intensidad.
-   Se anima solo la opacidad: sin reflujo, sin movimiento de tarjetas ni brillo excesivo.
-   La luz nace debajo del contenido y respeta el estado claro/oscuro. */
+/* UI/UX Pro Max · luz inferior perceptible, sin efecto neón.
+   El brillo respira entre dos intensidades; los cuadros NO se desplazan. */
 :root{
   --bim-ambient-rgb:76,164,224;
-  --bim-ambient-low:.36;
-  --bim-ambient-high:.72;
+  --bim-ambient-low:.55;
+  --bim-ambient-high:.98;
+  --bim-ambient-core:.28;
+  --bim-ambient-halo:.12;
+  --bim-ambient-edge:.14;
 }
 html[data-theme="light"]{
-  --bim-ambient-rgb:60,137,198;
-  --bim-ambient-low:.20;
-  --bim-ambient-high:.43;
+  --bim-ambient-rgb:55,133,187;
+  --bim-ambient-low:.40;
+  --bim-ambient-high:.76;
+  --bim-ambient-core:.15;
+  --bim-ambient-halo:.065;
+  --bim-ambient-edge:.09;
 }
 @keyframes bimQuietPanelGlow{
   0%,100%{opacity:var(--bim-ambient-low)}
@@ -3601,21 +3606,25 @@ html[data-theme="light"]{
   box-sizing:border-box;
   border-radius:inherit;
   pointer-events:none;
-  background:radial-gradient(ellipse 98% 73% at 50% 120%,
-    rgba(var(--bim-ambient-rgb),.085) 0%,
-    rgba(var(--bim-ambient-rgb),.027) 44%,
-    transparent 80%);
-  box-shadow:inset 0 0 0 1px rgba(var(--bim-ambient-rgb),.065),
-    inset 0 -8px 18px -15px rgba(var(--bim-ambient-rgb),.15);
+  background:
+    radial-gradient(ellipse 93% 110% at 50% 111%,
+      rgba(var(--bim-ambient-rgb),var(--bim-ambient-core)) 0%,
+      rgba(var(--bim-ambient-rgb),var(--bim-ambient-halo)) 42%,
+      transparent 78%);
+  box-shadow:
+    inset 0 0 0 1px rgba(var(--bim-ambient-rgb),var(--bim-ambient-edge)),
+    inset 0 -13px 20px -18px rgba(var(--bim-ambient-rgb),.35);
   opacity:var(--bim-ambient-low);
-  animation:bimQuietPanelGlow 5.6s ease-in-out infinite;
+  will-change:opacity;
+  animation:bimQuietPanelGlow 5.2s ease-in-out infinite;
 }
 @media(prefers-reduced-motion:reduce){
   :is(#dashboard-view,#tasks-view,#weekly-view):not(.hidden)
     :is(.card,.stat.kpi-reference,.weekly-kpi,.weekly-status-strip,
         .task-mobile-card,.weekly-time-step)::after{
     animation:none!important;
-    opacity:var(--bim-ambient-low);
+    opacity:.76;
+    will-change:auto;
   }
 }
 
