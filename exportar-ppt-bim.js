@@ -198,19 +198,31 @@ async function loadBimPptThumbnails(token){
 function pptBimAddText(slide,text,opts={}){
   slide.addText(String(text||''),{fontFace:'Arial',color:'172B49',breakLine:false,margin:0,...opts});
 }
+/* Imágenes oficiales proporcionadas por el usuario, servidas como recurso estático
+   del mismo sitio de Vercel. La exportación se cancela si faltan los logos. */
+let pptBimOfficialLogosPromise=null;
+async function pptBimLoadOfficialLogos(){
+  if(!pptBimOfficialLogosPromise){
+    const url=new URL('assets/logos-oficiales-bim.b64.txt',document.baseURI).href;
+    pptBimOfficialLogosPromise=fetch(url,{cache:'force-cache'}).then(async response=>{
+      if(!response.ok)throw new Error('No se encontraron los logos oficiales ANIN / S&P en Vercel');
+      const data=(await response.text()).replace(/\s+/g,'');
+      if(!/^\/9j\/[a-zA-Z0-9+/]+={0,2}$/.test(data)||data.length<10000)
+        throw new Error('El recurso con logos oficiales está dañado');
+      return 'data:image/jpeg;base64,'+data;
+    }).catch(err=>{pptBimOfficialLogosPromise=null;throw err});
+  }
+  return pptBimOfficialLogosPromise;
+}
+
 function pptBimMaster(slide,pptx){
   const S=pptx.ShapeType;
   slide.background={color:'FFFFFF'};
-  // Identidad y bandas de la plantilla de reunión semanal (13.33 × 7.5).
+  // Sustituye las imitaciones de ANIN y S&P por los dos logos oficiales,
+  // montados sobre una franja blanca. Se aplica a portada y hojas de evidencias.
+  if(!pptx._bimOfficialLogos)throw new Error('Los logos oficiales aún no están disponibles');
+  slide.addImage({data:pptx._bimOfficialLogos,x:0,y:.02,w:13.33,h:.667});
   slide.addShape(S.line,{x:0,y:.72,w:13.33,h:0,line:{color:'C8C8C8',width:.75}});
-  slide.addShape(S.rect,{x:.19,y:.19,w:.32,h:.23,fill:{color:'C00000'},line:{color:'C00000'}});
-  pptBimAddText(slide,'ANIN',{x:.58,y:.12,w:1.65,h:.46,
-    fontFace:'Arial',bold:true,fontSize:24,color:'1C2B45'});
-  pptBimAddText(slide,'AUTORIDAD NACIONAL DE INFRAESTRUCTURA',
-    {x:.59,y:.51,w:3.3,h:.16,fontSize:7,color:'4C5564'});
-  slide.addShape(S.rect,{x:11.69,y:.03,w:.80,h:.54,fill:{color:'C00000'},line:{color:'C00000'}});
-  pptBimAddText(slide,'S&P',{x:11.72,y:.095,w:.77,h:.36,fontSize:23,color:'FFFFFF',bold:true});
-  pptBimAddText(slide,'ÁREA BIM',{x:12.51,y:.25,w:.73,h:.18,fontSize:8,color:'414141',bold:true});
   // Pie gris con banda roja heredados visualmente del archivo de referencia.
   slide.addShape(S.rect,{x:0,y:7.05,w:9.05,h:.39,fill:{color:'858585'},line:{color:'858585'}});
   slide.addShape(S.rect,{x:9.06,y:7.02,w:4.27,h:.29,fill:{color:'FF0000'},line:{color:'FF0000'}});
@@ -332,6 +344,7 @@ async function exportBimPpt(){
     const Factory=await pptBimEnsureLib();
     const pptx=new Factory();
     pptx.layout='LAYOUT_WIDE';
+    pptx._bimOfficialLogos=await pptBimLoadOfficialLogos();
     pptx.author='ÁREA BIM | S&P';
     pptx.subject='Reporte de evidencias BIM, '+pptBimState.week;
     pptx.title='Reporte fotográfico BIM '+pptBimState.week;
