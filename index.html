@@ -4094,7 +4094,29 @@ textarea,
   }
 }
 
+
+/* CNC: registro accesible desde Control de tareas y lectura en Control Semanal. */
+#tasks-view .task-cnc-button{display:block;margin-top:5px;padding:3px 6px;max-width:100%;border:1px solid var(--border-strong);border-radius:5px;background:var(--bg-subtle);color:var(--accent-blue);font-size:9px;line-height:1.35;font-weight:700;cursor:pointer}
+#tasks-view .task-cnc-button:hover,#tasks-view .task-cnc-button:focus-visible{border-color:var(--accent-blue);background:var(--bg-hover)}
+#tasks-view .task-mobile-cnc{align-self:flex-start}
+.cnc-modal{width:min(570px,calc(100vw - 24px));max-height:calc(100dvh - 24px)}
+.cnc-modal .modal-body{overflow:auto}
+.cnc-task-context{border:1px solid var(--border-base);border-radius:8px;background:var(--bg-subtle);padding:12px;margin-bottom:14px;display:grid;gap:5px;line-height:1.5}
+.cnc-task-context strong{font-size:12px;color:var(--ink-primary)}
+.cnc-task-context span{font-size:10px;color:var(--ink-secondary)}
+.cnc-form-grid{display:grid;gap:12px}
+.cnc-form-grid .form-field{margin:0}
+.cnc-form-grid textarea{min-height:75px}
+.cnc-explainer{font-size:10px;line-height:1.5;color:var(--ink-secondary)}
+.cnc-readonly{display:grid;gap:9px}
+.cnc-readonly div{display:grid;gap:4px;padding-bottom:9px;border-bottom:1px solid var(--border-base)}
+.cnc-readonly b{font-size:10px;color:var(--ink-secondary)}
+.cnc-readonly p{margin:0;color:var(--ink-primary);font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
+#weekly-view .weekly-cnc-item .cnc-cause{color:var(--accent-blue);font-weight:650}
+#weekly-view .weekly-cnc-item .cnc-action{color:var(--ink-secondary);font-size:10px;line-height:1.5;margin-top:5px}
+
 </style>
+<script src="cnc.js"></script>
 </head>
 <body>
 <aside class="sidebar">
@@ -4540,6 +4562,32 @@ textarea,
   </div>
 </div>
 
+
+<!-- REGISTRO DE CAUSAS CNC · CONTROL DE TAREAS -->
+<div class="modal-back" id="cnc-back" onclick="if(event.target===this)closeCnc()">
+  <div class="modal cnc-modal" role="dialog" aria-modal="true" aria-labelledby="cnc-title">
+    <div class="modal-hd"><h2 id="cnc-title">Registrar causa CNC</h2><button type="button" class="close" onclick="closeCnc()" aria-label="Cerrar CNC">×</button></div>
+    <div class="modal-body">
+      <div id="cnc-task-context" class="cnc-task-context"></div>
+      <div id="cnc-existing" class="cnc-readonly hidden"></div>
+      <form id="cnc-form" class="cnc-form-grid" onsubmit="saveCnc(event)">
+        <div class="form-field"><label for="cnc-category">Causa principal *</label><select id="cnc-category" required>
+          <option value="">Seleccionar causa</option><option>Falta de información</option>
+          <option>Falta de coordinación BIM</option><option>Interferencias entre disciplinas</option>
+          <option>Cambios de alcance o diseño</option><option>Falta de recursos</option>
+          <option>Dependencia de otra área</option><option>Problemas de planificación</option><option>Otros</option>
+        </select></div>
+        <div class="form-field"><label for="cnc-description">Descripción de lo sucedido *</label><textarea id="cnc-description" maxlength="1000" required placeholder="¿Qué impidió cumplir el compromiso?"></textarea></div>
+        <div class="form-field"><label for="cnc-action">Acción correctiva *</label><textarea id="cnc-action" maxlength="1000" required placeholder="¿Qué se hará para corregir el incumplimiento?"></textarea></div>
+        <div class="form-field"><label for="cnc-date">Nueva fecha propuesta (opcional)</label><input type="date" id="cnc-date"></div>
+        <div class="form-field"><label for="cnc-reporter">Nombre de quien registra *</label><input id="cnc-reporter" class="field-input" maxlength="100" required autocomplete="name" placeholder="Nombre y apellidos"></div>
+        <p class="cnc-explainer">La fecha original no se modifica. El registro será de solo lectura. El nombre declarado no constituye autenticación verificada.</p>
+        <div class="modal-ft"><div><button type="button" class="btn" onclick="closeCnc()">Cancelar</button><button type="submit" class="btn primary">Guardar causa CNC</button></div></div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: CONFIRMACIÓN PERSONALIZADO -->
 <div class="modal-back" id="confirm-back" onclick="if(event.target===this)closeConfirm()">
   <div class="modal confirm-modal" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
@@ -4658,6 +4706,7 @@ function normalizeCatalogs(input){
   // Metadatos internos compatibles con el campo JSONB bim_catalogs.data existente.
   // Sin migraciones: nunca se envían columnas no existentes a bim_tasks.
   result.analytics=normalizeMonthlyAnalytics(input?.analytics);
+  result.cncRecords=normalizeCncRecords(input?.cncRecords);
   // Copias completas en el JSONB de bim_catalogs, sin cambiar el esquema.
   // Nunca copiar backups dentro del payload de otro backup.
   result.backups=Array.isArray(input?.backups)
@@ -5055,7 +5104,7 @@ function renderTasks(){
       <td>${esc(t.owner)}</td>
       <td><span class="chip todo">${esc(t.team)}</span></td>
       <td><span class="chip ${clsPriority(t.priority)}">${esc(t.priority)}</span></td>
-      <td><span class="chip ${clsStatus(t.status)}">${esc(t.status)}</span></td>
+      <td><span class="chip ${clsStatus(t.status)}">${esc(t.status)}</span>${taskCncButton(t)}</td>
       <td>${supportHtml}</td>
       <td class="deadline-cell">
         <div class="deadline-date">${dateDisplay(t.deadline)}</div>
@@ -5079,6 +5128,7 @@ function renderTasks(){
         <div class="task-mobile-support-field"><dt>APOYO EN OTRAS ÁREAS</dt><dd>${t.support?esc(t.support):'<span class="cell-empty">—</span>'}</dd></div>
         <div><dt>SITUACIÓN DEL PLAZO</dt><dd><span class="chip ${esc(alert.cls)}">${esc(alert.text)}</span></dd></div>
       </dl>
+      ${taskCncButton(t,true)}
       <button type="button" class="btn small task-mobile-edit" data-edit-id="${esc(t.id)}" aria-label="Editar entregable ${esc(t.id)}">Editar entregable</button>
     </article>`;
   }).join(''):'<div class="compact-empty">No hay entregables con los filtros seleccionados.</div>';
@@ -6103,6 +6153,9 @@ document.addEventListener('keydown', e => {
     if($('#weekly-backup-back').classList.contains('open')){
       e.preventDefault();closeWeeklyBackupDialog();return;
     }
+    if($('#cnc-back').classList.contains('open')){
+      e.preventDefault();closeCnc();return;
+    }
     if($('#modal-back').classList.contains('open')){
       e.preventDefault();closeEditor();return;
     }
@@ -6707,6 +6760,7 @@ function weeklyTrend(m){
     '</span><span></span><b>'+selectedPpc.toFixed(1)+'%</b></div>':'')+'</div>';
 }
 function weeklyCncPanel(m){
+  if(typeof renderRegisteredWeeklyCnc==='function')return renderRegisteredWeeklyCnc(m);
   const container=$('#weekly-cnc'),count=$('#weekly-cnc-count');
   if(!container||!count)return;
   const end=weekEnd(m.week);
@@ -6974,6 +7028,7 @@ async function load(){
         merged.statuses=[...fromCloud.statuses,...catalogs.statuses].filter((x,i,all)=>
           all.findIndex(y=>y.name.toLocaleLowerCase('es')===x.name.toLocaleLowerCase('es'))===i);
         merged.analytics=mergeMonthlyAnalytics(fromCloud.analytics,catalogs.analytics);
+        merged.cncRecords=mergeCncRecords(fromCloud.cncRecords,catalogs.cncRecords);
         merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups);
         catalogs=normalizeCatalogs(merged);
         ids=cloudIds;
@@ -7019,6 +7074,8 @@ async function save(){
     check(latestCatalogs,'Consultar copias en Supabase');
     catalogsToSave.backups=mergeCloudBackupLists(latestCatalogs.data?.[0]?.data?.backups,catalogsToSave.backups);
     catalogs.backups=catalogsToSave.backups;
+    catalogsToSave.cncRecords=mergeCncRecords(latestCatalogs.data?.[0]?.data?.cncRecords,catalogsToSave.cncRecords);
+    catalogs.cncRecords=catalogsToSave.cncRecords;
     const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
     if(gone.length){
       const deleted=await d.from('bim_tasks').delete().in('id',gone);
