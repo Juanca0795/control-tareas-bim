@@ -3425,7 +3425,6 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
           <input type="week" id="weekly-week" class="field-input" aria-label="Elegir semana de análisis" onchange="changeWeeklyWeek(this.value)">
           <button type="button" class="icon-btn" onclick="stepWeekly(1)" aria-label="Semana siguiente" title="Semana siguiente">›</button>
           <div class="weekly-utility-actions">
-            <button type="button" class="btn small" onclick="downloadWeeklyCSV()" title="Exportar los resultados reales de la semana">Exportar CSV</button>
             <button type="button" class="btn small" id="weekly-close-btn" onclick="requestWeeklyClose()" title="Cerrar y archivar la semana seleccionada">Cerrar semana</button>
           </div>
         </div>
@@ -5297,22 +5296,40 @@ function updateWeeklyFilters(){
   // Las opciones dependen de la semana seleccionada y de los demás filtros activos.
   crossFilterOptions(WEEKLY_CROSS_FIELDS,weeklyRaw(selectedWeek).rows);
 }
-function stepWeekly(n){selectedWeek=neighborWeek(selectedWeek,n);renderWeekly();}
-function goToCurrentWeek(){selectedWeek=isoWeekKey(new Date());renderWeekly();}
-function changeWeeklyWeek(week){if(!weekStart(week)){toast('Semana ISO no válida');return;}selectedWeek=week;renderWeekly();}
+// El segmento visible no se reposiciona al pulsar una semana dentro de él.
+let weeklyTimelineWindowStart=null;
+function ensureWeeklyTimelineWindow(week){
+  if(!weeklyTimelineWindowStart)
+    weeklyTimelineWindowStart=neighborWeek(isoWeekKey(new Date()),-5);
+  if(week<weeklyTimelineWindowStart)weeklyTimelineWindowStart=week;
+  else if(week>neighborWeek(weeklyTimelineWindowStart,7))
+    weeklyTimelineWindowStart=neighborWeek(week,-7);
+}
+function stepWeekly(n){
+  selectedWeek=neighborWeek(selectedWeek,n);
+  ensureWeeklyTimelineWindow(selectedWeek);
+  renderWeekly();
+}
+function goToCurrentWeek(){
+  selectedWeek=isoWeekKey(new Date());
+  weeklyTimelineWindowStart=neighborWeek(selectedWeek,-5);
+  renderWeekly();
+}
+function changeWeeklyWeek(week){
+  if(!weekStart(week)){toast('Semana ISO no válida');return;}
+  selectedWeek=week;
+  ensureWeeklyTimelineWindow(week);
+  renderWeekly();
+}
 function renderWeeklyTimeline(){
   const target=$('#weekly-timeline'),track=$('#weekly-timeline-track');
   if(!target||!track)return;
   const nowWeek=isoWeekKey(new Date());
-  // Mantener ocho semanas visibles; si la selección está a siete semanas
-  // o menos de la actual, ambas quedan dentro de la misma línea de tiempo.
-  // Si está más lejos, priorizar la selección y usar «Esta semana» para volver.
-  const selectedStart=neighborWeek(selectedWeek,-5);
-  const currentDistance=Math.round((weekStart(selectedWeek)-weekStart(nowWeek))/604800000);
-  const windowStart=Math.abs(currentDistance)>7?selectedStart:
-    currentDistance<0?neighborWeek(nowWeek,-7):
-    currentDistance>2?nowWeek:selectedStart;
-  const weeks=Array.from({length:8},(_,i)=>neighborWeek(windowStart,i));
+  ensureWeeklyTimelineWindow(selectedWeek);
+  // Siempre mostrar las ocho semanas en las mismas posiciones: navegar con
+  // flechas o por selector cuando la semana elegida quede fuera del segmento.
+  const weeks=Array.from({length:8},(_,i)=>neighborWeek(weeklyTimelineWindowStart,i));
+  const preservedScroll=target.scrollLeft;
   track.innerHTML=weeks.map(week=>{
     const start=dateDisplay(localISO(weekStart(week))).slice(0,5),end=dateDisplay(weekEnd(week)).slice(0,5);
     const m=weeklyMetrics(week),archived=m.closed,hasData=m.planned>0;
@@ -5334,8 +5351,7 @@ function renderWeeklyTimeline(){
       <span class="weekly-time-status">${esc(amounts||subtitle)}</span>
     </button>`;
   }).join('');
-  const active=track.querySelector('.selected');
-  if(active)target.scrollLeft=Math.max(0,active.offsetLeft-(target.clientWidth-active.offsetWidth)/2);
+  target.scrollLeft=preservedScroll;
 }
 function resetWeeklyFilters(){for(const name of ['package','team','owner'])$('#weekly-'+name).value='';$('#weekly-compare').checked=true;renderWeekly();}
 function clearWeeklyFilter(name){$('#weekly-'+name).value='';renderWeekly();}
@@ -5736,22 +5752,6 @@ function confirmWeeklyClose(){
       weeklySnapshots.push({week,createdAt:new Date().toISOString(),rows:snapshot.rows.map(t=>({...t}))});
       persist();renderWeekly();toast(`Cierre ${week} guardado`);
     });
-}
-function downloadWeeklyCSV(){
-  const m=weeklyMetrics(selectedWeek);
-  const columns=[['Semana',selectedWeek],['Estado',m.closed?'Cerrada':'Abierta'],['Comprometidas',m.planned],
-    ['Cumplidas',m.completed],['PPC (%)',m.ppc===null?'':m.ppc.toFixed(1)],['Pendientes',m.remaining],
-    ['Puntualidad (%)',m.punctuality===null?'':m.punctuality.toFixed(1)],
-    ['Compromisos evaluables',m.punctualityBase],['Cierres a tiempo',m.onTime],
-    ['Vencidas sin cierre',m.delayed],['Pendientes al corte',m.dueAtCutoff],
-    ['Cierres tardíos',m.lateCompleted],['Completadas sin fecha verificada',m.unknownDate]];
-  const csv=['Indicador;Valor',...columns.map(([k,v])=>`"${String(k).replace(/"/g,'""')}";"${String(v).replace(/"/g,'""')}"`),'',
-    'Colaborador;Comprometidas;Cumplidas',...groupForWeekly(m,'owner').map(g=>`"${String(g.label).replace(/"/g,'""')}";${g.planned};${g.done}`),'',
-    'Paquete;Comprometidas;Cumplidas;PPC (%)',...groupForWeekly(m,'package').map(g=>`"${String(g.label).replace(/"/g,'""')}";${g.planned};${g.done};${(100*g.done/g.planned).toFixed(1)}`)].join('\r\n');
-  const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));
-  const link=document.createElement('a');link.href=url;link.download=`control-semanal-bim-${selectedWeek}.csv`;
-  document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1200);
-  toast('Resultados KPI exportados a CSV');
 }
 updateWeeklyFilters();
 
