@@ -34,7 +34,11 @@ function mergeWeeklyForecasts(remote,local){
   }
   return out;
 }
-let weeklyInnerTab='seguimiento';
+// Mantener la subpestaña actual al recargar esta misma sesión del navegador.
+let weeklyInnerTab=(()=>{
+  try{return sessionStorage.getItem('area-bim-weekly-subtab')==='proyeccion'?'proyeccion':'seguimiento'}
+  catch(e){return 'seguimiento'}
+})();
 function syncWeeklySubtab(){
   const tracking=$('#weekly-seguimiento'),forecast=$('#weekly-proyeccion');
   if(!tracking||!forecast)return;
@@ -54,6 +58,7 @@ function syncWeeklySubtab(){
 function switchWeeklySubtab(mode){
   if(!['seguimiento','proyeccion'].includes(mode))return;
   weeklyInnerTab=mode;
+  try{sessionStorage.setItem('area-bim-weekly-subtab',mode)}catch(e){}
   syncWeeklySubtab();
   renderWeekly();
 }
@@ -102,7 +107,7 @@ function renderWeeklyProjection(m){
   const kpis=[
     ['PROGRAMADAS',String(m.planned),'Compromisos de '+weekShort(m.week),''],
     ['CUMPLIDAS',String(p.completed.length),percent(p.completed.length)+' del alcance','positive'],
-    ['PENDIENTES',String(p.pending.length),'Sin cierre verificado al corte','warning'],
+    ['PENDIENTES',String(p.pending.length),'Sin cierre verificado al corte','projection-pending'],
     ['PROYECCIÓN AL CIERRE',p.projectionReady?percent(p.projectedTotal):'—',
       !p.editable?'Histórico: no aplica estimación':!m.planned?'Sin compromisos':
       !p.projectionReady?'Asigna fechas a las tareas pendientes':
