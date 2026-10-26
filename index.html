@@ -3208,6 +3208,19 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   border-collapse:separate;border-spacing:0;
   font-size:10px;text-align:center;line-height:1.3;
 }
+/* Solo una disciplina: paquete y cierre equilibran el ancho a ambos lados.
+   La disciplina queda exactamente sobre el eje central sin reducir el panel. */
+#dashboard-view .pulse-specialty-matrix.single-specialty{
+  table-layout:fixed;
+  min-width:max(100%,400px);
+}
+#dashboard-view .pulse-specialty-matrix.single-specialty thead th:first-child,
+#dashboard-view .pulse-specialty-matrix.single-specialty thead th:last-child{
+  width:28%;
+}
+#dashboard-view .pulse-specialty-matrix.single-specialty thead th:nth-child(2){
+  width:44%;
+}
 #dashboard-view .pulse-specialty-matrix th,
 #dashboard-view .pulse-specialty-matrix td{
   border-bottom:1px solid var(--border-base);
@@ -3520,8 +3533,8 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
       </article>
 
       <article class="card chart-card pulse-card">
-        <div class="pulse-matrix-heading"><div><h2>PULSO DE PAQUETES / ESPECIALIDAD</h2>
-          <p class="desc">Entregables por especialidad · cierre según tareas completadas</p></div>
+        <div class="pulse-matrix-heading"><div><h2>MATRIZ OPERATIVA: PAQUETES X DISCIPLINA</h2>
+          <p class="desc">Entregables por disciplina · cierre según tareas completadas</p></div>
           <span class="control-count" id="pulse-package-count"></span></div>
         <div id="team-summary" class="control-team-summary" tabindex="0" role="region" aria-label="Matriz desplazable de paquetes y especialidades"></div>
       </article>
@@ -4400,7 +4413,7 @@ function renderPackageSpecialtyMatrix(rows){
       data-drill="team" data-value="${esc(specialty)}" aria-label="Ver ${count} entregables de ${esc(specialty)}">${count}</button></td>`;
   }).join('');
   const done=completed(rows);
-  return `<table class="pulse-specialty-matrix" style="--matrix-cols:${specialties.length}" aria-label="Entregables por paquete y especialidad, con porcentaje completado">
+  return `<table class="pulse-specialty-matrix${specialties.length===1?' single-specialty':''}" style="--matrix-cols:${specialties.length}" aria-label="Entregables por paquete y disciplina, con porcentaje completado">
     <thead><tr><th scope="col">PAQUETE</th>${header}<th scope="col">CIERRE</th></tr></thead>
     <tbody>${body}</tbody>
     <tfoot><tr><th scope="row">TOTAL</th>${totalBySpecialty}<td><strong class="pulse-matrix-percent" title="${done} completados de ${rows.length}">${pulsePercent(done,rows.length)}</strong></td></tr></tfoot>
