@@ -3468,31 +3468,9 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   #dashboard-view .executive-grid>.pulse-card{order:4}
 }
 
-/* AEC OBSIDIAN · Microinteracciones de tablero y transición de pestañas.
-   Solo composición visual: no modifica métricas, tamaños ni persistencia. */
+/* AEC OBSIDIAN · Efectos sobre las tarjetas y los DATOS, no sobre las vistas. */
 :root{--bim-interaction-glow:rgba(46,191,230,.16)}
 html[data-theme="light"]{--bim-interaction-glow:rgba(30,102,176,.12)}
-:is(#dashboard-view,#tasks-view,#weekly-view){
-  position:relative;
-}
-@keyframes bimViewReveal{
-  0%{opacity:.26;transform:translateY(7px);clip-path:inset(0 100% 0 0)}
-  65%{opacity:1}
-  100%{opacity:1;transform:translateY(0);clip-path:inset(0 0 0 0)}
-}
-@keyframes bimViewSweep{
-  from{transform:translateX(-115%);opacity:.95}
-  to{transform:translateX(115%);opacity:0}
-}
-:is(#dashboard-view,#tasks-view,#weekly-view).bim-view-enter{
-  animation:bimViewReveal .43s cubic-bezier(.2,.72,.25,1) both;
-}
-:is(#dashboard-view,#tasks-view,#weekly-view).bim-view-enter::after{
-  content:"";position:absolute;inset:0;z-index:6;
-  pointer-events:none;
-  background:linear-gradient(90deg,transparent 8%,var(--bim-interaction-glow) 49%,transparent 92%);
-  animation:bimViewSweep .48s cubic-bezier(.16,.7,.3,1) both;
-}
 :is(#dashboard-view,#tasks-view,#weekly-view) .card,
 :is(#dashboard-view,#tasks-view) .stat,
 #weekly-view .weekly-kpi,
@@ -3552,10 +3530,6 @@ html[data-theme="light"]{--bim-interaction-glow:rgba(30,102,176,.12)}
   }
 }
 @media (prefers-reduced-motion:reduce){
-  :is(#dashboard-view,#tasks-view,#weekly-view).bim-view-enter,
-  :is(#dashboard-view,#tasks-view,#weekly-view).bim-view-enter::after{
-    animation:none!important;
-  }
   :is(#dashboard-view,#tasks-view,#weekly-view) .card,
   :is(#dashboard-view,#tasks-view) .stat,
   #weekly-view .weekly-kpi,#tasks-view .task-mobile-card{
@@ -4948,6 +4922,117 @@ document.addEventListener('click', e => {
 });
 
 function renderAll(){ refreshFilters(); updateWeeklyFilters(); renderTasks(); renderDashboard(); if(currentView==='weekly')renderWeekly(); }
+
+/* Contadores y barras al cambiar de pestaña: presentación, sin modificar datos. */
+let bimMotionToken=0;
+let bimMotionFrame=0;
+let bimMotionEntries=[];
+let bimMotionBarAnimations=[];
+function stopBimMetricsAnimation(){
+  bimMotionToken++;
+  if(bimMotionFrame)cancelAnimationFrame(bimMotionFrame);
+  bimMotionFrame=0;
+  for(const entry of bimMotionEntries){
+    if(entry.node.isConnected){
+      entry.node.textContent=entry.original;
+      if(entry.hadAria)entry.node.setAttribute('aria-label',entry.aria);
+      else entry.node.removeAttribute('aria-label');
+    }
+  }
+  bimMotionEntries=[];
+  for(const animation of bimMotionBarAnimations){
+    try{animation.cancel()}catch(e){}
+  }
+  bimMotionBarAnimations=[];
+}
+function bimNumberAnimationEntry(node){
+  const original=node.textContent;
+  // No alterar textos, guiones, relaciones numéricas ni datos sin verificar.
+  const match=/^(\s*)(\d+(?:[.,]\d+)?)(%?)(\s*)$/.exec(original);
+  if(!match)return null;
+  const number=Number(match[2].replace(',','.'));
+  if(!Number.isFinite(number)||number===0)return null;
+  const sep=match[2].includes(',')?',':'.';
+  const decimals=match[2].split(/[.,]/)[1]?.length||0;
+  const integerPart=match[2].split(/[.,]/)[0];
+  const zeroPad=integerPart.length>1&&integerPart.startsWith('0')?integerPart.length:0;
+  return {node,original,number,sep,decimals,zeroPad,leading:match[1],suffix:match[3]+match[4],
+    aria:node.getAttribute('aria-label'),hadAria:node.hasAttribute('aria-label')};
+}
+function formatBimAnimatedNumber(entry,value){
+  let formatted=entry.decimals?value.toFixed(entry.decimals):String(Math.round(value));
+  if(entry.zeroPad){
+    const parts=formatted.split('.');
+    parts[0]=parts[0].padStart(entry.zeroPad,'0');
+    formatted=parts.join('.');
+  }
+  if(entry.sep===',')formatted=formatted.replace('.',',');
+  return entry.leading+formatted+entry.suffix;
+}
+function animateViewMetrics(viewName){
+  stopBimMetricsAnimation();
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const view=$('#'+viewName+'-view');
+  if(!view||view.classList.contains('hidden'))return;
+  const token=bimMotionToken;
+  const nodes=view.querySelectorAll([
+    '.stat .val','.weekly-kpi .number','.health-ring-center strong',
+    '.health-metric-value','.collaborator-percent','.priority-urgent-count',
+    '.pulse-specialty-matrix tbody strong','.weekly-time-ppc'
+  ].join(','));
+  bimMotionEntries=[...nodes].map(bimNumberAnimationEntry).filter(Boolean);
+  for(const entry of bimMotionEntries){
+    entry.node.setAttribute('aria-label',entry.original);
+    entry.node.textContent=formatBimAnimatedNumber(entry,0);
+  }
+  // El ancho real sigue siendo el definido por las métricas. Solo se escala
+  // visualmente desde cero sin modificar el layout ni la base de datos.
+  const tracks=view.querySelectorAll([
+    '.stat-meter i','.collaborator-track i','.package-pulse-track i',
+    '.weekly-track b','.weekly-dual-track b','.weekly-stacked-track b',
+    '.pulse-specialty-matrix .pulse-matrix-bar i'
+  ].join(','));
+  if(typeof Element!=='undefined'&&Element.prototype.animate){
+    for(const track of tracks){
+      bimMotionBarAnimations.push(track.animate([
+        {transform:'scaleX(0)',transformOrigin:'left center'},
+        {transform:'scaleX(1)',transformOrigin:'left center'}
+      ],{duration:760,easing:'cubic-bezier(.22,.76,.24,1)'}));
+    }
+    for(const ring of view.querySelectorAll('.health-ring-segment')){
+      const final=ring.getAttribute('stroke-dasharray');
+      if(!final)continue;
+      bimMotionBarAnimations.push(ring.animate([
+        {strokeDasharray:'0 100'},
+        {strokeDasharray:final}
+      ],{duration:800,easing:'cubic-bezier(.22,.76,.24,1)'}));
+    }
+  }
+  const duration=670,start=performance.now();
+  function tick(now){
+    if(token!==bimMotionToken)return;
+    const progress=Math.min(1,(now-start)/duration);
+    const eased=1-Math.pow(1-progress,3);
+    for(const entry of bimMotionEntries){
+      if(entry.node.isConnected)entry.node.textContent=
+        progress>=1?entry.original:formatBimAnimatedNumber(entry,entry.number*eased);
+    }
+    if(progress<1)bimMotionFrame=requestAnimationFrame(tick);
+    else{
+      for(const entry of bimMotionEntries){
+        if(entry.node.isConnected){
+          entry.node.textContent=entry.original;
+          if(entry.hadAria)entry.node.setAttribute('aria-label',entry.aria);
+          else entry.node.removeAttribute('aria-label');
+        }
+      }
+      bimMotionEntries=[];
+      bimMotionFrame=0;
+    }
+  }
+  if(bimMotionEntries.length)bimMotionFrame=requestAnimationFrame(tick);
+}
+
 function switchView(v, authenticated=false){
   // Solicitar credenciales cada vez que se entra desde otra vista.
   if(v==='weekly' && currentView!=='weekly' && !authenticated){
@@ -4965,14 +5050,8 @@ function switchView(v, authenticated=false){
   window.scrollTo(0,0);
   if(v==='dashboard') renderDashboard();
   if(v==='weekly') renderWeekly();
-  // Revelado rápido de izquierda a derecha al entrar en otra pestaña.
-  // No se ejecuta con cada filtro ni al refrescar los datos de Supabase.
-  if(previousView!==v && !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
-    const view=$('#'+v+'-view');
-    view.classList.remove('bim-view-enter');
-    void view.offsetWidth;
-    view.classList.add('bim-view-enter');
-  }
+  // Anima los valores reales dentro de la pestaña, sin revelar ni mover paneles.
+  if(previousView!==v)animateViewMetrics(v);
 }
 
 function populateEditorSelects(){
