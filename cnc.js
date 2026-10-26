@@ -8,10 +8,10 @@ function normalizeCncRecords(input){
     const taskId=String(raw.taskId||'').trim(),deadline=String(raw.deadline||'');
     if(!taskId||!/^\d{4}-\d{2}-\d{2}$/.test(deadline)||!Number.isFinite(Date.parse(deadline)))continue;
     const id=taskId+'|'+deadline;
-    if(map.has(id)||!raw.category||!raw.description||!raw.action||!raw.createdAt)continue;
+    if(map.has(id)||!raw.category||!raw.description||!raw.createdAt)continue;
     map.set(id,{id,taskId,deadline,week:String(raw.week||''),
       category:String(raw.category).slice(0,100),description:String(raw.description).slice(0,1000),
-      action:String(raw.action).slice(0,1000),proposedDate:String(raw.proposedDate||''),
+      action:String(raw.action||'').slice(0,1000),proposedDate:String(raw.proposedDate||''),
       reporter:String(raw.reporter||'No identificado').slice(0,100),
       owner:String(raw.owner||'').slice(0,100),package:String(raw.package||'').slice(0,100),
       team:String(raw.team||'').slice(0,100),title:String(raw.title||'').slice(0,200),
@@ -64,8 +64,8 @@ function openCnc(id,historyOnly=false){
   $('#cnc-existing').classList.toggle('hidden',!record);
   if(record){
     const fields=[['Causa principal',record.category],['Descripción',record.description],
-      ['Acción correctiva',record.action],['Nueva fecha propuesta',record.proposedDate?dateDisplay(record.proposedDate):'No indicada'],
-      ['Registrado por (declarado)',record.reporter],['Fecha de registro',record.createdAt]];
+      ['Nueva fecha propuesta',record.proposedDate?dateDisplay(record.proposedDate):'No indicada'],
+      ['Fecha de registro',record.createdAt]];
     $('#cnc-existing').innerHTML=fields.map(pair=>'<div><b>'+esc(pair[0])+'</b><p>'+esc(pair[1])+'</p></div>').join('');
   }else{
     $('#cnc-form').reset();$('#cnc-date').min=todayString();
@@ -83,12 +83,11 @@ function saveCnc(event){
   if(!task||!taskCncIncident(task)){toast('El compromiso ya no cumple los criterios CNC.');return;}
   if(cncFor(task.id,task.deadline)){toast('Este incumplimiento ya tiene una causa.');closeCnc();return;}
   const category=$('#cnc-category').value.trim(),description=$('#cnc-description').value.trim(),
-    action=$('#cnc-action').value.trim(),reporter=$('#cnc-reporter').value.trim(),
     proposedDate=$('#cnc-date').value;
-  if(!category||!description||!action||!reporter){toast('Completa los campos obligatorios.');return;}
+  if(!category||!description){toast('Completa los campos obligatorios.');return;}
   if(proposedDate&&proposedDate<todayString()){toast('La fecha propuesta no puede ser anterior a hoy.');return;}
   const record={id:task.id+'|'+task.deadline,taskId:task.id,deadline:task.deadline,
-    week:effectiveTaskWeek(task),category,description,action,proposedDate,reporter,
+    week:effectiveTaskWeek(task),category,description,proposedDate,
     owner:task.owner||'',package:task.package||'',team:task.team||'',title:task.title||'',
     createdAt:new Date().toISOString()};
   catalogs.cncRecords=mergeCncRecords(catalogs.cncRecords,[record]);
@@ -144,7 +143,6 @@ function renderRegisteredWeeklyCnc(m){
       '<p>Compromiso '+esc(t.id)+' · '+esc(t.owner||'Sin responsable')+'</p>'+
       '<small>Plazo: '+esc(dateDisplay(t.deadline))+' · '+(t.cncHistorical?'CNC histórico':late?'Cierre tardío':'Sin cierre en plazo')+'</small>'+
       (record?'<p class="cnc-cause">'+esc(record.category)+'</p><p>'+esc(record.description)+'</p>'+
-        '<div class="cnc-action"><b>Acción:</b> '+esc(record.action)+'</div>'+
         (record.proposedDate?'<small>Fecha propuesta: '+esc(dateDisplay(record.proposedDate))+'</small>':''):
         '<p class="cnc-cause">Causa pendiente de registrar desde Control de tareas</p>')+'</div>';
   }).join('');
@@ -154,7 +152,7 @@ function renderRegisteredWeeklyCnc(m){
     ' por registrar.</div><div class="weekly-cnc-list">'+list+'</div>'+
     (incidents.length>5?'<p class="weekly-cnc-summary">+'+(incidents.length-5)+' incumplimientos adicionales.</p>':'')+
     '<div class="weekly-cnc-note"><strong>Seguimiento de causas</strong><div>'+
-    (without.length?without.length+' actividad(es) requieren causa y acción correctiva desde Control de tareas.':
-      'Todas las incidencias tienen causa y acción correctiva documentadas.')+
+    (without.length?without.length+' actividad(es) requieren registrar su causa desde Control de tareas.':
+      'Todas las incidencias tienen su causa documentada.')+
     ' Se conserva el vencimiento original.</div></div>';
 }
