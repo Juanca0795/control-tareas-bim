@@ -2815,9 +2815,9 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 }
 #dashboard-view .dashboard-compact-heading{
   display:flex;align-items:flex-start;justify-content:space-between;
-  gap:12px;min-height:67px;flex:0 0 auto;
+  gap:8px;min-height:0;flex:0 0 auto;
   border-bottom:1px solid var(--border-base);
-  padding-bottom:11px;margin-bottom:14px;
+  padding-bottom:7px;margin-bottom:9px;
 }
 #dashboard-view .dashboard-compact-heading>div:first-child{min-width:0}
 #dashboard-view .dashboard-heading-actions{
@@ -2838,22 +2838,22 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   flex:1 1 auto;margin:0;display:flex!important;flex-direction:column;
 }
 #dashboard-view .owner-card .collaborator-list{
-  grid-auto-rows:minmax(65px,auto);margin:0;flex:1 1 auto;
+  grid-auto-rows:minmax(60px,auto);margin:0;flex:1 1 auto;
 }
 #dashboard-view .attention-card #alerts-list{
-  flex:1 1 auto;grid-auto-rows:minmax(65px,auto);margin:0;
+  flex:1 1 auto;grid-auto-rows:minmax(60px,auto);margin:0;
 }
 #dashboard-view .owner-card .collaborator-row,
 #dashboard-view .attention-card .priority-task{
-  min-height:65px;
+  min-height:60px;
 }
 @media(max-width:760px){
   #dashboard-view .dashboard-compact-heading{flex-wrap:wrap;min-height:0}
   #dashboard-view .dashboard-heading-actions{flex-direction:row;flex-wrap:wrap}
   #dashboard-view .owner-card .collaborator-list,
-  #dashboard-view .attention-card #alerts-list{grid-auto-rows:minmax(65px,auto)}
+  #dashboard-view .attention-card #alerts-list{grid-auto-rows:minmax(60px,auto)}
   #dashboard-view .owner-card .collaborator-row,
-  #dashboard-view .attention-card .priority-task{min-height:65px}
+  #dashboard-view .attention-card .priority-task{min-height:60px}
 
 }
 @media(prefers-reduced-motion:reduce){
@@ -2869,7 +2869,7 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #weekly-view .weekly-trend-footer .weekly-benchmark.at-goal{color:var(--ink-secondary)}
 /* Dashboard: paneles compactos, lista completa desplegable EN la propia tarjeta */
 #dashboard-view .owner-card .collaborator-row{
-  min-height:65px;padding:8px 10px;gap:7px;
+  min-height:60px;padding:7px 10px;gap:7px;
   grid-template-columns:32px minmax(0,1fr) minmax(78px,120px) 38px;
 }
 #dashboard-view .owner-card .collaborator-avatar{height:32px;width:32px;font-size:10px}
@@ -2877,7 +2877,7 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #dashboard-view .owner-card .collaborator-count{font-size:9px}
 #dashboard-view .owner-card .collaborator-track{height:5px}
 #dashboard-view .attention-card .priority-task{
-  min-height:65px;padding:7px 10px;gap:5px;
+  min-height:60px;padding:6px 10px;gap:5px;
 }
 #dashboard-view .attention-card .priority-task-title{font-size:11px;line-height:1.3}
 #dashboard-view .attention-card .priority-task-code,
@@ -2916,7 +2916,7 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   min-width:0;
   overflow:hidden;
 }
-/* 5 filas compactas visibles (5 x 65px + 4 separaciones x 9px). */
+/* 5 filas compactas visibles (5 x 60px + 4 separaciones x 6px). */
 #dashboard-view .owner-card #owner-chart,
 #dashboard-view .attention-card #alerts-list{
   flex:0 1 auto;
@@ -2925,9 +2925,9 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #dashboard-view .owner-card .collaborator-list,
 #dashboard-view .attention-card #alerts-list{
   box-sizing:border-box;
-  height:361px;
-  max-height:361px;
-  flex:0 0 361px;
+  height:324px;
+  max-height:324px;
+  flex:0 0 324px;
   overflow-x:hidden;
   overflow-y:auto;
   scrollbar-width:thin;
@@ -2937,9 +2937,9 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   touch-action:pan-y;
   padding-right:6px;
   display:grid;
-  grid-auto-rows:minmax(65px,max-content);
+  grid-auto-rows:minmax(60px,max-content);
   align-content:start;
-  gap:9px;
+  gap:6px;
 }
 #dashboard-view .owner-card .collaborator-list::-webkit-scrollbar,
 #dashboard-view .attention-card #alerts-list::-webkit-scrollbar{width:6px}
@@ -2964,9 +2964,20 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 @media(max-width:760px){
   #dashboard-view .owner-card .collaborator-list,
   #dashboard-view .attention-card #alerts-list{
-    height:361px;max-height:361px;
-    grid-auto-rows:minmax(65px,max-content);
+    height:324px;max-height:324px;
+    grid-auto-rows:minmax(60px,max-content);
   }
+}
+
+/* Dashboard: disminuir altura exterior de paneles sin cambiar su ancho. */
+#dashboard-view .executive-grid>.owner-card,
+#dashboard-view .executive-grid>.attention-card{
+  padding-top:13px;
+  padding-bottom:13px;
+}
+#dashboard-view .owner-card .collaborator-list,
+#dashboard-view .attention-card #alerts-list{
+  min-width:0;
 }
 </style>
 </head>
