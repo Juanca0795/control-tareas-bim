@@ -3023,6 +3023,49 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   #dashboard-view .health-card-heading{align-items:flex-start}
   #dashboard-view .health-quick-actions{justify-content:flex-start}
 }
+
+/* Radar BIM: arco SVG de extremos redondeados estilo Stitch, sin leyenda repetida */
+#dashboard-view .health-ring{
+  position:relative;
+  width:min(155px,76%);
+  aspect-ratio:1;
+  border-radius:50%;
+  background:transparent;
+  display:grid;
+  place-items:center;
+}
+#dashboard-view .health-ring:before{display:none}
+#dashboard-view .health-ring-svg{
+  display:block;position:absolute;inset:0;width:100%;height:100%;
+  overflow:visible;z-index:0;
+}
+#dashboard-view .health-ring-segment{
+  pointer-events:stroke;cursor:help;
+  transition:filter .15s ease,stroke-width .15s ease;
+}
+#dashboard-view .health-ring-segment:hover,
+#dashboard-view .health-ring-segment:focus-visible{
+  filter:drop-shadow(0 0 4px rgba(155,211,239,.48));
+  stroke-width:21;
+}
+#dashboard-view .health-ring-segment:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:3px;
+}
+#dashboard-view .health-ring-center{
+  position:relative;z-index:1;pointer-events:none;
+}
+#dashboard-view .health-panel .health-caption{
+  text-align:center;line-height:1.4;
+}
+#dashboard-view .health-panel .health-explain{
+  font-size:9px;line-height:1.35;max-width:255px;
+}
+#dashboard-view .health-metric.neutral .health-metric-label i{background:#8493aa}
+#dashboard-view .health-metric.neutral .health-metric-value{color:var(--ink-secondary)}
+#weekly-view .weekly-trend-key i.goal{border-top-width:1px}
+@media(prefers-reduced-motion:reduce){
+  #dashboard-view .health-ring-segment{transition:none}
+}
 </style>
 </head>
 <body>
@@ -4021,65 +4064,74 @@ function attentionDeadline(t){
 // Los grupos del anillo son EXCLUYENTES y cubren el 100% de los entregables.
 // Prioridad alta es una condición transversal: se muestra en el panel lateral,
 // pero no se suma otra vez al gráfico circular.
+// Segmentos excluyentes: representan TODOS los entregables y nunca mezclan
+// la prioridad operativa con la situación de plazo.
 function operationalHealthCounts(rows){
-  const counts={critical:0,soon:0,done:0,other:0};
+  const counts={critical:0,soon:0,done:0,onTime:0,noDeadline:0};
   for(const task of rows){
     if(categoryOf(task.status)==='done'){counts.done++;continue;}
-    const urgency=alertStatus(task).sort;
-    if(urgency<=1)counts.critical++;
-    else if(urgency===2)counts.soon++;
-    else counts.other++;
+    const days=dueDays(task.deadline);
+    if(days===null){counts.noDeadline++;continue;}
+    if(days<=0)counts.critical++;
+    else if(days<=3)counts.soon++;
+    else counts.onTime++;
   }
   return counts;
 }
 function renderOperationalHealth(rows){
   if(!rows.length)return '<div class="compact-empty" role="status"><strong>Sin entregables</strong><span>Registra tareas para visualizar la situación operativa.</span></div>';
   const groups=operationalHealthCounts(rows);
-  const urgent=groups.critical,soon=groups.soon,done=groups.done;
-  const high=rows.filter(t=>t.priority==='Alta'&&categoryOf(t.status)!=='done').length;
-  const clear=rows.length-urgent;
-  const percent=100*clear/rows.length;
-  // Segmentos: rojo (críticas), ámbar (próximas), verde (completadas),
-  // azul (restantes sin urgencia). Nunca se inventan clashes.
+  // "Sin fecha" no significa estar en plazo y no debe mejorar artificialmente el indicador.
+  const safe=groups.soon+groups.done+groups.onTime;
+  const percent=100*safe/rows.length;
   const distribution=[
-    {title:'Vencidas / hoy',count:groups.critical,color:'#f14a75'},
-    {title:'Próximas 3 días',count:groups.soon,color:'#ffbf43'},
-    {title:'Completadas',count:groups.done,color:'#31cba7'},
-    {title:'Otras pendientes',count:groups.other,color:'#4da5ff'}
+    {title:'Vencidas / hoy',count:groups.critical,color:'#f14a75',kind:'critical',drill:'late',detail:'Atención inmediata'},
+    {title:'Próximas 3 días',count:groups.soon,color:'#ffbf43',kind:'warning',drill:'soon',detail:'Vencimiento cercano'},
+    {title:'Completadas',count:groups.done,color:'#31cba7',kind:'success',drill:'completed',detail:'Entregables cerrados'},
+    {title:'En plazo',count:groups.onTime,color:'#4da5ff',kind:'blue',drill:'onTime',detail:'Más de 3 días para vencer'}
   ];
+  // Solo añadir una quinta categoría cuando de verdad existen tareas sin fecha.
+  // Así la suma de las tarjetas laterales siempre coincide con el total.
+  if(groups.noDeadline)distribution.push({
+    title:'Sin fecha',count:groups.noDeadline,color:'#8493aa',kind:'neutral',
+    drill:'noDeadline',detail:'Sin vencimiento definido'
+  });
+  // SVG real, con extremos redondeados y segmentos individuales superpuestos:
+  // cada arco expone en hover/foco una cantidad y porcentaje verificables.
   let offset=0;
-  const slices=[];
-  for(const group of distribution){
-    if(!group.count)continue;
-    const next=offset+group.count/rows.length*100;
-    slices.push(group.color+' '+offset.toFixed(4)+'% '+next.toFixed(4)+'%');
-    offset=next;
-  }
-  const gradient='conic-gradient('+slices.join(',')+')';
-  const legend=distribution.map(group=>`<span class="health-legend-item" title="${esc(group.title+': '+group.count)}">
-    <i style="background:${group.color}" aria-hidden="true"></i>${esc(group.title)}: <strong>${group.count}</strong>
-  </span>`).join('');
-  const metrics=[
-    {title:'Vencidas / hoy',value:urgent,kind:'critical',drill:'late',detail:'Atención inmediata'},
-    {title:'Próximas 3 días',value:soon,kind:'warning',drill:'soon',detail:'Vencimiento cercano'},
-    {title:'Prioridad alta',value:high,kind:'blue',drill:'high',detail:'No completadas · No se suma al anillo'},
-    {title:'Completadas',value:done,kind:'success',drill:'completed',detail:'Entregables cerrados'}
-  ];
-  return `<div class="operational-health">
-    <div class="health-panel">
-      <div class="health-ring" role="img" aria-label="${percent.toFixed(1)}% sin vencimiento crítico. ${distribution.map(g=>g.title+': '+g.count).join('; ')}"
-        style="background:${gradient}">
-        <div class="health-ring-center"><strong>${percent.toFixed(1)}%</strong><small>SIN ALERTA CRÍTICA</small></div>
-      </div>
-      <strong class="health-caption${percent<85?' health-needs-attention':''}">${clear} de ${rows.length} sin vencimiento crítico</strong>
-      <div class="health-ring-legend" aria-label="Distribución de entregables">${legend}</div>
-      <span class="health-explain">Estado de plazos; no representa interferencias BIM.</span>
-    </div>
-    <div class="health-metrics">${metrics.map(m=>`<button type="button" class="health-metric ${m.kind}${selectedDrill(m.drill)?' selected':''}"
+  const arcs=distribution.filter(item=>item.count>0).map(item=>{
+    const pct=item.count/rows.length*100;
+    const current=offset;
+    offset+=pct;
+    const tooltip=esc(item.title+': '+item.count+' de '+rows.length+' entregables ('+pct.toFixed(1)+'%)');
+    return `<circle class="health-ring-segment" cx="80" cy="80" r="58"
+      pathLength="100" fill="none" stroke="${item.color}" stroke-width="19"
+      stroke-linecap="round" stroke-dasharray="${pct.toFixed(4)} ${(100-pct).toFixed(4)}"
+      stroke-dashoffset="${(-current).toFixed(4)}"
+      tabindex="0" role="img" aria-label="${tooltip}"><title>${tooltip}</title></circle>`;
+  }).join('');
+  const metrics=distribution.map(m=>`<button type="button" class="health-metric ${m.kind}${selectedDrill(m.drill)?' selected':''}"
       data-drill="${m.drill}" aria-pressed="${selectedDrill(m.drill)}">
       <span class="health-metric-label"><i aria-hidden="true"></i><strong>${m.title}</strong><small>${m.detail}</small></span>
-      <span class="health-metric-value">${m.value}</span>
-    </button>`).join('')}</div>
+      <span class="health-metric-value">${m.count}</span>
+    </button>`).join('');
+  return `<div class="operational-health">
+    <div class="health-panel">
+      <div class="health-ring" role="group" aria-label="Distribución de ${rows.length} entregables por cumplimiento de plazos">
+        <svg class="health-ring-svg" viewBox="0 0 160 160" role="group"
+          aria-label="Pasa el mouse o enfoca un segmento para conocer sus cantidades">
+          <g transform="rotate(-90 80 80)">
+            <circle cx="80" cy="80" r="58" fill="none" stroke="var(--border-strong)"
+              stroke-width="19" aria-hidden="true"/>
+            ${arcs}
+          </g>
+        </svg>
+        <div class="health-ring-center"><strong>${percent.toFixed(1)}%</strong><small>SIN ALERTA CRÍTICA</small></div>
+      </div>
+      <strong class="health-caption${percent<85?' health-needs-attention':''}">${safe} de ${rows.length} sin vencimiento crítico verificado</strong>
+      <span class="health-explain">Pasa el mouse por cada color para ver su cantidad. Los registros sin fecha no se consideran en plazo.</span>
+    </div>
+    <div class="health-metrics">${metrics}</div>
   </div>`;
 }
 function renderPackagePulse(rows){
@@ -4195,6 +4247,8 @@ function drillTitle(type, value=''){
     high:'Entregables de Alta Prioridad',
     pending:'Entregables no iniciados',
     notCompleted:'Entregables pendientes de completar',
+    onTime:'Entregables en plazo (más de 3 días)',
+    noDeadline:'Entregables sin fecha límite',
     status:`Estado: ${value}`,
     package:`Paquete: ${value}`,
     owner:`Colaborador: ${value}`,
@@ -4213,6 +4267,8 @@ function drillTasks(a){
     case 'inProgress': return a.filter(t=>categoryOf(t.status)==='progress');
     case 'pending': return a.filter(t=>categoryOf(t.status)==='pending');
     case 'notCompleted': return a.filter(t=>categoryOf(t.status)!=='done');
+    case 'onTime': return a.filter(t=>categoryOf(t.status)!=='done'&&dueDays(t.deadline)>3);
+    case 'noDeadline': return a.filter(t=>categoryOf(t.status)!=='done'&&dueDays(t.deadline)===null);
     case 'late': return a.filter(t=>alertStatus(t).sort<=1);
     case 'soon': return a.filter(t=>alertStatus(t).sort===2);
     case 'high': return a.filter(t=>t.priority==='Alta');
@@ -5075,7 +5131,7 @@ function weeklyTrend(m){
         fill:'origin',tension:.28,pointRadius:4,pointHoverRadius:6,
         borderWidth:2.6,spanGaps:false},
       {label:'Meta LPS (85%)',data:weeks.map(()=>goal),borderColor:c.pink,
-        borderWidth:1.8,pointRadius:0,pointHoverRadius:0,fill:false,tension:0}
+        borderWidth:1,pointRadius:0,pointHoverRadius:0,fill:false,tension:0}
     ];
     // La línea punteada es una referencia horizontal, no un PPC proyectado:
     // se oculta si la semana seleccionada no tiene compromisos verificables.
