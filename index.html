@@ -2707,6 +2707,44 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   #dashboard-view .collaborator-row{grid-template-columns:32px minmax(0,1fr) 38px}
   #dashboard-view .collaborator-progress{grid-column:2/4;grid-row:2}
 }
+
+/* DASHBOARD AEC OBSIDIAN — estados vacíos integrados en la tarjeta exterior.
+   No aplicar este tratamiento a Control de tareas ni Control semanal. */
+#dashboard-view .executive-grid .compact-empty{
+  border:0!important;
+  border-radius:0;
+  background:transparent!important;
+  box-shadow:none!important;
+  outline:0;
+  padding:14px 10px;
+  color:var(--ink-muted);
+  text-align:center;
+}
+#dashboard-view.ui-empty-dashboard .executive-grid .compact-empty{
+  flex:1 1 auto;
+  align-self:stretch;
+  min-height:105px;
+  justify-content:center;
+}
+#dashboard-view.ui-empty-dashboard .executive-grid > .chart-card{
+  min-height:200px!important;
+}
+#dashboard-view .executive-grid .compact-empty strong{
+  color:var(--ink-primary);
+  font-size:11px;
+  font-weight:650;
+}
+#dashboard-view.ui-empty-dashboard .attention-card .priority-headline{
+  display:none;
+}
+@media(max-width:760px){
+  #dashboard-view.ui-empty-dashboard .executive-grid > .chart-card{
+    min-height:165px!important;
+  }
+  #dashboard-view.ui-empty-dashboard .executive-grid .compact-empty{
+    min-height:80px;
+  }
+}
 </style>
 </head>
 <body>
