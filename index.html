@@ -5376,8 +5376,8 @@ async function createWeeklyBackupAndOpen(){
     weeklyBackupFeedback('No está disponible la conexión de respaldo en Supabase.',true);
     return;
   }
-  // Si la nube devolvió cero pero antes existían registros, no guardar un
-  // backup vacío. Mostrar copias existentes para restauración manual.
+  // Ante cambios locales pendientes, mantener bloqueada la creación de copias
+  // hasta reconciliar la sincronización. Cero tareas confirmadas es válido.
   if(window.bimCloudBackups.isRecoveryMode()){
     await refreshWeeklyCloudBackups();
     weeklyBackupFeedback('Respaldo nuevo suspendido: Supabase devolvió 0 tareas. '+
@@ -6000,31 +6000,18 @@ async function load(){
     ]);
     check(a,'Tareas');check(c,'Catálogos');check(w,'Semanas');
     const cloudTasks=(a.data||[]).map(f);
-    const storedBackups=c.data?.[0]?.data?.backups;
-    const hasRecoverableBackup=Array.isArray(storedBackups)&&
-      storedBackups.some(b=>Number(b?.tasksCount)>0||b?.payload?.tasks?.length>0);
-    // Un SELECT que devuelve [] puede significar datos eliminados, RLS o
-    // un alcance equivocado. Jamás sustituir o volver a guardar el caché local
-    // cuando existían entregables anteriormente o hay backups con tareas.
-    if(!cloudTasks.length&&(tasks.length||ids.size||hasRecoverableBackup)){
+    // Una lista vacía es válida: se eliminaron intencionalmente tareas de prueba.
+    // Los backups son históricos y NO implican que deban existir tareas activas.
+    // Solo se protege una edición local aún sin sincronizar.
+    if(!cloudTasks.length&&tasks.length&&pendingSave){
       cloudEmptyGuard=true;
-      ready=1; // La consulta de respaldos sigue accesible, pero se inhiben los guardados.
-      const localCount=tasks.length;
-      cloudDataNotice('ATENCIÓN: Supabase devolvió 0 tareas'+
-        (localCount?' (conservadas '+localCount+' tareas locales)':'')+
-        '. La sincronización de escritura queda detenida para proteger los datos. '+
-        (hasRecoverableBackup?'Hay respaldos; revísalos desde Control Semanal.':
-         'Verifica la conexión y los permisos de Supabase.'),true);
+      ready=1;
+      cloudDataNotice('Hay cambios locales sin sincronizar; se conservan antes de aceptar una lista vacía.',true);
       renderAll();
       return;
     }
-    if(cloudEmptyGuard&&pendingSave){
-      cloudDataNotice('Supabase ya responde con tareas, pero existen cambios locales sin sincronizar. '+
-        'No se han sobrescrito registros. Conserva la copia local y revisa la situación.',true);
-      return;
-    }
     cloudEmptyGuard=false;
-    cloudDataNotice(cloudTasks.length?'':'Supabase respondió correctamente, pero el proyecto no contiene tareas. Revisa los respaldos o registros anteriores.');
+    cloudDataNotice('');
     const cloudIds=new Set(cloudTasks.map(t=>t.id));
     const cloudWeeks=(w.data||[]).map(x=>({week:x.week,createdAt:x.created_at,rows:x.rows||[]}));
     if(loadedAtRevision!==revision){
@@ -6183,9 +6170,6 @@ window.bimCloudBackups={
     lock=1;
     try{
       const cloud=await backupCloudState();
-      if(!cloud.tasks.length&&mergeCloudBackupLists(cloud.catalogs.backups,[])
-          .some(b=>Number(b.tasksCount)>0||b.payload?.tasks?.length>0))
-        throw Error('Supabase no tiene tareas, pero existen respaldos con registros. No se creó copia vacía');
       return cloudBackupMetadata(await backupStoreCloudCopy(cloud,'Backup manual'));
     }finally{lock=0}
   },
