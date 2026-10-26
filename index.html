@@ -3155,6 +3155,29 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
     align-content:start;
   }
 }
+/* Tareas con prioridad: ajustar las tarjetas al alto INTERNO disponible.
+   El panel exterior conserva su altura; cada posición de scroll muestra filas enteras. */
+#dashboard-view .attention-card #alerts-list{
+  gap:6px;
+  grid-auto-rows:calc((100% - 18px) / 4);
+  scroll-snap-type:y mandatory;
+}
+#dashboard-view .attention-card .priority-task{
+  min-height:0;
+  height:100%;
+  scroll-snap-align:start;
+}
+@media(max-width:1100px){
+  #dashboard-view .attention-card #alerts-list{
+    grid-auto-rows:calc((100% - 12px) / 3);
+  }
+}
+@media(max-width:510px){
+  #dashboard-view .attention-card #alerts-list{
+    grid-auto-rows:calc((100% - 6px) / 2);
+  }
+}
+
 @media(max-width:760px){
   /* Mantener el orden visual y de teclado en pantallas de una sola columna. */
   #dashboard-view .executive-grid>.radar-card{order:1}
