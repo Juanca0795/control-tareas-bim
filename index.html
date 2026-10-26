@@ -4114,8 +4114,83 @@ textarea,
 .cnc-readonly p{margin:0;color:var(--ink-primary);font-size:11px;white-space:pre-wrap;overflow-wrap:anywhere}
 #weekly-view .weekly-cnc-item .cnc-cause{color:var(--accent-blue);font-weight:650}
 
+
+/* CONTROL SEMANAL — subpestañas internas, sin modificar la navegación principal. */
+#weekly-view .weekly-subtabs{display:flex;gap:5px;width:fit-content;max-width:100%;padding:4px;margin:0 0 15px;
+  background:var(--bg-subtle);border:1px solid var(--border-base);border-radius:10px}
+#weekly-view .weekly-subtab{border:1px solid transparent;background:transparent;color:var(--ink-secondary);
+  font-size:11px;font-weight:700;letter-spacing:.035em;padding:10px 18px;border-radius:7px;cursor:pointer}
+#weekly-view .weekly-subtab.active{background:var(--bg-panel);border-color:var(--border-strong);
+  color:var(--accent-blue);box-shadow:0 2px 10px rgba(0,0,0,.08)}
+#weekly-view .weekly-subtab:hover{color:var(--ink-primary);background:var(--bg-hover)}
+#weekly-view .weekly-projection-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}
+#weekly-view .weekly-projection-kpi{display:flex;flex-direction:column;gap:7px;min-width:0;
+  padding:16px;border-radius:10px;border:1px solid var(--border-base);background:var(--bg-panel)}
+#weekly-view .weekly-projection-kpi .proj-label{color:var(--ink-secondary);font-size:9px;font-weight:750;letter-spacing:.065em}
+#weekly-view .weekly-projection-kpi .proj-value{font-family:var(--font-mono);font-size:29px;font-weight:750;
+  letter-spacing:-.05em;color:var(--ink-primary);line-height:1.25}
+#weekly-view .weekly-projection-kpi.positive .proj-value{color:var(--status-done-fg)}
+#weekly-view .weekly-projection-kpi.warning .proj-value{color:var(--status-warn-fg)}
+#weekly-view .weekly-projection-kpi.projection .proj-value{color:var(--accent-blue)}
+#weekly-view .weekly-projection-kpi .proj-foot{font-size:10px;color:var(--ink-muted);line-height:1.5;overflow-wrap:anywhere}
+#weekly-view .weekly-projection-bar-card{padding:15px 17px;margin-bottom:13px}
+#weekly-view .weekly-projection-bar-card>h2{font-size:11px;margin:0 0 12px}
+#weekly-view .proj-stack{display:flex;width:100%;height:12px;overflow:hidden;background:var(--bg-subtle);border-radius:10px}
+#weekly-view .proj-part{display:block;height:100%;min-width:0;transition:width .25s ease}
+#weekly-view .proj-part.done{background:#24cba5}
+#weekly-view .proj-part.forecast{background:#f3bb67}
+#weekly-view .proj-part.remaining{background:var(--border-strong)}
+#weekly-view .proj-legend{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;color:var(--ink-secondary);font-size:10px}
+#weekly-view .proj-legend span{display:inline-flex;align-items:center;gap:6px}
+#weekly-view .proj-legend i{display:inline-block;width:9px;height:9px;border-radius:2px;background:var(--border-strong)}
+#weekly-view .proj-legend i.done{background:#24cba5}
+#weekly-view .proj-legend i.forecast{background:#f3bb67}
+#weekly-view .weekly-projection-layout{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(280px,1fr);gap:12px;align-items:stretch}
+#weekly-view .weekly-projection-layout>.card{min-width:0;padding:17px}
+#weekly-view .weekly-projection-layout .weekly-card-head{align-items:start}
+#weekly-view .weekly-projection-layout .weekly-card-head h2{font-size:11px}
+#weekly-view .weekly-projection-layout .weekly-card-head p{line-height:1.5}
+#weekly-view #weekly-projection-chart{height:285px;min-height:285px;position:relative;margin-top:14px}
+#weekly-view .proj-chart-legend{display:flex;gap:13px;flex-wrap:wrap;font-size:10px;color:var(--ink-secondary)}
+#weekly-view .proj-chart-legend span{display:inline-flex;align-items:center;gap:6px}
+#weekly-view .proj-chart-legend i{display:inline-block;width:16px;border-top:2px solid #4da5ff}
+#weekly-view .proj-chart-legend i.real{border-color:#24cba5}
+#weekly-view .proj-chart-legend i.forecast{border-color:#f3bb67;border-top-style:dashed}
+#weekly-view #weekly-projection-status{font-size:10px;color:var(--ink-secondary);line-height:1.5;margin:9px 0 12px}
+#weekly-view #weekly-projection-tasks{max-height:285px;overflow-y:auto;scrollbar-width:thin}
+#weekly-view .proj-list{display:grid;gap:8px}
+#weekly-view .proj-task{display:grid;grid-template-columns:minmax(0,1fr) 154px;gap:12px;align-items:center;
+  border:1px solid var(--border-base);border-radius:8px;background:var(--bg-subtle);padding:11px}
+#weekly-view .proj-task-info{min-width:0}
+#weekly-view .proj-task-info strong{display:block;font-size:10.5px;line-height:1.45;color:var(--ink-primary);overflow-wrap:anywhere}
+#weekly-view .proj-task-info small{display:block;font-size:9px;line-height:1.5;margin-top:4px;color:var(--ink-muted)}
+#weekly-view .proj-task-date label{display:block;color:var(--ink-secondary);font-size:9px;margin-bottom:4px;font-weight:650}
+#weekly-view .proj-task-date input{width:100%;min-width:0;background:var(--bg-panel);color:var(--ink-primary);
+  border:1px solid var(--border-strong);padding:7px 6px;border-radius:6px;font:10px var(--font-mono);color-scheme:dark}
+html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
+#weekly-view .proj-invalid{display:block;font-size:9px;color:var(--status-warn-fg);line-height:1.4;margin-top:4px}
+#weekly-view .proj-empty{display:flex;align-items:center;justify-content:center;min-height:100px;text-align:center;
+  padding:12px;color:var(--ink-secondary);font-size:11px}
+#weekly-view .proj-fallback{height:100%;overflow:auto}
+#weekly-view .proj-fallback table{width:100%;border-collapse:collapse;font-size:11px;color:var(--ink-secondary)}
+#weekly-view .proj-fallback th,#weekly-view .proj-fallback td{padding:8px;text-align:center;border-bottom:1px solid var(--border-base)}
+@media(max-width:1000px){
+  #weekly-view .weekly-projection-layout{grid-template-columns:minmax(0,1fr)}
+}
+@media(max-width:680px){
+  #weekly-view .weekly-projection-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #weekly-view .weekly-projection-kpi{padding:12px;gap:5px}
+  #weekly-view .weekly-projection-kpi .proj-value{font-size:23px}
+  #weekly-view .weekly-subtabs{width:100%}
+  #weekly-view .weekly-subtab{flex:1;padding:10px 8px;font-size:10px}
+  #weekly-view .weekly-projection-layout>.card{padding:13px}
+  #weekly-view .proj-task{grid-template-columns:minmax(0,1fr)}
+  #weekly-view .proj-task-date{max-width:250px}
+}
+
 </style>
 <script src="cnc.js"></script>
+<script src="proyeccion.js"></script>
 </head>
 <body>
 <aside class="sidebar">
@@ -4288,6 +4363,11 @@ textarea,
       <div id="weekly-filter-chips" class="active-filters"></div>
     </section>
 
+    <div class="weekly-subtabs" role="tablist" aria-label="Secciones de Control Semanal">
+      <button type="button" id="weekly-tab-seguimiento" class="weekly-subtab active" role="tab" aria-selected="true" aria-controls="weekly-seguimiento" onclick="switchWeeklySubtab('seguimiento')">SEGUIMIENTO</button>
+      <button type="button" id="weekly-tab-proyeccion" class="weekly-subtab" role="tab" aria-selected="false" aria-controls="weekly-proyeccion" tabindex="-1" onclick="switchWeeklySubtab('proyeccion')">PROYECCIÓN</button>
+    </div>
+    <div id="weekly-seguimiento" role="tabpanel" aria-labelledby="weekly-tab-seguimiento">
     <section class="weekly-status-strip" id="weekly-info" role="status" aria-live="polite"></section>
     <section class="weekly-kpis" id="weekly-kpis" aria-label="Resultados KPI semanales"></section>
 
@@ -4306,6 +4386,35 @@ textarea,
         <div id="weekly-cnc" class="weekly-cnc-content" aria-live="polite"></div>
       </article>
     </section>
+    </div>
+    <div id="weekly-proyeccion" class="hidden" role="tabpanel" aria-labelledby="weekly-tab-proyeccion">
+      <section id="weekly-projection-kpis" class="weekly-projection-kpis" aria-label="Indicadores de proyección semanal"></section>
+      <section class="card weekly-projection-bar-card" aria-label="Distribución semanal">
+        <h2>COMPOSICIÓN DEL COMPROMISO SEMANAL</h2>
+        <div id="weekly-projection-bar"></div>
+      </section>
+      <section class="weekly-projection-layout" aria-label="Curva acumulada y fechas estimadas">
+        <article class="card weekly-chart-card weekly-projection-graph">
+          <div class="weekly-card-head">
+            <div><h2>EVOLUCIÓN ACUMULADA DE ACTIVIDADES</h2>
+              <p>Programado según plazos · Real verificado · Proyección basada en fechas estimadas</p></div>
+          </div>
+          <div class="proj-chart-legend" aria-hidden="true">
+            <span><i></i> Programado</span><span><i class="real"></i> Real</span>
+            <span><i class="forecast"></i> Proyectado</span>
+          </div>
+          <div id="weekly-projection-chart" aria-label="Gráfico de evolución acumulada"></div>
+        </article>
+        <article class="card weekly-chart-card">
+          <div class="weekly-card-head">
+            <div><h2>ESTIMACIÓN DE ACTIVIDADES PENDIENTES</h2>
+              <p>Indica cuándo esperas completar cada entregable pendiente de esta semana</p></div>
+          </div>
+          <p id="weekly-projection-status" role="status" aria-live="polite"></p>
+          <div id="weekly-projection-tasks"></div>
+        </article>
+      </section>
+    </div>
   </div>
 
   <!-- VISTA: DASHBOARD SALA DE CONTROL -->
@@ -4704,6 +4813,7 @@ function normalizeCatalogs(input){
   // Sin migraciones: nunca se envían columnas no existentes a bim_tasks.
   result.analytics=normalizeMonthlyAnalytics(input?.analytics);
   result.cncRecords=normalizeCncRecords(input?.cncRecords);
+  result.weeklyForecasts=normalizeWeeklyForecasts(input?.weeklyForecasts);
   // Copias completas en el JSONB de bim_catalogs, sin cambiar el esquema.
   // Nunca copiar backups dentro del payload de otro backup.
   result.backups=Array.isArray(input?.backups)
@@ -6933,6 +7043,7 @@ function weeklyBacklogChart(){
 }
 function renderWeekly(){
   if(!$('#weekly-view')||currentView!=='weekly')return;
+  syncWeeklySubtab();
   disposeWeeklyCharts();
   document.querySelectorAll('.weekly-chart-card').forEach(card=>card.classList.remove('weekly-is-empty'));
   updateWeeklyFilters();
@@ -6964,8 +7075,11 @@ function renderWeekly(){
     weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?m.onTime+'/'+m.punctualityBase+' evaluables · '+(m.observedUntil===todayString()?'incluye hoy':'al corte'):'Sin plazos evaluables al corte',m.punctuality!==null&&m.punctuality<85?'warning':''),
     weeklyKpiCard('VENCIDAS',m.delayed,m.dueAtCutoff+(m.observedUntil===todayString()?' vencen hoy':' al corte')+' · '+m.lateCompleted+' cierres tardíos',m.delayed?'danger':m.dueAtCutoff?'warning':'positive')
   ].join('');
-  weeklyTrend(m);
-  weeklyCncPanel(m);
+  if(weeklyInnerTab==='seguimiento'){
+    weeklyTrend(m);
+    weeklyCncPanel(m);
+  }
+  renderWeeklyProjection(m);
   scheduleBimMetricsAnimation('weekly');
 }
 function requestWeeklyClose(){
@@ -7032,6 +7146,7 @@ async function load(){
           all.findIndex(y=>y.name.toLocaleLowerCase('es')===x.name.toLocaleLowerCase('es'))===i);
         merged.analytics=mergeMonthlyAnalytics(fromCloud.analytics,catalogs.analytics);
         merged.cncRecords=mergeCncRecords(fromCloud.cncRecords,catalogs.cncRecords);
+        merged.weeklyForecasts=mergeWeeklyForecasts(fromCloud.weeklyForecasts,catalogs.weeklyForecasts);
         merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups);
         catalogs=normalizeCatalogs(merged);
         ids=cloudIds;
@@ -7079,6 +7194,8 @@ async function save(){
     catalogs.backups=catalogsToSave.backups;
     catalogsToSave.cncRecords=mergeCncRecords(latestCatalogs.data?.[0]?.data?.cncRecords,catalogsToSave.cncRecords);
     catalogs.cncRecords=catalogsToSave.cncRecords;
+    catalogsToSave.weeklyForecasts=mergeWeeklyForecasts(latestCatalogs.data?.[0]?.data?.weeklyForecasts,catalogsToSave.weeklyForecasts);
+    catalogs.weeklyForecasts=catalogsToSave.weeklyForecasts;
     const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
     if(gone.length){
       const deleted=await d.from('bim_tasks').delete().in('id',gone);
