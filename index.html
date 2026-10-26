@@ -2963,7 +2963,7 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
       <article class="card weekly-chart-card weekly-primary-trend">
         <div class="weekly-card-head">
           <div><h2>EVOLUCIÓN DEL CUMPLIMIENTO PPC</h2><p>Porcentaje de compromisos cumplidos en la semana planificada · Meta 85%</p></div>
-          <span class="weekly-mini-badge">Últimas 8 semanas</span>
+          <span class="weekly-mini-badge" id="weekly-trend-range">Sin semanas registradas</span>
         </div>
         <div class="weekly-trend-key"><span><i class="achieved"></i> PPC logrado</span><span><i class="goal"></i> Meta 85%</span></div>
         <div id="weekly-trend-chart" class="weekly-chart-content"></div>
@@ -4744,6 +4744,9 @@ function weeklyEmpty(el,msg){
 }
 function weeklyTrend(m){
   const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer'),weeks=weeklyHistoryWeeks();
+  const range=$('#weekly-trend-range');
+  if(range)range.textContent=!weeks.length?'Sin semanas registradas':
+    weeks.length===8?'Últimas 8 semanas':'Desde '+weekShort(weeks[0])+' · '+weeks.length+' semana'+(weeks.length===1?'':'s');
   const nowWeek=isoWeekKey(new Date());
   const vals=weeks.map(w=>{
     const metric=weeklyMetrics(w);
@@ -4753,10 +4756,10 @@ function weeklyTrend(m){
   const mean=known.length?known.reduce((a,b)=>a+b,0)/known.length:null;
   const delta=mean===null?null:mean-85;
   footer.innerHTML=mean===null?
-    '<span>No hay resultados PPC verificables en las ocho semanas.</span>':
+    '<span>No existen compromisos PPC verificables en el período seleccionado.</span>':
     `<span>PPC medio del período: <strong>${mean.toFixed(1)}%</strong> · ${known.length} semana(s) con compromisos</span>
     <span>${delta>=0?'↑ +':'↓ −'}${Math.abs(delta).toFixed(1)} pp ${delta>=0?'sobre':'bajo'} la meta de referencia (85%)</span>`;
-  if(!known.length){weeklyEmpty(node,'Aún no existen compromisos verificables en estas ocho semanas.');return;}
+  if(!known.length){weeklyEmpty(node,'Todavía no existen compromisos verificables hasta la semana seleccionada.');return;}
   if(typeof Chart!=='undefined'){
     const c=weeklyChartOptions();
     node.innerHTML='<canvas role="img" aria-label="Evolución PPC con línea de meta 85 por ciento"></canvas>';
@@ -4840,7 +4843,21 @@ function weeklyGroupChart(id,groups,mode){
 
 /* Visualizaciones semanales: se usa Chart.js cuando está disponible; de lo contrario,
    se representa una alternativa HTML con exactamente los mismos datos. */
-function weeklyHistoryWeeks(){return Array.from({length:8},(_,i)=>neighborWeek(selectedWeek,i-7));}
+function weeklyHistoryWeeks(){
+  // El período empieza en la primera semana CON COMPROMISOS verificables,
+  // nunca en semanas anteriores vacías. Máximo ocho semanas hasta la seleccionada.
+  const presentWeek=isoWeekKey(new Date());
+  const endingWeek=selectedWeek<=presentWeek?selectedWeek:presentWeek;
+  const candidates=[...new Set([
+    ...tasks.map(t=>effectiveTaskWeek(t)),
+    ...weeklySnapshots.map(snapshot=>snapshot.week)
+  ])].filter(w=>typeof w==='string'&&weekStart(w)&&w<=endingWeek).sort();
+  // Usar métricas filtradas y snapshots archivados; sin fabricar PPC para semanas vacías.
+  const earliest=candidates.find(w=>weeklyMetrics(w).planned>0);
+  if(!earliest)return [];
+  return Array.from({length:8},(_,i)=>neighborWeek(endingWeek,i-7))
+    .filter(w=>w>=earliest);
+}
 function weeklyPlanChart(){
   const node=$('#weekly-plan-chart'),weeks=weeklyHistoryWeeks(),metrics=weeks.map(weeklyMetrics);
   const planned=metrics.map(m=>m.planned),done=metrics.map(m=>m.completed),c=weeklyChartOptions();
