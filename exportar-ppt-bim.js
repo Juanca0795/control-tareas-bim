@@ -147,12 +147,12 @@ function renderBimPptExport(){
     ' <span>'+group.length+' fotografía(s)</span></h3><div class="bim-ppt-items">'+
     group.map(({x,index})=>
       '<article class="bim-ppt-item">'+
-      '<div class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'">Vista previa</div>'+
-      '<div class="bim-ppt-fields">'+
       '<div class="bim-ppt-item-title"><label><input type="checkbox" data-bim-ppt-check="'+index+'"'+
       (x.enabled?' checked':'')+'> Incluir</label>'+
-      '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+'</span></div>'+
       '<label class="bim-ppt-caption-label" for="bim-ppt-caption-'+index+'">Descripción para el PPT</label>'+
+      '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+'</span></div>'+
+      '<div class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'">Vista previa</div>'+
+      '<div class="bim-ppt-fields">'+
       '<textarea id="bim-ppt-caption-'+index+'" data-bim-ppt-caption="'+index+'" maxlength="240" rows="2">'+
       esc(x.caption)+'</textarea></div></article>').join('')+
     '</div></section>').join('');
