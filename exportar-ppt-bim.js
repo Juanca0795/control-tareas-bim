@@ -101,9 +101,18 @@ function pptBimItemsForWeek(week){
       });
     }
   }
-  return out.sort((a,b)=>a.package.localeCompare(b.package,'es',{numeric:true})||
+  out.sort((a,b)=>a.package.localeCompare(b.package,'es',{numeric:true})||
     a.taskId.localeCompare(b.taskId,'es',{numeric:true})||
     a.id.localeCompare(b.id));
+  // Numeración por actividad: cada fotografía conserva su propia descripción.
+  const totals=new Map(),positions=new Map();
+  for(const item of out)totals.set(item.taskId,(totals.get(item.taskId)||0)+1);
+  for(const item of out){
+    item.photoIndex=(positions.get(item.taskId)||0)+1;
+    item.photoCount=totals.get(item.taskId);
+    positions.set(item.taskId,item.photoIndex);
+  }
+  return out;
 }
 function openBimPptExport(){
   if(currentView!=='weekly'){toast('Ingresa a Control Semanal para exportar el informe.');return}
@@ -150,7 +159,8 @@ function renderBimPptExport(){
       '<div class="bim-ppt-item-title"><label><input type="checkbox" data-bim-ppt-check="'+index+'"'+
       (x.enabled?' checked':'')+'> Incluir</label>'+
       '<label class="bim-ppt-caption-label" for="bim-ppt-caption-'+index+'">Descripción para el PPT</label>'+
-      '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+'</span></div>'+
+      '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+
+      ' · Foto '+x.photoIndex+' de '+x.photoCount+'</span></div>'+
       '<div class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'">Vista previa</div>'+
       '<div class="bim-ppt-fields">'+
       '<textarea id="bim-ppt-caption-'+index+'" data-bim-ppt-caption="'+index+'" maxlength="240" rows="2">'+
@@ -250,9 +260,9 @@ function pptBimCover(pptx,week,groups,imageCount){
   pptBimAddText(slide,'ÁREA BIM · S&P',{x:.45,y:6.87,w:3.4,h:.16,
     fontSize:10,color:'FFFFFF',bold:true,align:'center'});
 }
-/* Prioriza fotografías del mismo paquete, sin desperdiciar hojas:
- * paquetes con 2 o 3 imágenes forman un bloque indivisible,
- * y un espacio restante puede completarse con otro paquete.
+/* Mantiene juntas y en su orden las fotografías de cada paquete.
+ * Si un paquete supera tres imágenes continúa en la siguiente diapositiva.
+ * Los espacios restantes pueden completarse con el siguiente paquete.
  */
 function pptBimPackSlides(items){
   const groups=new Map();
@@ -261,20 +271,15 @@ function pptBimPackSlides(items){
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push(item);
   }
-  const chunks=[];
-  let order=0;
-  for(const photos of groups.values()){
-    for(let i=0;i<photos.length;i+=3)
-      chunks.push({entries:photos.slice(i,i+3),order:order++});
-  }
-  // Bloques completos de 3, luego de 2 y de 1; no separar parejas de un paquete.
-  chunks.sort((a,b)=>b.entries.length-a.entries.length||a.order-b.order);
   const pages=[];
-  for(const chunk of chunks){
-    let target=pages.find(page=>page.length+chunk.entries.length<=3);
-    if(!target){target=[];pages.push(target)}
-    target.push(...chunk.entries);
+  let page=[];
+  for(const photos of groups.values()){
+    for(const photo of photos){
+      if(page.length===3){pages.push(page);page=[]}
+      page.push(photo);
+    }
   }
+  if(page.length)pages.push(page);
   return pages;
 }
 function pptBimEvidenceSlide(pptx,week,entries){
@@ -307,7 +312,8 @@ function pptBimEvidenceSlide(pptx,week,entries){
       {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
         fontSize:caption.length>180?8:caption.length>95?10:13,
         bold:true,align:'center',valign:'mid',fit:'shrink'});
-    pptBimAddText(slide,e.taskId+(e.team?' · '+e.team:''),
+    pptBimAddText(slide,e.taskId+(e.team?' · '+e.team:'')+
+      ' · Foto '+e.photoIndex+' de '+e.photoCount,
       {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
         color:'5A5A5A',align:'center'});
   }
@@ -362,8 +368,7 @@ async function exportBimPpt(){
       decoded.push({...photo,...loaded});
       if(status)status.textContent='Preparando imágenes '+decoded.length+' de '+included.length+'…';
     }
-    // Se agrupan las evidencias en hojas de 1 a 3 imágenes, sin separar parejas
-    // o tríos de un mismo paquete y aprovechando las columnas disponibles.
+    // Se mantienen consecutivas las fotos de cada paquete, en hojas de 1 a 3 imágenes.
     const pages=pptBimPackSlides(decoded);
     for(const entries of pages)pptBimEvidenceSlide(pptx,pptBimState.week,entries);
     if(status)status.textContent='Generando PPTX editable…';
