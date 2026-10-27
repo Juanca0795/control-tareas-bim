@@ -4474,6 +4474,16 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 .bim-ppt-mode button:hover:not([aria-pressed="true"]){background:var(--bg-hover)}
 .bim-ppt-mode button:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
 .bim-ppt-mode button:disabled{opacity:.6;cursor:wait}
+/* Solo lista de días: sin calendario ni aumento del ancho del diálogo. */
+.bim-ppt-meeting-day{
+  flex:0 0 auto;width:107px;height:32px;min-width:0;
+  padding:0 6px;border:1px solid var(--border-strong);border-radius:7px;
+  background:var(--bg-subtle);color:var(--ink-primary);
+  font:650 10px Inter,sans-serif;cursor:pointer
+}
+.bim-ppt-meeting-day[hidden]{display:none!important}
+.bim-ppt-meeting-day:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.bim-ppt-meeting-day:disabled{opacity:.6;cursor:wait}
 .bim-ppt-dialog .bim-ppt-mode-desc{
   flex:0 0 auto;margin:0;font-size:10px;line-height:1.4;color:var(--ink-muted)
 }
@@ -4579,6 +4589,8 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   .bim-ppt-dialog{height:calc(100dvh - 18px);max-height:calc(100dvh - 18px)}
   .bim-ppt-dialog>.modal-hd{position:relative;flex-wrap:wrap;gap:7px;padding:12px 38px 12px 12px}
   .bim-ppt-dialog>.modal-hd h2{flex:1 1 100%;font-size:12px}
+  .bim-ppt-mode button{padding:0 7px;height:25px;font-size:9px}
+  .bim-ppt-meeting-day{width:100px;height:31px}
   .bim-ppt-dialog>.modal-hd .close{position:absolute;top:10px;right:10px}
   .bim-ppt-dialog>.modal-body{padding:12px;gap:8px}
   .bim-ppt-dialog .bim-ppt-list{padding-right:5px}
@@ -5413,11 +5425,23 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     <div class="modal-hd">
       <h2 id="bim-ppt-title">EXPORTAR EVIDENCIAS BIM A POWERPOINT</h2>
       <div class="bim-ppt-mode" role="group" aria-label="Seleccionar criterio de exportación">
-        <button type="button" data-bim-ppt-mode="ingreso" aria-pressed="true"
+        <button type="button" data-bim-ppt-mode="ingreso" aria-pressed="false"
           title="Por fecha de carga de la fotografía" onclick="setBimPptMode('ingreso')">Ingreso</button>
         <button type="button" data-bim-ppt-mode="culminacion" aria-pressed="false"
           title="Por fecha real de culminación de la actividad" onclick="setBimPptMode('culminacion')">Culminación</button>
+        <button type="button" data-bim-ppt-mode="reunion" aria-pressed="true"
+          title="Siete días previos al día de la reunión" onclick="setBimPptMode('reunion')">Reunión</button>
       </div>
+      <select id="bim-ppt-meeting-day" class="bim-ppt-meeting-day" aria-label="Día habitual de reunión"
+        title="Día habitual de reunión" onchange="setBimPptMeetingDay(this.value)">
+        <option value="1">Lunes</option>
+        <option value="2">Martes</option>
+        <option value="3" selected>Miércoles</option>
+        <option value="4">Jueves</option>
+        <option value="5">Viernes</option>
+        <option value="6">Sábado</option>
+        <option value="7">Domingo</option>
+      </select>
       <button type="button" class="close" onclick="closeBimPptExport()" aria-label="Cerrar exportación">×</button>
     </div>
     <div class="modal-body">
