@@ -4703,6 +4703,46 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   box-shadow:0 15px 32px rgba(24,52,81,.17),0 9px 22px rgba(var(--bim-ambient-rgb),.10);
 }
 
+
+/* Filtros cruzados sobre las etiquetas: misma semántica y tamaño de las chips
+   anteriores, con hover azul discreto, selección y foco visibles. */
+#tasks-view .task-facet-chip{
+  appearance:none;
+  cursor:pointer;
+  vertical-align:middle;
+  transition:transform .16s ease,filter .16s ease,
+    border-color .18s ease,box-shadow .18s ease;
+}
+#tasks-view .task-facet-chip:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.12);
+  border-color:var(--accent-blue);
+  box-shadow:0 0 0 1px rgba(93,167,255,.14),
+    0 0 12px rgba(93,167,255,.12);
+}
+#tasks-view .task-facet-chip.is-active{
+  border-color:var(--accent-blue);
+  box-shadow:inset 0 0 0 1px rgba(93,167,255,.22),
+    0 0 13px rgba(93,167,255,.14);
+}
+#tasks-view .task-facet-chip:focus-visible{
+  outline:2px solid var(--accent-blue);
+  outline-offset:3px;
+}
+@keyframes bimTaskFacetEnter{
+  from{opacity:.64;transform:translateY(5px)}
+  to{opacity:1;transform:translateY(0)}
+}
+#tasks-view .task-table tbody tr.task-facet-enter,
+#tasks-view .task-mobile-card.task-facet-enter{
+  animation:bimTaskFacetEnter .32s cubic-bezier(.2,.75,.25,1) both;
+}
+@media(prefers-reduced-motion:reduce){
+  #tasks-view .task-facet-chip{transition:none!important}
+  #tasks-view .task-table tbody tr.task-facet-enter,
+  #tasks-view .task-mobile-card.task-facet-enter{animation:none!important}
+}
+
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -5760,11 +5800,44 @@ function makeStats(rows,interactive=false){
 
 const TASKS_PER_PAGE=15;
 let currentTaskPage=1;
+let taskFacetAnimateNext=false;
 function onTaskFiltersChanged(){
   currentTaskPage=1;
   selectedTaskId=null;
   hoveredTaskId=null;
   renderTasks();
+}
+/* Acceso rápido a los filtros cruzados ya existentes. Clic repetido desactiva
+   sólo ese filtro, preservando paquete, colaborador, búsqueda y el otro criterio. */
+function taskFacetChip(field,value,tone){
+  if(!value)return '<span class="cell-empty">-</span>';
+  const control=field==='team'?'#filter-team':'#filter-status';
+  const active=$(control)?.value===value;
+  const label=field==='team'?'disciplina':'estado';
+  const command=active?'Quitar filtro':'Filtrar por';
+  return `<button type="button" class="chip ${esc(tone)} task-facet-chip${active?' is-active':''}"
+    data-task-facet="${field}" data-task-facet-value="${esc(value)}"
+    aria-pressed="${active?'true':'false'}"
+    aria-label="${command} de ${label}: ${esc(value)}"
+    title="${command} ${label}: ${esc(value)}">${esc(value)}</button>`;
+}
+function handleTaskFacetClick(event){
+  const facet=event.target.closest('button[data-task-facet]');
+  if(!facet)return false;
+  event.preventDefault();
+  event.stopPropagation();
+  const field=facet.dataset.taskFacet;
+  const id=field==='team'?'filter-team':field==='status'?'filter-status':null;
+  if(!id)return true;
+  const select=document.getElementById(id);
+  if(!select)return true;
+  const value=facet.dataset.taskFacetValue;
+  select.value=select.value===value?'':value;
+  taskFacetAnimateNext=true;
+  onTaskFiltersChanged();
+  // Reproducir efectos KPI y barras cuando se navega por etiquetas de la tabla.
+  scheduleBimMetricsAnimation('tasks',true);
+  return true;
 }
 function changeTaskPage(nextPage){
   const total=filteredTasks().length;
@@ -5830,6 +5903,8 @@ function filteredTasks(){
 }
 
 function renderTasks(){
+  const animateFacet=taskFacetAnimateNext;
+  taskFacetAnimateNext=false;
   crossFilterOptions(TASK_CROSS_FIELDS,taskCrossSource());
   const a = filteredTasks();
   const maxPage=Math.max(1,Math.ceil(a.length/TASKS_PER_PAGE));
@@ -5851,15 +5926,15 @@ function renderTasks(){
     const al = alertStatus(t);
     const lodHtml = t.lod ? `<span class="lod-badge">${esc(t.lod)}</span>` : `<span class="cell-empty">-</span>`;
     const supportHtml = t.support ? `<span class="support-text">${esc(t.support)}</span>` : `<span class="cell-empty">-</span>`;
-    return `<tr data-task-row="${esc(t.id)}" tabindex="0" title="${esc(taskRegistrationHint(t))}" class="${selectedTaskId===t.id?'task-row-selected ':''}${isDone?'task-row-completed':''}">
+    return `<tr data-task-row="${esc(t.id)}" tabindex="0" title="${esc(taskRegistrationHint(t))}" class="${selectedTaskId===t.id?'task-row-selected ':''}${isDone?'task-row-completed':''}${animateFacet?' task-facet-enter':''}">
       <td><span class="id">${esc(t.id)}</span></td>
       <td><div class="task-name">${esc(t.title)}${taskEvidenceBadge(t.id)}</div></td>
       <td>${lodHtml}</td>
       <td>${esc(t.package)}</td>
       <td>${esc(t.owner)}</td>
-      <td><span class="chip todo">${esc(t.team)}</span></td>
+      <td>${taskFacetChip('team',t.team,'todo')}</td>
       <td><span class="chip ${clsPriority(t.priority)}">${esc(t.priority)}</span></td>
-      <td><span class="chip ${clsStatus(t.status)}">${esc(t.status)}</span>${taskCncButton(t)}</td>
+      <td>${taskFacetChip('status',t.status,clsStatus(t.status))}${taskCncButton(t)}</td>
       <td>${supportHtml}</td>
       <td class="deadline-cell">
         <div class="deadline-date">${dateDisplay(t.deadline)}</div>
@@ -5870,14 +5945,14 @@ function renderTasks(){
   // Vista compacta para móviles; reutiliza las mismas tareas y el editor existente.
   $('#tasks-mobile-cards').innerHTML=visible.length?visible.map(t=>{
     const alert=alertStatus(t);
-    return `<article class="task-mobile-card${categoryOf(t.status)==='done'?' task-mobile-completed':''}" aria-label="Entregable ${esc(t.id)}">
-      <div class="task-mobile-card-head"><span class="id">${esc(t.id)}</span><span class="chip ${clsStatus(t.status)}">${esc(t.status)}</span></div>
+    return `<article class="task-mobile-card${categoryOf(t.status)==='done'?' task-mobile-completed':''}${animateFacet?' task-facet-enter':''}" aria-label="Entregable ${esc(t.id)}">
+      <div class="task-mobile-card-head"><span class="id">${esc(t.id)}</span>${taskFacetChip('status',t.status,clsStatus(t.status))}</div>
       <h3 class="task-mobile-title" title="${esc(t.title)}">${esc(t.title)}${taskEvidenceBadge(t.id)}</h3>
       <dl class="task-mobile-facts">
         <div><dt>LOI</dt><dd>${t.lod?`<span class="lod-badge">${esc(t.lod)}</span>`:'<span class="cell-empty">—</span>'}</dd></div>
         <div><dt>PAQUETE</dt><dd title="${esc(t.package)}">${esc(t.package)||'—'}</dd></div>
         <div><dt>RESPONSABLE</dt><dd title="${esc(t.owner)}">${esc(t.owner)||'—'}</dd></div>
-        <div><dt>DISCIPLINA</dt><dd title="${esc(t.team)}">${esc(t.team)||'—'}</dd></div>
+        <div><dt>DISCIPLINA</dt><dd>${taskFacetChip('team',t.team,'todo')}</dd></div>
         <div><dt>PRIORIDAD</dt><dd><span class="chip ${clsPriority(t.priority)}">${esc(t.priority)}</span></dd></div>
         <div><dt>VENCIMIENTO</dt><dd>${esc(dateDisplay(t.deadline))}</dd></div>
         <div class="task-mobile-support-field"><dt>APOYO EN OTRAS ÁREAS</dt><dd>${t.support?esc(t.support):'<span class="cell-empty">—</span>'}</dd></div>
@@ -7003,18 +7078,24 @@ taskTableBody.addEventListener('pointerout', e => {
 });
 taskTableBody.addEventListener('mouseleave', () => { hoveredTaskId = null; });
 taskTableBody.addEventListener('click', e => {
+  if(handleTaskFacetClick(e))return;
   const tr = taskRowFromEvent(e);
   if(!tr) return;
   selectTaskRow(tr.dataset.taskRow);
   tr.focus({preventScroll:true});
 });
 taskTableBody.addEventListener('focusin', e => {
+  if(e.target.closest('button[data-task-facet]'))return;
   const tr = taskRowFromEvent(e);
   if(tr) selectTaskRow(tr.dataset.taskRow);
 });
 taskTableBody.addEventListener('dblclick', e => {
+  if(e.target.closest('button[data-task-facet]')){e.preventDefault();return;}
   const tr = taskRowFromEvent(e);
   if(tr) openEditor(tr.dataset.taskRow);
+});
+document.getElementById('tasks-mobile-cards').addEventListener('click', e => {
+  handleTaskFacetClick(e);
 });
 
 document.addEventListener('keydown', e => {
