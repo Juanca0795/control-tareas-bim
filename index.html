@@ -4489,6 +4489,78 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 }
 @media(prefers-reduced-motion:reduce){.sidebar .weekly-ppt-launch{transition:none}}
 
+
+/* APOYO EN OTRAS ÁREAS: detalle flotante sólo al hover (sin ventana ni columnas nuevas). */
+:is(#dashboard-view,#tasks-view) .stat.kpi-support{position:relative;overflow:visible}
+:is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:hover,:focus-visible){z-index:65}
+:is(#dashboard-view,#tasks-view) .support-area-popover{
+  position:absolute;inset-inline-end:0;top:100%;
+  width:min(345px,calc(100vw - 30px));max-width:calc(100vw - 30px);
+  border:1px solid var(--border-strong);border-radius:11px;
+  background:var(--bg-panel);color:var(--ink-primary);text-align:left;
+  box-shadow:0 16px 40px rgba(0,0,0,.35),inset 0 1px 0 rgba(99,172,255,.09);
+  padding:14px 15px 11px;cursor:default;
+  opacity:0;visibility:hidden;transform:translateY(-5px) scale(.98);
+  transform-origin:top right;
+  transition:opacity .19s ease,transform .23s ease,visibility .19s;
+  pointer-events:none;z-index:70;
+}
+:is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:hover,:focus-visible) .support-area-popover{
+  opacity:1;visibility:visible;transform:translateY(0) scale(1);pointer-events:auto
+}
+:is(#dashboard-view,#tasks-view) .support-area-popover-header{
+  display:flex;justify-content:space-between;align-items:center;gap:12px;
+  padding-bottom:8px;border-bottom:1px solid var(--border-base);
+  letter-spacing:.055em;font-weight:750;font-size:10.5px;color:var(--ink-secondary);
+}
+:is(#dashboard-view,#tasks-view) .support-area-popover-header strong{
+  color:var(--kpi-color);font-family:var(--font-mono);font-size:15px;font-weight:700;letter-spacing:0
+}
+:is(#dashboard-view,#tasks-view) .support-area-popover-context{
+  margin:0;padding:8px 0 9px;color:var(--ink-muted);font-size:10.5px;
+  line-height:1.5;white-space:normal
+}
+:is(#dashboard-view,#tasks-view) .support-area-popover-list{
+  display:grid;gap:11px;max-height:min(300px,48vh);overflow-y:auto;
+  padding:2px 5px 5px 0;overscroll-behavior:contain;scrollbar-width:thin
+}
+:is(#dashboard-view,#tasks-view) .support-area-entry{display:grid;gap:6px;min-width:0}
+:is(#dashboard-view,#tasks-view) .support-area-entry-top{
+  display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:9px;
+  align-items:center;font-size:10.5px
+}
+:is(#dashboard-view,#tasks-view) .support-area-entry-top strong{
+  font-weight:650;color:var(--ink-primary);min-width:0;overflow-wrap:anywhere
+}
+:is(#dashboard-view,#tasks-view) .support-area-entry-count{font-size:9px;color:var(--ink-muted);white-space:nowrap}
+:is(#dashboard-view,#tasks-view) .support-area-entry-percent{
+  color:var(--kpi-color);font-family:var(--font-mono);font-size:11px;
+  min-width:45px;text-align:right;white-space:nowrap
+}
+:is(#dashboard-view,#tasks-view) .support-area-entry-track{
+  height:4px;border-radius:5px;background:var(--border-strong);overflow:hidden
+}
+:is(#dashboard-view,#tasks-view) .support-area-entry-track i{
+  display:block;width:var(--support-pct);max-width:100%;height:100%;
+  background:var(--kpi-color);border-radius:inherit;
+  transform-origin:left center;transform:scaleX(0);
+  transition:transform .60s cubic-bezier(.2,.8,.2,1)
+}
+:is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:hover,:focus-visible) .support-area-entry-track i{
+  transform:scaleX(1)
+}
+:is(#dashboard-view,#tasks-view) .support-area-popover-footer{
+  margin-top:11px;border-top:1px solid var(--border-base);padding-top:10px;
+  color:var(--ink-secondary);font-size:10px;line-height:1.35
+}
+:is(#dashboard-view,#tasks-view) .support-area-empty{
+  margin:0;font-size:11px;color:var(--ink-secondary);line-height:1.5;padding:8px 0
+}
+@media(prefers-reduced-motion:reduce){
+  :is(#dashboard-view,#tasks-view) .support-area-popover,
+  :is(#dashboard-view,#tasks-view) .support-area-entry-track i{transition:none!important}
+}
+
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -5424,7 +5496,7 @@ function refreshFilters(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
 }
 
-function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,proportion=null,badge=null,tone='neutral',rightText=''){
+function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,proportion=null,badge=null,tone='neutral',rightText='',extraMarkup=''){
   const percent=Number.isFinite(proportion)?Math.max(0,Math.min(100,proportion)):null;
   const safeTone=['neutral','cyan','green','blue','pink','teal'].includes(tone)?tone:'neutral';
   const text=badge?.text||'';
@@ -5437,11 +5509,15 @@ function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,pr
     </div>
     <div class="stat-detail-line"><span class="foot">${esc(foot)}</span>${rightText?`<strong class="stat-right">${esc(rightText)}</strong>`:''}</div>
     ${percent===null?'':`<span class="stat-meter" aria-hidden="true"><i style="width:${percent}%"></i></span>`}
+    ${extraMarkup}
   `;
-  const cls='stat kpi-reference kpi-'+safeTone+(drill?' stat-action':'')+(selected?' selected':'');
+  const cls='stat kpi-reference kpi-'+safeTone+(drill?' stat-action':'')+(selected?' selected':'')+(extraMarkup?' kpi-support':'');
+  const tooltipId=extraMarkup?(drill?'support-details-dashboard':'support-details-tasks'):'';
   return drill
-    ?`<button type="button" class="${cls}" data-drill="${esc(drill)}" aria-pressed="${selected}" title="Filtrar por: ${esc(label)}">${body}</button>`
-    :`<article class="${cls}">${body}</article>`;
+    ?`<button type="button" class="${cls}" data-drill="${esc(drill)}" aria-pressed="${selected}"${tooltipId?
+      ` aria-describedby="${tooltipId}" aria-label="Filtrar por: ${esc(label)}"`:
+      ` title="Filtrar por: ${esc(label)}"`}>${body}</button>`
+    :`<article class="${cls}"${tooltipId?` tabindex="0" aria-describedby="${tooltipId}"`:''}>${body}</article>`;
 }
 function currentWeekPerformance(rows){
   const week=isoWeekKey(new Date()),end=weekEnd(week);
@@ -5469,11 +5545,34 @@ function supportAreaMetrics(rows){
     total:rows.length,
     supported,
     percent:rows.length?100*supported/rows.length:0,
+    ranking:ranking.map(group=>({...group,percent:rows.length?100*group.count/rows.length:0})),
     primaryArea:top?.name||'',
     areaHelp:top?(ties.length>1?'Empate entre áreas: '+ties.join(', '):
       top.name+' · '+top.count+' actividad'+(top.count===1?'':'es')+' con este apoyo'):
       'No hay actividades con apoyo registrado en el alcance seleccionado.'
   };
+}
+function supportAreaPopover(support,view){
+  const total=support.total;
+  const items=support.ranking.map(area=>{
+    const percent=area.percent.toFixed(1);
+    return `<div class="support-area-entry">
+      <div class="support-area-entry-top">
+        <strong title="${esc(area.name)}">${esc(area.name)}</strong>
+        <span class="support-area-entry-count">${area.count} ${area.count===1?'tarea':'tareas'}</span>
+        <b class="support-area-entry-percent">${percent}%</b>
+      </div>
+      <div class="support-area-entry-track" aria-hidden="true"><i style="--support-pct:${percent}%"></i></div>
+    </div>`;
+  }).join('');
+  return `<div class="support-area-popover" id="support-details-${view}" role="tooltip">
+    <div class="support-area-popover-header">
+      <span>DESGLOSE POR ÁREA</span><strong>${support.percent.toFixed(1)}%</strong>
+    </div>
+    <p class="support-area-popover-context">Porcentaje sobre el total de ${total} ${total===1?'actividad':'actividades'} del alcance seleccionado.</p>
+    <div class="support-area-popover-list">${items||'<p class="support-area-empty">No hay apoyos registrados para este alcance.</p>'}</div>
+    <div class="support-area-popover-footer">${support.supported} de ${total} actividades con apoyo registrado</div>
+  </div>`;
 }
 function makeStats(rows,interactive=false){
   const s=stats(rows),selected=interactive?dashboardDrill:null,now=todayString(),month=now.slice(0,7);
@@ -5493,8 +5592,8 @@ function makeStats(rows,interactive=false){
      help:'Variación respecto a la última lectura real guardada del mes anterior ('+before.capturedOn+').'};
   if(!hasFullScope){trend.text='Sin comparativa filtrada';trend.kind='neutral';}
   const badge=(text,kind='neutral',help='')=>({text,kind,help});
-  const one=(label,value,foot,icon,accent,drill,tone,pct=null,mark=null,right='')=>
-    statCard(label,value,foot,icon,accent,interactive?drill:'',Boolean(selected&&selected.type===drill),pct,mark,tone,right);
+  const one=(label,value,foot,icon,accent,drill,tone,pct=null,mark=null,right='',extra='')=>
+    statCard(label,value,foot,icon,accent,interactive?drill:'',Boolean(selected&&selected.type===drill),pct,mark,tone,right,extra);
   const running=rows.filter(t=>categoryOf(t.status)==='progress');
   const onSchedule=running.filter(t=>!t.deadline||dueDays(t.deadline)>0).length;
   const support=supportAreaMetrics(rows);
@@ -5512,7 +5611,8 @@ function makeStats(rows,interactive=false){
     one('APOYO EN OTRAS ÁREAS',support.percent.toFixed(1)+'%',
       support.supported+' de '+support.total+' actividades con apoyo',
       SVG_ICONS.support,'blue','support','teal',support.percent,
-      support.percent.toFixed(1)==='0.0'?null:badge(support.primaryArea,'neutral',support.areaHelp))
+      support.percent.toFixed(1)==='0.0'?null:badge(support.primaryArea,'neutral',support.areaHelp),
+      '',supportAreaPopover(support,interactive?'dashboard':'tasks'))
   ].join('');
 }
 
