@@ -5511,6 +5511,26 @@ function renderTaskPagination(total){
     <button type="button" class="task-page-edge" onclick="changeTaskPage(${currentTaskPage+1})"
       ${currentTaskPage===max?'disabled':''} aria-label="Página siguiente">Siguiente</button>`;
 }
+// Orden solo para la tabla de Control de Tareas; no modifica el arreglo compartido
+// ni la secuencia histórica de Dashboard, Control Semanal o Supabase.
+function recentTaskFirst(a,b){
+  const aDate=taskCreationDate(a),bDate=taskCreationDate(b);
+  if(aDate!==bDate)return aDate>bDate?-1:1; // Fecha más nueva primero; sin fecha al final.
+  // Si Supabase dispone de marcas completas, respetar también la hora real de alta.
+  const timestamp=t=>typeof t.createdAt==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(t.createdAt)
+    ?Date.parse(t.createdAt):NaN;
+  const aTime=timestamp(a),bTime=timestamp(b);
+  if(Number.isFinite(aTime)&&Number.isFinite(bTime)&&aTime!==bTime)return bTime-aTime;
+  // Altas del mismo día sin hora: siguiente código BIM primero, sin inventar horas.
+  const seq=t=>/^BIM-(\d+)$/.exec(t.id||'');
+  const aId=seq(a),bId=seq(b);
+  if(aId&&bId&&Number(aId[1])!==Number(bId[1]))return Number(bId[1])-Number(aId[1]);
+  return String(b.id).localeCompare(String(a.id),'es',{numeric:true});
+}
+function taskRegistrationHint(t){
+  const date=taskCreationDate(t);
+  return date?'Fecha de registro: '+dateDisplay(date):'Fecha de registro no disponible';
+}
 function filteredTasks(){
   const q = $('#search').value.toLocaleLowerCase('es');
   return tasks.filter(t =>
@@ -5520,7 +5540,7 @@ function filteredTasks(){
     (!$('#filter-owner').value || t.owner === $('#filter-owner').value) &&
     (!$('#filter-status').value || t.status === $('#filter-status').value) &&
     (!$('#filter-team').value || t.team === $('#filter-team').value)
-  );
+  ).sort(recentTaskFirst);
 }
 
 function renderTasks(){
@@ -5545,7 +5565,7 @@ function renderTasks(){
     const al = alertStatus(t);
     const lodHtml = t.lod ? `<span class="lod-badge">${esc(t.lod)}</span>` : `<span class="cell-empty">-</span>`;
     const supportHtml = t.support ? `<span class="support-text">${esc(t.support)}</span>` : `<span class="cell-empty">-</span>`;
-    return `<tr data-task-row="${esc(t.id)}" tabindex="0" title="Doble clic para editar — Supr para eliminar" class="${selectedTaskId===t.id?'task-row-selected ':''}${isDone?'task-row-completed':''}">
+    return `<tr data-task-row="${esc(t.id)}" tabindex="0" title="${esc(taskRegistrationHint(t))}" class="${selectedTaskId===t.id?'task-row-selected ':''}${isDone?'task-row-completed':''}">
       <td><span class="id">${esc(t.id)}</span></td>
       <td><div class="task-name">${esc(t.title)}${taskEvidenceBadge(t.id)}</div></td>
       <td>${lodHtml}</td>
