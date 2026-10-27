@@ -7,7 +7,16 @@
 const PPT_BIM_VERSION='4.0.0';
 const PPT_BIM_ZIP_VERSION='3.10.1';
 let pptBimScriptPromise=null;
-let pptBimState={items:[],week:'',mode:'ingreso',busy:false,token:0,drafts:new Map()};
+const PPT_BIM_MEETING_DAY_KEY='bim-ppt-meeting-day';
+const PPT_BIM_MEETING_DAYS=['','lunes','martes','miércoles','jueves','viernes','sábado','domingo'];
+function pptBimSavedMeetingDay(){
+  try{
+    const day=Number(localStorage.getItem(PPT_BIM_MEETING_DAY_KEY));
+    return Number.isInteger(day)&&day>=1&&day<=7?day:3;
+  }catch(e){return 3}
+}
+let pptBimState={items:[],week:'',mode:'reunion',meetingDay:pptBimSavedMeetingDay(),
+  busy:false,token:0,drafts:new Map()};
 
 function pptBimLib(){
   const ctor=window.pptxgen||window.PptxGenJS;
@@ -83,15 +92,31 @@ function pptBimDownloadBlob(blob,fileName){
   setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
-// Fechas de ingreso: usar la zona horaria de Perú al convertir los ISO de Supabase.
-function pptBimIngresoWeek(photo){
+// Convertir las marcas de tiempo UTC a día local de Perú.
+function pptBimIngresoDate(photo){
   const date=new Date(String(photo.addedAt||''));
   if(!photo.addedAt||Number.isNaN(date.getTime()))return '';
   const parts=Intl.DateTimeFormat('es-PE',{
     timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'
   }).formatToParts(date);
   const fields=Object.fromEntries(parts.map(part=>[part.type,part.value]));
-  return isoWeekKey(new Date(Number(fields.year),Number(fields.month)-1,Number(fields.day),12));
+  return fields.year+'-'+fields.month+'-'+fields.day;
+}
+function pptBimIngresoWeek(photo){
+  const day=pptBimIngresoDate(photo);
+  return day?isoWeekKey(new Date(day+'T12:00:00')):'';
+}
+// Semana de la reunión: 7 días previos, hasta el día anterior (ambos inclusive).
+function pptBimMeetingPeriod(week,meetingDay=3){
+  const monday=weekStart(week);
+  if(!monday||!Number.isInteger(meetingDay)||meetingDay<1||meetingDay>7)return null;
+  const meeting=new Date(monday.getTime());
+  meeting.setUTCDate(meeting.getUTCDate()+meetingDay-1);
+  const start=new Date(meeting.getTime());
+  start.setUTCDate(start.getUTCDate()-7);
+  const end=new Date(meeting.getTime());
+  end.setUTCDate(end.getUTCDate()-1);
+  return {meeting:localISO(meeting),start:localISO(start),end:localISO(end)};
 }
 // La culminación corresponde a la FECHA REAL de término, no a la fecha límite.
 function pptBimCompletionWeek(task){
@@ -100,7 +125,9 @@ function pptBimCompletionWeek(task){
   const parsed=new Date(date+'T12:00:00');
   return Number.isNaN(parsed.getTime())?'':isoWeekKey(parsed);
 }
-function pptBimItemsForWeek(week,mode='ingreso'){
+function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3){
+  const meetingPeriod=mode==='reunion'?pptBimMeetingPeriod(week,meetingDay):null;
+  if(mode==='reunion'&&!meetingPeriod)return [];
   const packageFilter=$('#weekly-package')?.value||'';
   const teamFilter=$('#weekly-team')?.value||'';
   const ownerFilter=$('#weekly-owner')?.value||'';
@@ -112,6 +139,10 @@ function pptBimItemsForWeek(week,mode='ingreso'){
     if(mode==='culminacion'&&pptBimCompletionWeek(task)!==week)continue;
     for(const photo of taskEvidenceRecords(task.id)){
       if(mode==='ingreso'&&pptBimIngresoWeek(photo)!==week)continue;
+      if(mode==='reunion'){
+        const ingreso=pptBimIngresoDate(photo);
+        if(!ingreso||ingreso<meetingPeriod.start||ingreso>meetingPeriod.end)continue;
+      }
       out.push({
         id:photo.id,path:photo.path,taskId:task.id,
         package:task.package||'Sin paquete',
@@ -140,45 +171,72 @@ function pptBimRefreshModeInfo(){
     button.setAttribute('aria-pressed',String(button.dataset.bimPptMode===pptBimState.mode));
     button.disabled=pptBimState.busy;
   });
+  const daySelect=$('#bim-ppt-meeting-day');
+  if(daySelect){
+    daySelect.hidden=pptBimState.mode!=='reunion';
+    daySelect.disabled=pptBimState.busy;
+    daySelect.value=String(pptBimState.meetingDay);
+  }
   const label=$('#bim-ppt-week-label'),items=pptBimState.items;
   if(label)label.textContent='Semana '+pptBimState.week.replace('-W',' · ')+
     ' · '+items.length+' fotografía'+(items.length!==1?'s':'')+
     ' · '+new Set(items.map(x=>x.package)).size+' paquete(s)';
   const description=$('#bim-ppt-mode-note');
-  if(description)description.textContent=pptBimState.mode==='ingreso'
-    ?'Ingreso: fotografías cargadas durante esta semana (hora de Perú), independientemente del plazo de la actividad.'
-    :'Culminación: fotografías de actividades completadas durante esta semana; no implica que la foto se haya tomado ese día.';
+  if(!description)return;
+  if(pptBimState.mode==='reunion'){
+    const period=pptBimMeetingPeriod(pptBimState.week,pptBimState.meetingDay);
+    description.textContent=period
+      ?'Reunión '+PPT_BIM_MEETING_DAYS[pptBimState.meetingDay]+' '+dateDisplay(period.meeting)+
+       ' · Fotografías ingresadas del '+dateDisplay(period.start)+' al '+dateDisplay(period.end)+
+       ' (hora de Perú).'
+      :'No se pudo calcular el periodo de reunión.';
+  }else if(pptBimState.mode==='ingreso'){
+    description.textContent='Ingreso: fotografías cargadas durante la semana ISO seleccionada (hora de Perú).';
+  }else{
+    description.textContent='Culminación: fotografías de actividades completadas durante esta semana; no implica que la foto se haya tomado ese día.';
+  }
 }
-function setBimPptMode(mode){
-  if(pptBimState.busy||!['ingreso','culminacion'].includes(mode)||
-    !$('#bim-ppt-back')?.classList.contains('open')||mode===pptBimState.mode)return;
-  // Mantener las descripciones editadas si el usuario alterna entre criterios.
+function pptBimRefreshItems(mode=pptBimState.mode){
+  // Conservar descripciones y casillas por fotografía al cambiar día o criterio.
   for(const item of pptBimState.items)
     pptBimState.drafts.set(pptBimPhotoKey(item),{caption:item.caption,enabled:item.enabled});
-  const items=pptBimItemsForWeek(pptBimState.week,mode);
+  const items=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay);
   pptBimState.items=items.map(item=>({
     ...item,...(pptBimState.drafts.get(pptBimPhotoKey(item))||{}),enabled:
     pptBimState.drafts.get(pptBimPhotoKey(item))?.enabled??true
   }));
   pptBimState.mode=mode;
-  pptBimState.token++; // Invalidar vistas previas pendientes del criterio anterior.
+  pptBimState.token++;
   const progress=$('#bim-ppt-progress');
   if(progress)progress.textContent='';
   renderBimPptExport();
   loadBimPptThumbnails(pptBimState.token);
+}
+function setBimPptMode(mode){
+  if(pptBimState.busy||!['ingreso','culminacion','reunion'].includes(mode)||
+    !$('#bim-ppt-back')?.classList.contains('open')||mode===pptBimState.mode)return;
+  pptBimRefreshItems(mode);
+}
+function setBimPptMeetingDay(value){
+  if(pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open'))return;
+  const day=Number(value);
+  if(!Number.isInteger(day)||day<1||day>7||day===pptBimState.meetingDay)return;
+  pptBimState.meetingDay=day;
+  try{localStorage.setItem(PPT_BIM_MEETING_DAY_KEY,String(day))}catch(e){}
+  pptBimRefreshItems();
 }
 function openBimPptExport(){
   if(currentView!=='weekly'){toast('Ingresa a Control Semanal para exportar el informe.');return}
   if(!window.bimEvidenceCloud||!window.bimEvidenceCloud.ready()){
     toast('Supabase Storage no está disponible. Comprueba la conexión.');return;
   }
-  const items=pptBimItemsForWeek(selectedWeek,'ingreso');
+  const meetingDay=pptBimSavedMeetingDay();
+  const items=pptBimItemsForWeek(selectedWeek,'reunion',meetingDay);
   pptBimState={items:items.map(x=>({...x,enabled:true})),
-    week:selectedWeek,mode:'ingreso',busy:false,token:pptBimState.token+1,drafts:new Map()};
+    week:selectedWeek,mode:'reunion',meetingDay,busy:false,token:pptBimState.token+1,drafts:new Map()};
   renderBimPptExport();
   $('#bim-ppt-back').classList.add('open');
   document.body.style.overflow='hidden';
-  // Las miniaturas se cargan con URLs firmadas, nunca con enlaces públicos.
   loadBimPptThumbnails(pptBimState.token);
 }
 function closeBimPptExport(){
@@ -288,7 +346,7 @@ function pptBimFit(innerW,innerH,iw,ih){
   const ratio=Math.min(innerW/iw,innerH/ih);
   return {w:iw*ratio,h:ih*ratio};
 }
-function pptBimCover(pptx,week,groups,imageCount){
+function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null){
   const slide=pptx.addSlide();
   pptBimMaster(slide,pptx);
   const S=pptx.ShapeType;
@@ -297,7 +355,11 @@ function pptBimCover(pptx,week,groups,imageCount){
   slide.addShape(S.rect,{x:.55,y:1.89,w:12.18,h:.12,fill:{color:'C00000'},line:{color:'C00000'}});
   pptBimAddText(slide,'CONTROL SEMANAL · '+week.replace('-W',' / SEMANA '),
     {x:.55,y:2.37,w:12,h:.55,fontSize:22,bold:true});
-  pptBimAddText(slide,'Evidencias vinculadas a entregables registrados en Control de Tareas',
+  const detail=meetingPeriod
+    ?'REUNIÓN '+dateDisplay(meetingPeriod.meeting)+' · INGRESO '+dateDisplay(meetingPeriod.start)+
+     ' AL '+dateDisplay(meetingPeriod.end)
+    :'Evidencias vinculadas a entregables registrados en Control de Tareas';
+  pptBimAddText(slide,detail,
     {x:.55,y:3.1,w:12,h:.43,fontSize:14,color:'525D6C'});
   pptBimAddText(slide,'PAQUETES: '+groups+'     FOTOGRAFÍAS: '+imageCount,
     {x:.55,y:4.11,w:12,h:.55,fontSize:18,color:'172B49',bold:true});
@@ -407,7 +469,8 @@ async function exportBimPpt(){
     // El ampersand debe escaparse para no invalidar todo el PowerPoint.
     pptx.company='ÁREA BIM | S&amp;P';
     const groups=new Set(included.map(item=>item.package||'Sin paquete'));
-    pptBimCover(pptx,pptBimState.week,groups.size,included.length);
+    pptBimCover(pptx,pptBimState.week,groups.size,included.length,
+      pptBimState.mode==='reunion'?pptBimMeetingPeriod(pptBimState.week,pptBimState.meetingDay):null);
     const decoded=[];
     for(const photo of included){
       if(runToken!==pptBimState.token)throw new Error('La exportación fue interrumpida');
