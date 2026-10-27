@@ -5505,7 +5505,7 @@ function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,pr
     <div class="stat-head"><span class="label">${esc(label)}</span><span class="stamp ${accent}">${iconSvg}</span></div>
     <div class="stat-number-line">
       <span class="val">${esc(val)}</span>
-      ${text?`<span class="stat-kpi-badge ${badgeKind}" ${badge.help?`title="${esc(badge.help)}"`:''}>${esc(text)}</span>`:''}
+      ${text?`<span class="stat-kpi-badge ${badgeKind}" ${badge.help&&!extraMarkup?`title="${esc(badge.help)}"`:''}>${esc(text)}</span>`:''}
     </div>
     <div class="stat-detail-line"><span class="foot">${esc(foot)}</span>${rightText?`<strong class="stat-right">${esc(rightText)}</strong>`:''}</div>
     ${percent===null?'':`<span class="stat-meter" aria-hidden="true"><i style="width:${percent}%"></i></span>`}
