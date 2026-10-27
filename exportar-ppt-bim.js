@@ -268,7 +268,8 @@ document.addEventListener('click',event=>{
 function setBimPptMeetingDay(value){
   if(pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open'))return;
   const day=Number(value);
-  if(!Number.isInteger(day)||day<1||day>7||day===pptBimState.meetingDay)return;
+  if(!Number.isInteger(day)||day<1||day>7)return;
+  if(day===pptBimState.meetingDay){closeBimPptMeetingMenu(true);return}
   pptBimState.meetingDay=day;
   try{localStorage.setItem(PPT_BIM_MEETING_DAY_KEY,String(day))}catch(e){}
   pptBimRefreshItems();
