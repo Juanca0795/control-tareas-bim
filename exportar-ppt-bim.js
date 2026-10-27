@@ -171,12 +171,20 @@ function pptBimRefreshModeInfo(){
     button.setAttribute('aria-pressed',String(button.dataset.bimPptMode===pptBimState.mode));
     button.disabled=pptBimState.busy;
   });
-  const daySelect=$('#bim-ppt-meeting-day');
-  if(daySelect){
-    daySelect.hidden=pptBimState.mode!=='reunion';
-    daySelect.disabled=pptBimState.busy;
-    daySelect.value=String(pptBimState.meetingDay);
+  const dayPicker=$('#bim-ppt-day-picker');
+  const dayTrigger=$('#bim-ppt-meeting-trigger');
+  if(dayPicker)dayPicker.hidden=pptBimState.mode!=='reunion';
+  if(dayTrigger){
+    dayTrigger.disabled=pptBimState.busy;
+    $('#bim-ppt-meeting-label').textContent=
+      PPT_BIM_MEETING_DAYS[pptBimState.meetingDay].replace(/^./,c=>c.toUpperCase());
   }
+  document.querySelectorAll('[data-bim-meeting-day]').forEach(option=>{
+    option.setAttribute('aria-selected',
+      String(Number(option.dataset.bimMeetingDay)===pptBimState.meetingDay));
+    option.disabled=pptBimState.busy;
+  });
+  if(pptBimState.mode!=='reunion'||pptBimState.busy)closeBimPptMeetingMenu();
   const label=$('#bim-ppt-week-label'),items=pptBimState.items;
   if(label)label.textContent='Semana '+pptBimState.week.replace('-W',' · ')+
     ' · '+items.length+' fotografía'+(items.length!==1?'s':'')+
@@ -215,8 +223,48 @@ function pptBimRefreshItems(mode=pptBimState.mode){
 function setBimPptMode(mode){
   if(pptBimState.busy||!['ingreso','culminacion','reunion'].includes(mode)||
     !$('#bim-ppt-back')?.classList.contains('open')||mode===pptBimState.mode)return;
+  closeBimPptMeetingMenu();
   pptBimRefreshItems(mode);
 }
+// Menú propio: sin los márgenes adicionales del desplegable nativo del navegador.
+function closeBimPptMeetingMenu(restoreFocus=false){
+  const menu=$('#bim-ppt-meeting-menu'),trigger=$('#bim-ppt-meeting-trigger');
+  if(!menu||!trigger)return;
+  menu.hidden=true;
+  trigger.setAttribute('aria-expanded','false');
+  if(restoreFocus)trigger.focus();
+}
+function toggleBimPptMeetingMenu(){
+  const menu=$('#bim-ppt-meeting-menu'),trigger=$('#bim-ppt-meeting-trigger');
+  if(!menu||!trigger||trigger.disabled)return;
+  const opening=menu.hidden;
+  if(!opening){closeBimPptMeetingMenu();return}
+  menu.hidden=false;
+  trigger.setAttribute('aria-expanded','true');
+  const active=menu.querySelector('[aria-selected="true"]')||
+    menu.querySelector('[data-bim-meeting-day]');
+  active?.focus();
+}
+function handleBimPptMeetingKey(event){
+  const menu=$('#bim-ppt-meeting-menu');
+  if(event.key==='Escape'&&!menu?.hidden){
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    closeBimPptMeetingMenu(true);
+    return;
+  }
+  if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+    event.preventDefault();
+    if(menu?.hidden){toggleBimPptMeetingMenu();return}
+    const options=[...menu.querySelectorAll('[data-bim-meeting-day]')];
+    if(!options.length)return;
+    const index=options.indexOf(document.activeElement);
+    const shift=event.key==='ArrowDown'?1:-1;
+    options[(index+shift+options.length)%options.length].focus();
+  }
+}
+document.addEventListener('click',event=>{
+  if(!event.target.closest('#bim-ppt-day-picker'))closeBimPptMeetingMenu();
+});
 function setBimPptMeetingDay(value){
   if(pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open'))return;
   const day=Number(value);
@@ -224,6 +272,7 @@ function setBimPptMeetingDay(value){
   pptBimState.meetingDay=day;
   try{localStorage.setItem(PPT_BIM_MEETING_DAY_KEY,String(day))}catch(e){}
   pptBimRefreshItems();
+  closeBimPptMeetingMenu(true);
 }
 function openBimPptExport(){
   if(currentView!=='weekly'){toast('Ingresa a Control Semanal para exportar el informe.');return}
@@ -241,6 +290,7 @@ function openBimPptExport(){
 }
 function closeBimPptExport(){
   if(pptBimState.busy)return;
+  closeBimPptMeetingMenu();
   $('#bim-ppt-back').classList.remove('open');
   document.body.style.overflow='';
   pptBimState.token++;
