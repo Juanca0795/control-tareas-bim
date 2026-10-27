@@ -4927,11 +4927,13 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   animation:bim-intro-draw 1.75s cubic-bezier(.31,.03,.25,1) forwards;
   animation-delay:var(--draw-at,0s)
 }
-.bim-intro-line.accent{stroke:#ee5b9f;stroke-width:2}
+.bim-intro-line.accent{stroke:#d71920;stroke-width:2;filter:drop-shadow(0 0 3px rgba(215,25,32,.5))}
 .bim-intro-line.muted{stroke:#7a9dae;stroke-width:1.6;filter:none}
+.bim-intro-line.soft{stroke:#8eabb5;stroke-width:1.3;filter:none}
+.bim-intro-line.structure{stroke:#6aefd3;stroke-width:1.9}
 .bim-intro-cursor{
   fill:#34e7bf;filter:drop-shadow(0 0 6px #38f7ce);
-  opacity:0;animation:bim-intro-cursor 2.4s ease-in-out 1.5s forwards
+  opacity:0;animation:bim-intro-cursor 1.8s ease-in-out 3.65s forwards
 }
 .bim-intro-name{
   margin:0;color:#eaf8f7;
@@ -4939,7 +4941,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   letter-spacing:.2em;text-indent:.2em;text-align:center;
   opacity:0;transform:translateY(12px);
   text-shadow:0 0 22px rgba(46,219,178,.23);
-  animation:bim-intro-name-in .8s ease 3.25s forwards
+  animation:bim-intro-name-in .8s ease 4.35s forwards
 }
 @keyframes bim-intro-draw{to{stroke-dashoffset:0}}
 @keyframes bim-intro-guide{
@@ -5598,7 +5600,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   </div>
 </div>
 
-<!-- Animación de trazos inspirada en la referencia, integrada en la identidad BIM. -->
+<!-- Área BIM: perspectiva coherente de tres cuartos, ilustrada mediante trazos SVG. -->
 <div id="bim-brand-intro" class="bim-brand-intro" role="dialog" aria-modal="true"
   aria-label="Presentación del Área BIM" hidden
   onclick="if(event.target===this)closeBimBrandIntro()">
@@ -5606,58 +5608,106 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     onclick="closeBimBrandIntro()">×</button>
   <div class="bim-intro-scene">
     <svg class="bim-intro-graphic" viewBox="0 0 600 390" fill="none"
-      role="img" aria-label="Una persona trabajando frente a una computadora, dibujada progresivamente con líneas luminosas">
+      role="img" aria-label="Un especialista BIM visto desde atrás y en tres cuartos trabaja ante un monitor y escritorio inclinados, mientras se dibuja una estructura BIM tridimensional en pantalla">
       <g class="bim-intro-guides" aria-hidden="true">
-        <circle cx="208" cy="131" r="70"/><circle cx="205" cy="132" r="96"/>
-        <circle cx="369" cy="196" r="139"/><circle cx="421" cy="179" r="89"/>
-        <circle cx="308" cy="271" r="62"/>
-        <path d="M72 320H537M208 31V325M420 55V323"/>
+        <circle cx="225" cy="143" r="76"/><circle cx="225" cy="143" r="99"/>
+        <circle cx="430" cy="168" r="121"/><circle cx="430" cy="168" r="144"/>
+        <path d="M75 312H555M225 42V320M429 27V321"/>
       </g>
-      <!-- Silueta: cabeza y perfil. -->
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:.16s"
-        d="M180 135C171 117 176 98 190 89C206 78 224 80 237 91C252 103 251 124 244 138
-           C240 145 237 151 233 157C225 174 209 181 193 175C184 170 181 160 178 149"/>
-      <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.5s"
-        d="M178 130Q166 126 167 141Q168 152 180 151M230 129Q236 131 241 130
-           M224 144Q228 146 232 144"/>
-      <!-- Cabello y auricular. -->
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:.73s"
-        d="M177 128Q162 104 183 88Q200 72 222 80Q247 85 253 112
-           M179 111Q201 101 218 102Q231 100 242 116"/>
-      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:1.0s"
-        d="M168 126Q155 109 166 96Q179 81 191 82M174 124Q181 113 191 118
-           M168 129Q165 137 173 143"/>
-      <!-- Torso, silla, hombro y brazos escribiendo. -->
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:1.15s"
-        d="M189 178Q169 184 152 201Q142 222 147 263L150 311
-           M211 178Q246 182 266 210Q276 230 284 259
-           L323 277Q333 281 350 278"/>
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:1.47s"
-        d="M166 221Q166 245 178 265L214 290Q226 299 252 299
-           M222 227Q241 251 258 274L299 295Q309 302 331 296"/>
-      <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.7s"
-        d="M143 226Q124 232 123 255V323Q128 330 136 328
-           M145 315L145 351M148 351H189"/>
-      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:1.87s"
-        d="M321 277Q331 269 343 275L356 281M322 296Q335 288 349 293"/>
-      <!-- Monitor, interfaz y soporte. -->
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:1.32s"
-        d="M335 135Q335 128 343 128H496Q505 128 505 137V246Q505 254 497 254
-           H343Q335 254 335 247Z"/>
-      <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.87s"
-        d="M348 141H492V241H348Z M420 254V288 M393 288H446"/>
-      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:2.1s"
-        d="M364 166L376 177L364 188M391 188H419M363 203H400
-           M411 203H440M364 217H380"/>
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:2.3s"
-        d="M311 305L332 288H475L493 305Z
-           M319 311H489M320 296H473"/>
-      <path class="bim-intro-line muted" pathLength="100" style="--draw-at:2.62s"
-        d="M119 317H526M137 323V362M502 323V362
-           M108 317Q101 318 102 324Q104 329 111 327H524Q531 327 531 321Q530 317 525 317"/>
-      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:2.8s"
-        d="M342 288H464M162 353H202"/>
-      <circle class="bim-intro-cursor" cx="382" cy="185" r="3.5"/>
+
+      <!-- 1. Perspectiva del escritorio: fondo más estrecho, borde frontal más ancho. -->
+      <g aria-hidden="true">
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.10s;--draw-duration:.80s"
+          d="M151 264L501 264L552 308Q559 315 549 317H69Q62 315 68 309Z"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:.23s;--draw-duration:.72s"
+          d="M70 317H548M103 318L97 360M519 318L531 360M86 361H110M519 361H542"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.35s;--draw-duration:.67s"
+          d="M153 269L501 269M94 311H541"/>
+        <!-- El monitor se presenta oblicuo hacia la persona y el espectador. -->
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:.50s;--draw-duration:1.05s"
+          d="M348 119L495 87Q501 86 503 92L525 213Q527 219 520 221L368 252
+             Q361 254 360 245L342 130Q341 122 348 119Z"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.72s;--draw-duration:.88s"
+          d="M359 131L492 103L510 210L373 237Z
+             M367 148L496 122"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.93s;--draw-duration:.63s"
+          d="M435 238L442 269M422 273L462 265L484 275L407 286Z"/>
+        <!-- Teclado y ratón siguen los mismos ejes de fuga. -->
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:1.02s;--draw-duration:.80s"
+          d="M302 295L393 278L432 299L332 313Z"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.20s;--draw-duration:.56s"
+          d="M314 297L399 284M323 304L416 290M340 309L424 296
+             M334 291L342 307M361 286L372 305M389 281L405 301"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.29s;--draw-duration:.48s"
+          d="M454 294Q459 287 465 289Q470 291 471 298Q465 305 458 302Q453 300 454 294Z"/>
+      </g>
+
+      <!-- 2. Persona desde atrás, con cabeza orientada hacia la pantalla. -->
+      <g aria-hidden="true">
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:1.36s;--draw-duration:1.00s"
+          d="M200 168C189 159 183 140 187 119Q189 97 207 87
+             Q227 76 246 86Q261 96 262 116
+             Q265 124 268 131Q269 135 263 139
+             Q261 157 252 166Q242 178 223 177"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:1.53s;--draw-duration:.78s"
+          d="M189 126Q185 107 199 93Q219 76 239 84
+             Q257 90 261 110M196 105Q210 93 230 97Q247 99 256 114"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.74s;--draw-duration:.62s"
+          d="M205 171L207 186M249 168L253 187
+             M251 137Q259 136 263 135"/>
+        <path class="bim-intro-line accent" pathLength="100" style="--draw-at:1.85s;--draw-duration:.54s"
+          d="M188 122Q182 112 189 100Q196 88 206 86"/>
+        <!-- Espalda curva hacia la derecha, sin ojos ni rostro frontal. -->
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:1.98s;--draw-duration:.95s"
+          d="M206 186Q181 185 165 201Q151 217 157 250L164 292
+             Q184 307 217 307Q251 308 276 297
+             M253 186Q277 197 287 221Q292 235 300 250"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:2.13s;--draw-duration:.71s"
+          d="M205 194Q215 206 229 207Q247 205 256 192
+             M213 207Q206 250 223 289
+             M193 286Q217 296 255 296"/>
+        <!-- Brazos dirigidos al teclado, no hacia el espectador. -->
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:2.28s;--draw-duration:.77s"
+          d="M271 207Q289 226 301 251L328 282
+             Q336 285 344 286
+             M280 228Q291 254 310 274L331 290"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:2.47s;--draw-duration:.70s"
+          d="M170 228Q175 254 191 269L252 292
+             Q277 300 307 297L327 291"/>
+        <path class="bim-intro-line accent" pathLength="100" style="--draw-at:2.60s;--draw-duration:.50s"
+          d="M328 282Q339 278 347 282L357 285
+             M323 291Q337 290 343 295"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:2.67s;--draw-duration:.65s"
+          d="M157 220Q135 229 130 254L129 305
+             M129 306Q136 314 150 309M138 310L137 347M124 349H161"/>
+      </g>
+
+      <!-- 3. Modelo estructural BIM isométrico proyectado en la pantalla oblicua. -->
+      <g aria-hidden="true">
+        <path class="bim-intro-line structure" pathLength="100" style="--draw-at:2.87s;--draw-duration:.63s"
+          d="M383 164L425 146L474 154L431 173Z"/>
+        <path class="bim-intro-line structure" pathLength="100" style="--draw-at:3.04s;--draw-duration:.66s"
+          d="M383 164V209L431 218V173
+             M474 154V198L431 218"/>
+        <path class="bim-intro-line structure" pathLength="100" style="--draw-at:3.20s;--draw-duration:.55s"
+          d="M403 168V213M450 165V209M425 146V190"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:3.36s;--draw-duration:.57s"
+          d="M383 179L431 188L474 170
+             M383 194L431 203L474 184"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:3.51s;--draw-duration:.55s"
+          d="M403 183L448 164M403 198L448 180
+             M425 190L474 170"/>
+        <path class="bim-intro-line accent" pathLength="100" style="--draw-at:3.67s;--draw-duration:.47s"
+          d="M383 194L431 203L474 184"/>
+        <path class="bim-intro-line soft" pathLength="100" style="--draw-at:3.82s;--draw-duration:.47s"
+          d="M372 154L385 151M372 163L379 161
+             M477 144L490 141M478 221L501 217"/>
+      </g>
+
+      <!-- 4. Últimos trazos de acento y firma ÁREA BIM. -->
+      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:3.96s;--draw-duration:.43s"
+        d="M466 235L495 229M207 356L317 356"/>
+      <circle class="bim-intro-cursor" cx="431" cy="202" r="3.5"/>
     </svg>
     <h2 class="bim-intro-name">ÁREA BIM</h2>
   </div>
