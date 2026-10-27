@@ -5814,11 +5814,11 @@ function taskFacetChip(field,value,tone){
   const control=field==='team'?'#filter-team':'#filter-status';
   const active=$(control)?.value===value;
   const label=field==='team'?'disciplina':'estado';
-  const command=active?'Quitar filtro':'Filtrar por';
+  const command=active?'Quitar filtro de':'Filtrar por';
   return `<button type="button" class="chip ${esc(tone)} task-facet-chip${active?' is-active':''}"
     data-task-facet="${field}" data-task-facet-value="${esc(value)}"
     aria-pressed="${active?'true':'false'}"
-    aria-label="${command} de ${label}: ${esc(value)}"
+    aria-label="${command} ${label}: ${esc(value)}"
     title="${command} ${label}: ${esc(value)}">${esc(value)}</button>`;
 }
 function handleTaskFacetClick(event){
