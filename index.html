@@ -4884,14 +4884,14 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 }
 
 
-/* Animación de identidad BIM: activación sobre el título, sin estética de botón. */
+/* Animación de identidad BIM: título textual, no control visual tipo botón. */
 .brand .bim-brand-title{display:block;cursor:pointer;user-select:none}
-.brand .bim-brand-title:focus-visible{outline:2px solid #36d7b4;outline-offset:4px;border-radius:2px}
+.brand .bim-brand-title:focus-visible{outline:2px solid #41dfbc;outline-offset:4px;border-radius:2px}
 .bim-brand-intro{
   position:fixed;inset:0;z-index:12000;display:grid;place-items:center;
-  padding:clamp(16px,4vw,48px);background:rgba(4,9,17,.97);
-  color:#f1f5f9;opacity:0;transition:opacity .25s ease;
-  isolation:isolate
+  padding:clamp(16px,4vw,48px);
+  background:radial-gradient(ellipse 65% 60% at 51% 47%,rgba(17,61,71,.25),transparent 76%),rgba(4,9,17,.98);
+  color:#f1f5f9;opacity:0;transition:opacity .25s ease;isolation:isolate
 }
 .bim-brand-intro[hidden]{display:none!important}
 .bim-brand-intro.is-open{opacity:1}
@@ -4903,54 +4903,55 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   cursor:pointer;transition:color .2s,border-color .2s
 }
 .bim-intro-close:hover,.bim-intro-close:focus-visible{
-  color:#fff;border-color:#33d9b5;outline:none
+  color:#fff;border-color:#41dfbc;outline:none
 }
 .bim-intro-scene{
   width:min(680px,100%);max-height:calc(100dvh - 90px);
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:clamp(4px,1.6vh,18px);overflow:hidden
+  gap:clamp(5px,1.6vh,18px);overflow:hidden
 }
 .bim-intro-graphic{
   display:block;width:min(600px,100%);height:auto;
   max-height:min(58dvh,440px);overflow:visible
 }
 .bim-intro-guides circle,.bim-intro-guides path{
-  fill:none;stroke:#597385;stroke-width:.85;opacity:.23;
-  transform-origin:center;animation:bim-intro-guide 5s ease-in-out infinite alternate
+  fill:none;stroke:#6b8390;stroke-width:.8;opacity:.17;
+  transform-origin:center;animation:bim-intro-guide 6s ease-in-out infinite alternate
 }
-.bim-intro-guides circle:nth-child(even){animation-delay:-1.8s}
+.bim-intro-guides circle:nth-child(even){animation-delay:-2s}
 .bim-intro-line{
-  fill:none;stroke:#35e6bd;stroke-width:2.3;
+  fill:none;stroke:#4ce5c5;stroke-width:2.15;
   stroke-linecap:round;stroke-linejoin:round;
   stroke-dasharray:100;stroke-dashoffset:100;
-  filter:drop-shadow(0 0 4px rgba(27,214,171,.36));
-  animation:bim-intro-draw 1.75s cubic-bezier(.31,.03,.25,1) forwards;
+  filter:drop-shadow(0 0 4px rgba(35,218,173,.3));
+  animation:bim-intro-draw var(--draw-duration,.9s) cubic-bezier(.3,.04,.27,1) both;
   animation-delay:var(--draw-at,0s)
 }
-.bim-intro-line.accent{stroke:#ee5b9f;stroke-width:2}
-.bim-intro-line.muted{stroke:#7a9dae;stroke-width:1.6;filter:none}
+.bim-intro-line.muted{stroke:#819daf;stroke-width:1.45;filter:none}
+.bim-intro-line.soft{stroke:#9bb7bd;stroke-width:1.15;filter:none}
+.bim-intro-line.structure{stroke:#72f4d3;stroke-width:1.7}
+.bim-intro-line.accent{stroke:#e33d47;stroke-width:2.1;filter:drop-shadow(0 0 4px rgba(215,25,32,.32))}
 .bim-intro-cursor{
-  fill:#34e7bf;filter:drop-shadow(0 0 6px #38f7ce);
-  opacity:0;animation:bim-intro-cursor 2.4s ease-in-out 1.5s forwards
+  fill:#e33d47;filter:drop-shadow(0 0 7px rgba(215,25,32,.7));
+  opacity:0;animation:bim-intro-cursor 1.8s ease-in-out 3.55s forwards
 }
 .bim-intro-name{
-  margin:0;color:#eaf8f7;
+  margin:0;color:#edf8f5;
   font:700 clamp(27px,5vw,41px)/1.15 "Space Grotesk",Inter,sans-serif;
   letter-spacing:.2em;text-indent:.2em;text-align:center;
-  opacity:0;transform:translateY(12px);
-  text-shadow:0 0 22px rgba(46,219,178,.23);
-  animation:bim-intro-name-in .8s ease 3.25s forwards
+  opacity:0;transform:translateY(10px);
+  text-shadow:0 0 18px rgba(46,219,178,.22);
+  animation:bim-intro-name-in .8s ease 4.35s forwards
 }
 @keyframes bim-intro-draw{to{stroke-dashoffset:0}}
 @keyframes bim-intro-guide{
-  0%{opacity:.12;transform:scale(.98)}
-  100%{opacity:.29;transform:scale(1.018)}
+  0%{opacity:.09;transform:scale(.99)}
+  100%{opacity:.22;transform:scale(1.014)}
 }
 @keyframes bim-intro-name-in{to{opacity:1;transform:translateY(0)}}
 @keyframes bim-intro-cursor{
-  0%{opacity:0}
-  35%,80%{opacity:1}
-  100%{opacity:0}
+  0%,100%{opacity:0}
+  30%,75%{opacity:1}
 }
 @media(max-width:580px){
   .bim-intro-graphic{width:100%;max-height:54dvh}
@@ -5598,7 +5599,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   </div>
 </div>
 
-<!-- Animación de trazos inspirada en la referencia, integrada en la identidad BIM. -->
+<!-- Presentación de identidad BIM: dibujo progresivo de especialista y estructura 3D. -->
 <div id="bim-brand-intro" class="bim-brand-intro" role="dialog" aria-modal="true"
   aria-label="Presentación del Área BIM" hidden
   onclick="if(event.target===this)closeBimBrandIntro()">
@@ -5606,58 +5607,94 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     onclick="closeBimBrandIntro()">×</button>
   <div class="bim-intro-scene">
     <svg class="bim-intro-graphic" viewBox="0 0 600 390" fill="none"
-      role="img" aria-label="Una persona trabajando frente a una computadora, dibujada progresivamente con líneas luminosas">
+      role="img" aria-label="Se dibujan una mesa y una computadora, luego un especialista BIM y finalmente un modelo estructural 3D dentro de la pantalla">
+      <!-- Referencias circulares de dibujo técnico, en segundo plano. -->
       <g class="bim-intro-guides" aria-hidden="true">
-        <circle cx="208" cy="131" r="70"/><circle cx="205" cy="132" r="96"/>
-        <circle cx="369" cy="196" r="139"/><circle cx="421" cy="179" r="89"/>
-        <circle cx="308" cy="271" r="62"/>
-        <path d="M72 320H537M208 31V325M420 55V323"/>
+        <circle cx="207" cy="144" r="83"/><circle cx="207" cy="144" r="105"/>
+        <circle cx="423" cy="191" r="121"/><circle cx="423" cy="191" r="146"/>
+        <path d="M69 320H546M205 45V316M421 39V313M78 92H540"/>
       </g>
-      <!-- Silueta: cabeza y perfil. -->
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:.16s"
-        d="M180 135C171 117 176 98 190 89C206 78 224 80 237 91C252 103 251 124 244 138
-           C240 145 237 151 233 157C225 174 209 181 193 175C184 170 181 160 178 149"/>
-      <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.5s"
-        d="M178 130Q166 126 167 141Q168 152 180 151M230 129Q236 131 241 130
-           M224 144Q228 146 232 144"/>
-      <!-- Cabello y auricular. -->
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:.73s"
-        d="M177 128Q162 104 183 88Q200 72 222 80Q247 85 253 112
-           M179 111Q201 101 218 102Q231 100 242 116"/>
-      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:1.0s"
-        d="M168 126Q155 109 166 96Q179 81 191 82M174 124Q181 113 191 118
-           M168 129Q165 137 173 143"/>
-      <!-- Torso, silla, hombro y brazos escribiendo. -->
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:1.15s"
-        d="M189 178Q169 184 152 201Q142 222 147 263L150 311
-           M211 178Q246 182 266 210Q276 230 284 259
-           L323 277Q333 281 350 278"/>
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:1.47s"
-        d="M166 221Q166 245 178 265L214 290Q226 299 252 299
-           M222 227Q241 251 258 274L299 295Q309 302 331 296"/>
-      <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.7s"
-        d="M143 226Q124 232 123 255V323Q128 330 136 328
-           M145 315L145 351M148 351H189"/>
-      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:1.87s"
-        d="M321 277Q331 269 343 275L356 281M322 296Q335 288 349 293"/>
-      <!-- Monitor, interfaz y soporte. -->
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:1.32s"
-        d="M335 135Q335 128 343 128H496Q505 128 505 137V246Q505 254 497 254
-           H343Q335 254 335 247Z"/>
-      <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.87s"
-        d="M348 141H492V241H348Z M420 254V288 M393 288H446"/>
-      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:2.1s"
-        d="M364 166L376 177L364 188M391 188H419M363 203H400
-           M411 203H440M364 217H380"/>
-      <path class="bim-intro-line" pathLength="100" style="--draw-at:2.3s"
-        d="M311 305L332 288H475L493 305Z
-           M319 311H489M320 296H473"/>
-      <path class="bim-intro-line muted" pathLength="100" style="--draw-at:2.62s"
-        d="M119 317H526M137 323V362M502 323V362
-           M108 317Q101 318 102 324Q104 329 111 327H524Q531 327 531 321Q530 317 525 317"/>
-      <path class="bim-intro-line accent" pathLength="100" style="--draw-at:2.8s"
-        d="M342 288H464M162 353H202"/>
-      <circle class="bim-intro-cursor" cx="382" cy="185" r="3.5"/>
+      <!-- 1. Primero se dibuja el escritorio, el monitor y el teclado. -->
+      <g aria-hidden="true">
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.1s;--draw-duration:.8s"
+          d="M89 314H545Q554 314 554 321Q554 328 544 328H88Q80 328 80 321Q80 314 89 314Z"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:.25s;--draw-duration:.8s"
+          d="M111 329V361M513 329V361M100 362H134M492 362H526"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:.42s;--draw-duration:1.05s"
+          d="M343 109H520Q531 109 531 120V255Q531 266 520 266H343
+             Q332 266 332 255V120Q332 109 343 109Z"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.61s;--draw-duration:.85s"
+          d="M345 124H519V249H345ZM345 142H519M430 266V288M401 290H458"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:.85s;--draw-duration:.65s"
+          d="M356 133H366M373 133H385M492 133H509"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:.9s;--draw-duration:.8s"
+          d="M309 310L330 291H482L509 310ZM329 297H478M317 306H501"/>
+        <path class="bim-intro-line soft" pathLength="100" style="--draw-at:1.03s;--draw-duration:.8s"
+          d="M341 298L336 303M366 298L363 303M392 298L391 303M418 298L419 303
+             M443 298L448 303M468 298L477 303M353 305H460"/>
+      </g>
+      <!-- 2. Ingeniero BIM: silueta proporcionada, rostro, manos y postura. -->
+      <g aria-hidden="true">
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:1.15s;--draw-duration:1.06s"
+          d="M176 133C172 116 175 98 185 88C196 75 215 73 229 81
+             C243 89 247 106 244 122L250 139Q252 145 245 149L240 151
+             Q238 168 226 177Q213 186 197 177L187 169"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:1.3s;--draw-duration:.8s"
+          d="M175 131Q158 108 172 91Q182 75 201 74Q225 67 240 84
+             Q256 99 248 117M177 115Q195 98 213 100Q228 103 240 111"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.56s;--draw-duration:.6s"
+          d="M176 130Q166 125 165 135Q165 146 179 149
+             M235 127L242 126M230 144Q235 146 240 143"/>
+        <path class="bim-intro-line accent" pathLength="100" style="--draw-at:1.72s;--draw-duration:.6s"
+          d="M169 127Q155 113 166 97Q172 86 181 83M171 129Q182 117 190 126"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:1.75s;--draw-duration:.5s"
+          d="M196 178L190 193M223 178L230 191"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:1.86s;--draw-duration:.95s"
+          d="M190 190Q171 187 157 202Q145 214 144 237L151 313
+             M228 190Q244 196 253 214L273 248Q284 262 305 277"/>
+        <path class="bim-intro-line" pathLength="100" style="--draw-at:2.0s;--draw-duration:.8s"
+          d="M162 227Q167 252 188 268L231 287Q247 294 268 293
+             L298 297M226 222Q238 242 259 266L290 285"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:2.19s;--draw-duration:.7s"
+          d="M180 204Q198 210 220 207M184 239L195 251M205 280L220 290"/>
+        <path class="bim-intro-line structure" pathLength="100" style="--draw-at:2.26s;--draw-duration:.68s"
+          d="M297 297Q307 294 313 290L324 285Q328 283 333 285
+             M302 279Q315 278 324 281L335 285"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:2.39s;--draw-duration:.72s"
+          d="M147 234Q127 238 125 262V309Q125 321 140 320
+             M143 325V351M145 351H182"/>
+      </g>
+      <!-- 3. La estructura BIM se construye isométricamente dentro del monitor. -->
+      <g aria-hidden="true">
+        <path class="bim-intro-line structure" pathLength="100" style="--draw-at:2.48s;--draw-duration:.77s"
+          d="M389 180L420 157L479 170L447 195Z"/>
+        <path class="bim-intro-line structure" pathLength="100" style="--draw-at:2.72s;--draw-duration:.87s"
+          d="M389 180V224L447 238V195M447 238L479 213V170"/>
+        <path class="bim-intro-line structure" pathLength="100" style="--draw-at:2.94s;--draw-duration:.68s"
+          d="M408 185V228M427 190V233M461 184V227"/>
+        <path class="bim-intro-line soft" pathLength="100" style="--draw-at:3.02s;--draw-duration:.77s"
+          d="M389 201L447 215L479 190M389 212L447 226L479 201"/>
+        <path class="bim-intro-line soft" pathLength="100" style="--draw-at:3.22s;--draw-duration:.65s"
+          d="M408 185L441 163M427 190L459 166
+             M409 206L441 181M429 211L461 187"/>
+        <path class="bim-intro-line accent" pathLength="100" style="--draw-at:3.42s;--draw-duration:.62s"
+          d="M389 201L447 215L479 190"/>
+        <path class="bim-intro-line accent" pathLength="100" style="--draw-at:3.55s;--draw-duration:.58s"
+          d="M447 195V238"/>
+        <path class="bim-intro-line muted" pathLength="100" style="--draw-at:3.62s;--draw-duration:.56s"
+          d="M354 157H374M354 164H366M491 178H507
+             M491 185H501M352 233H370"/>
+      </g>
+      <!-- 4. Detalles técnicos y pequeños acentos antes de revelar el nombre. -->
+      <g aria-hidden="true">
+        <path class="bim-intro-line soft" pathLength="100" style="--draw-at:3.79s;--draw-duration:.5s"
+          d="M365 174V194M356 184H374M490 226H509M500 216V235"/>
+        <path class="bim-intro-line accent" pathLength="100" style="--draw-at:3.94s;--draw-duration:.55s"
+          d="M352 243H382M482 243H511"/>
+        <path class="bim-intro-line accent" pathLength="100" style="--draw-at:4.1s;--draw-duration:.47s"
+          d="M242 362H355"/>
+        <circle class="bim-intro-cursor" cx="447" cy="215" r="3"/>
+      </g>
     </svg>
     <h2 class="bim-intro-name">ÁREA BIM</h2>
   </div>
