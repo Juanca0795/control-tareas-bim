@@ -3920,17 +3920,61 @@ textarea,
     inset 0 1px 0 rgba(93,167,255,.23),
     inset 0 -1px 0 rgba(93,167,255,.23);
 }
-#tasks-view .task-table tbody tr.task-row-completed{
-  opacity:.84;
-  filter:saturate(.78);
+/* Entregables cerrados: muy tenues, sin opacidad global para mantener
+   legibles el estado verde, el tooltip y el foco de teclado. */
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected{
+  opacity:1;
+  filter:none;
 }
-#tasks-view .task-table tbody tr.task-row-completed:hover,
-#tasks-view .task-table tbody tr.task-row-completed.task-row-selected{
-  opacity:1;filter:none;
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed td{
+  background-color:color-mix(in srgb,var(--bg-panel) 38%,var(--bg-app));
+  color:var(--ink-muted);
 }
-#tasks-view .task-table tbody tr.task-row-completed .task-name{
-  color:var(--ink-secondary);
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed .task-name,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed .id,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed .lod-badge,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed .support-text,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed .deadline-date{
+  color:var(--ink-muted);
+  opacity:.56;
 }
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed .chip:not(.done),
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed .bim-photo-badge{
+  opacity:.52;
+  filter:saturate(.40);
+}
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed .chip.done{
+  opacity:.82;
+  filter:saturate(.72);
+}
+/* Al posar el cursor sólo se recupera parte del contraste.
+   No alcanza la intensidad de una actividad todavía en ejecución. */
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover td,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected td,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected:hover td{
+  background-color:color-mix(in srgb,var(--bg-panel) 64%,var(--bg-app));
+}
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover .task-name,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover .id,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover .lod-badge,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover .support-text,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover .deadline-date,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected .task-name,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected .id,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected .lod-badge,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected .support-text,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected .deadline-date{
+  opacity:.79;
+}
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover .chip:not(.done),
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected .chip:not(.done),
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed:hover .bim-photo-badge,
+#tasks-view .task-table tbody tr[data-task-row].task-row-completed.task-row-selected .bim-photo-badge{
+  opacity:.70;
+}
+
 /* Tarjetas de tarea: estado, información íntegra y lectura táctil. */
 #tasks-view .task-mobile-card{
   position:relative;
