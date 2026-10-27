@@ -4474,16 +4474,36 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 .bim-ppt-mode button:hover:not([aria-pressed="true"]){background:var(--bg-hover)}
 .bim-ppt-mode button:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
 .bim-ppt-mode button:disabled{opacity:.6;cursor:wait}
-/* Solo lista de días: sin calendario ni aumento del ancho del diálogo. */
-.bim-ppt-meeting-day{
-  flex:0 0 auto;width:88px;height:32px;min-width:0;
-  padding:0 6px;border:1px solid var(--border-strong);border-radius:7px;
-  background:var(--bg-subtle);color:var(--ink-primary);
-  font:650 10px Inter,sans-serif;cursor:pointer
+/* Menú de días ceñido al texto: elimina los anchos mínimos del select del sistema. */
+.bim-ppt-day-picker{position:relative;flex:0 0 auto;min-width:0}
+.bim-ppt-day-picker[hidden]{display:none!important}
+.bim-ppt-day-trigger{
+  width:max-content;max-width:100%;height:30px;display:inline-flex;
+  align-items:center;justify-content:center;gap:3px;
+  padding:0 4px 0 6px;border:1px solid var(--border-strong);
+  border-radius:7px;background:var(--bg-subtle);color:var(--ink-primary);
+  font:650 10px Inter,sans-serif;white-space:nowrap;cursor:pointer
 }
-.bim-ppt-meeting-day[hidden]{display:none!important}
-.bim-ppt-meeting-day:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
-.bim-ppt-meeting-day:disabled{opacity:.6;cursor:wait}
+.bim-ppt-day-trigger svg{width:9px;height:9px;flex:none}
+.bim-ppt-day-trigger:hover{border-color:var(--accent-blue)}
+.bim-ppt-day-trigger:focus-visible,
+.bim-ppt-day-menu button:focus-visible{outline:2px solid var(--accent-blue);outline-offset:1px}
+.bim-ppt-day-trigger:disabled{opacity:.6;cursor:wait}
+.bim-ppt-day-menu{
+  position:absolute;top:calc(100% + 3px);right:0;z-index:150;
+  width:max-content;min-width:100%;padding:2px;
+  border:1px solid var(--border-strong);border-radius:6px;
+  background:var(--bg-panel);box-shadow:0 8px 22px rgba(0,0,0,.3)
+}
+.bim-ppt-day-menu[hidden]{display:none!important}
+.bim-ppt-day-menu button{
+  display:block;width:100%;margin:0;padding:5px 6px;border:0;
+  border-radius:3px;background:transparent;color:var(--ink-primary);
+  font:500 10px Inter,sans-serif;text-align:left;white-space:nowrap;cursor:pointer
+}
+.bim-ppt-day-menu button:hover,
+.bim-ppt-day-menu button:focus-visible{background:var(--bg-hover)}
+.bim-ppt-day-menu button[aria-selected="true"]{background:var(--bg-selected);color:var(--ink-primary);font-weight:700}
 .bim-ppt-dialog .bim-ppt-mode-desc{
   flex:0 0 auto;margin:0;font-size:10px;line-height:1.4;color:var(--ink-muted)
 }
@@ -4590,7 +4610,7 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   .bim-ppt-dialog>.modal-hd{position:relative;flex-wrap:wrap;gap:7px;padding:12px 38px 12px 12px}
   .bim-ppt-dialog>.modal-hd h2{flex:1 1 100%;font-size:12px}
   .bim-ppt-mode button{padding:0 7px;height:25px;font-size:9px}
-  .bim-ppt-meeting-day{width:88px;height:31px}
+  .bim-ppt-day-trigger{height:29px}
   .bim-ppt-dialog>.modal-hd .close{position:absolute;top:10px;right:10px}
   .bim-ppt-dialog>.modal-body{padding:12px;gap:8px}
   .bim-ppt-dialog .bim-ppt-list{padding-right:5px}
@@ -5432,16 +5452,28 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         <button type="button" data-bim-ppt-mode="reunion" aria-pressed="true"
           title="Siete días previos al día de la reunión" onclick="setBimPptMode('reunion')">Reunión</button>
       </div>
-      <select id="bim-ppt-meeting-day" class="bim-ppt-meeting-day" aria-label="Día habitual de reunión"
-        title="Día habitual de reunión" onchange="setBimPptMeetingDay(this.value)">
-        <option value="1">Lunes</option>
-        <option value="2">Martes</option>
-        <option value="3" selected>Miércoles</option>
-        <option value="4">Jueves</option>
-        <option value="5">Viernes</option>
-        <option value="6">Sábado</option>
-        <option value="7">Domingo</option>
-      </select>
+      <div id="bim-ppt-day-picker" class="bim-ppt-day-picker"
+        onkeydown="handleBimPptMeetingKey(event)">
+        <button type="button" id="bim-ppt-meeting-trigger" class="bim-ppt-day-trigger"
+          aria-label="Día habitual de reunión" aria-haspopup="listbox"
+          aria-expanded="false" aria-controls="bim-ppt-meeting-menu"
+          onclick="toggleBimPptMeetingMenu()">
+          <span id="bim-ppt-meeting-label">Miércoles</span>
+          <svg viewBox="0 0 10 10" aria-hidden="true" fill="none">
+            <path d="m2 4 3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div id="bim-ppt-meeting-menu" class="bim-ppt-day-menu"
+          role="listbox" aria-label="Día habitual de reunión" hidden>
+          <button type="button" role="option" data-bim-meeting-day="1" aria-selected="false" onclick="setBimPptMeetingDay(1)">Lunes</button>
+          <button type="button" role="option" data-bim-meeting-day="2" aria-selected="false" onclick="setBimPptMeetingDay(2)">Martes</button>
+          <button type="button" role="option" data-bim-meeting-day="3" aria-selected="true" onclick="setBimPptMeetingDay(3)">Miércoles</button>
+          <button type="button" role="option" data-bim-meeting-day="4" aria-selected="false" onclick="setBimPptMeetingDay(4)">Jueves</button>
+          <button type="button" role="option" data-bim-meeting-day="5" aria-selected="false" onclick="setBimPptMeetingDay(5)">Viernes</button>
+          <button type="button" role="option" data-bim-meeting-day="6" aria-selected="false" onclick="setBimPptMeetingDay(6)">Sábado</button>
+          <button type="button" role="option" data-bim-meeting-day="7" aria-selected="false" onclick="setBimPptMeetingDay(7)">Domingo</button>
+        </div>
+      </div>
       <button type="button" class="close" onclick="closeBimPptExport()" aria-label="Cerrar exportación">×</button>
     </div>
     <div class="modal-body">
