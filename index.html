@@ -4502,29 +4502,53 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 .bim-ppt-items{display:flex;flex-direction:column;gap:0}
 .bim-ppt-item{
   flex:0 0 auto;
-  display:grid;grid-template-columns:110px minmax(0,1fr);
-  gap:12px;align-items:start;
-  min-height:116px;border-bottom:1px solid var(--border-base);padding:12px;
+  display:grid;
+  grid-template-columns:110px minmax(0,1fr);
+  grid-template-rows:auto auto;
+  column-gap:12px;row-gap:9px;
+  align-items:start;
+  min-height:130px;border-bottom:1px solid var(--border-base);padding:12px;
   transition:background-color .18s ease;
 }
 .bim-ppt-item:hover{background:var(--bg-hover)}
 .bim-ppt-item:last-child{border-bottom:0}
-.bim-ppt-thumb{display:grid;place-items:center;min-width:0;height:92px;border:1px solid var(--border-strong);
-  border-radius:7px;background:var(--bg-subtle);font-size:10px;color:var(--ink-muted);overflow:hidden}
+.bim-ppt-thumb{
+  grid-column:1;grid-row:2;
+  display:grid;place-items:center;min-width:0;height:92px;
+  border:1px solid var(--border-strong);
+  border-radius:7px;background:var(--bg-subtle);font-size:10px;color:var(--ink-muted);overflow:hidden
+}
 .bim-ppt-thumb img{
   display:block;width:100%;height:100%;object-fit:contain;
   transition:filter .22s ease,transform .22s ease;
 }
 .bim-ppt-item:hover .bim-ppt-thumb img{filter:brightness(1.06);transform:scale(1.015)}
-.bim-ppt-fields{min-width:0}
-.bim-ppt-item-title{display:flex;justify-content:space-between;gap:10px;align-items:center;
-  font-size:10px;color:var(--ink-secondary);margin-bottom:7px}
-.bim-ppt-item-title label{display:inline-flex;align-items:center;gap:6px;font-weight:650;color:var(--ink-primary)}
-.bim-ppt-item-title span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bim-ppt-caption-label{display:block;font-size:9px;font-weight:650;color:var(--ink-secondary);margin-bottom:5px}
-.bim-ppt-fields textarea{width:100%;min-width:0;height:auto;resize:vertical;min-height:64px;max-height:none;border:1px solid var(--border-strong);
-  border-radius:7px;background:var(--bg-subtle);color:var(--ink-primary);font:11px Inter,sans-serif;
-  line-height:1.4;padding:8px}
+.bim-ppt-fields{grid-column:2;grid-row:2;min-width:0}
+.bim-ppt-item-title{
+  grid-column:1 / -1;grid-row:1;
+  display:grid;grid-template-columns:110px minmax(0,1fr) auto;
+  gap:12px;align-items:center;min-width:0;
+  font-size:10px;color:var(--ink-secondary);margin:0
+}
+.bim-ppt-item-title>label:first-child{
+  display:inline-flex;align-items:center;gap:6px;
+  font-weight:650;color:var(--ink-primary);white-space:nowrap
+}
+.bim-ppt-item-title span{
+  min-width:0;max-width:235px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right
+}
+.bim-ppt-item-title .bim-ppt-caption-label{
+  display:block;font-size:9px;font-weight:650;
+  color:var(--ink-secondary);margin:0;white-space:nowrap
+}
+.bim-ppt-fields textarea{
+  display:block;width:100%;min-width:0;
+  height:92px;min-height:92px;max-height:none;resize:vertical;
+  border:1px solid var(--border-strong);
+  border-radius:7px;background:var(--bg-subtle);color:var(--ink-primary);
+  font:11px Inter,sans-serif;line-height:1.4;padding:8px
+}
 .bim-ppt-fields textarea:focus{outline:1px solid var(--accent-blue)}
 .bim-ppt-selection{color:var(--ink-secondary);font-size:10px}
 .bim-ppt-progress{font-size:10px;color:var(--accent-blue);line-height:1.5;min-height:16px}
@@ -4532,8 +4556,12 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   .bim-ppt-dialog{height:calc(100dvh - 18px);max-height:calc(100dvh - 18px)}
   .bim-ppt-dialog>.modal-body{padding:12px;gap:8px}
   .bim-ppt-dialog .bim-ppt-list{padding-right:5px}
-  .bim-ppt-item{grid-template-columns:83px minmax(0,1fr);gap:8px;padding:9px;min-height:104px}
+  .bim-ppt-item{grid-template-columns:83px minmax(0,1fr);column-gap:8px;row-gap:8px;padding:9px;min-height:119px}
+  .bim-ppt-item-title{grid-template-columns:83px minmax(0,1fr) auto;gap:8px}
+  .bim-ppt-item-title span{max-width:132px;font-size:9px}
+  .bim-ppt-item-title .bim-ppt-caption-label{font-size:8.5px}
   .bim-ppt-thumb{height:80px}
+  .bim-ppt-fields textarea{height:80px;min-height:80px}
   .bim-ppt-dialog .modal-ft{flex-wrap:wrap;gap:9px}
 }
 @media(prefers-reduced-motion:reduce){
