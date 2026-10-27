@@ -7,7 +7,7 @@
 const PPT_BIM_VERSION='4.0.0';
 const PPT_BIM_ZIP_VERSION='3.10.1';
 let pptBimScriptPromise=null;
-let pptBimState={items:[],week:'',busy:false,token:0};
+let pptBimState={items:[],week:'',mode:'ingreso',busy:false,token:0,drafts:new Map()};
 
 function pptBimLib(){
   const ctor=window.pptxgen||window.PptxGenJS;
@@ -83,19 +83,39 @@ function pptBimDownloadBlob(blob,fileName){
   setTimeout(()=>URL.revokeObjectURL(url),60000);
 }
 
-function pptBimItemsForWeek(week){
-  if(typeof weeklyFiltered!=='function')return [];
-  const snapshot=weeklyFiltered(week);
-  const current=new Map(tasks.map(t=>[t.id,t]));
+// Fechas de ingreso: usar la zona horaria de Perú al convertir los ISO de Supabase.
+function pptBimIngresoWeek(photo){
+  const date=new Date(String(photo.addedAt||''));
+  if(!photo.addedAt||Number.isNaN(date.getTime()))return '';
+  const parts=Intl.DateTimeFormat('es-PE',{
+    timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit'
+  }).formatToParts(date);
+  const fields=Object.fromEntries(parts.map(part=>[part.type,part.value]));
+  return isoWeekKey(new Date(Number(fields.year),Number(fields.month)-1,Number(fields.day),12));
+}
+// La culminación corresponde a la FECHA REAL de término, no a la fecha límite.
+function pptBimCompletionWeek(task){
+  const date=String(task.completedAt||'');
+  if(categoryOf(task.status)!=='done'||!/^\d{4}-\d{2}-\d{2}$/.test(date))return '';
+  const parsed=new Date(date+'T12:00:00');
+  return Number.isNaN(parsed.getTime())?'':isoWeekKey(parsed);
+}
+function pptBimItemsForWeek(week,mode='ingreso'){
+  const packageFilter=$('#weekly-package')?.value||'';
+  const teamFilter=$('#weekly-team')?.value||'';
+  const ownerFilter=$('#weekly-owner')?.value||'';
   const out=[];
-  for(const row of snapshot.rows){
-    const task=current.get(row.id);
-    if(!task)continue;
+  for(const task of tasks){
+    if((packageFilter&&task.package!==packageFilter)||
+       (teamFilter&&task.team!==teamFilter)||
+       (ownerFilter&&task.owner!==ownerFilter))continue;
+    if(mode==='culminacion'&&pptBimCompletionWeek(task)!==week)continue;
     for(const photo of taskEvidenceRecords(task.id)){
+      if(mode==='ingreso'&&pptBimIngresoWeek(photo)!==week)continue;
       out.push({
         id:photo.id,path:photo.path,taskId:task.id,
-        package:row.package||task.package||'Sin paquete',
-        team:row.team||task.team||'',owner:row.owner||task.owner||'',
+        package:task.package||'Sin paquete',
+        team:task.team||'',owner:task.owner||'',
         title:task.title||task.id,caption:task.title||task.id,
         name:photo.name||'Fotografía'
       });
@@ -104,7 +124,7 @@ function pptBimItemsForWeek(week){
   out.sort((a,b)=>a.package.localeCompare(b.package,'es',{numeric:true})||
     a.taskId.localeCompare(b.taskId,'es',{numeric:true})||
     a.id.localeCompare(b.id));
-  // Numeración por actividad: cada fotografía conserva su propia descripción.
+  // Numeración de fotografías dentro de cada actividad en la selección actual.
   const totals=new Map(),positions=new Map();
   for(const item of out)totals.set(item.taskId,(totals.get(item.taskId)||0)+1);
   for(const item of out){
@@ -114,22 +134,47 @@ function pptBimItemsForWeek(week){
   }
   return out;
 }
+function pptBimPhotoKey(item){return item.taskId+'|'+item.id}
+function pptBimRefreshModeInfo(){
+  document.querySelectorAll('[data-bim-ppt-mode]').forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.bimPptMode===pptBimState.mode));
+    button.disabled=pptBimState.busy;
+  });
+  const label=$('#bim-ppt-week-label'),items=pptBimState.items;
+  if(label)label.textContent='Semana '+pptBimState.week.replace('-W',' · ')+
+    ' · '+items.length+' fotografía'+(items.length!==1?'s':'')+
+    ' · '+new Set(items.map(x=>x.package)).size+' paquete(s)';
+  const description=$('#bim-ppt-mode-note');
+  if(description)description.textContent=pptBimState.mode==='ingreso'
+    ?'Ingreso: fotografías cargadas durante esta semana (hora de Perú), independientemente del plazo de la actividad.'
+    :'Culminación: fotografías de actividades completadas durante esta semana; no implica que la foto se haya tomado ese día.';
+}
+function setBimPptMode(mode){
+  if(pptBimState.busy||!['ingreso','culminacion'].includes(mode)||
+    !$('#bim-ppt-back')?.classList.contains('open')||mode===pptBimState.mode)return;
+  // Mantener las descripciones editadas si el usuario alterna entre criterios.
+  for(const item of pptBimState.items)
+    pptBimState.drafts.set(pptBimPhotoKey(item),{caption:item.caption,enabled:item.enabled});
+  const items=pptBimItemsForWeek(pptBimState.week,mode);
+  pptBimState.items=items.map(item=>({
+    ...item,...(pptBimState.drafts.get(pptBimPhotoKey(item))||{}),enabled:
+    pptBimState.drafts.get(pptBimPhotoKey(item))?.enabled??true
+  }));
+  pptBimState.mode=mode;
+  pptBimState.token++; // Invalidar vistas previas pendientes del criterio anterior.
+  const progress=$('#bim-ppt-progress');
+  if(progress)progress.textContent='';
+  renderBimPptExport();
+  loadBimPptThumbnails(pptBimState.token);
+}
 function openBimPptExport(){
   if(currentView!=='weekly'){toast('Ingresa a Control Semanal para exportar el informe.');return}
-  const items=pptBimItemsForWeek(selectedWeek);
-  if(!items.length){
-    toast('No hay fotografías guardadas en las actividades de esta semana y filtros.');
-    return;
-  }
   if(!window.bimEvidenceCloud||!window.bimEvidenceCloud.ready()){
     toast('Supabase Storage no está disponible. Comprueba la conexión.');return;
   }
+  const items=pptBimItemsForWeek(selectedWeek,'ingreso');
   pptBimState={items:items.map(x=>({...x,enabled:true})),
-    week:selectedWeek,busy:false,token:pptBimState.token+1};
-  const label=$('#bim-ppt-week-label');
-  if(label)label.textContent='Semana '+selectedWeek.replace('-W',' · ')+
-    ' · '+items.length+' fotografía'+(items.length!==1?'s':'')+
-    ' · '+new Set(items.map(x=>x.package)).size+' paquete(s)';
+    week:selectedWeek,mode:'ingreso',busy:false,token:pptBimState.token+1,drafts:new Map()};
   renderBimPptExport();
   $('#bim-ppt-back').classList.add('open');
   document.body.style.overflow='hidden';
@@ -151,7 +196,7 @@ function renderBimPptExport(){
     if(!packages.has(x.package))packages.set(x.package,[]);
     packages.get(x.package).push({x,index});
   });
-  area.innerHTML=[...packages].map(([name,group])=>
+  area.innerHTML=pptBimState.items.length?[...packages].map(([name,group])=>
     '<section class="bim-ppt-group"><h3>'+esc(name)+
     ' <span>'+group.length+' fotografía(s)</span></h3><div class="bim-ppt-items">'+
     group.map(({x,index})=>
@@ -165,10 +210,12 @@ function renderBimPptExport(){
       '<div class="bim-ppt-fields">'+
       '<textarea id="bim-ppt-caption-'+index+'" data-bim-ppt-caption="'+index+'" maxlength="240" rows="2">'+
       esc(x.caption)+'</textarea></div></article>').join('')+
-    '</div></section>').join('');
+    '</div></section>').join(''):
+    '<p class="bim-ppt-empty">No hay fotografías para la semana y el criterio seleccionados. Puedes cambiar el criterio arriba.</p>';
   updateBimPptSelectedCounter();
 }
 function updateBimPptSelectedCounter(){
+  pptBimRefreshModeInfo();
   const included=pptBimState.items.filter(x=>x.enabled);
   const target=$('#bim-ppt-selection');
   if(target)target.textContent=included.length+' imágenes · '+new Set(included.map(x=>x.package)).size+
@@ -344,6 +391,7 @@ async function exportBimPpt(){
   if(!window.bimEvidenceCloud?.ready()){toast('No hay conexión con Supabase Storage.');return}
   const runToken=pptBimState.token,btn=$('#bim-ppt-download'),status=$('#bim-ppt-progress');
   pptBimState.busy=true;
+  pptBimRefreshModeInfo();
   if(btn)btn.disabled=true;
   if(status)status.textContent='Preparando PowerPoint…';
   try{
