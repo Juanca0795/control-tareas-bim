@@ -5499,10 +5499,10 @@ function makeStats(rows,interactive=false){
   const onSchedule=running.filter(t=>!t.deadline||dueDays(t.deadline)>0).length;
   const support=supportAreaMetrics(rows);
   return [
+    one('AVANCE PROMEDIO',s.avg.toFixed(1)+'%','Media del alcance actual',SVG_ICONS.gauge,'blue','average','cyan',s.avg,trend),
     one('TOTAL ENTREGABLES',s.total,'Entregables del alcance',SVG_ICONS.grid,'','all','neutral',null,
       badge('+'+createdThisMonth+' este mes','positive',
         withoutCreationDate?'Existen '+withoutCreationDate+' entregables históricos sin fecha de creación verificable.':'Altas registradas automáticamente este mes.'),''),
-    one('AVANCE PROMEDIO',s.avg.toFixed(1)+'%','Media del alcance actual',SVG_ICONS.gauge,'blue','average','cyan',s.avg,trend),
     one('COMPLETADAS',s.done,'Entregables cerrados',SVG_ICONS.check,'green','completed','green',share(s.done),
       badge('/ '+s.total+' tot.','neutral'),share(s.done).toFixed(1)+'%'),
     one('EN EJECUCIÓN',s.inProgress,'Tareas en progreso',SVG_ICONS.play,'blue','inProgress','blue',share(s.inProgress),
@@ -7601,9 +7601,9 @@ function renderWeekly(forceMotion=false){
   $('#weekly-close-btn').disabled=overallWeek.closed||!overallWeek.rows.length;
   $('#weekly-close-btn').textContent=overallWeek.closed?'✓ Semana cerrada':'✓ Cerrar semana';
   $('#weekly-kpis').innerHTML=[
+    weeklyKpiCard('PPC SEMANAL',pct(m.ppc),m.ppc===null&&selectedWeek>isoWeekKey(new Date())?'Semana aún no iniciada':'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
     weeklyKpiCard('COMPROMETIDAS',m.planned,m.closed?'Base archivada del período':'Plan semanal · provisional'),
     weeklyKpiCard('CUMPLIDAS',m.completed,'Cierres verificados hasta el corte','positive'),
-    weeklyKpiCard('PPC SEMANAL',pct(m.ppc),m.ppc===null&&selectedWeek>isoWeekKey(new Date())?'Semana aún no iniciada':'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
     weeklyKpiCard('PENDIENTES',m.remaining,'Sin cierre verificado al corte',m.remaining?'warning':''),
     weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?m.onTime+'/'+m.punctualityBase+' evaluables · '+(m.observedUntil===todayString()?'incluye hoy':'al corte'):'Sin plazos evaluables al corte',m.punctuality!==null&&m.punctuality<85?'warning':''),
     weeklyKpiCard('VENCIDAS',m.delayed,m.dueAtCutoff+(m.observedUntil===todayString()?' vencen hoy':' al corte')+' · '+m.lateCompleted+' cierres tardíos',m.delayed?'danger':m.dueAtCutoff?'warning':'positive')
