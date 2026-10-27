@@ -4458,6 +4458,29 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   height:min(790px,calc(100dvh - 34px));
   max-height:calc(100dvh - 34px);
 }
+/* Selector compacto en la cabecera: no modifica el ancho de la ventana. */
+.bim-ppt-dialog>.modal-hd{display:flex;align-items:center;gap:9px;padding:15px 18px}
+.bim-ppt-dialog>.modal-hd h2{flex:1 1 auto;min-width:0;font-size:13px}
+.bim-ppt-mode{
+  display:inline-flex;align-items:center;flex:0 0 auto;gap:2px;padding:3px;
+  border:1px solid var(--border-strong);border-radius:7px;background:var(--bg-subtle)
+}
+.bim-ppt-mode button{
+  border:0;border-radius:5px;background:transparent;color:var(--ink-secondary);
+  height:26px;padding:0 8px;font:650 10px Inter,sans-serif;white-space:nowrap;
+  cursor:pointer;transition:background-color .15s,color .15s
+}
+.bim-ppt-mode button[aria-pressed="true"]{background:var(--accent-blue);color:#fff}
+.bim-ppt-mode button:hover:not([aria-pressed="true"]){background:var(--bg-hover)}
+.bim-ppt-mode button:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.bim-ppt-mode button:disabled{opacity:.6;cursor:wait}
+.bim-ppt-dialog .bim-ppt-mode-desc{
+  flex:0 0 auto;margin:0;font-size:10px;line-height:1.4;color:var(--ink-muted)
+}
+.bim-ppt-empty{
+  margin:0;padding:18px 13px;border:1px dashed var(--border-strong);
+  border-radius:8px;color:var(--ink-secondary);font-size:11px;line-height:1.5
+}
 /* Solo desplazar las evidencias: título, instrucciones, progreso y botones fijos. */
 .bim-ppt-dialog>.modal-hd,
 .bim-ppt-dialog>.modal-ft{flex:0 0 auto}
@@ -4554,6 +4577,9 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 .bim-ppt-progress{font-size:10px;color:var(--accent-blue);line-height:1.5;min-height:16px}
 @media(max-width:680px){
   .bim-ppt-dialog{height:calc(100dvh - 18px);max-height:calc(100dvh - 18px)}
+  .bim-ppt-dialog>.modal-hd{position:relative;flex-wrap:wrap;gap:7px;padding:12px 38px 12px 12px}
+  .bim-ppt-dialog>.modal-hd h2{flex:1 1 100%;font-size:12px}
+  .bim-ppt-dialog>.modal-hd .close{position:absolute;top:10px;right:10px}
   .bim-ppt-dialog>.modal-body{padding:12px;gap:8px}
   .bim-ppt-dialog .bim-ppt-list{padding-right:5px}
   .bim-ppt-item{grid-template-columns:83px minmax(0,1fr);column-gap:8px;row-gap:8px;padding:9px;min-height:119px}
@@ -5386,14 +5412,21 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   <div class="modal bim-ppt-dialog" role="dialog" aria-modal="true" aria-labelledby="bim-ppt-title">
     <div class="modal-hd">
       <h2 id="bim-ppt-title">EXPORTAR EVIDENCIAS BIM A POWERPOINT</h2>
+      <div class="bim-ppt-mode" role="group" aria-label="Seleccionar criterio de exportación">
+        <button type="button" data-bim-ppt-mode="ingreso" aria-pressed="true"
+          title="Por fecha de carga de la fotografía" onclick="setBimPptMode('ingreso')">Ingreso</button>
+        <button type="button" data-bim-ppt-mode="culminacion" aria-pressed="false"
+          title="Por fecha real de culminación de la actividad" onclick="setBimPptMode('culminacion')">Culminación</button>
+      </div>
       <button type="button" class="close" onclick="closeBimPptExport()" aria-label="Cerrar exportación">×</button>
     </div>
     <div class="modal-body">
       <p class="bim-ppt-subtitle" id="bim-ppt-week-label"></p>
+      <p class="bim-ppt-mode-desc" id="bim-ppt-mode-note" aria-live="polite"></p>
       <p class="bim-ppt-note">
         Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores.
         Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía
-        antes de exportar. Solo se incluyen evidencias guardadas de la semana y filtros actuales.
+        antes de exportar. Se respetan los filtros de paquete, disciplina y colaborador.
       </p>
       <div id="bim-ppt-list" class="bim-ppt-list"></div>
       <p id="bim-ppt-progress" class="bim-ppt-progress" role="status" aria-live="polite"></p>
