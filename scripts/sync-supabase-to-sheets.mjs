@@ -13,9 +13,43 @@ const headers={Authorization:'Bearer '+oauth.access_token,'Content-Type':'applic
 const tasks=await get(await fetch('https://qpotytogdeanlkmgswpm.supabase.co/rest/v1/bim_tasks?user_id=eq.00000000-0000-0000-0000-000000000001&select=id,title,package,team,owner,priority,lod,deadline,status,support,progress&order=id.asc&limit=1000',{headers:{apikey:key,Authorization:'Bearer '+key}}));
 if(!Array.isArray(tasks)||tasks.length>=1000||new Set(tasks.map(t=>t.id)).size!==tasks.length)throw Error('Listado inválido');
 if(!tasks.length&&process.env.ALLOW_EMPTY_TASK_SYNC!=='true')throw Error('Lista vacía: eliminación masiva bloqueada por seguridad');
-const info=await get(await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sheet+'?fields=sheets(properties(sheetId,title,gridProperties))',{headers}));
+const info=await get(await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+sheet+'?ranges=Control_Tareas%21B5%3AM5&includeGridData=true&fields=sheets(properties(sheetId,title,gridProperties),data(columnMetadata))',{headers}));
 const target=info.sheets.find(t=>t.properties?.sheetId===101)?.properties;
 if(target?.title!=='Control_Tareas')throw Error('Pestaña de destino incorrecta');
+// Aproximación conservadora al ancho Calibri 10 pt para ajustar filas
+// aun si Google devuelve 21 px con autoResizeDimensions tras importar un XLSX.
+const sheetInfo=info.sheets.find(t=>t.properties?.sheetId===101);
+const widths=sheetInfo?.data?.[0]?.columnMetadata||[];
+const titleWidth=widths[1]?.pixelSize||383;  // C, descripción
+const supportWidth=widths[9]?.pixelSize||109; // K, apoyo
+function textWidth(text){
+  return [...String(text)].reduce((n,ch)=>{
+    if(/\s/.test(ch))return n+3.5;
+    if(/[iIl1.,:;!'|]/.test(ch))return n+3.6;
+    if(/[mMwW@#%]/.test(ch))return n+10.0;
+    if(/[A-ZÁÉÍÓÚÑ]/.test(ch))return n+8.2;
+    return n+6.7;
+  },0);
+}
+function wrappedLines(input,columnWidth){
+  if(!input)return 1;
+  const max=Math.max(45,columnWidth-18);
+  let lines=1,used=0;
+  for(const word of String(input).trim().split(/\s+/)){
+    const width=textWidth(word),space=used?3.5:0;
+    if(used&&used+space+width>max){lines++;used=0;}
+    if(width>max){
+      const parts=Math.ceil(width/max);
+      lines+=parts-1;
+      used=width-(parts-1)*max;
+    }else used+=(used?3.5:0)+width;
+  }
+  return lines;
+}
+const taskRowHeights=tasks.map(t=>{
+  const lines=Math.max(wrappedLines(t.title,titleWidth),wrappedLines(t.support,supportWidth));
+  return Math.max(29,lines*17+12);
+});
 const val=x=>x===null||x===undefined||x===''?{}:{userEnteredValue:typeof x==='number'?{numberValue:x}:{stringValue:String(x)}};
 const date=s=>s?Math.round((Date.parse(s+'T00:00:00Z')-Date.UTC(1899,11,30))/86400000):null;
 const rows=tasks.map((t,i)=>{const r=i+5;const fields=[t.id,t.title,t.package,t.team,t.owner,t.priority,t.lod||'',date(t.deadline),t.status,t.support||'',Number(t.progress||0)/100];const formula='=IF(I'+r+'="","",IF(J'+r+'="Completada","Completada",IF(I'+r+'<TODAY(),"Vencida ("&(TODAY()-I'+r+')&" d)",IF(I'+r+'=TODAY(),"Vence hoy",IF(I'+r+'-TODAY()<=3,"Próximo a vencer ("&(I'+r+'-TODAY())&" d)","En plazo ("&(I'+r+'-TODAY())&" d)")))))';return{values:[...fields.map(val),{userEnteredValue:{formulaValue:formula}}]};});
@@ -59,6 +93,12 @@ if(rows.length){
   requests.push({autoResizeDimensions:{
     dimensions:{sheetId:101,dimension:'ROWS',startIndex:4,endIndex:4+rows.length}
   }});
+  // Ajuste garantizado de altura para textos en varias líneas.
+  // Un valor diferente por fila: las tareas cortas no ocupan altura innecesaria.
+  taskRowHeights.forEach((height,i)=>requests.push({updateDimensionProperties:{
+    range:{sheetId:101,dimension:'ROWS',startIndex:4+i,endIndex:5+i},
+    properties:{pixelSize:height},fields:'pixelSize'
+  }}));
 }
 if(4+rows.length<end){
   requests.push({setDataValidation:{
