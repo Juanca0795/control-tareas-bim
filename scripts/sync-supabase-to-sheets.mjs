@@ -21,35 +21,37 @@ if(target?.title!=='Control_Tareas')throw Error('Pestaña de destino incorrecta'
 const sheetInfo=info.sheets.find(t=>t.properties?.sheetId===101);
 const widths=sheetInfo?.data?.[0]?.columnMetadata||[];
 const titleWidth=widths[1]?.pixelSize||383;  // C, descripción
-const supportWidth=widths[9]?.pixelSize||109; // K, apoyo
+// La altura depende de la descripción (columna C), no de los nombres largos
+// de "Apoyo en otra área" (K). K se muestra en una sola línea sin perder el dato.
 function textWidth(text){
   return [...String(text)].reduce((n,ch)=>{
-    if(/\s/.test(ch))return n+3.5;
-    if(/[iIl1.,:;!'|]/.test(ch))return n+3.6;
-    if(/[mMwW@#%]/.test(ch))return n+10.0;
-    if(/[A-ZÁÉÍÓÚÑ]/.test(ch))return n+8.2;
-    return n+6.7;
+    if(/\s/.test(ch))return n+3;
+    if(/[iIl1.,:;!'|]/.test(ch))return n+3;
+    if(/[mMwW@#%]/.test(ch))return n+8.8;
+    if(/[A-ZÁÉÍÓÚÑ]/.test(ch))return n+7.3;
+    return n+5.95;
   },0);
 }
 function wrappedLines(input,columnWidth){
   if(!input)return 1;
-  const max=Math.max(45,columnWidth-18);
-  let lines=1,used=0;
-  for(const word of String(input).trim().split(/\s+/)){
-    const width=textWidth(word),space=used?3.5:0;
-    if(used&&used+space+width>max){lines++;used=0;}
-    if(width>max){
-      const parts=Math.ceil(width/max);
-      lines+=parts-1;
-      used=width-(parts-1)*max;
-    }else used+=(used?3.5:0)+width;
+  const max=Math.max(70,columnWidth-16);
+  let count=0;
+  for(const paragraph of String(input).split(/\r?\n/)){
+    count++;
+    let used=0;
+    for(const word of paragraph.trim().split(/\s+/).filter(Boolean)){
+      const width=textWidth(word);
+      if(used&&used+3+width>max){count++;used=0;}
+      if(width>max){
+        const parts=Math.ceil(width/max);
+        count+=parts-1;
+        used=width-(parts-1)*max;
+      }else used+=(used?3:0)+width;
+    }
   }
-  return lines;
+  return Math.max(1,count);
 }
-const taskRowHeights=tasks.map(t=>{
-  const lines=Math.max(wrappedLines(t.title,titleWidth),wrappedLines(t.support,supportWidth));
-  return Math.max(29,lines*17+12);
-});
+const taskRowHeights=tasks.map(t=>26+13*(wrappedLines(t.title,titleWidth)-1));
 const val=x=>x===null||x===undefined||x===''?{}:{userEnteredValue:typeof x==='number'?{numberValue:x}:{stringValue:String(x)}};
 const date=s=>s?Math.round((Date.parse(s+'T00:00:00Z')-Date.UTC(1899,11,30))/86400000):null;
 const rows=tasks.map((t,i)=>{const r=i+5;const fields=[t.id,t.title,t.package,t.team,t.owner,t.priority,t.lod||'',date(t.deadline),t.status,t.support||'',Number(t.progress||0)/100];const formula='=IF(I'+r+'="","",IF(J'+r+'="Completada","Completada",IF(I'+r+'<TODAY(),"Vencida ("&(TODAY()-I'+r+')&" d)",IF(I'+r+'=TODAY(),"Vence hoy",IF(I'+r+'-TODAY()<=3,"Próximo a vencer ("&(I'+r+'-TODAY())&" d)","En plazo ("&(I'+r+'-TODAY())&" d)")))))';return{values:[...fields.map(val),{userEnteredValue:{formulaValue:formula}}]};});
@@ -82,19 +84,20 @@ requests.push({updateDimensionProperties:{
   range:{sheetId:101,dimension:'ROWS',startIndex:4,endIndex:4+rows.length},
   properties:{hiddenByUser:false},fields:'hiddenByUser'
 }});
-// Autoajustar la altura según las descripciones y los apoyos registrados.
-// La altura se calcula DESPUÉS de guardar los textos y mostrar filas activas.
+// Presentación compacta: filas normales de 26 px; cada línea adicional suma 13 px.
+// C se parte en líneas con centrado vertical. K se recorta visualmente en una
+// línea cuando es largo; el valor íntegro permanece en la celda.
 if(rows.length){
-  for(const col of [2,10])requests.push({repeatCell:{
-    range:{sheetId:101,startRowIndex:4,endRowIndex:4+rows.length,startColumnIndex:col,endColumnIndex:col+1},
-    cell:{userEnteredFormat:{wrapStrategy:'WRAP'}},
-    fields:'userEnteredFormat.wrapStrategy'
+  requests.push({repeatCell:{
+    range:{sheetId:101,startRowIndex:4,endRowIndex:4+rows.length,startColumnIndex:2,endColumnIndex:3},
+    cell:{userEnteredFormat:{wrapStrategy:'WRAP',verticalAlignment:'MIDDLE'}},
+    fields:'userEnteredFormat.wrapStrategy,userEnteredFormat.verticalAlignment'
   }});
-  requests.push({autoResizeDimensions:{
-    dimensions:{sheetId:101,dimension:'ROWS',startIndex:4,endIndex:4+rows.length}
+  requests.push({repeatCell:{
+    range:{sheetId:101,startRowIndex:4,endRowIndex:4+rows.length,startColumnIndex:10,endColumnIndex:11},
+    cell:{userEnteredFormat:{wrapStrategy:'CLIP',verticalAlignment:'MIDDLE'}},
+    fields:'userEnteredFormat.wrapStrategy,userEnteredFormat.verticalAlignment'
   }});
-  // Ajuste garantizado de altura para textos en varias líneas.
-  // Un valor diferente por fila: las tareas cortas no ocupan altura innecesaria.
   taskRowHeights.forEach((height,i)=>requests.push({updateDimensionProperties:{
     range:{sheetId:101,dimension:'ROWS',startIndex:4+i,endIndex:5+i},
     properties:{pixelSize:height},fields:'pixelSize'
