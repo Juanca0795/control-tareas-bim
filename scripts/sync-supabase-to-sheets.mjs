@@ -48,6 +48,18 @@ requests.push({updateDimensionProperties:{
   range:{sheetId:101,dimension:'ROWS',startIndex:4,endIndex:4+rows.length},
   properties:{hiddenByUser:false},fields:'hiddenByUser'
 }});
+// Autoajustar la altura según las descripciones y los apoyos registrados.
+// La altura se calcula DESPUÉS de guardar los textos y mostrar filas activas.
+if(rows.length){
+  for(const col of [2,10])requests.push({repeatCell:{
+    range:{sheetId:101,startRowIndex:4,endRowIndex:4+rows.length,startColumnIndex:col,endColumnIndex:col+1},
+    cell:{userEnteredFormat:{wrapStrategy:'WRAP'}},
+    fields:'userEnteredFormat.wrapStrategy'
+  }});
+  requests.push({autoResizeDimensions:{
+    dimensions:{sheetId:101,dimension:'ROWS',startIndex:4,endIndex:4+rows.length}
+  }});
+}
 if(4+rows.length<end){
   requests.push({setDataValidation:{
     range:{sheetId:101,startRowIndex:4+rows.length,endRowIndex:end,startColumnIndex:1,endColumnIndex:13}
