@@ -7933,7 +7933,8 @@ function monthlyPpcMetrics(month){
     ppc:future||!planned?null:100*completed/planned,
     punctuality:future||!punctualityBase?null:100*onTime/punctualityBase,
     closed:month<todayString().slice(0,7),
-    observedUntil:month===todayString().slice(0,7)?todayString():month+'-31'};
+    observedUntil:month===todayString().slice(0,7)?todayString():
+      localISO(new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5)),0)))};
 }
 function weeklyTrend(m){
   const monthly=weeklyPpcMonthlyMode;
@@ -8080,6 +8081,70 @@ function weeklyTrend(m){
     '<div class="weekly-fallback-row"><span>Meta LPS</span><span></span><b>85%</b></div>'+
     (hasReference?'<div class="weekly-fallback-row"><span>PPC '+esc(label(selectedPeriod))+
     '</span><span></span><b>'+selectedPpc.toFixed(1)+'%</b></div>':'')+'</div>';
+}
+// Análisis CNC mensual: agrega incidencias reales de las semanas del mes
+// asignadas por jueves ISO; incluye causas archivadas tras reprogramaciones.
+function monthlyCncPanel(monthMetric){
+  const container=$('#weekly-cnc'),count=$('#weekly-cnc-count');
+  if(!container||!count)return;
+  const incidents=new Map(),month=monthMetric.month;
+  const filtered={
+    package:$('#weekly-package')?.value||'',
+    team:$('#weekly-team')?.value||'',
+    owner:$('#weekly-owner')?.value||''
+  };
+  for(const metric of monthMetric.weekMetrics){
+    for(const task of metric.rows){
+      if(!task.deadline)continue;
+      const late=task.done&&task.completedAt?
+        task.completedAt>task.deadline:task.deadline<metric.observedUntil;
+      if(!late)continue;
+      const key=task.id+'|'+task.deadline;
+      if(!incidents.has(key))incidents.set(key,{...task,week:metric.week});
+    }
+  }
+  for(const record of catalogs.cncRecords||[]){
+    if(monthOfPpcWeek(record.week)!==month)continue;
+    if(filtered.package&&record.package!==filtered.package)continue;
+    if(filtered.team&&record.team!==filtered.team)continue;
+    if(filtered.owner&&record.owner!==filtered.owner)continue;
+    if(!incidents.has(record.id))incidents.set(record.id,{
+      id:record.taskId,deadline:record.deadline,owner:record.owner,
+      package:record.package,team:record.team,title:record.title||record.taskId,
+      week:record.week,cncHistorical:true
+    });
+  }
+  const entries=[...incidents.values()].sort((a,b)=>a.deadline.localeCompare(b.deadline));
+  const lookup=(task)=>typeof cncFor==='function'?cncFor(task.id,task.deadline):
+    (catalogs.cncRecords||[]).find(r=>r.taskId===task.id&&r.deadline===task.deadline);
+  const missing=entries.filter(t=>!lookup(t)),registered=entries.length-missing.length;
+  count.textContent=missing.length+' sin causa';
+  if(!entries.length){
+    container.innerHTML='<div class="weekly-empty"><strong>Sin incumplimientos del mes</strong>'+
+      '<span>Para este período no hay incidencias de plazo documentadas o pendientes.</span></div>';
+    return;
+  }
+  const taskNames=new Map(tasks.map(t=>[t.id,t.title]));
+  const items=entries.slice(0,5).map(t=>{
+    const record=lookup(t),title=taskNames.get(t.id)||t.title||t.id;
+    return '<div class="weekly-cnc-item"><strong>'+esc(title)+'</strong>'+
+      '<p>Compromiso '+esc(t.id)+' · '+esc(t.owner||'Sin responsable')+'</p>'+
+      '<small>Plazo: '+esc(dateDisplay(t.deadline))+' · '+esc(weekShort(t.week))+
+        (t.cncHistorical?' · CNC histórico':'')+'</small>'+
+      (record?'<p class="cnc-cause">'+esc(record.category)+'</p>'+
+        '<p>'+esc(record.description)+'</p>':
+        '<p class="cnc-cause">Causa pendiente de registrar desde Control de tareas</p>')+
+      '</div>';
+  }).join('');
+  container.innerHTML='<div class="weekly-cnc-summary"><strong>'+entries.length+
+    ' incumplimiento(s) del mes</strong> · '+registered+' documentado(s) · '+
+    missing.length+' por registrar.</div><div class="weekly-cnc-list">'+items+'</div>'+
+    (entries.length>5?'<p class="weekly-cnc-summary">+'+(entries.length-5)+
+      ' incumplimientos adicionales.</p>':'')+
+    '<div class="weekly-cnc-note"><strong>Seguimiento de causas</strong><div>'+
+    (missing.length?missing.length+' actividad(es) requieren registrar su causa desde Control de tareas.':
+      'Todas las incidencias tienen su causa documentada.')+
+    ' Se conserva el vencimiento original.</div></div>';
 }
 function weeklyCncPanel(m){
   if(typeof renderRegisteredWeeklyCnc==='function')return renderRegisteredWeeklyCnc(m);
