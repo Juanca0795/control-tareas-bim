@@ -77,9 +77,12 @@ function weeklyProjectionModel(m,today=todayString()){
   const cutoff=m.observedUntil||today;
   const historic=m.closed||end<today;
   const editable=!historic;
+  // El fin programado define el compromiso. Sin plazo no se proyecta.
+  // El cierre real se obtiene exclusivamente de completedAt.
+  const scheduled=m.rows.filter(t=>projectionDateValid(t.deadline));
   const verified=t=>Boolean(t.done&&t.completedAt&&t.completedAt<=cutoff);
-  const completed=m.rows.filter(verified);
-  const pending=m.rows.filter(t=>!verified(t));
+  const completed=scheduled.filter(verified);
+  const pending=scheduled.filter(t=>!verified(t));
   const saved=catalogs.weeklyForecasts?.[m.week]||{};
   const earliest=today>start?today:start;
   const estimates=new Map();
@@ -95,8 +98,8 @@ function weeklyProjectionModel(m,today=todayString()){
     d.setUTCDate(d.getUTCDate()+i);
     return localISO(d);
   });
-  const planned=days.map(day=>m.rows.filter(t=>{
-    const due=projectionDateValid(t.deadline)?t.deadline:end;
+  const planned=days.map(day=>scheduled.filter(t=>{
+    const due=t.deadline;
     const at=due<start?start:due>end?end:due;
     return at<=day;
   }).length);
