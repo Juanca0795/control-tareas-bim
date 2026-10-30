@@ -4999,6 +4999,32 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   #tasks-view .task-head-tools{width:100%;justify-content:flex-start;gap:8px}
   #tasks-view .task-week-toolbar{justify-content:flex-start}
 }
+/* Detalle de compromisos pendientes: solo lectura en Control semanal. */
+#weekly-view .weekly-kpi-pending-button{
+  width:100%;font:inherit;color:inherit;text-align:left;cursor:pointer;
+}
+#weekly-view .weekly-kpi-pending-button:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:3px;
+}
+#weekly-view .weekly-kpi-pending-button[aria-expanded="true"]{
+  border-color:var(--accent-blue);box-shadow:inset 0 0 0 1px var(--bim-interaction-glow);
+}
+#weekly-view .weekly-pending-panel{
+  border:1px solid var(--border-base);background:var(--bg-panel);
+  border-radius:10px;padding:14px;margin:-3px 0 17px;min-width:0;
+}
+#weekly-view .weekly-pending-panel[hidden]{display:none!important}
+#weekly-view .weekly-pending-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+#weekly-view .weekly-pending-head strong{font-size:11px;color:var(--ink-primary)}
+#weekly-view .weekly-pending-head p{font-size:10px;color:var(--ink-muted);margin:5px 0 0}
+#weekly-view .weekly-pending-scroll{max-height:290px;overflow:auto;border:1px solid var(--border-base);border-radius:6px}
+#weekly-view .weekly-pending-scroll table{width:100%;min-width:790px;border-collapse:collapse;font-size:10.5px}
+#weekly-view .weekly-pending-scroll th{position:sticky;top:0;background:var(--bg-subtle);color:var(--ink-secondary);
+  font-weight:650;text-align:left;padding:9px;border-bottom:1px solid var(--border-base);white-space:nowrap}
+#weekly-view .weekly-pending-scroll td{padding:9px;border-bottom:1px solid var(--border-base);vertical-align:middle;color:var(--ink-secondary)}
+#weekly-view .weekly-pending-scroll tr:last-child td{border-bottom:0}
+#weekly-view .weekly-pending-scroll .weekly-pending-title{min-width:200px;color:var(--ink-primary);font-weight:550}
+#weekly-view .weekly-pending-empty{font-size:11px;color:var(--ink-muted);margin:10px 0}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -5203,6 +5229,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     <div id="weekly-seguimiento" role="tabpanel" aria-labelledby="weekly-tab-seguimiento">
     <section class="weekly-status-strip" id="weekly-info" role="status" aria-live="polite"></section>
     <section class="weekly-kpis" id="weekly-kpis" aria-label="Resultados KPI semanales"></section>
+    <section class="weekly-pending-panel" id="weekly-pending-details" aria-label="Listado de tareas pendientes de la semana" hidden></section>
 
     <section class="weekly-executive-row" aria-label="Evolución PPC y análisis de causas">
       <article class="card weekly-chart-card weekly-primary-trend">
@@ -8188,6 +8215,46 @@ function renderWeeklyChips(){
     return `<button type="button" class="filter-pill" onclick="clearWeeklyFilter('${k}')" aria-label="Quitar filtro ${esc(label)}"><b>${esc(label)}:</b> ${esc(value)} <i>×</i></button>`;
   }).join('');
 }
+let weeklyPendingDetailsOpen=false;
+function toggleWeeklyPendingDetails(){
+  weeklyPendingDetailsOpen=!weeklyPendingDetailsOpen;
+  const month=monthOfPpcWeek(selectedWeek);
+  renderWeeklyPendingDetails(weeklyPpcMonthlyMode?monthlyPpcMetrics(month):weeklyMetrics(selectedWeek),
+    weeklyPpcMonthlyMode);
+  const card=document.querySelector('#weekly-kpis .weekly-kpi-pending-button');
+  if(card)card.setAttribute('aria-expanded',String(weeklyPendingDetailsOpen));
+}
+function renderWeeklyPendingDetails(metric,monthly){
+  const target=$('#weekly-pending-details');
+  if(!target)return;
+  target.hidden=!weeklyPendingDetailsOpen;
+  if(!weeklyPendingDetailsOpen){target.innerHTML='';return;}
+  const scope=monthly?metric.weekMetrics:[metric];
+  const currentTasks=new Map(tasks.map(t=>[t.id,t]));
+  const pending=scope.flatMap(week=>week.rows
+    .filter(t=>!(t.done&&t.completedAt&&t.completedAt<=week.observedUntil))
+    .map(t=>({...t,week:week.week})));
+  const period=monthly?ppcMonthlyLabel(metric.month):weekShort(metric.week);
+  const rows=pending.map(t=>{
+    const title=currentTasks.get(t.id)?.title||t.title||'Entregable sin descripción';
+    const state=t.done
+      ?(t.completedAt?'Completada fuera del corte':'Culminación sin fecha verificada')
+      :t.statusCategory==='progress'?'En progreso':'No iniciada';
+    return `<tr><td>${esc(t.id)}</td><td class="weekly-pending-title">${esc(title)}</td>
+      <td>${esc(t.owner||'Sin responsable')}</td><td>${esc(t.package||'Sin paquete')}</td>
+      <td>${esc(state)}</td><td>${esc(t.deadline?dateDisplay(t.deadline):'Sin fecha')}</td>
+      ${monthly?'<td>'+esc(weekShort(t.week))+'</td>':''}</tr>`;
+  }).join('');
+  target.innerHTML=`<div class="weekly-pending-head">
+    <div><strong>ACTIVIDADES PENDIENTES · ${esc(period)}</strong>
+      <p>${pending.length} compromiso(s) sin culminación verificada al corte · Solo lectura</p></div>
+    <button type="button" class="btn small" onclick="toggleWeeklyPendingDetails()" aria-label="Ocultar listado de pendientes">Cerrar</button>
+    </div>${pending.length?
+    '<div class="weekly-pending-scroll"><table><thead><tr><th>Código</th><th>Entregable</th>'+
+    '<th>Responsable</th><th>Paquete</th><th>Estado al corte</th><th>Fecha límite</th>'+
+    (monthly?'<th>Semana</th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div>':
+    '<p class="weekly-pending-empty">No existen compromisos pendientes para los filtros seleccionados.</p>'}`;
+}
 function weeklyKpiCard(title,value,foot,kind='',difference=null){
   const icon=title==='COMPROMETIDAS'?'▢':title==='CUMPLIDAS'?'✓':
     (title==='PPC SEMANAL'||title==='PPC MENSUAL')?'↗':title==='PENDIENTES'||title==='ARRASTRE'?'◷':
@@ -8195,10 +8262,14 @@ function weeklyKpiCard(title,value,foot,kind='',difference=null){
   const differenceLabel=(difference!==null&&Number.isFinite(difference))
     ?(difference>0?'↑ +':difference<0?'↓ −':'= ')+Math.abs(difference).toFixed(1)+' pp vs anterior':'';
   const tag=differenceLabel?`<span class="weekly-kpi-tag ${difference<0?'danger':''}">${esc(differenceLabel)}</span>`:'';
-  return `<article class="weekly-kpi ${kind} ${(title==='PPC SEMANAL'||title==='PPC MENSUAL')?'ppc-highlight':''}">
+  const interactive=title==='PENDIENTES';
+  const tagName=interactive?'button':'article';
+  const attrs=interactive?'type="button" onclick="toggleWeeklyPendingDetails()" class="weekly-kpi weekly-kpi-pending-button '+kind+'" aria-controls="weekly-pending-details" aria-expanded="'+String(weeklyPendingDetailsOpen)+'" title="Mostrar u ocultar tareas pendientes"':
+    'class="weekly-kpi '+kind+' '+((title==='PPC SEMANAL'||title==='PPC MENSUAL')?'ppc-highlight':'')+'"';
+  return `<${tagName} ${attrs}>
       <div class="weekly-kpi-header"><span class="label">${esc(title)}</span><span class="weekly-kpi-icon" aria-hidden="true">${icon}</span></div>
       <div class="weekly-kpi-value"><strong class="number">${esc(value)}</strong>${tag}</div>
-      <span class="foot">${esc(foot)}</span></article>`;
+      <span class="foot">${esc(foot)}</span></${tagName}>`;
 }
 function pct(v){return v===null?'-':`${v.toFixed(1)}%`;}
 function groupForWeekly(m,key){
@@ -8725,6 +8796,7 @@ function renderWeekly(forceMotion=false){
       (m.observedUntil===todayString()?' vencen hoy':' al corte')+' · '+m.lateCompleted+' cierres tardíos',
       m.delayed?'danger':m.dueAtCutoff?'warning':'positive')
   ].join('');
+  renderWeeklyPendingDetails(m,monthly);
   if(weeklyInnerTab==='seguimiento'){
     weeklyTrend(weekMetric);
     if(monthly)monthlyCncPanel(m);
