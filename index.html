@@ -4734,6 +4734,20 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   font-weight:700;letter-spacing:0;
   text-shadow:0 0 12px rgba(var(--bim-ambient-rgb),.19);
 }
+/* Checkbox de vista original, sin texto visible. */
+:is(#dashboard-view,#tasks-view) .support-area-header-actions{
+  display:flex;align-items:center;gap:9px;
+}
+:is(#dashboard-view,#tasks-view) .support-area-separate-check{
+  width:15px;height:15px;flex:none;margin:0;cursor:pointer;
+  accent-color:var(--accent-blue);
+}
+:is(#dashboard-view,#tasks-view) .support-area-separate-check:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:3px;
+}
+:is(#dashboard-view,#tasks-view) .support-area-popover-list[hidden]{
+  display:none!important;
+}
 :is(#dashboard-view,#tasks-view) .support-area-popover-context{
   margin:0;padding:8px 0 9px;color:var(--ink-muted);
   font-size:10.5px;line-height:1.5;white-space:normal;
@@ -5963,9 +5977,21 @@ function supportAreaMetrics(rows){
       'No hay actividades con apoyo registrado en el alcance seleccionado.'
   };
 }
-function supportAreaPopover(support,view){
-  const total=support.total;
-  const items=support.ranking.map(area=>{
+// Check sin etiqueta visible. Estado compartido por las dos vistas.
+let supportAreaSeparate=false;
+function toggleSupportAreaBreakdown(checked){
+  supportAreaSeparate=Boolean(checked);
+  document.querySelectorAll('.support-area-popover').forEach(popover=>{
+    const checkbox=popover.querySelector('.support-area-separate-check');
+    if(checkbox)checkbox.checked=supportAreaSeparate;
+    const grouped=popover.querySelector('[data-support-mode="grouped"]');
+    const detailed=popover.querySelector('[data-support-mode="separate"]');
+    if(grouped)grouped.hidden=supportAreaSeparate;
+    if(detailed)detailed.hidden=!supportAreaSeparate;
+  });
+}
+function supportAreaEntries(ranking){
+  return ranking.map(area=>{
     const percent=area.percent.toFixed(1);
     return `<div class="support-area-entry">
       <div class="support-area-entry-top">
@@ -5976,12 +6002,26 @@ function supportAreaPopover(support,view){
       <div class="support-area-entry-track" aria-hidden="true"><i style="--support-pct:${percent}%"></i></div>
     </div>`;
   }).join('');
-  return `<div class="support-area-popover" id="support-details-${view}" role="tooltip">
+}
+function supportAreaPopover(support,view){
+  const total=support.total;
+  const empty='<p class="support-area-empty">No hay apoyos registrados para este alcance.</p>';
+  return `<div class="support-area-popover" id="support-details-${view}" role="group" aria-label="Desglose por área">
     <div class="support-area-popover-header">
-      <span>DESGLOSE POR ÁREA</span><strong>${support.percent.toFixed(1)}%</strong>
+      <span>DESGLOSE POR ÁREA</span>
+      <span class="support-area-header-actions">
+        <input class="support-area-separate-check" type="checkbox"
+          aria-label="Mostrar especialidades sin agrupar"
+          title="Mostrar especialidades sin agrupar"
+          ${supportAreaSeparate?'checked':''}
+          onclick="event.stopPropagation()" onkeydown="event.stopPropagation()"
+          onchange="toggleSupportAreaBreakdown(this.checked)">
+        <strong>${support.percent.toFixed(1)}%</strong>
+      </span>
     </div>
     <p class="support-area-popover-context">Porcentaje sobre el total de ${total} ${total===1?'actividad':'actividades'} del alcance seleccionado.</p>
-    <div class="support-area-popover-list">${items||'<p class="support-area-empty">No hay apoyos registrados para este alcance.</p>'}</div>
+    <div class="support-area-popover-list" data-support-mode="grouped" ${supportAreaSeparate?'hidden':''}>${supportAreaEntries(support.ranking)||empty}</div>
+    <div class="support-area-popover-list" data-support-mode="separate" ${supportAreaSeparate?'':'hidden'}>${supportAreaEntries(support.originalRanking)||empty}</div>
     <div class="support-area-popover-footer">${support.supported} de ${total} actividades con apoyo registrado</div>
   </div>`;
 }
