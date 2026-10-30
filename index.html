@@ -5618,12 +5618,31 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           <button type="button" role="option" data-bim-meeting-day="7" aria-selected="false" onclick="setBimPptMeetingDay(7)">Domingo</button>
         </div>
       </div>
+      <div id="bim-ppt-specialty-picker" class="bim-ppt-day-picker" hidden
+        onkeydown="handleBimPptSpecialtyKey(event)">
+        <button type="button" id="bim-ppt-specialty-trigger" class="bim-ppt-day-trigger"
+          aria-label="Filtrar fotografías por especialidad" aria-haspopup="listbox"
+          aria-expanded="false" aria-controls="bim-ppt-specialty-menu"
+          onclick="toggleBimPptSpecialtyMenu()">
+          <span id="bim-ppt-specialty-label">Revit</span>
+          <svg viewBox="0 0 10 10" aria-hidden="true" fill="none">
+            <path d="m2 4 3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div id="bim-ppt-specialty-menu" class="bim-ppt-day-menu" role="listbox"
+          aria-label="Especialidad para exportar" hidden>
+          <button type="button" role="option" data-bim-specialty="revit" aria-selected="true"
+            onclick="setBimPptSpecialty('revit')">Revit</button>
+          <button type="button" role="option" data-bim-specialty="civil" aria-selected="false"
+            onclick="setBimPptSpecialty('civil')">Civil 3D</button>
+        </div>
+      </div>
       <button type="button" class="close" onclick="closeBimPptExport()" aria-label="Cerrar exportación">×</button>
     </div>
     <div class="modal-body">
       <p class="bim-ppt-subtitle" id="bim-ppt-week-label"></p>
       <p class="bim-ppt-mode-desc" id="bim-ppt-mode-note" aria-live="polite"></p>
-      <p class="bim-ppt-note">
+      <p class="bim-ppt-note" id="bim-ppt-design-note">
         Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores.
         Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía
         antes de exportar. Se respetan los filtros de paquete, disciplina y colaborador.
@@ -7110,8 +7129,14 @@ function switchView(v, authenticated=false){
   // Salir de Control Semanal revoca el acceso de esta pestaña; reentrar exige clave.
   try{
     sessionStorage.setItem('area-bim-active-view',v);
-    if(v==='weekly')sessionStorage.setItem('area-bim-weekly-session','authorized');
-    else sessionStorage.removeItem('area-bim-weekly-session');
+    if(v==='weekly'){
+      sessionStorage.setItem('area-bim-weekly-session','authorized');
+      sessionStorage.setItem('area-bim-weekly-export-profile',bimExportProfile);
+    }else{
+      sessionStorage.removeItem('area-bim-weekly-session');
+      sessionStorage.removeItem('area-bim-weekly-export-profile');
+      bimExportProfile='standard';
+    }
   }catch(e){}
   rememberBimViewInHistory();
   updateBimNavIndicator();
@@ -7139,6 +7164,7 @@ function restoreBimViewOnReload(){
     saved=sessionStorage.getItem('area-bim-active-view')||
       (typeof history!=='undefined'?history.state?.bimView:'')||'';
     authorized=sessionStorage.getItem('area-bim-weekly-session')==='authorized';
+    bimExportProfile=authorized&&sessionStorage.getItem('area-bim-weekly-export-profile')==='by-person'?'by-person':'standard';
   }catch(e){}
   if(saved==='tasks')switchView('tasks');
   else if(saved==='weekly'){
@@ -7160,6 +7186,8 @@ function populateEditorSelects(){
   }
 }
 
+// Perfil exclusivo de exportación PPT. No modifica datos ni el usuario original.
+let bimExportProfile='standard';
 let authTarget = 'settings';
 function showProtectedAuth(target){
   authTarget = target;
@@ -7204,13 +7232,18 @@ function validateSettingsAuth(event){
   event.preventDefault();
   const user = $('#settings-auth-user').value.trim();
   const password = $('#settings-auth-password').value;
-  if(user !== 'AREA_BIM' || password !== 'AREABIM'){
+  if(password !== 'AREABIM' || !['AREA_BIM','AREA_BIM2'].includes(user)){
     $('#settings-auth-error').classList.remove('hidden');
     $('#settings-auth-password').value = '';
     $('#settings-auth-password').focus();
     return;
   }
   const target=authTarget;
+  bimExportProfile=user==='AREA_BIM2'?'by-person':'standard';
+  try{
+    if(target==='weeklyAccess'||currentView==='weekly')
+      sessionStorage.setItem('area-bim-weekly-export-profile',bimExportProfile);
+  }catch(e){}
   closeSettingsAuth();
   if(target==='weeklyAccess') switchView('weekly', true);
   else if(target==='weekly') confirmWeeklyClose();
