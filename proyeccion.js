@@ -103,6 +103,65 @@ function weeklyProjectionModel(m,today=todayString()){
   return {m,start,end,cutoff,editable,earliest,completed,pending,estimates,saved,days,
     planned,actual,projected,projectedTotal,projectionReady};
 }
+// Modo de visualización de Curva S. No altera los compromisos ni pronósticos.
+let weeklyProjectionMonthlyMode=false;
+function toggleProjectionMonthlyMode(checked){
+  weeklyProjectionMonthlyMode=Boolean(checked);
+  if(typeof renderWeekly==='function')renderWeekly();
+}
+// Los meses usan el mismo criterio del PPC: mes del jueves ISO de la semana.
+// Se consideran los compromisos del alcance y sus cierres verificados, sin
+// duplicar una tarea dentro de una misma semana ni inventar fechas previstas.
+function projectionWeeksForPeriod(period,monthly){
+  return monthly?weeksAssignedToPpcMonth(period):[period];
+}
+function projectionPeriodSummary(period,monthly){
+  const weeks=projectionWeeksForPeriod(period,monthly);
+  const weekly=weeks.map(week=>{
+    const m=weeklyMetrics(week);
+    return {m,p:weeklyProjectionModel(m)};
+  });
+  const total=key=>weekly.reduce((sum,row)=>sum+row.m[key],0);
+  const planned=total('planned'),completed=total('completed');
+  const estimated=weekly.reduce((sum,row)=>sum+row.p.estimates.size,0);
+  const unestimated=Math.max(0,planned-completed-estimated);
+  const now=monthly?todayString().slice(0,7):isoWeekKey(new Date());
+  const historic=period<now;
+  return {period,monthly,weeks,planned,completed,estimated,
+    remaining:planned-completed,unestimated,historic,
+    projectedTotal:completed+estimated,
+    projectionReady:!historic&&planned>0&&(estimated>0||completed===planned)};
+}
+function projectionTrendModel(){
+  const monthly=weeklyProjectionMonthlyMode;
+  const periods=monthly?monthlyPpcHistoryMonths():weeklyPpcHistoryWeeks();
+  const now=monthly?todayString().slice(0,7):isoWeekKey(new Date());
+  const summaries=periods.map(period=>projectionPeriodSummary(period,monthly));
+  const labels=periods.map(monthly?ppcMonthlyLabel:weekShort);
+  const planned=[],actual=[],forecast=[];
+  let runningPlanned=0,runningReal=0;
+  for(const summary of summaries){
+    runningPlanned+=summary.planned;
+    planned.push(runningPlanned);
+    if(summary.period<=now)runningReal+=summary.completed;
+    actual.push(summary.period<=now?runningReal:null);
+  }
+  const currentIndex=periods.indexOf(now);
+  const lastForecastIndex=summaries.findLastIndex((r,i)=>i>=Math.max(0,currentIndex)&&r.estimated>0);
+  // Sólo se traza una proyección si existe al menos una fecha ingresada.
+  // El pronóstico parte del último cumplimiento verificable, no del programa.
+  let runningProjected=0;
+  for(let i=0;i<summaries.length;i++){
+    const row=summaries[i];
+    if(i<currentIndex||currentIndex<0||lastForecastIndex<0||i>lastForecastIndex){
+      forecast.push(null);continue;
+    }
+    runningProjected+=row.estimated;
+    forecast.push(runningReal+runningProjected);
+  }
+  return {monthly,periods,labels,summaries,planned,actual,forecast,
+    hasForecast:lastForecastIndex>=0,now};
+}
 function renderWeeklyProjection(m){
   const view=$('#weekly-proyeccion');
   if(!view)return;
