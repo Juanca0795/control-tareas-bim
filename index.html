@@ -4964,6 +4964,30 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   #tasks-view .task-mobile-card.task-facet-enter{animation:none!important}
 }
 
+/* Control de tareas: filtro temporal junto al total, sin alterar la tabla. */
+#tasks-view .task-head-tools{
+  display:flex;align-items:center;justify-content:flex-end;gap:14px;
+  flex-wrap:wrap;min-width:0;
+}
+#tasks-view .task-head-tools #count-label{white-space:nowrap;font-weight:600}
+#tasks-view .task-week-toolbar{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+#tasks-view .task-week-toolbar .btn.small{min-width:28px;padding:5px 8px;font-size:11px;line-height:1.2}
+#tasks-view .task-week-toggle{
+  display:inline-flex;align-items:center;gap:6px;white-space:nowrap;
+  padding:5px 6px;color:var(--ink-muted);font-size:11px;cursor:pointer;
+}
+#tasks-view .task-week-toggle input{accent-color:var(--accent-blue);margin:0;cursor:pointer}
+#tasks-view .task-week-period{
+  border:1px solid var(--border-base);border-radius:5px;
+  background:var(--bg-subtle);padding:5px 7px;font-size:10px;
+  white-space:nowrap;color:var(--accent-blue);
+}
+#tasks-view .task-week-period[hidden]{display:none!important}
+@media(max-width:900px){
+  #tasks-view .card-head{flex-wrap:wrap;gap:8px}
+  #tasks-view .task-head-tools{width:100%;justify-content:flex-start;gap:8px}
+  #tasks-view .task-week-toolbar{justify-content:flex-start}
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -5061,7 +5085,19 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           <p class="desc task-table-help">Doble clic en una fila para editar — Selecciona una fila y pulsa Supr para eliminar.</p>
           <p class="desc task-mobile-help">En celular o tablet, usa «Editar entregable» para modificar un registro. Todos los campos están visibles en su tarjeta.</p>
         </div>
-        <div class="subtle" id="count-label"></div>
+        <div class="task-head-tools">
+          <div class="subtle" id="count-label"></div>
+          <div class="task-week-toolbar" role="group" aria-label="Filtrar entregables por semana de ingreso">
+            <button type="button" class="btn small task-week-nav" onclick="changeTaskFilterWeek(-1)" title="Semana anterior" aria-label="Filtrar por semana anterior">‹</button>
+            <button type="button" class="btn small task-week-now" onclick="resetTaskFilterWeek()" title="Mostrar semana actual">Actual</button>
+            <button type="button" class="btn small task-week-nav" onclick="changeTaskFilterWeek(1)" title="Semana siguiente" aria-label="Filtrar por semana siguiente">›</button>
+            <label class="task-week-toggle" title="Filtrar usando la fecha de ingreso de cada tarea, incluidas las retroactivas">
+              <input type="checkbox" id="task-week-filter" onchange="setTaskWeeklyFilter(this.checked)">
+              <span>Por semana</span>
+            </label>
+            <span class="task-week-period" id="task-week-period" hidden aria-live="polite"></span>
+          </div>
+        </div>
       </div>
       <div class="controls">
         <input id="search" class="field-input" oninput="onTaskFiltersChanged()" placeholder="Filtrar por código BIM, entregable, colaborador o área de apoyo." aria-label="Buscar tareas">
@@ -5972,6 +6008,7 @@ function crossFilterOptions(fields,sourceRows){
 function taskCrossSource(){
   const query=$('#search').value.trim().toLocaleLowerCase('es');
   return tasks.filter(t=>(!linkedTaskIds||linkedTaskIds.has(t.id))&&
+    (!taskWeekFilterEnabled||taskEntryWeek(t)===taskWeekFilterKey)&&
     (!query||[t.id,t.title,t.owner,t.package,t.support].join(' ').toLocaleLowerCase('es').includes(query)));
 }
 function refreshFilters(){
@@ -6183,6 +6220,39 @@ function makeStats(rows,interactive=false){
   ].join('');
 }
 
+// Filtro visual opcional por SEMANA DE INGRESO, independiente de PPC y vencimiento.
+let taskWeekFilterEnabled=false;
+let taskWeekFilterKey='';
+function currentTaskEntryWeek(){
+  return isoWeekKey(new Date(peruEntryClock().date+'T12:00:00'));
+}
+function setTaskWeeklyFilter(enabled){
+  taskWeekFilterEnabled=Boolean(enabled);
+  if(taskWeekFilterEnabled&&!taskWeekFilterKey)taskWeekFilterKey=currentTaskEntryWeek();
+  onTaskFiltersChanged();
+}
+function changeTaskFilterWeek(direction){
+  if(!Number.isInteger(direction)||Math.abs(direction)!==1)return;
+  const week=taskWeekFilterKey||currentTaskEntryWeek();
+  taskWeekFilterKey=neighborWeek(week,direction);
+  taskWeekFilterEnabled=true;
+  onTaskFiltersChanged();
+}
+function resetTaskFilterWeek(){
+  taskWeekFilterKey=currentTaskEntryWeek();
+  taskWeekFilterEnabled=true;
+  onTaskFiltersChanged();
+}
+function updateTaskWeekControls(){
+  const toggle=$('#task-week-filter'),label=$('#task-week-period');
+  if(toggle)toggle.checked=taskWeekFilterEnabled;
+  if(!label)return;
+  label.hidden=!taskWeekFilterEnabled;
+  if(taskWeekFilterEnabled){
+    const week=taskWeekFilterKey||currentTaskEntryWeek();
+    label.textContent=weekShort(week)+' · '+dateDisplay(localISO(weekStart(week)))+' – '+dateDisplay(weekEnd(week));
+  }
+}
 const TASKS_PER_PAGE=15;
 let currentTaskPage=1;
 let taskFacetAnimateNext=false;
@@ -6310,6 +6380,7 @@ function filteredTasks(){
   const q = $('#search').value.toLocaleLowerCase('es');
   return tasks.filter(t =>
     (!linkedTaskIds || linkedTaskIds.has(t.id)) &&
+    (!taskWeekFilterEnabled || taskEntryWeek(t)===taskWeekFilterKey) &&
     (!q || [t.id, t.title, t.owner, t.package, t.support].join(' ').toLocaleLowerCase('es').includes(q)) &&
     (!$('#filter-package').value || t.package === $('#filter-package').value) &&
     (!$('#filter-owner').value || t.owner === $('#filter-owner').value) &&
@@ -6319,6 +6390,7 @@ function filteredTasks(){
 }
 
 function renderTasks(){
+  updateTaskWeekControls();
   const animateFacet=taskFacetAnimateNext;
   taskFacetAnimateNext=false;
   crossFilterOptions(TASK_CROSS_FIELDS,taskCrossSource());
