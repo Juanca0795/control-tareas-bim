@@ -5363,7 +5363,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           </div>
         </div>
         <p class="auth-error hidden" id="settings-auth-error" role="alert">Usuario o contraseña incorrectos.</p>
-        <p class="auth-note">Control de acceso local. No sustituye la autenticación de un servidor.</p>
+        <p class="auth-note">Control de acceso local. No sustituye la autenticación de un servidor. <span id="bim-auth-version">Acceso v2.1</span></p>
       </div>
       <div class="modal-ft"><div><button class="btn" type="button" onclick="closeSettingsAuth()">Cancelar</button><button class="btn primary" type="submit">Ingresar</button></div></div>
     </form>
@@ -7241,8 +7241,9 @@ function toggleSettingsPassword(){
 }
 function validateSettingsAuth(event){
   event.preventDefault();
-  const user = $('#settings-auth-user').value.trim();
+  const user = $('#settings-auth-user').value.trim().toUpperCase();
   const password = $('#settings-auth-password').value;
+  // Acceso v2.1: AREA_BIM mantiene su perfil original; AREA_BIM2 solo modifica el PPT.
   if(password !== 'AREABIM' || !['AREA_BIM','AREA_BIM2'].includes(user)){
     $('#settings-auth-error').classList.remove('hidden');
     $('#settings-auth-password').value = '';
