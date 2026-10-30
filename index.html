@@ -5654,6 +5654,18 @@ function normalizeMonthlyAnalytics(input){
   const validDate=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+'T00:00:00Z'));
   const dates=input?.createdAtByTask&&typeof input.createdAtByTask==='object'&&!Array.isArray(input.createdAtByTask)
     ?Object.fromEntries(Object.entries(input.createdAtByTask).filter(([id,date])=>id&&validDate(date))):{};
+  // Ajustes de fecha visible, sin modificar created_at nativo de Supabase.
+  // Las entradas vacías sirven como retirada sincronizable (tombstone).
+  const rawManual=input?.manualEntryDateByTask;
+  const manual={};
+  if(rawManual&&typeof rawManual==='object'&&!Array.isArray(rawManual)){
+    for(const [id,row] of Object.entries(rawManual)){
+      if(!id||!row||typeof row!=='object'||Array.isArray(row))continue;
+      if(row.date&&!validDate(row.date))continue;
+      if(typeof row.updatedAt!=='string'||!Number.isFinite(Date.parse(row.updatedAt)))continue;
+      manual[id]={date:row.date||'',updatedAt:row.updatedAt};
+    }
+  }
   const months={};
   if(input?.monthlySnapshots&&typeof input.monthlySnapshots==='object'&&!Array.isArray(input.monthlySnapshots)){
     for(const [month,row] of Object.entries(input.monthlySnapshots)){
@@ -5661,17 +5673,25 @@ function normalizeMonthlyAnalytics(input){
       months[month]={avg:Math.max(0,Math.min(100,row.avg)),total:Math.max(0,Math.trunc(row.total)),capturedOn:row.capturedOn};
     }
   }
-  return {createdAtByTask:dates,monthlySnapshots:months};
+  return {createdAtByTask:dates,manualEntryDateByTask:manual,monthlySnapshots:months};
 }
 function mergeMonthlyAnalytics(cloud,local){
   const a=normalizeMonthlyAnalytics(cloud),b=normalizeMonthlyAnalytics(local);
   const months={...a.monthlySnapshots};
   for(const [key,val] of Object.entries(b.monthlySnapshots))
     if(!months[key]||val.capturedOn>=months[key].capturedOn)months[key]=val;
-  return {createdAtByTask:{...a.createdAtByTask,...b.createdAtByTask},monthlySnapshots:months};
+  const manualEntryDateByTask={...a.manualEntryDateByTask};
+  for(const [id,row] of Object.entries(b.manualEntryDateByTask))
+    if(!manualEntryDateByTask[id]||row.updatedAt>=manualEntryDateByTask[id].updatedAt)
+      manualEntryDateByTask[id]=row;
+  return {createdAtByTask:{...a.createdAtByTask,...b.createdAtByTask},
+    manualEntryDateByTask,monthlySnapshots:months};
 }
 function taskCreationDate(t){
-  // Se acepta una fecha nativa real si Supabase ya la proporciona.
+  // La fecha declarada prevalece solo a efectos de visualización y orden.
+  // created_at nativo permanece inmutable para la auditoría de inserción.
+  const manual=catalogs.analytics?.manualEntryDateByTask?.[t.id]?.date;
+  if(manual)return manual;
   const local=catalogs.analytics?.createdAtByTask?.[t.id];
   if(local)return local;
   if(typeof t.createdAt==='string'&&/^\d{4}-\d{2}-\d{2}/.test(t.createdAt))return t.createdAt.slice(0,10);
@@ -8586,6 +8606,10 @@ async function save(){
     check(latestCatalogs,'Consultar copias en Supabase');
     catalogsToSave.backups=mergeCloudBackupLists(latestCatalogs.data?.[0]?.data?.backups,catalogsToSave.backups);
     catalogs.backups=catalogsToSave.backups;
+    // Evitar perder cambios de fecha ingresados desde otros dispositivos.
+    catalogsToSave.analytics=mergeMonthlyAnalytics(
+      latestCatalogs.data?.[0]?.data?.analytics,catalogsToSave.analytics);
+    catalogs.analytics=catalogsToSave.analytics;
     catalogsToSave.cncRecords=mergeCncRecords(latestCatalogs.data?.[0]?.data?.cncRecords,catalogsToSave.cncRecords);
     catalogs.cncRecords=catalogsToSave.cncRecords;
     catalogsToSave.weeklyForecasts=mergeWeeklyForecasts(latestCatalogs.data?.[0]?.data?.weeklyForecasts,catalogsToSave.weeklyForecasts);
