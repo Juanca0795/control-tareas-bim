@@ -5900,6 +5900,21 @@ function isDesignSupportArea(value){
   const terms=normalized.split(/\s+/).filter(word=>!connector.has(word));
   return terms.length>0&&terms.every(word=>disciplines.some(pattern=>pattern.test(word)));
 }
+// Medio Ambiente, IGAPRO, Ambiental y sus combinaciones se muestran como
+// MEDIO AMBIENTE exclusivamente en el desglose. No modifica task.support.
+function isEnvironmentalSupportArea(value){
+  const normalized=String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLocaleUpperCase('es').replace(/[^A-Z0-9]+/g,' ').trim();
+  if(!normalized)return false;
+  const fillers=new Set(['Y','E','DE','DEL','LA','LAS','EL','LOS','EN','PARA',
+    'AREA','AREAS','ESPECIALIDAD','ESPECIALIDADES','DISCIPLINA','DISCIPLINAS',
+    'EQUIPO','DIRECCION','DEPARTAMENTO','SECTOR','GESTION','ESTUDIO','ESTUDIOS',
+    'IMPACTO','EVALUACION','PROTECCION','CONSULTORIA','INGENIERIA','SERVICIO','SERVICIOS']);
+  const tokens=normalized.split(/\s+/).filter(word=>!fillers.has(word));
+  const environmental=/^(?:AMBIENTAL(?:ES|ISTA[S]?)?|AMBIENTE[S]?|MEDIO[S]?|MEDIOAMBIENTE[S]?|MEDIOAMBIENTAL(?:ES)?|IGAPRO)$/;
+  return tokens.length>0&&tokens.some(word=>environmental.test(word))
+    &&tokens.every(word=>environmental.test(word));
+}
 // Cada actividad con apoyo informado se contabiliza una vez en el alcance.
 function supportAreaMetrics(rows){
   const groups=new Map();
@@ -5908,7 +5923,7 @@ function supportAreaMetrics(rows){
     const name=String(task.support??'').trim().replace(/\s+/g,' ');
     if(!name)continue;
     supported++;
-    const area=isDesignSupportArea(name)?'DISEÑO':name;
+    const area=isEnvironmentalSupportArea(name)?'MEDIO AMBIENTE':isDesignSupportArea(name)?'DISEÑO':name;
     const key=area.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
     const previous=groups.get(key);
     if(previous)previous.count++;
