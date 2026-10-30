@@ -2498,6 +2498,16 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 #weekly-view .weekly-monthly-toggle:focus-within{color:var(--ink-primary)}
 @media(max-width:690px){#weekly-view .weekly-chart-card .weekly-card-head{flex-wrap:wrap}#weekly-view .weekly-trend-controls{width:100%;justify-content:space-between}}
 
+/* Selector mensual de Curva S: mismo tratamiento que el PPC. */
+#weekly-view .weekly-projection-trend-tools{
+  display:flex;align-items:center;gap:10px;justify-content:flex-end;flex-wrap:wrap;
+}
+#weekly-view .weekly-projection-trend-tools .weekly-monthly-toggle{flex-shrink:0}
+#weekly-view .weekly-projection-trend-tools .weekly-mini-badge{white-space:nowrap}
+@media(max-width:720px){
+  #weekly-view .weekly-projection-graph .weekly-card-head{flex-wrap:wrap}
+  #weekly-view .weekly-projection-trend-tools{width:100%;justify-content:space-between}
+}
 /* Franja de compromisos y vista semanal sin los paneles complementarios. */
 #weekly-view .weekly-status-context{color:var(--ink-muted);margin-left:6px;font-size:10px}
 #weekly-view .weekly-status-comparison{margin-left:8px;color:var(--status-done-fg);font-weight:700;white-space:nowrap}
@@ -5122,14 +5132,21 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     <div id="weekly-proyeccion" class="hidden" role="tabpanel" aria-labelledby="weekly-tab-proyeccion">
       <section id="weekly-projection-kpis" class="weekly-projection-kpis" aria-label="Indicadores de proyección semanal"></section>
       <section class="card weekly-projection-bar-card" aria-label="Distribución semanal">
-        <h2>COMPOSICIÓN DEL COMPROMISO SEMANAL</h2>
+        <h2 id="weekly-projection-composition-title">COMPOSICIÓN DEL COMPROMISO SEMANAL</h2>
         <div id="weekly-projection-bar"></div>
       </section>
       <section class="weekly-projection-layout" aria-label="Curva acumulada y fechas estimadas">
         <article class="card weekly-chart-card weekly-projection-graph">
           <div class="weekly-card-head">
-            <div><h2>CURVA S · EVOLUCIÓN SEMANAL ACUMULADA</h2>
-              <p>Programado acumulado · Cumplido real · Proyección según fechas estimadas</p></div>
+            <div><h2 id="weekly-projection-trend-title">CURVA S · EVOLUCIÓN SEMANAL ACUMULADA</h2>
+              <p id="weekly-projection-trend-desc">Programado acumulado · Cumplido real · Proyección según fechas estimadas</p></div>
+            <div class="weekly-projection-trend-tools">
+              <label class="weekly-monthly-toggle" title="Alternar Curva S semanal y mensual">
+                <input type="checkbox" id="weekly-projection-monthly" onchange="toggleProjectionMonthlyMode(this.checked)">
+                <span>Curva S mensual</span>
+              </label>
+              <span class="weekly-mini-badge" id="weekly-projection-trend-range">9 semanas</span>
+            </div>
           </div>
           <div id="weekly-projection-chart" aria-label="Gráfico de evolución acumulada"></div>
           <div id="weekly-projection-chart-status" class="proj-chart-status" role="status" aria-live="polite"></div>
@@ -5141,8 +5158,8 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         </article>
         <article class="card weekly-chart-card">
           <div class="weekly-card-head">
-            <div><h2>ESTIMACIÓN DE ACTIVIDADES PENDIENTES</h2>
-              <p>Indica cuándo esperas completar cada entregable pendiente de esta semana</p></div>
+            <div><h2 id="weekly-projection-pending-title">ESTIMACIÓN DE ACTIVIDADES PENDIENTES</h2>
+              <p id="weekly-projection-pending-desc">Indica cuándo esperas completar cada entregable pendiente de esta semana</p></div>
           </div>
           <p id="weekly-projection-status" role="status" aria-live="polite"></p>
           <div id="weekly-projection-tasks"></div>
