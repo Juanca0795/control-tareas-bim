@@ -5075,7 +5075,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         <rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M12 14v5m-3-3 3 3 3-3"/>
       </svg> Exportar PPT
     </button>
-    <button type="button" id="weekly-backup-launch" class="weekly-backup-launch hidden" onclick="createWeeklyBackupAndOpen()" title="Crear backup en Supabase y consultar respaldos" aria-label="Abrir respaldos de Control Semanal">
+    <button type="button" id="weekly-backup-launch" class="weekly-backup-launch hidden" onclick="openWeeklyBackupDialog()" title="Administrar backups sin crear automáticamente una copia" aria-label="Abrir respaldos de Control Semanal">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3M5 7a8 8 0 0 1 14 0"/></svg> Backup
     </button>
     <button class="nav-link active" id="nav-dashboard" type="button" role="tab" aria-selected="true" onclick="switchView('dashboard')">
@@ -5456,7 +5456,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
       <button type="button" class="close" onclick="closeWeeklyBackupDialog()" aria-label="Cerrar backups">×</button>
     </div>
     <div class="modal-body">
-      <p class="weekly-backup-note">Cada copia conserva un estado completo independiente de las tareas actuales. Restaurar reemplazará los registros vigentes y requiere confirmación.</p>
+      <p class="weekly-backup-note">Al abrir esta ventana no se crea ningún backup. Pulsa <strong>Crear backup en Supabase</strong> para guardarlo. Puedes restaurar o eliminar una copia concreta; eliminar un backup no borra tareas ni semanas actuales.</p>
       <div class="weekly-backup-actions">
         <button type="button" id="weekly-backup-create" class="btn primary" onclick="createWeeklyCloudBackup()">Crear backup en Supabase</button>
         <button type="button" class="btn small" id="weekly-backup-refresh" onclick="refreshWeeklyCloudBackups()">Actualizar lista</button>
@@ -5822,6 +5822,12 @@ function captureMonthlyStats(){
   }
   return changed;
 }
+// Registros de eliminación que impiden reintroducir backups desde sesiones obsoletas.
+function mergeCloudBackupDeletedIds(remote,local){
+  const valid=list=>Array.isArray(list)?
+    list.filter(id=>typeof id==='string'&&id.length>0&&id.length<=160):[];
+  return [...new Set([...valid(remote),...valid(local)])];
+}
 function normalizeCatalogs(input){
   const result = {};
   for(const key of ['packages','owners','teams']){
@@ -5841,8 +5847,10 @@ function normalizeCatalogs(input){
   result.evidenceByTask=normalizeEvidenceByTask(input?.evidenceByTask);
   // Copias completas en el JSONB de bim_catalogs, sin cambiar el esquema.
   // Nunca copiar backups dentro del payload de otro backup.
+  result.deletedBackupIds=mergeCloudBackupDeletedIds(input?.deletedBackupIds,[]);
+  const deleted=new Set(result.deletedBackupIds);
   result.backups=Array.isArray(input?.backups)
-    ?input.backups.filter(x=>x&&typeof x.id==='string'&&x.payload&&Array.isArray(x.payload.tasks)&&Array.isArray(x.payload.weeklySnapshots))
+    ?input.backups.filter(x=>x&&typeof x.id==='string'&&!deleted.has(x.id)&&x.payload&&Array.isArray(x.payload.tasks)&&Array.isArray(x.payload.weeklySnapshots))
     :[];
   return result;
 }
@@ -7973,30 +7981,13 @@ function weeklyBackupUiBusy(value){
   for(const selector of ['#weekly-backup-create','#weekly-backup-refresh']){
     const btn=$(selector);if(btn)btn.disabled=value;
   }
+  $('#weekly-backup-list')?.querySelectorAll('button').forEach(btn=>btn.disabled=value);
 }
 async function openWeeklyBackupDialog(){
   if(currentView!=='weekly')return;
   $('#weekly-backup-back').classList.add('open');
   document.body.style.overflow='hidden';
   await refreshWeeklyCloudBackups();
-}
-async function createWeeklyBackupAndOpen(){
-  if(currentView!=='weekly'||weeklyBackupBusy)return;
-  $('#weekly-backup-back').classList.add('open');
-  document.body.style.overflow='hidden';
-  if(!window.bimCloudBackups){
-    weeklyBackupFeedback('No está disponible la conexión de respaldo en Supabase.',true);
-    return;
-  }
-  // Ante cambios locales pendientes, mantener bloqueada la creación de copias
-  // hasta reconciliar la sincronización. Cero tareas confirmadas es válido.
-  if(window.bimCloudBackups.isRecoveryMode()){
-    await refreshWeeklyCloudBackups();
-    weeklyBackupFeedback('Respaldo nuevo suspendido: Supabase devolvió 0 tareas. '+
-      'Selecciona un respaldo anterior para restaurar únicamente si confirmas sus datos.',true);
-    return;
-  }
-  await createWeeklyCloudBackup();
 }
 async function refreshWeeklyCloudBackups(){
   if(weeklyBackupBusy)return;
@@ -8011,7 +8002,8 @@ async function refreshWeeklyCloudBackups(){
         esc(new Date(x.createdAt).toLocaleString('es-PE'))+' · '+esc(x.label||'Backup manual')+
         '</strong><small>'+Number(x.tasksCount||0)+' tareas · '+Number(x.weeksCount||0)+
         ' semanas archivadas</small></div><button type="button" class="btn small danger" data-backup-restore="'+
-        esc(x.id)+'">Restaurar</button></article>').join('')
+        esc(x.id)+'">Restaurar</button><button type="button" class="btn small danger" data-backup-delete="'+
+        esc(x.id)+'" title="Eliminar solo este backup">Eliminar</button></article>').join('')
       :'<p class="weekly-backup-note">Todavía no hay backups. Crea el primero para poder restaurarlo después.</p>';
     weeklyBackupFeedback(weeklyBackupsShown.length+' respaldo(s) en Supabase.');
   }catch(err){weeklyBackupFeedback('No se pudo leer Supabase: '+err.message,true)}
@@ -8029,6 +8021,30 @@ async function createWeeklyCloudBackup(){
   }catch(err){weeklyBackupFeedback('Backup no creado: '+err.message,true)}
   finally{weeklyBackupUiBusy(false)}
   if(!$('#weekly-backup-feedback').classList.contains('error'))await refreshWeeklyCloudBackups();
+}
+function confirmWeeklyCloudDelete(id){
+  if(weeklyBackupBusy)return;
+  const b=weeklyBackupsShown.find(x=>x.id===id);
+  if(!b)return;
+  openConfirm('Eliminar backup de Supabase',
+    'Se eliminará definitivamente SOLO la copia del '+new Date(b.createdAt).toLocaleString('es-PE')+
+      '. Las tareas, fechas de ingreso, catálogos y cierres actuales NO se modificarán. ¿Eliminar este backup?',
+    ()=>deleteWeeklyCloudBackup(id));
+}
+async function deleteWeeklyCloudBackup(id){
+  const api=window.bimCloudBackups;
+  if(!api||weeklyBackupBusy)return;
+  weeklyBackupUiBusy(true);
+  weeklyBackupFeedback('Eliminando únicamente el backup seleccionado...');
+  let deleted=false;
+  try{
+    await api.remove(id);
+    deleted=true;
+    weeklyBackupFeedback('Backup eliminado de Supabase. Las tareas y fechas se conservaron.');
+    toast('Backup eliminado; datos activos intactos');
+  }catch(err){weeklyBackupFeedback('No se eliminó el backup: '+err.message,true)}
+  finally{weeklyBackupUiBusy(false)}
+  if(deleted)await refreshWeeklyCloudBackups();
 }
 function confirmWeeklyCloudRestore(id){
   if(weeklyBackupBusy)return;
@@ -8054,9 +8070,11 @@ async function restoreWeeklyCloudBackup(id){
   if(restored)await refreshWeeklyCloudBackups();
 }
 document.addEventListener('click',e=>{
-  const button=e.target.closest('[data-backup-restore]');
-  if(button&&$('#weekly-backup-back').classList.contains('open'))
-    confirmWeeklyCloudRestore(button.dataset.backupRestore);
+  if(!$('#weekly-backup-back').classList.contains('open'))return;
+  const restoreButton=e.target.closest('[data-backup-restore]');
+  if(restoreButton)confirmWeeklyCloudRestore(restoreButton.dataset.backupRestore);
+  const deleteButton=e.target.closest('[data-backup-delete]');
+  if(deleteButton)confirmWeeklyCloudDelete(deleteButton.dataset.backupDelete);
 });
 /* ---------- CONTROL SEMANAL: fechas ISO, snapshots y KPIs ---------- */
 function isoWeekKey(date){
@@ -8908,7 +8926,8 @@ async function load(){
         merged.cncRecords=mergeCncRecords(fromCloud.cncRecords,catalogs.cncRecords);
         merged.weeklyForecasts=mergeWeeklyForecasts(fromCloud.weeklyForecasts,catalogs.weeklyForecasts);
         merged.evidenceByTask=mergeEvidenceByTask(fromCloud.evidenceByTask,catalogs.evidenceByTask);
-        merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups);
+        merged.deletedBackupIds=mergeCloudBackupDeletedIds(fromCloud.deletedBackupIds,catalogs.deletedBackupIds);
+        merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups,merged.deletedBackupIds);
         catalogs=normalizeCatalogs(merged);
         ids=cloudIds;
         weeklySnapshots=cloudWeeks;
@@ -8956,7 +8975,11 @@ async function save(){
     catalogsToSave.analytics=mergeMonthlyAnalytics(
       latestCatalogs.data?.[0]?.data?.analytics,catalogsToSave.analytics);
     catalogs.analytics=catalogsToSave.analytics;
-    catalogsToSave.backups=mergeCloudBackupLists(latestCatalogs.data?.[0]?.data?.backups,catalogsToSave.backups);
+    catalogsToSave.deletedBackupIds=mergeCloudBackupDeletedIds(
+      latestCatalogs.data?.[0]?.data?.deletedBackupIds,catalogsToSave.deletedBackupIds);
+    catalogs.deletedBackupIds=catalogsToSave.deletedBackupIds;
+    catalogsToSave.backups=mergeCloudBackupLists(
+      latestCatalogs.data?.[0]?.data?.backups,catalogsToSave.backups,catalogsToSave.deletedBackupIds);
     catalogs.backups=catalogsToSave.backups;
     // Evitar perder cambios de fecha ingresados desde otros dispositivos.
     catalogsToSave.analytics=mergeMonthlyAnalytics(
@@ -8999,10 +9022,10 @@ async function save(){
 
 // El backup está en bim_catalogs.data.backups (JSONB Supabase existente).
 // No necesita nuevas tablas: incluye tareas, catálogos sin backups y cierres.
-function mergeCloudBackupLists(remote,local){
-  const byId=new Map();
+function mergeCloudBackupLists(remote,local,deletedIds=[]){
+  const byId=new Map(),deleted=new Set(deletedIds);
   for(const backup of [...(Array.isArray(remote)?remote:[]),...(Array.isArray(local)?local:[])]){
-    if(backup&&typeof backup.id==='string'&&backup.payload&&
+    if(backup&&typeof backup.id==='string'&&!deleted.has(backup.id)&&backup.payload&&
         Array.isArray(backup.payload.tasks)&&Array.isArray(backup.payload.weeklySnapshots))
       byId.set(backup.id,backup);
   }
@@ -9020,14 +9043,14 @@ async function backupCloudState(){
 }
 async function backupStoreCloudCopy(state,label){
   // Cada snapshot es autocontenido y jamás lleva copias anidadas.
-  const {backups:ignored,...catalogSnapshot}=state.catalogs;
+  const {backups:ignored,deletedBackupIds:ignoredDeletes,...catalogSnapshot}=state.catalogs;
   const createdAt=new Date().toISOString();
   const id=createdAt+'-'+Math.random().toString(36).slice(2,9);
   const copy={
     id,createdAt,label,tasksCount:state.tasks.length,weeksCount:state.weeklySnapshots.length,
     payload:{tasks:state.tasks,catalogs:catalogSnapshot,weeklySnapshots:state.weeklySnapshots}
   };
-  const backups=mergeCloudBackupLists(state.catalogs.backups,[copy]);
+  const backups=mergeCloudBackupLists(state.catalogs.backups,[copy],state.catalogs.deletedBackupIds);
   const result=await d.from('bim_catalogs').upsert({
     user_id:sharedUser,data:{...state.catalogs,backups}
   },{onConflict:'user_id'});
@@ -9037,7 +9060,8 @@ async function backupStoreCloudCopy(state,label){
   const recorded=verify.data?.[0]?.data?.backups;
   if(!Array.isArray(recorded)||!recorded.some(x=>x.id===id))
     throw Error('Supabase no confirmó el nuevo backup');
-  catalogs.backups=mergeCloudBackupLists(catalogs.backups,recorded);
+  catalogs.deletedBackupIds=mergeCloudBackupDeletedIds(catalogs.deletedBackupIds,state.catalogs.deletedBackupIds);
+  catalogs.backups=mergeCloudBackupLists(catalogs.backups,recorded,catalogs.deletedBackupIds);
   try{localStorage.setItem(CATALOG_KEY,JSON.stringify(catalogs))}catch(e){}
   return copy;
 }
@@ -9059,7 +9083,8 @@ window.bimCloudBackups={
     if(!ready)throw Error('Supabase todavía está cargando');
     const res=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
     check(res,'Consultar backups');
-    return mergeCloudBackupLists(res.data?.[0]?.data?.backups,[])
+    const state=res.data?.[0]?.data||{};
+    return mergeCloudBackupLists(state.backups,[],state.deletedBackupIds)
       .map(cloudBackupMetadata).reverse();
   },
   async create(){
@@ -9071,12 +9096,45 @@ window.bimCloudBackups={
       return cloudBackupMetadata(await backupStoreCloudCopy(cloud,'Backup manual'));
     }finally{lock=0}
   },
+  async remove(id){
+    await cloudBackupReady();
+    if(cloudEmptyGuard)throw Error('No se pueden eliminar backups durante una alerta de recuperación');
+    lock=1;
+    try{
+      const res=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+      check(res,'Consultar backup antes de eliminarlo');
+      const state=res.data?.[0]?.data;
+      if(!state||!Array.isArray(state.backups))throw Error('No se encontró el catálogo de backups');
+      const active=mergeCloudBackupLists(state.backups,[],state.deletedBackupIds);
+      if(!active.some(x=>x.id===id))throw Error('El backup seleccionado ya no existe');
+      const deletedBackupIds=mergeCloudBackupDeletedIds(state.deletedBackupIds,[id]);
+      const updated={...state,deletedBackupIds,
+        backups:mergeCloudBackupLists(state.backups,[],deletedBackupIds)};
+      // Solo el JSONB de copias. No escribir ni eliminar tareas ni semanas.
+      const written=await d.from('bim_catalogs').upsert({
+        user_id:sharedUser,data:updated
+      },{onConflict:'user_id'});
+      check(written,'Eliminar backup');
+      const verified=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+      check(verified,'Verificar eliminación');
+      const recorded=verified.data?.[0]?.data||{};
+      if(!Array.isArray(recorded.deletedBackupIds)||
+         !recorded.deletedBackupIds.includes(id)||
+         (recorded.backups||[]).some(x=>x.id===id))
+        throw Error('Supabase no confirmó la eliminación del backup');
+      catalogs.deletedBackupIds=mergeCloudBackupDeletedIds(catalogs.deletedBackupIds,recorded.deletedBackupIds);
+      catalogs.backups=mergeCloudBackupLists(catalogs.backups,recorded.backups,catalogs.deletedBackupIds);
+      try{localStorage.setItem(CATALOG_KEY,JSON.stringify(catalogs))}catch(e){}
+      return {id};
+    }finally{lock=0}
+  },
   async restore(id){
     await cloudBackupReady();
     lock=1;
     try{
       const current=await backupCloudState();
-      const backup=mergeCloudBackupLists(current.catalogs.backups,[]).find(x=>x.id===id);
+      const backup=mergeCloudBackupLists(
+        current.catalogs.backups,[],current.catalogs.deletedBackupIds).find(x=>x.id===id);
       if(!backup)throw Error('El backup elegido no existe en Supabase');
       const data=backup.payload;
       if(!Array.isArray(data.tasks)||!Array.isArray(data.weeklySnapshots)||
@@ -9113,8 +9171,10 @@ window.bimCloudBackups={
         const res=await d.from('bim_weekly_snapshots').delete().eq('user_id',sharedUser).in('week',removedWeeks);
         check(res,'Eliminar semanas posteriores al backup');
       }
-      const cloudBackups=mergeCloudBackupLists(current.catalogs.backups,[rescue]);
-      const updatedCatalog=normalizeCatalogs({...data.catalogs,backups:cloudBackups});
+      const cloudBackups=mergeCloudBackupLists(
+        current.catalogs.backups,[rescue],current.catalogs.deletedBackupIds);
+      const updatedCatalog=normalizeCatalogs({...data.catalog,backups:cloudBackups,
+        deletedBackupIds:current.catalogs.deletedBackupIds});
       const catalogResult=await d.from('bim_catalogs').upsert({
         user_id:sharedUser,data:updatedCatalog
       },{onConflict:'user_id'});
