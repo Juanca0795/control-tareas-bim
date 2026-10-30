@@ -4514,7 +4514,7 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 }
 /* Sólo AREA_BIM2 necesita espacio para el selector adicional. */
 .bim-ppt-dialog.bim-ppt-person-export{width:min(860px,calc(100vw - 24px))}
-@media(max-width:850px){
+@media(max-width:950px){
   .bim-ppt-dialog.bim-ppt-person-export>.modal-hd{
     position:relative;flex-wrap:wrap;gap:7px;padding-right:38px;
   }
@@ -4523,18 +4523,7 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
     position:absolute;top:10px;right:10px;
   }
 }
-/* El cuarto criterio necesita más espacio de cabecera solo en AREA_BIM. */
-.bim-ppt-dialog.bim-ppt-standard-export{width:min(860px,calc(100vw - 24px))}
-@media(max-width:950px){
-  .bim-ppt-dialog.bim-ppt-standard-export>.modal-hd{
-    position:relative;flex-wrap:wrap;gap:7px;padding-right:38px
-  }
-  .bim-ppt-dialog.bim-ppt-standard-export>.modal-hd h2{flex:1 1 100%}
-  .bim-ppt-dialog.bim-ppt-standard-export>.modal-hd .close{
-    position:absolute;top:10px;right:10px
-  }
-}
-/* Filtrado cruzado por semana exclusivo de AREA_BIM. Sin cambios al diseño PPTX. */
+""/* Filtrado cruzado por semana exclusivo de AREA_BIM2. Sin cambios al diseño PPTX. */
 .bim-ppt-dialog .bim-ppt-mode [hidden]{display:none!important}
 .bim-ppt-dialog .bim-ppt-week-tools{
   display:flex;flex-wrap:wrap;align-items:center;gap:9px;
@@ -5672,7 +5661,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           title="Por fecha real de culminación de la actividad" onclick="setBimPptMode('culminacion')">Culminación</button>
         <button type="button" data-bim-ppt-mode="reunion" aria-pressed="true"
           title="Siete días previos al día de la reunión" onclick="setBimPptMode('reunion')">Reunión</button>
-        <button type="button" data-bim-ppt-mode="semana" aria-pressed="false" data-bim-ppt-standard-only hidden
+        <button type="button" data-bim-ppt-mode="semana" aria-pressed="false" data-bim-ppt-person-only hidden
           title="Filtrar por semana y combinar ingreso y culminación" onclick="setBimPptMode('semana')">Por semana</button>
       </div>
       <div id="bim-ppt-day-picker" class="bim-ppt-day-picker"
