@@ -230,18 +230,18 @@ function pptBimPhotoKey(item){return item.taskId+'|'+item.id}
 function pptBimRefreshModeInfo(){
   const special=pptBimState.profile==='by-person';
   document.querySelectorAll('[data-bim-ppt-mode]').forEach(button=>{
-    button.hidden=special&&button.dataset.bimPptMode==='semana';
+    button.hidden=!special&&button.dataset.bimPptMode==='semana';
     button.setAttribute('aria-pressed',String(button.dataset.bimPptMode===pptBimState.mode));
     button.disabled=pptBimState.busy;
   });
   const weekTools=$('#bim-ppt-week-tools'),weekSelector=$('#bim-ppt-report-week');
   const crossFilter=$('#bim-ppt-week-cross');
-  if(weekTools)weekTools.hidden=special;
+  if(weekTools)weekTools.hidden=!special;
   if(weekSelector){
     weekSelector.disabled=pptBimState.busy;
     weekSelector.value=pptBimState.week;
   }
-  if(crossFilter)crossFilter.hidden=special||pptBimState.mode!=='semana';
+  if(crossFilter)crossFilter.hidden=!special||pptBimState.mode!=='semana';
   for(const criterion of ['ingreso','culminacion']){
     const checkbox=$('#bim-ppt-cross-'+criterion);
     if(checkbox){
@@ -263,7 +263,7 @@ function pptBimRefreshModeInfo(){
   }else closeBimPptSpecialtyMenu();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: fotografías agrupadas por <strong>responsable</strong> y filtradas por Civil 3D o Revit. No se incluyen los cuatro colaboradores excluidos. Se conservan los filtros de paquete, disciplina y colaborador.'
+    ?'Perfil AREA_BIM2: fotografías agrupadas por <strong>responsable</strong> y filtradas por Civil 3D o Revit. El modo Por semana permite combinar Ingreso y Culminación sin duplicar fotos. No se incluyen los cuatro colaboradores excluidos. Se conservan los filtros de paquete, disciplina y colaborador.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -325,14 +325,14 @@ function pptBimRefreshItems(mode=pptBimState.mode){
 }
 function setBimPptMode(mode){
   if(pptBimState.busy||!['ingreso','culminacion','reunion','semana'].includes(mode)||
-    (mode==='semana'&&pptBimState.profile!=='standard')||
+    (mode==='semana'&&pptBimState.profile!=='by-person')||
     !$('#bim-ppt-back')?.classList.contains('open')||mode===pptBimState.mode)return;
   closeBimPptMeetingMenu();
   closeBimPptSpecialtyMenu();
   pptBimRefreshItems(mode);
 }
 function setBimPptReportWeek(week){
-  if(pptBimState.profile!=='standard'||pptBimState.busy||
+  if(pptBimState.profile!=='by-person'||pptBimState.busy||
     !$('#bim-ppt-back')?.classList.contains('open')||
     !pptBimState.availableWeeks.includes(week)||pptBimState.week===week)return;
   closeBimPptMeetingMenu();
@@ -340,7 +340,7 @@ function setBimPptReportWeek(week){
   pptBimRefreshItems();
 }
 function setBimPptWeekCriterion(criterion,checked){
-  if(pptBimState.profile!=='standard'||pptBimState.mode!=='semana'||
+  if(pptBimState.profile!=='by-person'||pptBimState.mode!=='semana'||
     pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open')||
     !['ingreso','culminacion'].includes(criterion))return;
   const next={...pptBimState.weekFilters,[criterion]:Boolean(checked)};
@@ -459,12 +459,11 @@ function openBimPptExport(){
   pptBimState={items:items.map(x=>({...x,enabled:true})),
     week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,
     weekFilters:{ingreso:true,culminacion:true},
-    availableWeeks:profile==='standard'?pptBimAvailableWeeks(selectedWeek):[],
+    availableWeeks:profile==='by-person'?pptBimAvailableWeeks(selectedWeek):[],
     busy:false,token:pptBimState.token+1,drafts:new Map()};
   pptBimSetupWeekSelector();
   const dialog=$('#bim-ppt-back .bim-ppt-dialog');
   dialog?.classList.toggle('bim-ppt-person-export',profile==='by-person');
-  dialog?.classList.toggle('bim-ppt-standard-export',profile==='standard');
   renderBimPptExport();
   $('#bim-ppt-back').classList.add('open');
   document.body.style.overflow='hidden';
