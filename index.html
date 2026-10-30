@@ -6239,10 +6239,10 @@ function renderTaskPagination(total){
 }
 // Orden cronológico exclusivamente para Control de Tareas. No se cambian
 // IDs, el orden físico en Supabase, la semana de PPC ni sus snapshots.
-function recentTaskFirst(a,b){
+// Orden cronológico estable. El ID persistente no se modifica.
+function taskChronologicalOrder(a,b){
   const aDate=taskCreationDate(a),bDate=taskCreationDate(b);
-  if(aDate!==bDate)return !aDate?1:!bDate?-1:aDate.localeCompare(bDate);
-  // Misma fecha visible: mantener primero la tarea registrada antes.
+  if(aDate!==bDate)return !aDate?-1:!bDate?1:aDate.localeCompare(bDate);
   const timestamp=t=>typeof t.createdAt==='string'&&/^\d{4}-\d{2}-\d{2}T/.test(t.createdAt)
     ?Date.parse(t.createdAt):NaN;
   const aTime=timestamp(a),bTime=timestamp(b);
@@ -6251,6 +6251,15 @@ function recentTaskFirst(a,b){
   const aId=seq(a),bId=seq(b);
   if(aId&&bId&&Number(aId[1])!==Number(bId[1]))return Number(aId[1])-Number(bId[1]);
   return String(a.id).localeCompare(String(b.id),'es',{numeric:true});
+}
+function recentTaskFirst(a,b){return -taskChronologicalOrder(a,b);}
+// Numeración visible basada en TODAS las tareas, nunca en la página o filtros.
+function taskDisplayCodes(){
+  const codes=new Map();
+  [...tasks].sort(taskChronologicalOrder).forEach((t,i)=>{
+    codes.set(t.id,'BIM-'+String(i+1).padStart(3,'0'));
+  });
+  return codes;
 }
 function taskEntryWeek(t){
   const date=taskCreationDate(t);
@@ -6298,23 +6307,14 @@ function renderTasks(){
   if(selectedTaskId && !visible.some(t=>t.id===selectedTaskId)) selectedTaskId = null;
   if(hoveredTaskId && !visible.some(t=>t.id===hoveredTaskId)) hoveredTaskId = null;
 
-  const entryWeekCounts=new Map();
-  a.forEach(t=>{
-    const week=taskEntryWeek(t);
-    entryWeekCounts.set(week,(entryWeekCounts.get(week)||0)+1);
-  });
-  $('#tasks-tbody').innerHTML = visible.map((t,index) => {
-    const week=taskEntryWeek(t);
-    const weekHeader=index===0||taskEntryWeek(visible[index-1])!==week?
-      '<tr class="task-week-group"><td colspan="10"><div class="task-week-group-label">'+
-      '<strong>'+esc(taskEntryWeekTitle(week))+'</strong><small>'+
-      entryWeekCounts.get(week)+' actividad(es) del alcance</small></div></td></tr>':'';
+  const displayCodes=taskDisplayCodes();
+  $('#tasks-tbody').innerHTML = visible.map(t => {
     const isDone = categoryOf(t.status) === 'done';
     const al = alertStatus(t);
     const lodHtml = t.lod ? `<span class="lod-badge">${esc(t.lod)}</span>` : `<span class="cell-empty">-</span>`;
     const supportHtml = t.support ? `<span class="support-text">${esc(t.support)}</span>` : `<span class="cell-empty">-</span>`;
-    return `${weekHeader}<tr data-task-row="${esc(t.id)}" tabindex="0" title="${esc(taskRegistrationHint(t))}" class="${selectedTaskId===t.id?'task-row-selected ':''}${isDone?'task-row-completed':''}${animateFacet?' task-facet-enter':''}">
-      <td><span class="id">${esc(t.id)}</span></td>
+    return `<tr data-task-row="${esc(t.id)}" tabindex="0" title="${esc(taskRegistrationHint(t))}" class="${selectedTaskId===t.id?'task-row-selected ':''}${isDone?'task-row-completed':''}${animateFacet?' task-facet-enter':''}">
+      <td><span class="id">${esc(displayCodes.get(t.id)||t.id)}</span></td>
       <td><div class="task-name">${esc(t.title)}${taskEvidenceBadge(t.id)}</div></td>
       <td>${lodHtml}</td>
       <td>${esc(t.package)}</td>
@@ -6330,14 +6330,10 @@ function renderTasks(){
     </tr>`;
   }).join('') || `<tr class="task-row-empty"><td colspan="10" class="empty">No se encontraron entregables para los criterios seleccionados.</td></tr>`;
   // Vista compacta para móviles; reutiliza las mismas tareas y el editor existente.
-  $('#tasks-mobile-cards').innerHTML=visible.length?visible.map((t,index)=>{
+  $('#tasks-mobile-cards').innerHTML=visible.length?visible.map(t=>{
     const alert=alertStatus(t);
-    const week=taskEntryWeek(t);
-    const group=index===0||taskEntryWeek(visible[index-1])!==week?
-      '<div class="task-mobile-week-group"><strong>'+esc(taskEntryWeekTitle(week))+
-      '</strong><small>'+entryWeekCounts.get(week)+' actividad(es)</small></div>':'';
-    return `${group}<article class="task-mobile-card${categoryOf(t.status)==='done'?' task-mobile-completed':''}${animateFacet?' task-facet-enter':''}" aria-label="Entregable ${esc(t.id)}">
-      <div class="task-mobile-card-head"><span class="id">${esc(t.id)}</span>${taskFacetChip('status',t.status,clsStatus(t.status))}</div>
+    return `<article class="task-mobile-card${categoryOf(t.status)==='done'?' task-mobile-completed':''}${animateFacet?' task-facet-enter':''}" aria-label="Entregable ${esc(displayCodes.get(t.id)||t.id)}">
+      <div class="task-mobile-card-head"><span class="id">${esc(displayCodes.get(t.id)||t.id)}</span>${taskFacetChip('status',t.status,clsStatus(t.status))}</div>
       <h3 class="task-mobile-title" title="${esc(t.title)}">${esc(t.title)}${taskEvidenceBadge(t.id)}</h3>
       <dl class="task-mobile-facts">
         <div><dt>LOI</dt><dd>${t.lod?`<span class="lod-badge">${esc(t.lod)}</span>`:'<span class="cell-empty">—</span>'}</dd></div>
