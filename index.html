@@ -4933,6 +4933,19 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   box-shadow:inset 0 0 0 1px rgba(93,167,255,.22),
     0 0 13px rgba(93,167,255,.14);
 }
+/* El nombre sigue pareciendo texto, no una chip ni un botón grande. */
+#tasks-view .task-owner-filter{
+  display:inline-block;max-width:100%;padding:2px 4px;margin:-2px -4px;
+  background:transparent;border:1px solid transparent;border-radius:4px;
+  color:inherit;font:inherit;line-height:inherit;text-align:inherit;
+  white-space:normal;overflow-wrap:anywhere;
+}
+#tasks-view .task-owner-filter:hover{
+  color:var(--accent-blue);background:rgba(93,167,255,.07);
+}
+#tasks-view .task-owner-filter.is-active{
+  color:var(--accent-blue);background:rgba(93,167,255,.09);
+}
 #tasks-view .task-facet-chip:focus-visible{
   outline:2px solid var(--accent-blue);
   outline-offset:3px;
@@ -6193,13 +6206,25 @@ function taskFacetChip(field,value,tone){
     aria-label="${command} ${label}: ${esc(value)}"
     title="${command} ${label}: ${esc(value)}">${esc(value)}</button>`;
 }
+// El responsable conserva su presentación textual, pero filtra las tareas al hacer clic.
+function taskOwnerFilter(value){
+  if(!value)return '<span class="cell-empty">-</span>';
+  const active=$('#filter-owner')?.value===value;
+  const command=active?'Quitar filtro de':'Filtrar por';
+  return `<button type="button" class="task-facet-chip task-owner-filter${active?' is-active':''}"
+    data-task-facet="owner" data-task-facet-value="${esc(value)}"
+    aria-pressed="${active?'true':'false'}"
+    aria-label="${command} responsable: ${esc(value)}"
+    title="${command} responsable: ${esc(value)}">${esc(value)}</button>`;
+}
 function handleTaskFacetClick(event){
   const facet=event.target.closest('button[data-task-facet]');
   if(!facet)return false;
   event.preventDefault();
   event.stopPropagation();
   const field=facet.dataset.taskFacet;
-  const id=field==='team'?'filter-team':field==='status'?'filter-status':null;
+  const id=field==='team'?'filter-team':field==='status'?'filter-status':
+    field==='owner'?'filter-owner':null;
   if(!id)return true;
   const select=document.getElementById(id);
   if(!select)return true;
@@ -6323,7 +6348,7 @@ function renderTasks(){
       <td><div class="task-name">${esc(t.title)}${taskEvidenceBadge(t.id)}</div></td>
       <td>${lodHtml}</td>
       <td>${esc(t.package)}</td>
-      <td>${esc(t.owner)}</td>
+      <td>${taskOwnerFilter(t.owner)}</td>
       <td>${taskFacetChip('team',t.team,'todo')}</td>
       <td><span class="chip ${clsPriority(t.priority)}">${esc(t.priority)}</span></td>
       <td>${taskFacetChip('status',t.status,clsStatus(t.status))}${taskCncButton(t)}</td>
@@ -6343,7 +6368,7 @@ function renderTasks(){
       <dl class="task-mobile-facts">
         <div><dt>LOI</dt><dd>${t.lod?`<span class="lod-badge">${esc(t.lod)}</span>`:'<span class="cell-empty">—</span>'}</dd></div>
         <div><dt>PAQUETE</dt><dd title="${esc(t.package)}">${esc(t.package)||'—'}</dd></div>
-        <div><dt>RESPONSABLE</dt><dd title="${esc(t.owner)}">${esc(t.owner)||'—'}</dd></div>
+        <div><dt>RESPONSABLE</dt><dd title="${esc(t.owner)}">${taskOwnerFilter(t.owner)}</dd></div>
         <div><dt>DISCIPLINA</dt><dd>${taskFacetChip('team',t.team,'todo')}</dd></div>
         <div><dt>PRIORIDAD</dt><dd><span class="chip ${clsPriority(t.priority)}">${esc(t.priority)}</span></dd></div>
         <div><dt>VENCIMIENTO</dt><dd>${esc(dateDisplay(t.deadline))}</dd></div>
