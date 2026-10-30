@@ -7860,19 +7860,13 @@ function weeklyEmpty(el,msg){
   el.closest('.weekly-chart-card')?.classList.add('weekly-is-empty');
   el.innerHTML=`<div class="weekly-empty"><strong>Sin datos para graficar</strong><span>${esc(msg)}</span></div>`;
 }
-// Evolución PPC desde la semana ISO que contiene el 1 de octubre de 2026.
-// Se respetan las semanas sin dato y no se fabrican valores futuros.
+// Ventana PPC compacta: cuatro semanas anteriores, semana elegida y cuatro
+// posteriores; no retroceder antes del arranque definido (S40 de 2026).
 function weeklyPpcHistoryWeeks(){
   const first='2026-W40';
-  const visible=weeklyHistoryWeeks();
-  if(!visible.length)return [];
-  const last=visible[visible.length-1]>first?visible[visible.length-1]:first;
-  const weeks=[];
-  for(let week=first;week<=last;week=neighborWeek(week,1)){
-    weeks.push(week);
-    if(weeks.length>260)break;
-  }
-  return weeks;
+  const proposed=neighborWeek(selectedWeek,-4);
+  const start=proposed<first?first:proposed;
+  return Array.from({length:9},(_,i)=>neighborWeek(start,i));
 }
 function weeklyTrend(m){
   const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer'),weeks=weeklyPpcHistoryWeeks();
