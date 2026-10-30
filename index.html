@@ -5878,6 +5878,28 @@ function currentWeekPerformance(rows){
   const done=planned.filter(t=>categoryOf(t.status)==='done'&&t.completedAt&&t.completedAt<=end).length;
   return {week,planned:planned.length,done,ppc:planned.length?100*done/planned.length:null};
 }
+// Agrupación exclusivamente visual del desglose de apoyos. Se conservan
+// los nombres originales en cada tarea, en Supabase y en Google Sheets.
+// Solo categorías de diseño reconocibles (y sus combinaciones) se agrupan;
+// INTERFERENCIAS, AMBIENTAL, CONSTRUCCIÓN, BIM, etc. mantienen su nombre.
+function isDesignSupportArea(value){
+  const normalized=String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLocaleUpperCase('es').replace(/[^A-Z0-9]+/g,' ').trim();
+  if(!normalized)return false;
+  const connector=new Set(['Y','E','DE','DEL','LA','LAS','EL','LOS','EN','PARA',
+    'AREA','AREAS','ESPECIALIDAD','ESPECIALIDADES','DISCIPLINA','DISCIPLINAS',
+    'DISENO','INGENIERIA','ESTUDIO','ESTUDIOS']);
+  const disciplines=[
+    /^PAISAJ(?:ISMO[S]?|ISTA[S]?|ISTIC[OA]S?|E[S]?)$/,
+    /^ESTRUCTUR(?:A[S]?|AL(?:ES)?)$/,
+    /^HIDRAULIC[OA]S?$/,
+    /^GEOTECNIAS?$/, /^GEOTECNIC[OA]S?$/,
+    /^GEOLOGIAS?$/, /^GEOLOGIC[OA]S?$/, /^GEOLOG[OA]S?$/,
+    /^TOPOGRAFIAS?$/, /^TOPOGRAFIC[OA]S?$/, /^TOPOGRAF[OA]S?$/
+  ];
+  const terms=normalized.split(/\s+/).filter(word=>!connector.has(word));
+  return terms.length>0&&terms.every(word=>disciplines.some(pattern=>pattern.test(word)));
+}
 // Cada actividad con apoyo informado se contabiliza una vez en el alcance.
 function supportAreaMetrics(rows){
   const groups=new Map();
@@ -5886,10 +5908,11 @@ function supportAreaMetrics(rows){
     const name=String(task.support??'').trim().replace(/\s+/g,' ');
     if(!name)continue;
     supported++;
-    const key=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
+    const area=isDesignSupportArea(name)?'DISEÑO':name;
+    const key=area.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
     const previous=groups.get(key);
     if(previous)previous.count++;
-    else groups.set(key,{name,count:1});
+    else groups.set(key,{name:area,count:1});
   }
   const ranking=[...groups.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'es'));
   const top=ranking[0]||null;
