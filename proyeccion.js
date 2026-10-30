@@ -243,7 +243,106 @@ function renderWeeklyProjection(m){
     p.projectionReady?'Proyección al cierre':'Proyección pendiente';
   renderWeeklyProjectionChart(p);
 }
+// Curva S comparativa de 9 períodos (4 anteriores, elegido y 4 posteriores).
+// El acumulado reinicia en el primer período visible, nunca extrapola tareas.
 function renderWeeklyProjectionChart(p){
+  const node=$('#weekly-projection-chart');
+  if(!node)return;
+  const model=projectionTrendModel();
+  const {monthly,periods,labels,planned,actual,forecast}=model;
+  const periodLabel=monthly?ppcMonthlyLabel:weekShort;
+  const selectedLabel=monthly?periodLabel(monthOfPpcWeek(selectedWeek)):periodLabel(selectedWeek);
+  const heading=$('#weekly-projection-trend-title');
+  const description=$('#weekly-projection-trend-desc');
+  const range=$('#weekly-projection-trend-range');
+  const checkbox=$('#weekly-projection-monthly');
+  if(checkbox)checkbox.checked=monthly;
+  if(heading)heading.textContent='CURVA S · EVOLUCIÓN '+(monthly?'MENSUAL':'SEMANAL')+' ACUMULADA';
+  if(description)description.textContent='Programado acumulado · Cumplido real · Proyección según fechas estimadas';
+  if(range)range.textContent=labels.length?
+    'Desde '+labels[0]+' · '+labels.length+(monthly?' meses':' semanas'):'Sin períodos';
+  const periodTotals=model.summaries.reduce((n,summary)=>n+summary.planned,0);
+  const chartStatus=$('#weekly-projection-chart-status');
+  const lastReal=[...actual].reverse().find(Number.isFinite);
+  if(chartStatus){
+    chartStatus.innerHTML=
+      '<span class="proj-chart-reality"><i aria-hidden="true"></i>'+
+      (lastReal===undefined?'Cumplido real: sin corte registrado':
+        'Cumplido real acumulado: <strong>'+lastReal+'</strong>')+'</span>'+
+      (!model.hasForecast?
+        '<span class="proj-chart-unestimated">Proyección pendiente · Sin fecha estimada</span>':'');
+  }
+  const forecastLegend=$('#weekly-projection-legend-forecast');
+  if(forecastLegend)forecastLegend.textContent=model.hasForecast?'Proyección con fechas verificadas':'Proyección pendiente';
+  if(!periodTotals){
+    node.innerHTML='<div class="proj-empty">No existen compromisos en los 9 períodos mostrados.</div>';
+    return;
+  }
+  const c=weeklyChartOptions(),projectionColor='#e8783c';
+  const values=[...planned,...actual.filter(Number.isFinite),...forecast.filter(Number.isFinite)];
+  const upper=Math.max(1,...values);
+  const margin=Math.max(.16,upper*.09);
+  const marker={
+    id:'weeklyProjectionPeriodRealMarker',
+    afterDatasetsDraw(chart){
+      const index=actual.findLastIndex(Number.isFinite);
+      if(index<0)return;
+      const point=chart.getDatasetMeta(1)?.data?.[index],ctx=chart.ctx;
+      if(!point||!Number.isFinite(point.x)||!Number.isFinite(point.y))return;
+      const {x,y}=point,area=chart.chartArea;
+      const caption='Cumplido: '+actual[index];
+      ctx.save();
+      ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fillStyle=c.green;ctx.fill();
+      ctx.lineWidth=2;
+      ctx.strokeStyle=document.documentElement.dataset.theme==='light'?'#fff':'#111b2a';ctx.stroke();
+      ctx.font='600 10px Inter, sans-serif';
+      const w=ctx.measureText(caption).width+16,h=21;
+      const left=Math.max(area.left,Math.min(x+12,area.right-w));
+      const top=Math.max(area.top+2,Math.min(y-31,area.bottom-h-2));
+      ctx.fillStyle=document.documentElement.dataset.theme==='light'?'rgba(255,255,255,.95)':'rgba(16,25,42,.95)';
+      ctx.fillRect(left,top,w,h);ctx.strokeStyle=c.green;ctx.lineWidth=1;ctx.strokeRect(left,top,w,h);
+      ctx.fillStyle=c.green;ctx.textBaseline='middle';ctx.fillText(caption,left+8,top+h/2);
+      ctx.restore();
+    }
+  };
+  if(typeof Chart!=='undefined'&&weeklyInnerTab==='proyeccion'){
+    node.innerHTML='<canvas role="img" aria-label="Curva S de nueve períodos: programa acumulado, real acumulado y proyección con fechas registradas"></canvas>';
+    WEEKLY_CHARTS.projection=new Chart(node.querySelector('canvas'),{
+      type:'line',data:{labels,datasets:[
+        {label:'Programado acumulado',data:planned,borderColor:c.blue,backgroundColor:c.blue,
+          tension:0,fill:false,borderWidth:2.3,pointRadius:3,pointHoverRadius:5},
+        {label:'Cumplido real',data:actual,borderColor:c.green,backgroundColor:c.green,
+          tension:0,fill:false,borderWidth:2.5,pointRadius:4,pointHoverRadius:6,spanGaps:false},
+        ...(model.hasForecast?[{label:'Proyección según fechas estimadas',data:forecast,
+          borderColor:projectionColor,backgroundColor:projectionColor,
+          tension:0,fill:false,borderWidth:2.5,pointRadius:3,pointHoverRadius:5,spanGaps:false}]:[])
+      ]},
+      plugins:[marker],
+      options:{...weeklyChartMotionOptions(),
+        responsive:true,maintainAspectRatio:false,
+        layout:{padding:{top:10,bottom:4,left:10,right:12}},
+        interaction:{intersect:false,mode:'index'},
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{
+            title:items=>periods[items[0]?.dataIndex]||selectedLabel,
+            label:ctx=>ctx.parsed.y===null?'Sin dato':ctx.dataset.label+': '+ctx.parsed.y+' compromisos'
+          }}},
+        scales:{x:{ticks:{color:c.text,maxRotation:0},grid:{display:false}},
+          y:{min:-margin,max:upper+margin,
+            ticks:{color:c.text,stepSize:1,callback:value=>Number.isInteger(value)&&value>=0&&value<=upper?value:''},
+            grid:{color:context=>Number.isInteger(context.tick.value)&&context.tick.value>=0?c.grid:'transparent'}}}
+      }
+    });
+    return;
+  }
+  node.innerHTML='<div class="proj-fallback"><table><thead><tr><th>Período</th><th>Programa</th><th>Real</th><th>Proyección</th></tr></thead><tbody>'+
+    labels.map((label,i)=>'<tr><th>'+esc(label)+'</th><td>'+planned[i]+'</td><td>'+
+      (actual[i]===null?'—':actual[i])+'</td><td>'+
+      (forecast[i]===null?'—':forecast[i])+'</td></tr>').join('')+'</tbody></table></div>';
+}
+// Se conserva el renderer diario original para consultas específicas y
+// futuras extensiones sin alterar los registros de pronósticos por semana.
+function renderWeeklyProjectionDailyChart(p){
   const node=$('#weekly-projection-chart');
   if(!node)return;
   if(!p.m.planned){
