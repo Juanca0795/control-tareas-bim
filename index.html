@@ -5415,7 +5415,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             <div class="bim-entry-date-fields hidden" id="bim-entry-date-fields">
               <label for="f-entry-date">Fecha de ingreso de la tarea</label>
               <input type="date" id="f-entry-date" min="2026-10-01">
-              <small>Disponible hasta la 1:00 p. m. (hora de Perú). No modifica el plazo de entrega.</small><div id="bim-historical-completion" class="form-field hidden"><label for="f-historical-completed">Fecha real de culminación (confirmar)</label><input type="date" id="f-historical-completed" min="2026-10-01"><small>Confirma la fecha real de finalización de la tarea retroactiva.</small></div>
+              <small>Disponible hasta la 1:00 p. m. (hora de Perú). No modifica el plazo de entrega.</small>
             </div>
           </div>
           <div class="form-field">
@@ -7317,22 +7317,12 @@ function peruEntryClock(){
     hour:Number(parts.hour),minute:Number(parts.minute)};
 }
 function canSetManualEntryDate(){return peruEntryClock().hour<13;}
-function refreshHistoricalCompletion(){
-  const active=$('#f-entry-date-toggle').checked&&$('#f-status').value==='Completada';
-  $('#bim-historical-completion').classList.toggle('hidden',!active);
-  $('#f-historical-completed').required=active;
-  $('#f-historical-completed').max=peruEntryClock().date;
-  if(active&&!$('#f-historical-completed').value)$('#f-historical-completed').value=$('#f-entry-date').value;
-}
-document.addEventListener('change',e=>{
-  if(['f-status','f-entry-date'].includes(e.target.id))refreshHistoricalCompletion();
-});
 function toggleManualEntryDate(enabled){
   const section=$('#bim-entry-date-fields'),input=$('#f-entry-date');
   section.classList.toggle('hidden',!enabled);
   input.required=Boolean(enabled);
   if(enabled&&!input.value)input.value=peruEntryClock().date;
-  refreshHistoricalCompletion();
+
 }
 function refreshManualEntryDateWindow(){
   const modal=$('#modal-back');
@@ -7373,7 +7363,6 @@ function openEditor(id=null){
   $('#f-entry-date-toggle').checked=allowed&&Boolean(manual);
   $('#f-entry-date').max=peruEntryClock().date;
   $('#f-entry-date').value=manual||peruEntryClock().date;
-  $('#f-historical-completed').value=manual&&t?.completedAt?t.completedAt:'';
   toggleManualEntryDate(allowed&&Boolean(manual));
   $('#modal-back').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -7449,10 +7438,12 @@ async function saveEditor(e){
     toast('La semana '+weekShort(historicalWeek)+' está cerrada. No se puede modificar su PPC histórico desde una tarea; revisa el cierre antes de corregirlo.');
     return;
   }
-  const historicalCompletion=manualInput&&statusVal==='Completada'?$('#f-historical-completed').value:'';
-  if(manualInput&&statusVal==='Completada'&&(!historicalCompletion||
-    historicalCompletion<manualDate||historicalCompletion>currentPeruDate)){
-    toast('Confirma la fecha real de culminación, no anterior al ingreso ni posterior a hoy.');
+  // Para tareas retroactivas completadas, el plazo indicado será la fecha
+  // de culminación asumida, según el criterio operativo aprobado.
+  const historicalCompletion=manualInput&&statusVal==='Completada'?deadline:'';
+  if(manualInput&&statusVal==='Completada'&&(!/^\d{4}-\d{2}-\d{2}$/.test(deadline)||
+    deadline<manualDate||deadline>currentPeruDate)){
+    toast('Para una tarea retroactiva completada, indica una fecha límite válida entre el ingreso y hoy.');
     return;
   }
   // La reprogramación se permite aunque la tarea estuviera vencida.
