@@ -385,6 +385,7 @@ function openBimPptExport(){
   pptBimState={items:items.map(x=>({...x,enabled:true})),
     week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,
     busy:false,token:pptBimState.token+1,drafts:new Map()};
+  $('#bim-ppt-back .bim-ppt-dialog')?.classList.toggle('bim-ppt-person-export',profile==='by-person');
   renderBimPptExport();
   $('#bim-ppt-back').classList.add('open');
   document.body.style.overflow='hidden';
