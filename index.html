@@ -8183,7 +8183,7 @@ function weeklyTrend(m){
     const datasets=[
       {label:'PPC logrado',data:vals,borderColor:'#25c7e5',backgroundColor:fillGradient,
         fill:'origin',tension:.28,pointRadius:4,pointHoverRadius:6,
-        borderWidth:2.6,spanGaps:false},
+        borderWidth:2.6,spanGaps:true},
       {label:'Meta LPS (85%)',data:weeks.map(()=>goal),borderColor:c.pink,
         borderWidth:0.6,pointRadius:0,pointHoverRadius:0,fill:false,tension:0}
     ];
