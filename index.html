@@ -7834,12 +7834,12 @@ function renderWeeklyChips(){
 }
 function weeklyKpiCard(title,value,foot,kind='',difference=null){
   const icon=title==='COMPROMETIDAS'?'▢':title==='CUMPLIDAS'?'✓':
-    title==='PPC SEMANAL'?'↗':title==='PENDIENTES'||title==='ARRASTRE'?'◷':
+    (title==='PPC SEMANAL'||title==='PPC MENSUAL')?'↗':title==='PENDIENTES'||title==='ARRASTRE'?'◷':
     title==='PUNTUALIDAD'?'◉':'!';
   const differenceLabel=(difference!==null&&Number.isFinite(difference))
     ?(difference>0?'↑ +':difference<0?'↓ −':'= ')+Math.abs(difference).toFixed(1)+' pp vs anterior':'';
   const tag=differenceLabel?`<span class="weekly-kpi-tag ${difference<0?'danger':''}">${esc(differenceLabel)}</span>`:'';
-  return `<article class="weekly-kpi ${kind} ${title==='PPC SEMANAL'?'ppc-highlight':''}">
+  return `<article class="weekly-kpi ${kind} ${(title==='PPC SEMANAL'||title==='PPC MENSUAL')?'ppc-highlight':''}">
       <div class="weekly-kpi-header"><span class="label">${esc(title)}</span><span class="weekly-kpi-icon" aria-hidden="true">${icon}</span></div>
       <div class="weekly-kpi-value"><strong class="number">${esc(value)}</strong>${tag}</div>
       <span class="foot">${esc(foot)}</span></article>`;
@@ -8260,35 +8260,56 @@ function renderWeekly(forceMotion=false){
   $('#weekly-period').textContent='Semana '+selectedWeek.split('-W')[1]+' · '+weekDatesText(selectedWeek);
   renderWeeklyChips();
   renderWeeklyTimeline();
-  const m=weeklyMetrics(selectedWeek),previous=weeklyMetrics(neighborWeek(selectedWeek,-1));
+  const weekMetric=weeklyMetrics(selectedWeek);
+  const month=monthOfPpcWeek(selectedWeek);
+  const monthly=weeklyPpcMonthlyMode;
+  const m=monthly?monthlyPpcMetrics(month):weekMetric;
+  const previous=monthly?monthlyPpcMetrics(offsetPpcMonth(month,-1)):weeklyMetrics(neighborWeek(selectedWeek,-1));
   const compare=$('#weekly-compare').checked;
   const delta=compare&&m.ppc!==null&&previous.ppc!==null?m.ppc-previous.ppc:null;
   const status=$('#weekly-info'),overallWeek=weeklyRaw(selectedWeek);
   status.className='weekly-status-strip '+(m.closed?'done':m.planned?'':'warn');
-  const comparison=delta===null?'':(delta>0?'↑ +':delta<0?'↓ −':'= ')+Math.abs(delta).toFixed(1)+' pp respecto a '+weekShort(previous.week);
-  const description=m.closed?'Semana archivada: resultados fijados al cierre.':
-    m.planned?'Semana abierta: resultados operativos provisionales.':
-    'No hay compromisos de esta semana en el alcance seleccionado.';
-  status.innerHTML=`<span><b class="weekly-status-label">COMPROMISOS REGISTRADOS:</b>
-    ${m.planned} tarea${m.planned!==1?'s':''} planificada${m.planned!==1?'s':''} para esta semana.
+  const comparison=delta===null?'':(delta>0?'↑ +':delta<0?'↓ −':'= ')+Math.abs(delta).toFixed(1)+
+    ' pp respecto a '+(monthly?ppcMonthlyLabel(previous.month):weekShort(previous.week));
+  const description=monthly?
+    (month>todayString().slice(0,7)?'Mes futuro: programación provisional.':
+      month===todayString().slice(0,7)?'Mes en curso: resultados provisionales hasta el corte.':
+      'Mes finalizado: resultados verificados de sus semanas.'):
+    (m.closed?'Semana archivada: resultados fijados al cierre.':
+      m.planned?'Semana abierta: resultados operativos provisionales.':
+      'No hay compromisos de esta semana en el alcance seleccionado.');
+  const periodName=monthly?ppcMonthlyLabel(month):weekShort(selectedWeek);
+  status.innerHTML=`<span><b class="weekly-status-label">${monthly?'COMPROMISOS DEL MES:':'COMPROMISOS REGISTRADOS:'}</b>
+    ${m.planned} tarea${m.planned!==1?'s':''} planificada${m.planned!==1?'s':''} para ${monthly?'este mes':'esta semana'}.
     <span class="weekly-status-context">${esc(description)}</span>
     ${comparison?`<span class="weekly-status-comparison">${esc(comparison)}</span>`:''}
-    </span><span class="status-side">${esc(weekShort(selectedWeek))} — ${m.planned} compromisos</span>`;
+    </span><span class="status-side">${esc(periodName)} — ${m.planned} compromisos</span>`;
+  // El cierre de semanas continúa siendo exclusivo de la semana seleccionada.
   $('#weekly-close-btn').disabled=overallWeek.closed||!overallWeek.rows.length;
   $('#weekly-close-btn').textContent=overallWeek.closed?'✓ Semana cerrada':'✓ Cerrar semana';
+  $('#weekly-kpis').setAttribute('aria-label',monthly?'Resultados KPI mensuales':'Resultados KPI semanales');
   $('#weekly-kpis').innerHTML=[
-    weeklyKpiCard('PPC SEMANAL',pct(m.ppc),m.ppc===null&&selectedWeek>isoWeekKey(new Date())?'Semana aún no iniciada':'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
-    weeklyKpiCard('COMPROMETIDAS',m.planned,m.closed?'Base archivada del período':'Plan semanal · provisional'),
+    weeklyKpiCard(monthly?'PPC MENSUAL':'PPC SEMANAL',pct(m.ppc),
+      m.ppc===null&&((monthly?month: selectedWeek)>(monthly?todayString().slice(0,7):isoWeekKey(new Date())))?
+        (monthly?'Mes aún no iniciado':'Semana aún no iniciada'):
+        'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
+    weeklyKpiCard('COMPROMETIDAS',m.planned,monthly?'Plan mensual · '+(m.closed?'cerrado':'provisional'):
+      (m.closed?'Base archivada del período':'Plan semanal · provisional')),
     weeklyKpiCard('CUMPLIDAS',m.completed,'Cierres verificados hasta el corte','positive'),
     weeklyKpiCard('PENDIENTES',m.remaining,'Sin cierre verificado al corte',m.remaining?'warning':''),
-    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?m.onTime+'/'+m.punctualityBase+' evaluables · '+(m.observedUntil===todayString()?'incluye hoy':'al corte'):'Sin plazos evaluables al corte',m.punctuality!==null&&m.punctuality<85?'warning':''),
-    weeklyKpiCard('VENCIDAS',m.delayed,m.dueAtCutoff+(m.observedUntil===todayString()?' vencen hoy':' al corte')+' · '+m.lateCompleted+' cierres tardíos',m.delayed?'danger':m.dueAtCutoff?'warning':'positive')
+    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?
+      m.onTime+'/'+m.punctualityBase+' evaluables · '+(m.observedUntil===todayString()?'incluye hoy':'al corte'):
+      'Sin plazos evaluables al corte',m.punctuality!==null&&m.punctuality<85?'warning':''),
+    weeklyKpiCard('VENCIDAS',m.delayed,m.dueAtCutoff+
+      (m.observedUntil===todayString()?' vencen hoy':' al corte')+' · '+m.lateCompleted+' cierres tardíos',
+      m.delayed?'danger':m.dueAtCutoff?'warning':'positive')
   ].join('');
   if(weeklyInnerTab==='seguimiento'){
-    weeklyTrend(m);
-    weeklyCncPanel(m);
+    weeklyTrend(weekMetric);
+    if(monthly)monthlyCncPanel(m);
+    else weeklyCncPanel(weekMetric);
   }
-  renderWeeklyProjection(m);
+  renderWeeklyProjection(weekMetric);
   scheduleBimMetricsAnimation('weekly',forceMotion);
 }
 function requestWeeklyClose(){
