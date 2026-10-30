@@ -7427,6 +7427,16 @@ async function saveEditor(e){
     toast('Selecciona una fecha válida desde el 01/10/2026 hasta hoy.');
     return;
   }
+  // La fecha de ingreso declarada define la semana de compromiso retroactivo.
+  // No modifica la fecha real de culminación ni reescribe cierres históricos.
+  const historicalEntryDate=manualInput?manualDate:
+    (editingId?catalogs.analytics?.manualEntryDateByTask?.[editingId]?.date:'');
+  const historicalWeek=historicalEntryDate?
+    isoWeekKey(new Date(historicalEntryDate+'T12:00:00')):'';
+  if(historicalWeek&&weeklySnapshot(historicalWeek)){
+    toast('La semana '+weekShort(historicalWeek)+' está cerrada. No se puede modificar su PPC histórico desde una tarea; revisa el cierre antes de corregirlo.');
+    return;
+  }
   // La reprogramación se permite aunque la tarea estuviera vencida.
   // La opción «Registrar causa CNC» depende del plazo ACTUAL tras guardar:
   // si la nueva fecha ya no está vencida, taskCncButton() deja de mostrarla.
@@ -7443,6 +7453,7 @@ async function saveEditor(e){
     status: statusVal,
     support: $('#f-support').value.trim(),
     ...taskWeeklyMetadata(previous,statusVal,deadline),
+    ...(historicalWeek?{plannedWeek:historicalWeek}:{}),
     progress: progressFromStatus(statusVal)
   };
   if(!obj.title || !obj.package || !obj.team || !obj.owner || !obj.priority || !obj.status){
