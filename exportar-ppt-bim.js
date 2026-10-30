@@ -462,7 +462,9 @@ function openBimPptExport(){
     availableWeeks:profile==='standard'?pptBimAvailableWeeks(selectedWeek):[],
     busy:false,token:pptBimState.token+1,drafts:new Map()};
   pptBimSetupWeekSelector();
-  $('#bim-ppt-back .bim-ppt-dialog')?.classList.toggle('bim-ppt-person-export',profile==='by-person');
+  const dialog=$('#bim-ppt-back .bim-ppt-dialog');
+  dialog?.classList.toggle('bim-ppt-person-export',profile==='by-person');
+  dialog?.classList.toggle('bim-ppt-standard-export',profile==='standard');
   renderBimPptExport();
   $('#bim-ppt-back').classList.add('open');
   document.body.style.overflow='hidden';
