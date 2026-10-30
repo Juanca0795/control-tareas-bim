@@ -5178,6 +5178,9 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             <div><h2 id="weekly-projection-trend-title">CURVA S · EVOLUCIÓN SEMANAL ACUMULADA</h2>
               <p id="weekly-projection-trend-desc">Programado acumulado · Cumplido real · Proyección según fechas estimadas</p></div>
             <div class="weekly-projection-trend-tools">
+              <button type="button" class="btn small" onclick="navigateProjectionTrend(-1)" aria-label="Retroceder una semana o mes" title="Período anterior">‹</button>
+              <button type="button" class="btn small" onclick="resetProjectionTrend()" title="Volver a la semana actual">Actual</button>
+              <button type="button" class="btn small" onclick="navigateProjectionTrend(1)" aria-label="Avanzar una semana o mes" title="Período siguiente">›</button>
               <label class="weekly-monthly-toggle" title="Alternar Curva S semanal y mensual">
                 <input type="checkbox" id="weekly-projection-monthly" onchange="toggleProjectionMonthlyMode(this.checked)">
                 <span>Curva S mensual</span>
@@ -8277,7 +8280,7 @@ function weeklyTrend(m){
         }},
         scales:{
           x:{ticks:{color:c.text},grid:{display:false}},
-          y:{min:0,suggestedMax:100,grace:'8%',ticks:{color:c.text,callback:v=>v+'%'},grid:{color:c.grid}}
+          y:{min:0,max:110,ticks:{stepSize:20,color:c.text,callback:v=>v<=100?v+'%':''},grid:{color:c.grid}}
         }
       }
     });return;
