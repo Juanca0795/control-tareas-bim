@@ -9173,7 +9173,7 @@ window.bimCloudBackups={
       }
       const cloudBackups=mergeCloudBackupLists(
         current.catalogs.backups,[rescue],current.catalogs.deletedBackupIds);
-      const updatedCatalog=normalizeCatalogs({...data.catalog,backups:cloudBackups,
+      const updatedCatalog=normalizeCatalogs({...data.catalogs,backups:cloudBackups,
         deletedBackupIds:current.catalogs.deletedBackupIds});
       const catalogResult=await d.from('bim_catalogs').upsert({
         user_id:sharedUser,data:updatedCatalog
