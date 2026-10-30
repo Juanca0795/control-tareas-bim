@@ -4438,8 +4438,9 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   background:rgba(255,255,255,.09);cursor:pointer;font-size:25px}
 .bim-photo-lightbox-close:hover,.bim-photo-lightbox-close:focus-visible{
   background:rgba(255,255,255,.2);outline:2px solid var(--accent-blue);outline-offset:2px}
-.bim-photo-lightbox-image{display:block;max-width:100%;max-height:calc(100dvh - 108px);
-  width:auto;height:auto;object-fit:contain;border-radius:4px;cursor:zoom-out}
+.bim-photo-lightbox-image{display:block;width:100%;
+  height:calc(100dvh - 108px);max-width:100%;max-height:calc(100dvh - 108px);
+  object-fit:contain;border-radius:4px}
 .task-drawer button.bim-evidence-thumb{
   border:0;padding:0;background:transparent;color:inherit;cursor:zoom-in;min-width:0;
 }
@@ -4449,7 +4450,7 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 .bim-ppt-thumb{width:100%;padding:0;cursor:zoom-in}
 @media(max-width:600px){
   .bim-photo-lightbox{padding:8px 9px max(12px,env(safe-area-inset-bottom))}
-  .bim-photo-lightbox-image{max-height:calc(100dvh - 90px)}
+  .bim-photo-lightbox-image{height:calc(100dvh - 90px);max-height:calc(100dvh - 90px)}
 }
 /* FOTOGRAFÍAS BIM — galería opcional dentro del mismo formulario. */
 .task-drawer .bim-evidence-section{display:grid;gap:9px}
