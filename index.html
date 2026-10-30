@@ -8698,6 +8698,11 @@ async function save(){
     // Mantener copias creadas desde otro navegador antes de sobrescribir data JSONB.
     const latestCatalogs=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
     check(latestCatalogs,'Consultar copias en Supabase');
+    // Conservar fechas manuales de ingreso guardadas desde otro navegador
+    // antes de reemplazar el JSONB compartido. Gana la revisión más reciente.
+    catalogsToSave.analytics=mergeMonthlyAnalytics(
+      latestCatalogs.data?.[0]?.data?.analytics,catalogsToSave.analytics);
+    catalogs.analytics=catalogsToSave.analytics;
     catalogsToSave.backups=mergeCloudBackupLists(latestCatalogs.data?.[0]?.data?.backups,catalogsToSave.backups);
     catalogs.backups=catalogsToSave.backups;
     // Evitar perder cambios de fecha ingresados desde otros dispositivos.
