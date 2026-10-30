@@ -15,8 +15,37 @@ function pptBimSavedMeetingDay(){
     return Number.isInteger(day)&&day>=1&&day<=7?day:3;
   }catch(e){return 3}
 }
+// Listas de personal según clasificación marcada en la referencia del área BIM.
+// Los nombres con X nunca participan en las exportaciones AREA_BIM2.
+const PPT_BIM_CIVIL_OWNERS=new Set([
+  'diana amaya jimenez',
+  'juan carlos saldana cova',
+  'naysha norma hualpa aguirre',
+  'pedro luis lopez flores',
+  'veronica ivana bocanegra infante'
+]);
+const PPT_BIM_EXCLUDED_OWNERS=new Set([
+  'claudio villano meza',
+  'jenri tantanta tejeda',
+  'maria pia moyano de la cruz',
+  'oriol huerta diaz'
+]);
+function pptBimNormalizeOwner(name){
+  return String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLocaleLowerCase('es').trim().replace(/\s+/g,' ');
+}
+function pptBimSpecialtyForOwner(name){
+  const key=pptBimNormalizeOwner(name);
+  if(PPT_BIM_EXCLUDED_OWNERS.has(key))return 'excluded';
+  return PPT_BIM_CIVIL_OWNERS.has(key)?'civil':'revit';
+}
+function pptBimGroupName(item){
+  return pptBimState.profile==='by-person'
+    ?item.owner||'Sin responsable'
+    :item.package||'Sin paquete';
+}
 let pptBimState={items:[],week:'',mode:'reunion',meetingDay:pptBimSavedMeetingDay(),
-  busy:false,token:0,drafts:new Map()};
+  profile:'standard',specialty:'revit',busy:false,token:0,drafts:new Map()};
 
 function pptBimLib(){
   const ctor=window.pptxgen||window.PptxGenJS;
@@ -125,7 +154,7 @@ function pptBimCompletionWeek(task){
   const parsed=new Date(date+'T12:00:00');
   return Number.isNaN(parsed.getTime())?'':isoWeekKey(parsed);
 }
-function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3){
+function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null){
   const meetingPeriod=mode==='reunion'?pptBimMeetingPeriod(week,meetingDay):null;
   if(mode==='reunion'&&!meetingPeriod)return [];
   const packageFilter=$('#weekly-package')?.value||'';
@@ -133,6 +162,8 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3){
   const ownerFilter=$('#weekly-owner')?.value||'';
   const out=[];
   for(const task of tasks){
+    // El perfil original nunca entra en esta condición ni cambia su selección.
+    if(specialty&&pptBimSpecialtyForOwner(task.owner)!==specialty)continue;
     if((packageFilter&&task.package!==packageFilter)||
        (teamFilter&&task.team!==teamFilter)||
        (ownerFilter&&task.owner!==ownerFilter))continue;
@@ -152,7 +183,9 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3){
       });
     }
   }
-  out.sort((a,b)=>a.package.localeCompare(b.package,'es',{numeric:true})||
+  out.sort((a,b)=>
+    (specialty?a.owner.localeCompare(b.owner,'es',{numeric:true}):a.package.localeCompare(b.package,'es',{numeric:true}))||
+    (specialty?a.package.localeCompare(b.package,'es',{numeric:true}):0)||
     a.taskId.localeCompare(b.taskId,'es',{numeric:true})||
     a.id.localeCompare(b.id));
   // Numeración de fotografías dentro de cada actividad en la selección actual.
@@ -171,6 +204,23 @@ function pptBimRefreshModeInfo(){
     button.setAttribute('aria-pressed',String(button.dataset.bimPptMode===pptBimState.mode));
     button.disabled=pptBimState.busy;
   });
+  const special=pptBimState.profile==='by-person';
+  const specialtyPicker=$('#bim-ppt-specialty-picker');
+  const specialtyTrigger=$('#bim-ppt-specialty-trigger');
+  if(specialtyPicker)specialtyPicker.hidden=!special;
+  if(specialtyTrigger)specialtyTrigger.disabled=pptBimState.busy;
+  if(special){
+    const specialtyLabel=$('#bim-ppt-specialty-label');
+    if(specialtyLabel)specialtyLabel.textContent=pptBimState.specialty==='civil'?'Civil 3D':'Revit';
+    document.querySelectorAll('[data-bim-specialty]').forEach(option=>{
+      option.setAttribute('aria-selected',String(option.dataset.bimSpecialty===pptBimState.specialty));
+      option.disabled=pptBimState.busy;
+    });
+  }else closeBimPptSpecialtyMenu();
+  const note=$('#bim-ppt-design-note');
+  if(note)note.innerHTML=special
+    ?'Perfil AREA_BIM2: fotografías agrupadas por <strong>responsable</strong> y filtradas por Civil 3D o Revit. No se incluyen los cuatro colaboradores excluidos. Se conservan los filtros de paquete, disciplina y colaborador.'
+    :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
   if(dayPicker)dayPicker.hidden=pptBimState.mode!=='reunion';
@@ -188,7 +238,7 @@ function pptBimRefreshModeInfo(){
   const label=$('#bim-ppt-week-label'),items=pptBimState.items;
   if(label)label.textContent='Semana '+pptBimState.week.replace('-W',' · ')+
     ' · '+items.length+' fotografía'+(items.length!==1?'s':'')+
-    ' · '+new Set(items.map(x=>x.package)).size+' paquete(s)';
+    ' · '+new Set(items.map(pptBimGroupName)).size+(special?' responsable(s)':' paquete(s)');
   const description=$('#bim-ppt-mode-note');
   if(!description)return;
   if(pptBimState.mode==='reunion'){
@@ -208,7 +258,8 @@ function pptBimRefreshItems(mode=pptBimState.mode){
   // Conservar descripciones y casillas por fotografía al cambiar día o criterio.
   for(const item of pptBimState.items)
     pptBimState.drafts.set(pptBimPhotoKey(item),{caption:item.caption,enabled:item.enabled});
-  const items=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay);
+  const items=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay,
+    pptBimState.profile==='by-person'?pptBimState.specialty:null);
   pptBimState.items=items.map(item=>({
     ...item,...(pptBimState.drafts.get(pptBimPhotoKey(item))||{}),enabled:
     pptBimState.drafts.get(pptBimPhotoKey(item))?.enabled??true
@@ -224,6 +275,7 @@ function setBimPptMode(mode){
   if(pptBimState.busy||!['ingreso','culminacion','reunion'].includes(mode)||
     !$('#bim-ppt-back')?.classList.contains('open')||mode===pptBimState.mode)return;
   closeBimPptMeetingMenu();
+  closeBimPptSpecialtyMenu();
   pptBimRefreshItems(mode);
 }
 // Menú propio: sin los márgenes adicionales del desplegable nativo del navegador.
@@ -262,8 +314,51 @@ function handleBimPptMeetingKey(event){
     options[(index+shift+options.length)%options.length].focus();
   }
 }
+function closeBimPptSpecialtyMenu(restoreFocus=false){
+  const menu=$('#bim-ppt-specialty-menu'),trigger=$('#bim-ppt-specialty-trigger');
+  if(!menu||!trigger)return;
+  menu.hidden=true;
+  trigger.setAttribute('aria-expanded','false');
+  if(restoreFocus)trigger.focus();
+}
+function toggleBimPptSpecialtyMenu(){
+  const menu=$('#bim-ppt-specialty-menu'),trigger=$('#bim-ppt-specialty-trigger');
+  if(!menu||!trigger||trigger.disabled||pptBimState.profile!=='by-person')return;
+  const opening=menu.hidden;
+  if(!opening){closeBimPptSpecialtyMenu();return}
+  closeBimPptMeetingMenu();
+  menu.hidden=false;
+  trigger.setAttribute('aria-expanded','true');
+  menu.querySelector('[aria-selected="true"]')?.focus();
+}
+function handleBimPptSpecialtyKey(event){
+  const menu=$('#bim-ppt-specialty-menu');
+  if(event.key==='Escape'&&!menu?.hidden){
+    event.preventDefault();event.stopPropagation();event.stopImmediatePropagation();
+    closeBimPptSpecialtyMenu(true);
+    return;
+  }
+  if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+    event.preventDefault();
+    if(menu?.hidden){toggleBimPptSpecialtyMenu();return}
+    const options=[...menu.querySelectorAll('[data-bim-specialty]')];
+    const index=options.indexOf(document.activeElement);
+    const shift=event.key==='ArrowDown'?1:-1;
+    options[(index+shift+options.length)%options.length].focus();
+  }
+}
+function setBimPptSpecialty(value){
+  if(pptBimState.profile!=='by-person'||pptBimState.busy||
+    !$('#bim-ppt-back')?.classList.contains('open')||!['revit','civil'].includes(value))return;
+  if(value!==pptBimState.specialty){
+    pptBimState.specialty=value;
+    pptBimRefreshItems();
+  }
+  closeBimPptSpecialtyMenu(true);
+}
 document.addEventListener('click',event=>{
   if(!event.target.closest('#bim-ppt-day-picker'))closeBimPptMeetingMenu();
+  if(!event.target.closest('#bim-ppt-specialty-picker'))closeBimPptSpecialtyMenu();
 });
 function setBimPptMeetingDay(value){
   if(pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open'))return;
@@ -281,9 +376,15 @@ function openBimPptExport(){
     toast('Supabase Storage no está disponible. Comprueba la conexión.');return;
   }
   const meetingDay=pptBimSavedMeetingDay();
-  const items=pptBimItemsForWeek(selectedWeek,'reunion',meetingDay);
+  // AREA_BIM usa el flujo original. AREA_BIM2 activa únicamente el nuevo perfil.
+  const profile=typeof bimExportProfile!=='undefined'&&bimExportProfile==='by-person'
+    ?'by-person':'standard';
+  const specialty='revit';
+  const items=pptBimItemsForWeek(selectedWeek,'reunion',meetingDay,
+    profile==='by-person'?specialty:null);
   pptBimState={items:items.map(x=>({...x,enabled:true})),
-    week:selectedWeek,mode:'reunion',meetingDay,busy:false,token:pptBimState.token+1,drafts:new Map()};
+    week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,
+    busy:false,token:pptBimState.token+1,drafts:new Map()};
   renderBimPptExport();
   $('#bim-ppt-back').classList.add('open');
   document.body.style.overflow='hidden';
@@ -292,6 +393,7 @@ function openBimPptExport(){
 function closeBimPptExport(){
   if(pptBimState.busy)return;
   closeBimPptMeetingMenu();
+  closeBimPptSpecialtyMenu();
   $('#bim-ppt-back').classList.remove('open');
   document.body.style.overflow='';
   pptBimState.token++;
@@ -300,12 +402,13 @@ function closeBimPptExport(){
 function renderBimPptExport(){
   const area=$('#bim-ppt-list');
   if(!area)return;
-  const packages=new Map();
+  const groups=new Map();
   pptBimState.items.forEach((x,index)=>{
-    if(!packages.has(x.package))packages.set(x.package,[]);
-    packages.get(x.package).push({x,index});
+    const name=pptBimGroupName(x);
+    if(!groups.has(name))groups.set(name,[]);
+    groups.get(name).push({x,index});
   });
-  area.innerHTML=pptBimState.items.length?[...packages].map(([name,group])=>
+  area.innerHTML=pptBimState.items.length?[...groups].map(([name,group])=>
     '<section class="bim-ppt-group"><h3>'+esc(name)+
     ' <span>'+group.length+' fotografía(s)</span></h3><div class="bim-ppt-items">'+
     group.map(({x,index})=>
@@ -327,8 +430,13 @@ function updateBimPptSelectedCounter(){
   pptBimRefreshModeInfo();
   const included=pptBimState.items.filter(x=>x.enabled);
   const target=$('#bim-ppt-selection');
-  if(target)target.textContent=included.length+' imágenes · '+new Set(included.map(x=>x.package)).size+
-    ' paquetes · '+included.reduce((n,x,i)=>n+(i===0||included[i-1].package!==x.package?1:0),0)+' grupos';
+  if(target){
+    const labels=included.map(pptBimGroupName);
+    const isPerson=pptBimState.profile==='by-person';
+    target.textContent=included.length+' imágenes · '+new Set(labels).size+
+      (isPerson?' responsables':' paquetes')+' · '+
+      included.reduce((n,x,i)=>n+(i===0||labels[i-1]!==labels[i]?1:0),0)+' grupos';
+  }
   const btn=$('#bim-ppt-download');
   if(btn)btn.disabled=pptBimState.busy||!included.length;
 }
