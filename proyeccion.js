@@ -60,6 +60,12 @@ function syncWeeklySubtab(){
 }
 function switchWeeklySubtab(mode){
   if(!['seguimiento','proyeccion'].includes(mode))return;
+  // Al entrar a Proyección semanal se parte de la semana vigente.
+  if(mode==='proyeccion'&&weeklyInnerTab!=='proyeccion'&&!weeklyProjectionMonthlyMode){
+    selectedWeek=isoWeekKey(new Date());
+    try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
+    if(typeof ensureWeeklyTimelineWindow==='function')ensureWeeklyTimelineWindow(selectedWeek);
+  }
   weeklyInnerTab=mode;
   try{sessionStorage.setItem('area-bim-weekly-subtab',mode)}catch(e){}
   if(typeof rememberBimViewInHistory==='function')rememberBimViewInHistory();
@@ -115,15 +121,24 @@ function ensureProjectionTrendAnchors(){
   if(!projectionTrendMonthAnchor)projectionTrendMonthAnchor=todayString().slice(0,7);
 }
 function navigateProjectionTrend(direction){
-  ensureProjectionTrendAnchors();
-  if(weeklyProjectionMonthlyMode)projectionTrendMonthAnchor=offsetPpcMonth(projectionTrendMonthAnchor,direction);
-  else projectionTrendWeekAnchor=neighborWeek(projectionTrendWeekAnchor,direction);
-  if(typeof renderWeekly==='function')renderWeekly();
+  if(!Number.isInteger(direction)||Math.abs(direction)!==1)return;
+  if(weeklyProjectionMonthlyMode){
+    ensureProjectionTrendAnchors();
+    projectionTrendMonthAnchor=offsetPpcMonth(projectionTrendMonthAnchor,direction);
+    if(typeof renderWeekly==='function')renderWeekly();
+  }else{
+    // La curva diaria, los KPI y la línea de tiempo usan la MISMA semana.
+    changeWeeklyWeek(neighborWeek(selectedWeek,direction));
+  }
 }
 function resetProjectionTrend(){
   projectionTrendWeekAnchor=isoWeekKey(new Date());
   projectionTrendMonthAnchor=todayString().slice(0,7);
-  if(typeof renderWeekly==='function')renderWeekly();
+  if(weeklyProjectionMonthlyMode){
+    if(typeof renderWeekly==='function')renderWeekly();
+  }else{
+    changeWeeklyWeek(projectionTrendWeekAnchor);
+  }
 }
 function toggleProjectionMonthlyMode(checked){
   weeklyProjectionMonthlyMode=Boolean(checked);
@@ -281,6 +296,29 @@ function renderWeeklyProjection(m){
 function renderWeeklyProjectionChart(p){
   const node=$('#weekly-projection-chart');
   if(!node)return;
+  // Modo semanal: mostrar LUN-DOM de la semana seleccionada, no nueve semanas.
+  if(!weeklyProjectionMonthlyMode){
+    const checkbox=$('#weekly-projection-monthly');
+    if(checkbox)checkbox.checked=false;
+    const heading=$('#weekly-projection-trend-title');
+    const description=$('#weekly-projection-trend-desc');
+    const range=$('#weekly-projection-trend-range');
+    if(heading)heading.textContent='CURVA S · EVOLUCIÓN SEMANAL ACUMULADA';
+    if(description)description.textContent='Acumulado diario de lunes a domingo · Programado · Cumplido real · Proyección';
+    if(range)range.textContent=weekShort(p.m.week)+' · '+weekDatesText(p.m.week);
+    const status=$('#weekly-projection-chart-status');
+    const lastReal=[...p.actual].reverse().find(Number.isFinite);
+    if(status)status.innerHTML=
+      '<span class="proj-chart-reality"><i aria-hidden="true"></i>'+
+      (lastReal===undefined?'Cumplido real: sin corte registrado':
+        'Cumplido real al corte: <strong>'+lastReal+'</strong>')+'</span>'+
+      (!p.estimates.size?'<span class="proj-chart-unestimated">Proyección pendiente · Sin fecha estimada</span>':'');
+    const legend=$('#weekly-projection-legend-forecast');
+    if(legend)legend.textContent=p.estimates.size?'Proyección con fechas estimadas':'Proyección pendiente';
+    renderWeeklyProjectionDailyChart(p);
+    return;
+  }
+  // El modo mensual conserva la comparación de nueve meses y el acumulado histórico.
   const model=projectionTrendModel();
   const {monthly,periods,labels,planned,actual,forecast}=model;
   const periodLabel=monthly?ppcMonthlyLabel:weekShort;
