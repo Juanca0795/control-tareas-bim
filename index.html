@@ -5915,21 +5915,40 @@ function isEnvironmentalSupportArea(value){
   return tokens.length>0&&tokens.some(word=>environmental.test(word))
     &&tokens.every(word=>environmental.test(word));
 }
+// GASNOR, GASNORP, GASNORD, ROMA y sus combinaciones: INTERFERENCIAS.
+// Clasificación de visualización, sin modificar las tareas almacenadas.
+function isInterferenceSupportArea(value){
+  const words=String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLocaleUpperCase('es').replace(/[^A-Z0-9]+/g,' ').trim().split(/\s+/);
+  const fillers=new Set(['Y','E','DE','DEL','LA','LAS','EL','LOS','EN','PARA',
+    'CON','AREA','AREAS','COORDINACION','REVISION','EQUIPO']);
+  const meaningful=words.filter(w=>w&&!fillers.has(w));
+  return meaningful.length>0&&meaningful.every(w=>/^(?:INTERFERENCIAS?|GASNOR[A-Z0-9]*|ROMA)$/.test(w));
+}
 // Cada actividad con apoyo informado se contabiliza una vez en el alcance.
 function supportAreaMetrics(rows){
-  const groups=new Map();
+  const groups=new Map(),originals=new Map();
   let supported=0;
   for(const task of rows){
     const name=String(task.support??'').trim().replace(/\s+/g,' ');
     if(!name)continue;
     supported++;
-    const area=isEnvironmentalSupportArea(name)?'MEDIO AMBIENTE':isDesignSupportArea(name)?'DISEÑO':name;
+    const area=isEnvironmentalSupportArea(name)?'MEDIO AMBIENTE'
+      :isDesignSupportArea(name)?'DISEÑO'
+      :isInterferenceSupportArea(name)?'INTERFERENCIAS':name;
     const key=area.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
     const previous=groups.get(key);
     if(previous)previous.count++;
     else groups.set(key,{name:area,count:1});
+    const sourceKey=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('es');
+    const recorded=originals.get(sourceKey);
+    if(recorded)recorded.count++;
+    else originals.set(sourceKey,{name,count:1});
   }
   const ranking=[...groups.values()].sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'es'));
+  const originalRanking=[...originals.values()]
+    .sort((a,b)=>b.count-a.count||a.name.localeCompare(b.name,'es'))
+    .map(group=>({...group,percent:rows.length?100*group.count/rows.length:0}));
   const top=ranking[0]||null;
   const ties=top?ranking.filter(group=>group.count===top.count).map(group=>group.name):[];
   return {
@@ -5937,6 +5956,7 @@ function supportAreaMetrics(rows){
     supported,
     percent:rows.length?100*supported/rows.length:0,
     ranking:ranking.map(group=>({...group,percent:rows.length?100*group.count/rows.length:0})),
+    originalRanking,
     primaryArea:top?.name||'',
     areaHelp:top?(ties.length>1?'Empate entre áreas: '+ties.join(', '):
       top.name+' · '+top.count+' actividad'+(top.count===1?'':'es')+' con este apoyo'):
