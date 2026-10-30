@@ -7936,28 +7936,39 @@ function monthlyPpcMetrics(month){
     observedUntil:month===todayString().slice(0,7)?todayString():month+'-31'};
 }
 function weeklyTrend(m){
-  const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer'),weeks=weeklyPpcHistoryWeeks();
+  const monthly=weeklyPpcMonthlyMode;
+  const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer');
+  const weeks=monthly?monthlyPpcHistoryMonths():weeklyPpcHistoryWeeks();
+  const label=monthly?ppcMonthlyLabel:weekShort;
   const range=$('#weekly-trend-range'),referenceKey=$('#weekly-trend-progress-key');
-  if(range)range.textContent=!weeks.length?'Sin semanas registradas':
-    'Desde '+weekShort(weeks[0])+' · '+weeks.length+' semana'+(weeks.length===1?'':'s');
-  const nowWeek=isoWeekKey(new Date());
+  const heading=$('#weekly-trend-heading'),subtitle=$('#weekly-trend-subtitle');
+  const selector=$('#weekly-ppc-monthly');
+  if(selector)selector.checked=monthly;
+  heading.textContent=monthly?'EVOLUCIÓN DEL CUMPLIMIENTO PPC MENSUAL':'EVOLUCIÓN DEL CUMPLIMIENTO PPC';
+  subtitle.textContent=monthly?'Compromisos cumplidos / comprometidos de cada mes · Meta LPS 85%':
+    'Porcentaje de compromisos cumplidos en la semana planificada · Meta LPS 85%';
+  if(range)range.textContent=!weeks.length?'Sin períodos registrados':
+    (monthly?'Desde '+label(weeks[0])+' · 9 meses':'Desde '+label(weeks[0])+' · 9 semanas');
+  const nowWeek=monthly?todayString().slice(0,7):isoWeekKey(new Date());
   // Semanas futuras visibles pero siempre sin PPC real; una semana abierta sí
   // utiliza los compromisos verificados hasta la fecha.
   const vals=weeks.map(w=>{
-    const metric=weeklyMetrics(w);
+    const metric=monthly?monthlyPpcMetrics(w):weeklyMetrics(w);
     return w>nowWeek?null:metric.ppc;
   });
   const known=vals.filter(Number.isFinite);
   const mean=known.length?known.reduce((a,b)=>a+b,0)/known.length:null;
   const goal=85,delta=mean===null?null:mean-goal;
-  const selectedPpc=selectedWeek<=nowWeek?weeklyMetrics(selectedWeek).ppc:null;
-  const hasReference=Number.isFinite(selectedPpc)&&weeks.includes(selectedWeek);
+  const selectedPeriod=monthly?monthOfPpcWeek(selectedWeek):selectedWeek;
+  const selectedPpc=selectedPeriod<=nowWeek?
+    (monthly?monthlyPpcMetrics(selectedPeriod):weeklyMetrics(selectedPeriod)).ppc:null;
+  const hasReference=Number.isFinite(selectedPpc)&&weeks.includes(selectedPeriod);
   referenceKey.hidden=!hasReference;
   if(hasReference)$('#weekly-trend-progress-label').textContent=
-    'PPC '+weekShort(selectedWeek)+': '+selectedPpc.toFixed(1)+'%';
+    'PPC '+label(selectedPeriod)+': '+selectedPpc.toFixed(1)+'%';
   footer.innerHTML=mean===null?
     '<span>No existen compromisos PPC verificables en el período seleccionado.</span>':
-    `<span>PPC medio del período: <strong>${mean.toFixed(1)}%</strong> · ${known.length} semana(s) con compromisos</span>
+    `<span>PPC medio del período: <strong>${mean.toFixed(1)}%</strong> · ${known.length} ${monthly?'mes(es)':'semana(s)'} con compromisos</span>
     <span class="weekly-benchmark ${delta>0?'above':delta<0?'below':'at-goal'}">${delta>0?'↑ +':delta<0?'↓ −':'= '}${Math.abs(delta).toFixed(1)} pp ${delta>0?'por encima de':delta<0?'por debajo de':'en'} la meta LPS (85%)</span>`;
   if(!known.length){
     weeklyEmpty(node,'Todavía no existen compromisos verificables en las semanas transcurridas.');
@@ -7984,7 +7995,7 @@ function weeklyTrend(m){
     // La línea punteada es una referencia horizontal, no un PPC proyectado:
     // se oculta si la semana seleccionada no tiene compromisos verificables.
     if(hasReference)datasets.push({
-      label:'Referencia PPC '+weekShort(selectedWeek),
+      label:'Referencia PPC '+label(selectedPeriod),
       data:weeks.map(()=>selectedPpc),borderColor:c.pink,borderDash:[5,5],
       borderWidth:1.3,pointRadius:0,pointHoverRadius:0,fill:false,tension:0
     });
@@ -8045,12 +8056,12 @@ function weeklyTrend(m){
       }
     };
     WEEKLY_CHARTS.trend=new Chart(node.querySelector('canvas'),{
-      type:'line',data:{labels:weeks.map(weekShort),datasets},
+      type:'line',data:{labels:weeks.map(label),datasets},
       plugins:[pointLabels],
       options:{...weeklyChartMotionOptions(),
         maintainAspectRatio:false,responsive:true,interaction:{mode:'index',intersect:false},
         plugins:{legend:{display:false},tooltip:{
-          // No presentar la referencia constante como dato real de una semana futura.
+          // No presentar la referencia constante como dato real de un período futuro.
           filter:ctx=>ctx.datasetIndex!==2,
           callbacks:{label:ctx=>ctx.parsed.y===null?'Sin dato':ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+'%'}
         }},
@@ -8063,11 +8074,11 @@ function weeklyTrend(m){
   }
   // Alternativa accesible sin Chart.js: mismos datos, meta y referencia.
   node.innerHTML='<div class="weekly-fallback">'+weeks.map((w,i)=>`
-    <div class="weekly-fallback-row"><span>${esc(weekShort(w))}</span>
+    <div class="weekly-fallback-row"><span>${esc(label(w))}</span>
     <span class="weekly-track"><b style="width:${Number.isFinite(vals[i])?vals[i]:0}%"></b></span>
     <b>${Number.isFinite(vals[i])?vals[i].toFixed(1)+'%':'—'}</b></div>`).join('')+
     '<div class="weekly-fallback-row"><span>Meta LPS</span><span></span><b>85%</b></div>'+
-    (hasReference?'<div class="weekly-fallback-row"><span>PPC '+esc(weekShort(selectedWeek))+
+    (hasReference?'<div class="weekly-fallback-row"><span>PPC '+esc(label(selectedPeriod))+
     '</span><span></span><b>'+selectedPpc.toFixed(1)+'%</b></div>':'')+'</div>';
 }
 function weeklyCncPanel(m){
