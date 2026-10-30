@@ -2537,6 +2537,43 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
   #weekly-view .weekly-utility-actions .btn{flex:1}
 }
 
+/* Registro retroactivo: misma estética que el editor y sin cambios al ocultarlo. */
+.task-drawer .bim-entry-date-box.hidden,.task-drawer .bim-entry-date-fields.hidden{display:none!important}
+.task-drawer .bim-entry-date-box{
+  padding:10px 12px;border:1px solid var(--border-strong);border-radius:9px;
+  background:var(--bg-subtle);margin-top:1px
+}
+.task-drawer .bim-entry-date-choice{
+  display:inline-flex;align-items:center;gap:9px;margin:0!important;
+  color:var(--ink-primary);font-size:11px;font-weight:650;cursor:pointer
+}
+.task-drawer .bim-entry-date-choice input{
+  width:16px;height:16px;accent-color:var(--accent-blue);cursor:pointer;margin:0
+}
+.task-drawer .bim-entry-date-fields{margin-top:10px;display:grid;gap:6px}
+.task-drawer .bim-entry-date-fields label{margin:0;font-size:10.5px;color:var(--ink-secondary)}
+.task-drawer .bim-entry-date-fields input{
+  max-width:260px;padding:8px 11px;border:1px solid var(--border-strong);
+  background:var(--bg-panel);color:var(--ink-primary);border-radius:7px
+}
+.task-drawer .bim-entry-date-fields small{font-size:10px;line-height:1.4;color:var(--ink-muted)}
+/* Separadores por semana de ingreso: solo en la vista de tareas. */
+#tasks-view .task-week-group td{
+  padding:9px 13px!important;background:var(--bg-subtle);
+  border-top:1px solid var(--border-strong);border-bottom:1px solid var(--border-base)
+}
+#tasks-view .task-week-group-label{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+#tasks-view .task-week-group-label strong{
+  font:700 10.5px var(--font-mono);letter-spacing:.04em;color:var(--accent-blue)
+}
+#tasks-view .task-week-group-label small{font-size:10px;color:var(--ink-muted)}
+#tasks-view .task-mobile-week-group{
+  margin:12px 0 8px;padding:8px 10px;background:var(--bg-subtle);
+  border:1px solid var(--border-base);border-radius:7px
+}
+#tasks-view .task-mobile-week-group strong{font-size:11px;color:var(--accent-blue)}
+#tasks-view .task-mobile-week-group small{font-size:10px;color:var(--ink-muted);margin-left:8px}
+
 /* Control de tareas — paginación de 15 registros por página */
 #tasks-view .tasks-pagination-footer{
   display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;
@@ -5369,6 +5406,17 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           <div class="form-field wide">
             <label for="f-title">Descripción del entregable / tarea *</label>
             <textarea id="f-title" required placeholder="Ej.: Coordinación de interferencias MEP vs Estructuras"></textarea>
+          </div>
+          <div class="form-field wide bim-entry-date-box hidden" id="bim-entry-date-box">
+            <label class="bim-entry-date-choice">
+              <input type="checkbox" id="f-entry-date-toggle" onchange="toggleManualEntryDate(this.checked)">
+              <span>Ingresar fecha</span>
+            </label>
+            <div class="bim-entry-date-fields hidden" id="bim-entry-date-fields">
+              <label for="f-entry-date">Fecha de ingreso de la tarea</label>
+              <input type="date" id="f-entry-date" min="2026-10-01">
+              <small>Disponible hasta la 1:00 p. m. (hora de Perú). No modifica el plazo de entrega.</small>
+            </div>
           </div>
           <div class="form-field">
             <label for="f-package">Paquete de trabajo *</label>
