@@ -497,7 +497,8 @@ function renderBimPptExport(){
       '<label class="bim-ppt-caption-label" for="bim-ppt-caption-'+index+'">Descripción para el PPT</label>'+
       '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+
       ' · Foto '+x.photoIndex+' de '+x.photoCount+'</span></div>'+
-      '<div class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'">Vista previa</div>'+
+      '<button type="button" class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'"'+
+      ' aria-label="Ver fotografía '+(index+1)+' en pantalla completa" title="Ampliar fotografía">Vista previa</button>'+
       '<div class="bim-ppt-fields">'+
       '<textarea id="bim-ppt-caption-'+index+'" data-bim-ppt-caption="'+index+'" maxlength="240" rows="2">'+
       esc(x.caption)+'</textarea></div></article>').join('')+
