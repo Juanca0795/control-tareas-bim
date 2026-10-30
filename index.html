@@ -6106,7 +6106,7 @@ function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,pr
 }
 function currentWeekPerformance(rows){
   const week=isoWeekKey(new Date()),end=weekEnd(week);
-  const planned=rows.filter(t=>effectiveTaskWeek(t)===week);
+  const planned=rows.filter(t=>hasPpcDeadline(t)&&effectiveTaskWeek(t)===week);
   const done=planned.filter(t=>categoryOf(t.status)==='done'&&t.completedAt&&t.completedAt<=end).length;
   return {week,planned:planned.length,done,ppc:planned.length?100*done/planned.length:null};
 }
@@ -8132,8 +8132,20 @@ function weeklyFiltered(week){
   base.rows=base.rows.filter(t=>(!packageName||t.package===packageName)&&(!team||t.team===team)&&(!owner||t.owner===owner));
   return base;
 }
+// Una tarea sin fin programado no es un compromiso medible de PPC ni Curva S.
+// Solo lectura: no cambia plazos, registros, estados ni fechas de ingreso.
+function hasPpcDeadline(task){
+  const deadline=String(task?.deadline||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(deadline))return false;
+  const time=Date.parse(deadline+'T00:00:00Z');
+  return Number.isFinite(time)&&new Date(time).toISOString().slice(0,10)===deadline;
+}
 function weeklyMetrics(week){
   const data=weeklyFiltered(week),end=weekEnd(week),today=todayString();
+  // Las fechas de ingreso y el historial permanecen intactos. Solo los
+  // compromisos con fecha de fin programada entran en los indicadores.
+  const unscheduled=data.rows.filter(t=>!hasPpcDeadline(t)).length;
+  data.rows=data.rows.filter(hasPpcDeadline);
   const closedOn=data.closed&&data.createdAt?data.createdAt.slice(0,10):null;
   const cutoff=end<today?end:closedOn&&closedOn<end?closedOn:today;
   const future=week>isoWeekKey(new Date())&&!data.closed;
@@ -8149,7 +8161,7 @@ function weeklyMetrics(week){
   const verifiableDate=onTime+lateRows.length;
   const punctualityBase=verifiableDate+delayed+dueAtCutoff;
   const lateDays=lateRows.map(t=>(Date.parse(t.completedAt+'T00:00:00Z')-Date.parse(t.deadline+'T00:00:00Z'))/86400000).filter(Number.isFinite);
-  return {...data,planned,completed,remaining:planned-completed,unknownDate,delayed,dueAtCutoff,onTime,
+  return {...data,planned,completed,remaining:planned-completed,unscheduled,unknownDate,delayed,dueAtCutoff,onTime,
     observedUntil:cutoff,lateCompleted:lateRows.length,verifiableDate,punctualityBase,
     ppc:future?null:(planned?100*completed/planned:null),
     punctuality:future||!punctualityBase?null:100*onTime/punctualityBase,
@@ -8376,7 +8388,7 @@ function monthlyPpcMetrics(month){
   const punctualityBase=sum('punctualityBase'),onTime=sum('onTime');
   const future=month>todayString().slice(0,7);
   return {month,weeks,weekMetrics:list,
-    planned,completed,remaining:planned-completed,delayed:sum('delayed'),
+    planned,completed,remaining:planned-completed,unscheduled:sum('unscheduled'),delayed:sum('delayed'),
     dueAtCutoff:sum('dueAtCutoff'),lateCompleted:sum('lateCompleted'),
     punctualityBase,onTime,
     ppc:future||!planned?null:100*completed/planned,
@@ -8793,9 +8805,13 @@ function renderWeekly(forceMotion=false){
       m.planned?'Semana abierta: resultados operativos provisionales.':
       'No hay compromisos de esta semana en el alcance seleccionado.');
   const periodName=monthly?ppcMonthlyLabel(month):weekShort(selectedWeek);
+  const unscheduledNote=m.unscheduled?
+    '<span class="weekly-status-context"> · '+m.unscheduled+
+      ' tarea'+(m.unscheduled===1?'':'s')+' sin fecha límite fuera del PPC</span>':'';
   status.innerHTML=`<span><b class="weekly-status-label">${monthly?'COMPROMISOS DEL MES:':'COMPROMISOS REGISTRADOS:'}</b>
     ${m.planned} tarea${m.planned!==1?'s':''} planificada${m.planned!==1?'s':''} para ${monthly?'este mes':'esta semana'}.
     <span class="weekly-status-context">${esc(description)}</span>
+    ${unscheduledNote}
     ${comparison?`<span class="weekly-status-comparison">${esc(comparison)}</span>`:''}
     </span><span class="status-side">${esc(periodName)} — ${m.planned} compromisos</span>`;
   // El cierre de semanas continúa siendo exclusivo de la semana seleccionada.
