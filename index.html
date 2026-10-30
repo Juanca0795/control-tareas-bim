@@ -7894,6 +7894,14 @@ function weekShort(week){return week?`S${Number(week.split('-W')[1])}`:'-';}
 function weeklySnapshot(week){return weeklySnapshots.find(s=>s.week===week)||null;}
 function weekDatesText(week){const start=weekStart(week);if(!start)return 'Semana no válida';return `${localISO(start).split('-').reverse().join('/')} - ${dateDisplay(weekEnd(week))}`;}
 function effectiveTaskWeek(t){
+  // Compatibilidad con registros retroactivos anteriores a la corrección:
+  // la fecha manual declarada define su semana, aunque plannedWeek haya
+  // quedado guardada con la semana de vencimiento. No se cambian snapshots.
+  const manual=catalogs.analytics?.manualEntryDateByTask?.[t.id]?.date;
+  if(manual&&/^\d{4}-\d{2}-\d{2}$/.test(manual)){
+    const declared=isoWeekKey(new Date(manual+'T12:00:00'));
+    if(weekStart(declared))return declared;
+  }
   if(t.plannedWeek&&weekStart(t.plannedWeek))return t.plannedWeek;
   // Compatibilidad con tareas anteriores, sin cambiar el registro almacenado.
   if(!/^\d{4}-\d{2}-\d{2}$/.test(t.deadline||''))return '';
