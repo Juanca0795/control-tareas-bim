@@ -7286,6 +7286,36 @@ $('#task-form').addEventListener('keydown',event=>{
   switchBimEditorTab(next,{focus:true});
 });
 
+// Ventana de regularización de fechas: antes de las 13:00 en Perú.
+// Solo regula la UI. El sello de auditoría created_at sigue en Supabase.
+function peruEntryClock(){
+  const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{
+    timeZone:'America/Lima',year:'numeric',month:'2-digit',day:'2-digit',
+    hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+  }).formatToParts(new Date()).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
+  return {date:parts.year+'-'+parts.month+'-'+parts.day,
+    hour:Number(parts.hour),minute:Number(parts.minute)};
+}
+function canSetManualEntryDate(){return peruEntryClock().hour<13;}
+function toggleManualEntryDate(enabled){
+  const section=$('#bim-entry-date-fields'),input=$('#f-entry-date');
+  section.classList.toggle('hidden',!enabled);
+  input.required=Boolean(enabled);
+  if(enabled&&!input.value)input.value=peruEntryClock().date;
+}
+function refreshManualEntryDateWindow(){
+  const modal=$('#modal-back');
+  if(!modal?.classList.contains('open'))return;
+  const allowed=canSetManualEntryDate();
+  const section=$('#bim-entry-date-box'),toggle=$('#f-entry-date-toggle');
+  if(!allowed&&toggle.checked){
+    toggle.checked=false;
+    toggleManualEntryDate(false);
+    toast('Cerró el ingreso retroactivo a las 13:00. Se conserva la fecha automática.');
+  }
+  section.classList.toggle('hidden',!allowed);
+}
+setInterval(refreshManualEntryDateWindow,30000);
 function openEditor(id=null){
   editingId = id;
   const t = id ? tasks.find(x=>x.id===id) : null;
@@ -7306,6 +7336,13 @@ function openEditor(id=null){
     const value=v[prop]??'';
     $('#f-'+name).value = EDITOR_DEFAULT_FIELDS.includes(name) ? keepValidEditorOption(name,value) : value;
   }
+  const manual=catalogs.analytics?.manualEntryDateByTask?.[t?.id]?.date||'';
+  const allowed=canSetManualEntryDate();
+  $('#bim-entry-date-box').classList.toggle('hidden',!allowed);
+  $('#f-entry-date-toggle').checked=allowed&&Boolean(manual);
+  $('#f-entry-date').max=peruEntryClock().date;
+  $('#f-entry-date').value=manual||peruEntryClock().date;
+  toggleManualEntryDate(allowed&&Boolean(manual));
   $('#modal-back').classList.add('open');
   document.body.style.overflow = 'hidden';
   startEvidenceEditor(t);
@@ -7347,6 +7384,22 @@ async function saveEditor(e){
   const statusVal = $('#f-status').value;
   const previous = editingId ? tasks.find(t=>t.id===editingId) : null;
   const deadline = $('#f-deadline').value;
+  const manualInput=$('#f-entry-date-toggle').checked;
+  const allowManual=canSetManualEntryDate();
+  const manualDate=$('#f-entry-date').value;
+  if(manualInput&&!allowManual){
+    toast('El ingreso retroactivo finaliza a las 13:00 (hora de Perú).');
+    refreshManualEntryDateWindow();
+    return;
+  }
+  const currentPeruDate=peruEntryClock().date;
+  if(manualInput&&(!/^\\d{4}-\\d{2}-\\d{2}$/.test(manualDate)||
+    !Number.isFinite(Date.parse(manualDate+'T00:00:00Z'))||
+    new Date(manualDate+'T00:00:00Z').toISOString().slice(0,10)!==manualDate||
+    manualDate<'2026-10-01'||manualDate>currentPeruDate)){
+    toast('Selecciona una fecha válida desde el 01/10/2026 hasta hoy.');
+    return;
+  }
   // La reprogramación se permite aunque la tarea estuviera vencida.
   // La opción «Registrar causa CNC» depende del plazo ACTUAL tras guardar:
   // si la nueva fecha ya no está vencida, taskCncButton() deja de mostrarla.
@@ -7383,6 +7436,16 @@ async function saveEditor(e){
     $('#save-button').disabled=false;
   }
   const wasEditing = Boolean(editingId);
+  if(allowManual){
+    const existingManual=catalogs.analytics?.manualEntryDateByTask?.[obj.id]?.date||'';
+    // Editar una fecha manual o retirarla guarda historial de revisión
+    // sin alterar el sello created_at real de la base de datos.
+    if(manualInput||existingManual){
+      catalogs.analytics.manualEntryDateByTask[obj.id]={
+        date:manualInput?manualDate:'',updatedAt:new Date().toISOString()
+      };
+    }
+  }
   if(wasEditing){
     tasks = tasks.map(t => t.id===editingId ? {
       ...t, ...obj,
@@ -7392,7 +7455,7 @@ async function saveEditor(e){
     tasks.push(obj);
     // Fecha automática de alta, independiente de la fecha límite escogida.
     // Se guarda en el JSONB sincronizado con Supabase y nunca aparece en el formulario.
-    catalogs.analytics.createdAtByTask[obj.id]=todayString();
+    catalogs.analytics.createdAtByTask[obj.id]=currentPeruDate;
   }
   rememberEditorDefaults(obj);
   closeEditor();
