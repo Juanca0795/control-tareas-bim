@@ -165,22 +165,38 @@ function projectionTrendModel(){
 function renderWeeklyProjection(m){
   const view=$('#weekly-proyeccion');
   if(!view)return;
-  const p=weeklyProjectionModel(m);
-  const percent=n=>m.planned?(100*n/m.planned).toFixed(1)+'%':'—';
+  const p=weeklyProjectionModel(m),monthly=weeklyProjectionMonthlyMode;
+  const month=monthOfPpcWeek(m.week);
+  const totals=monthly?projectionPeriodSummary(month,true):null;
+  const planned=monthly?totals.planned:m.planned;
+  const done=monthly?totals.completed:p.completed.length;
+  const pending=monthly?totals.remaining:p.pending.length;
+  const estimates=monthly?totals.estimated:p.estimates.size;
+  const projected=monthly?totals.projectedTotal:p.projectedTotal;
+  const ready=monthly?totals.projectionReady:p.projectionReady;
+  const editable=monthly?!totals.historic:p.editable;
+  const percent=n=>planned?(100*n/planned).toFixed(1)+'%':'—';
+  $('#weekly-projection-kpis').setAttribute('aria-label',monthly?'Indicadores de proyección mensual':'Indicadores de proyección semanal');
+  $('#weekly-projection-composition-title').textContent=monthly?
+    'COMPOSICIÓN DEL COMPROMISO MENSUAL':'COMPOSICIÓN DEL COMPROMISO SEMANAL';
+  $('#weekly-projection-pending-title').textContent='ESTIMACIÓN DE ACTIVIDADES PENDIENTES';
+  $('#weekly-projection-pending-desc').textContent=monthly?
+    'Las fechas se siguen registrando en la semana '+weekShort(m.week)+'; los KPI y la Curva S muestran el mes completo.':
+    'Indica cuándo esperas completar cada entregable pendiente de esta semana';
   const kpis=[
-    ['PROGRAMADAS',String(m.planned),'Compromisos de '+weekShort(m.week),''],
-    ['CUMPLIDAS',String(p.completed.length),percent(p.completed.length)+' del alcance','positive'],
-    ['PENDIENTES',String(p.pending.length),'Sin cierre verificado al corte','projection-pending'],
-    ['PROYECCIÓN AL CIERRE',p.projectionReady?percent(p.projectedTotal):'—',
-      !p.editable?'Histórico: no aplica estimación':!m.planned?'Sin compromisos':
-      !p.projectionReady?'Asigna fechas a las tareas pendientes':
-      p.projectedTotal+' de '+m.planned+' previstas · '+(p.pending.length-p.estimates.size)+' sin estimar','projection']
+    ['PROGRAMADAS',String(planned),'Compromisos de '+(monthly?ppcMonthlyLabel(month):weekShort(m.week)),''],
+    ['CUMPLIDAS',String(done),percent(done)+' del alcance','positive'],
+    ['PENDIENTES',String(pending),'Sin cierre verificado al corte','projection-pending'],
+    ['PROYECCIÓN AL CIERRE',ready?percent(projected):'—',
+      !editable?'Histórico: no aplica estimación':!planned?'Sin compromisos':
+      !ready?'Asigna fechas a las tareas pendientes':
+      projected+' de '+planned+' previstas · '+(pending-estimates)+' sin estimar','projection']
   ];
   $('#weekly-projection-kpis').innerHTML=kpis.map(([label,val,foot,kind])=>
     '<article class="weekly-projection-kpi '+kind+'"><span class="proj-label">'+esc(label)+'</span>'+
     '<strong class="proj-value">'+esc(val)+'</strong><span class="proj-foot">'+esc(foot)+'</span></article>').join('');
-  const confirmed=p.completed.length,estimated=p.estimates.size,unestimated=m.planned-confirmed-estimated;
-  const width=n=>m.planned?100*n/m.planned:0;
+  const confirmed=done,estimated=estimates,unestimated=planned-confirmed-estimated;
+  const width=n=>planned?100*n/planned:0;
   $('#weekly-projection-bar').innerHTML=
     '<div class="proj-stack" role="img" aria-label="'+esc(confirmed+' cumplidas, '+estimated+' estimadas, '+unestimated+' sin estimar')+'">'+
       '<span class="proj-part done" style="width:'+width(confirmed)+'%"></span>'+
