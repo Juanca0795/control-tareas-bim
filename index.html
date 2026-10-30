@@ -7567,16 +7567,17 @@ function nextId(){
   return `BIM-${String(n+1).padStart(3,'0')}`;
 }
 // Los indicadores semanales se calculan internamente, sin campos adicionales en el formulario.
-function taskWeeklyMetadata(previous, status, deadline){
-  const wasCompleted = previous && categoryOf(previous.status)==='done';
-  const isCompleted = categoryOf(status)==='done';
-  // La fecha real se registra al pasar a Completada; conservar fechas históricas verificadas.
-  // Las tareas antiguas ya completadas y sin fecha permanecen sin fecha (sin inventar).
-  const completedAt = !isCompleted ? '' : (wasCompleted ? (previous.completedAt||'') : todayString());
-  // Semana ISO del vencimiento, o semana de registro si no hay fecha límite.
-  // Al editar, se respeta la semana previa salvo que cambie la fecha límite.
-  const plannedWeek = (previous && previous.deadline===deadline && previous.plannedWeek)
-    || isoWeekKey(new Date((deadline||todayString())+'T12:00:00'));
+function taskWeeklyMetadata(previous,status,deadline,entryDate=''){
+  const wasCompleted=previous&&categoryOf(previous.status)==='done';
+  const isCompleted=categoryOf(status)==='done';
+  // Tareas normales: fecha del cambio a Completada. Las antiguas no se sobrescriben.
+  const completedAt=!isCompleted?'':wasCompleted?(previous.completedAt||''):todayString();
+  // El compromiso PPC se asigna por el plazo, no por el ingreso retroactivo.
+  // Sin plazo: mantener la semana anterior o utilizar el ingreso original.
+  const plannedWeek=/^\d{4}-\d{2}-\d{2}$/.test(deadline||'')&&Number.isFinite(Date.parse(deadline+'T12:00:00'))
+    ?isoWeekKey(new Date(deadline+'T12:00:00'))
+    :previous?.plannedWeek&&weekStart(previous.plannedWeek)
+      ?previous.plannedWeek:isoWeekKey(new Date((entryDate||todayString())+'T12:00:00'));
   return {plannedWeek,completedAt};
 }
 let bimTaskEditorSubmitting=false;
@@ -7602,22 +7603,28 @@ async function saveEditor(e){
     toast('Selecciona una fecha válida desde el 01/10/2026 hasta hoy.');
     return;
   }
-  // La fecha de ingreso declarada define la semana de compromiso retroactivo.
-  // No modifica la fecha real de culminación ni reescribe cierres históricos.
+  // Conservar la fecha retroactiva existente incluso después de las 13:00.
   const historicalEntryDate=manualInput?manualDate:
-    (editingId?catalogs.analytics?.manualEntryDateByTask?.[editingId]?.date:'');
-  const historicalWeek=historicalEntryDate?
-    isoWeekKey(new Date(historicalEntryDate+'T12:00:00')):'';
-  if(historicalWeek&&weeklySnapshot(historicalWeek)){
-    toast('La semana '+weekShort(historicalWeek)+' está cerrada. No se puede modificar su PPC histórico desde una tarea; revisa el cierre antes de corregirlo.');
+    (previous?catalogs.analytics?.manualEntryDateByTask?.[previous.id]?.date||'':'');
+  const wasCompleted=previous&&categoryOf(previous.status)==='done';
+  const becomingCompleted=categoryOf(statusVal)==='done'&&!wasCompleted;
+  // En una retroactiva que pasa a Completada, usar el plazo como culminación asumida.
+  const historicalCompletion=historicalEntryDate&&becomingCompleted?deadline:'';
+  if(historicalCompletion&&(!/^\d{4}-\d{2}-\d{2}$/.test(deadline)||
+    !Number.isFinite(Date.parse(deadline+'T12:00:00'))||
+    deadline<historicalEntryDate||deadline>currentPeruDate)){
+    toast('La culminación retroactiva debe estar entre la fecha de ingreso y hoy.');
     return;
   }
-  // Para tareas retroactivas completadas, el plazo indicado será la fecha
-  // de culminación asumida, según el criterio operativo aprobado.
-  const historicalCompletion=manualInput&&statusVal==='Completada'?deadline:'';
-  if(manualInput&&statusVal==='Completada'&&(!/^\d{4}-\d{2}-\d{2}$/.test(deadline)||
-    deadline<manualDate||deadline>currentPeruDate)){
-    toast('Para una tarea retroactiva completada, indica una fecha límite válida entre el ingreso y hoy.');
+  const targetWeek=/^\d{4}-\d{2}-\d{2}$/.test(deadline||'')?
+    isoWeekKey(new Date(deadline+'T12:00:00')):
+    previous?.plannedWeek&&weekStart(previous.plannedWeek)?previous.plannedWeek:
+      isoWeekKey(new Date((historicalEntryDate||currentPeruDate)+'T12:00:00'));
+  const previousWeek=previous?effectiveTaskWeek(previous):'';
+  // Los compromisos de semanas archivadas no deben cambiar de semana.
+  if((weeklySnapshot(targetWeek)&&targetWeek!==previousWeek)||
+    (previousWeek&&weeklySnapshot(previousWeek)&&previousWeek!==targetWeek)){
+    toast('La semana comprometida está archivada; revisa su cierre antes de reasignarla.');
     return;
   }
   // La reprogramación se permite aunque la tarea estuviera vencida.
@@ -7635,8 +7642,7 @@ async function saveEditor(e){
     deadline,
     status: statusVal,
     support: $('#f-support').value.trim(),
-    ...taskWeeklyMetadata(previous,statusVal,deadline),
-    ...(historicalWeek?{plannedWeek:historicalWeek}:{}),
+    ...taskWeeklyMetadata(previous,statusVal,deadline,historicalEntryDate||currentPeruDate),
     ...(historicalCompletion?{completedAt:historicalCompletion}:{}),
     progress: progressFromStatus(statusVal)
   };
@@ -7658,13 +7664,12 @@ async function saveEditor(e){
     $('#save-button').disabled=false;
   }
   const wasEditing = Boolean(editingId);
-  if(allowManual){
+  // Nunca borrar fechas retroactivas al desmarcar, editar o llegar a las 13:00.
+  if(allowManual&&manualInput){
     const existingManual=catalogs.analytics?.manualEntryDateByTask?.[obj.id]?.date||'';
-    // Editar una fecha manual o retirarla guarda historial de revisión
-    // sin alterar el sello created_at real de la base de datos.
-    if(manualInput||existingManual){
+    if(existingManual!==manualDate){
       catalogs.analytics.manualEntryDateByTask[obj.id]={
-        date:manualInput?manualDate:'',updatedAt:new Date().toISOString()
+        date:manualDate,updatedAt:new Date().toISOString()
       };
     }
   }
@@ -8078,19 +8083,18 @@ function weekShort(week){return week?`S${Number(week.split('-W')[1])}`:'-';}
 function weeklySnapshot(week){return weeklySnapshots.find(s=>s.week===week)||null;}
 function weekDatesText(week){const start=weekStart(week);if(!start)return 'Semana no válida';return `${localISO(start).split('-').reverse().join('/')} - ${dateDisplay(weekEnd(week))}`;}
 function effectiveTaskWeek(t){
-  // Compatibilidad con registros retroactivos anteriores a la corrección:
-  // la fecha manual declarada define su semana, aunque plannedWeek haya
-  // quedado guardada con la semana de vencimiento. No se cambian snapshots.
-  const manual=catalogs.analytics?.manualEntryDateByTask?.[t.id]?.date;
-  if(manual&&/^\d{4}-\d{2}-\d{2}$/.test(manual)){
-    const declared=isoWeekKey(new Date(manual+'T12:00:00'));
-    if(weekStart(declared))return declared;
+  // Los snapshots históricos permanecen en su semana y no se duplican.
+  const archived=weeklySnapshots.find(s=>s.rows?.some(row=>row.id===t.id));
+  if(archived)return archived.week;
+  // PPC y Curva S siguen la fecha de finalización programada.
+  if(/^\d{4}-\d{2}-\d{2}$/.test(t.deadline||'')){
+    const date=new Date(t.deadline+'T12:00:00');
+    if(!Number.isNaN(date.getTime()))return isoWeekKey(date);
   }
   if(t.plannedWeek&&weekStart(t.plannedWeek))return t.plannedWeek;
-  // Compatibilidad con tareas anteriores, sin cambiar el registro almacenado.
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(t.deadline||''))return '';
-  const date=new Date(t.deadline+'T12:00:00');
-  return Number.isNaN(date.getTime())?'':isoWeekKey(date);
+  const entry=taskCreationDate(t);
+  return /^\d{4}-\d{2}-\d{2}$/.test(entry)?
+    isoWeekKey(new Date(entry+'T12:00:00')):'';
 }
 function weeklyRaw(week){
   const snap=weeklySnapshot(week);
