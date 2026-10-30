@@ -2491,6 +2491,13 @@ html[data-theme="light"] .kpi-reference.kpi-teal{--kpi-color:#147D74!important}
 @media(max-width:1100px){#weekly-view .weekly-executive-row{grid-template-columns:minmax(0,1fr)}#weekly-view .weekly-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}#weekly-view .weekly-primary-trend,#weekly-view .weekly-cnc-card{min-height:0}}
 @media(max-width:650px){#weekly-view .weekly-filter-card{padding:12px}#weekly-view .weekly-timeline-track{justify-content:start}#weekly-view .weekly-time-step{flex:0 0 105px;min-width:105px}#weekly-view .weekly-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#weekly-view .weekly-kpi{min-height:145px;padding:12px}#weekly-view .weekly-primary-trend .weekly-chart-content{height:235px;min-height:235px}#weekly-view .weekly-primary-trend,#weekly-view .weekly-cnc-card{padding:12px}}
 
+/* Control mensual compacto junto al rango visible del gráfico PPC. */
+#weekly-view .weekly-trend-controls{display:flex;align-items:center;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+#weekly-view .weekly-monthly-toggle{display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-secondary);white-space:nowrap;cursor:pointer;user-select:none}
+#weekly-view .weekly-monthly-toggle input{width:14px;height:14px;accent-color:var(--accent-blue);cursor:pointer;margin:0}
+#weekly-view .weekly-monthly-toggle:focus-within{color:var(--ink-primary)}
+@media(max-width:690px){#weekly-view .weekly-chart-card .weekly-card-head{flex-wrap:wrap}#weekly-view .weekly-trend-controls{width:100%;justify-content:space-between}}
+
 /* Franja de compromisos y vista semanal sin los paneles complementarios. */
 #weekly-view .weekly-status-context{color:var(--ink-muted);margin-left:6px;font-size:10px}
 #weekly-view .weekly-status-comparison{margin-left:8px;color:var(--status-done-fg);font-weight:700;white-space:nowrap}
@@ -5093,8 +5100,14 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     <section class="weekly-executive-row" aria-label="Evolución PPC y análisis de causas">
       <article class="card weekly-chart-card weekly-primary-trend">
         <div class="weekly-card-head">
-          <div><h2>EVOLUCIÓN DEL CUMPLIMIENTO PPC</h2><p>Porcentaje de compromisos cumplidos en la semana planificada · Meta LPS 85%</p></div>
-          <span class="weekly-mini-badge" id="weekly-trend-range">Sin semanas registradas</span>
+          <div><h2 id="weekly-trend-heading">EVOLUCIÓN DEL CUMPLIMIENTO PPC</h2><p id="weekly-trend-subtitle">Porcentaje de compromisos cumplidos en la semana planificada · Meta LPS 85%</p></div>
+          <div class="weekly-trend-controls">
+            <label class="weekly-monthly-toggle" title="Alternar entre PPC semanal y mensual">
+              <input id="weekly-ppc-monthly" type="checkbox" onchange="toggleWeeklyPpcMonthlyMode(this.checked)">
+              <span>PPC mensual</span>
+            </label>
+            <span class="weekly-mini-badge" id="weekly-trend-range">Sin semanas registradas</span>
+          </div>
         </div>
         <div class="weekly-trend-key"><span><i class="achieved"></i> PPC logrado</span><span><i class="goal"></i> Meta LPS 85%</span><span id="weekly-trend-progress-key" hidden><i class="reference"></i><span id="weekly-trend-progress-label">PPC de la semana</span></span></div>
         <div id="weekly-trend-chart" class="weekly-chart-content"></div>
@@ -7867,6 +7880,60 @@ function weeklyPpcHistoryWeeks(){
   const proposed=neighborWeek(selectedWeek,-4);
   const start=proposed<first?first:proposed;
   return Array.from({length:9},(_,i)=>neighborWeek(start,i));
+}
+// Vista mensual solo de presentación: los compromisos almacenados siguen
+// perteneciendo a su semana ISO. El mes se asigna por el jueves de la semana.
+let weeklyPpcMonthlyMode=false;
+function toggleWeeklyPpcMonthlyMode(enabled){
+  weeklyPpcMonthlyMode=Boolean(enabled);
+  renderWeekly();
+}
+function monthOfPpcWeek(week){
+  const monday=weekStart(week);
+  if(!monday)return '';
+  monday.setUTCDate(monday.getUTCDate()+3);
+  return localISO(monday).slice(0,7);
+}
+function offsetPpcMonth(month,offset){
+  const [year,number]=month.split('-').map(Number);
+  const d=new Date(Date.UTC(year,number-1+offset,1));
+  return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+}
+function ppcMonthlyLabel(month){
+  if(!month)return '-';
+  const names=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return names[Number(month.slice(5))-1]+' '+month.slice(2,4);
+}
+function monthlyPpcHistoryMonths(){
+  const selected=monthOfPpcWeek(selectedWeek);
+  return Array.from({length:9},(_,i)=>offsetPpcMonth(selected,i-4));
+}
+function weeksAssignedToPpcMonth(month){
+  const [year,number]=month.split('-').map(Number);
+  const firstThursday=new Date(Date.UTC(year,number-1,1));
+  while(firstThursday.getUTCDay()!==4)firstThursday.setUTCDate(firstThursday.getUTCDate()+1);
+  const weeks=[];
+  for(const d=new Date(firstThursday);d.getUTCMonth()===number-1&&d.getUTCFullYear()===year;d.setUTCDate(d.getUTCDate()+7)){
+    const local=new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
+    weeks.push(isoWeekKey(local));
+  }
+  return weeks;
+}
+function monthlyPpcMetrics(month){
+  const weeks=weeksAssignedToPpcMonth(month);
+  const list=weeks.map(weeklyMetrics);
+  const sum=k=>list.reduce((n,metric)=>n+(metric[k]||0),0);
+  const planned=sum('planned'),completed=sum('completed');
+  const punctualityBase=sum('punctualityBase'),onTime=sum('onTime');
+  const future=month>todayString().slice(0,7);
+  return {month,weeks,weekMetrics:list,
+    planned,completed,remaining:planned-completed,delayed:sum('delayed'),
+    dueAtCutoff:sum('dueAtCutoff'),lateCompleted:sum('lateCompleted'),
+    punctualityBase,onTime,
+    ppc:future||!planned?null:100*completed/planned,
+    punctuality:future||!punctualityBase?null:100*onTime/punctualityBase,
+    closed:month<todayString().slice(0,7),
+    observedUntil:month===todayString().slice(0,7)?todayString():month+'-31'};
 }
 function weeklyTrend(m){
   const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer'),weeks=weeklyPpcHistoryWeeks();
