@@ -18,7 +18,7 @@ function pptBimSavedMeetingDay(){
 // Listas de personal según clasificación marcada en la referencia del área BIM.
 // Los nombres con X nunca participan en las exportaciones AREA_BIM2.
 const PPT_BIM_CIVIL_OWNERS=new Set([
-  'diana amaya jimenez',
+  'arnold alejandro verastegui cova',
   'juan carlos saldana cova',
   'naysha norma hualpa aguirre',
   'pedro luis lopez flores',
@@ -529,9 +529,10 @@ function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=fal
   pptBimAddText(slide,'ÁREA BIM · S&P',{x:.45,y:6.87,w:3.4,h:.16,
     fontSize:10,color:'FFFFFF',bold:true,align:'center'});
 }
-/* Mantiene juntas y en su orden las fotografías de cada paquete.
- * Si un paquete supera tres imágenes continúa en la siguiente diapositiva.
- * Los espacios restantes pueden completarse con el siguiente paquete.
+/* AREA_BIM mantiene intacto el empaquetado consecutivo por paquete.
+ * AREA_BIM2 optimiza por responsable: páginas de 3 fotografías de una persona
+ * primero, luego combina remanentes de 2+1 o de distintas personas.
+ * Solo queda una fotografía sola cuando no hay otra disponible en el informe.
  */
 function pptBimPackSlides(items,byPerson=false){
   const groups=new Map();
@@ -541,16 +542,48 @@ function pptBimPackSlides(items,byPerson=false){
     groups.get(key).push(item);
   }
   const pages=[];
-  let page=[];
-  for(const photos of groups.values()){
-    for(const photo of photos){
-      if(page.length===3){pages.push(page);page=[]}
-      page.push(photo);
+  if(!byPerson){
+    // Ruta existente de AREA_BIM: no modificar la distribución por paquetes.
+    let page=[];
+    for(const photos of groups.values()){
+      for(const photo of photos){
+        if(page.length===3){pages.push(page);page=[]}
+        page.push(photo);
+      }
     }
-    // AREA_BIM2: cada responsable comienza una página nueva, sin mezclar personas.
-    if(byPerson&&page.length){pages.push(page);page=[]}
+    if(page.length)pages.push(page);
+    return pages;
   }
-  if(page.length)pages.push(page);
+  // Dar prioridad a responsables con más evidencias; desempatar alfabéticamente.
+  const ordered=[...groups.entries()].sort((a,b)=>
+    b[1].length-a[1].length||a[0].localeCompare(b[0],'es',{numeric:true}));
+  const pairs=[],singles=[];
+  for(const [,photos] of ordered){
+    let index=0;
+    while(index+3<=photos.length){
+      pages.push(photos.slice(index,index+3));
+      index+=3;
+    }
+    const rest=photos.slice(index);
+    if(rest.length===2)pairs.push(rest);
+    else if(rest.length===1)singles.push(rest[0]);
+  }
+  // Completar primero las parejas con fotografías individuales.
+  while(pairs.length&&singles.length){
+    pages.push([...pairs.shift(),singles.shift()]);
+  }
+  // Si quedan solo parejas, se permite mezclar responsables para aprovechar
+  // las tres columnas; si quedan singles, comparten diapositiva.
+  const remaining=[...pairs.flat(),...singles];
+  for(let index=0;index<remaining.length;index+=3)
+    pages.push(remaining.slice(index,index+3));
+  // Evitar que la última página tenga una sola imagen cuando una página
+  // anterior dispone de tres: redistribuir 3+1 como 2+2.
+  if(pages.length>1&&pages[pages.length-1].length===1){
+    const prior=pages[pages.length-2];
+    if(prior.length===3)pages[pages.length-1].unshift(prior.pop());
+    else if(prior.length===2)pages[pages.length-1].unshift(...prior.splice(0));
+  }
   return pages;
 }
 function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
