@@ -105,6 +105,19 @@ function weeklyProjectionModel(m,today=todayString()){
 }
 // Modo de visualización de Curva S. No altera los compromisos ni pronósticos.
 let weeklyProjectionMonthlyMode=false;
+// Ventana de la Curva S independiente del selector de compromisos.
+let projectionTrendWeekAnchor=isoWeekKey(new Date());
+let projectionTrendMonthAnchor=todayString().slice(0,7);
+function navigateProjectionTrend(direction){
+  if(weeklyProjectionMonthlyMode)projectionTrendMonthAnchor=offsetPpcMonth(projectionTrendMonthAnchor,direction);
+  else projectionTrendWeekAnchor=neighborWeek(projectionTrendWeekAnchor,direction);
+  if(typeof renderWeekly==='function')renderWeekly();
+}
+function resetProjectionTrend(){
+  projectionTrendWeekAnchor=isoWeekKey(new Date());
+  projectionTrendMonthAnchor=todayString().slice(0,7);
+  if(typeof renderWeekly==='function')renderWeekly();
+}
 function toggleProjectionMonthlyMode(checked){
   weeklyProjectionMonthlyMode=Boolean(checked);
   if(typeof renderWeekly==='function')renderWeekly();
@@ -134,12 +147,24 @@ function projectionPeriodSummary(period,monthly){
 }
 function projectionTrendModel(){
   const monthly=weeklyProjectionMonthlyMode;
-  const periods=monthly?monthlyPpcHistoryMonths():weeklyPpcHistoryWeeks();
+  const periods=monthly?
+    Array.from({length:9},(_,i)=>offsetPpcMonth(projectionTrendMonthAnchor,i-4)):
+    Array.from({length:9},(_,i)=>neighborWeek(projectionTrendWeekAnchor,i-4));
   const now=monthly?todayString().slice(0,7):isoWeekKey(new Date());
   const summaries=periods.map(period=>projectionPeriodSummary(period,monthly));
   const labels=periods.map(monthly?ppcMonthlyLabel:weekShort);
   const planned=[],actual=[],forecast=[];
+  // Acumulado real: incluir compromisos anteriores a la ventana visible.
+  const earlierWeeks=new Set([
+    ...tasks.map(t=>effectiveTaskWeek(t)),
+    ...weeklySnapshots.map(t=>t.week)
+  ].filter(w=>w&&weekStart(w)&&(monthly?monthOfPpcWeek(w)<periods[0]:w<periods[0])));
   let runningPlanned=0,runningReal=0;
+  for(const week of earlierWeeks){
+    const previous=weeklyMetrics(week);
+    runningPlanned+=previous.planned;
+    runningReal+=previous.completed;
+  }
   for(const summary of summaries){
     runningPlanned+=summary.planned;
     planned.push(runningPlanned);
