@@ -4512,6 +4512,17 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   height:min(790px,calc(100dvh - 34px));
   max-height:calc(100dvh - 34px);
 }
+/* Sólo AREA_BIM2 necesita espacio para el selector adicional. */
+.bim-ppt-dialog.bim-ppt-person-export{width:min(860px,calc(100vw - 24px))}
+@media(max-width:850px){
+  .bim-ppt-dialog.bim-ppt-person-export>.modal-hd{
+    position:relative;flex-wrap:wrap;gap:7px;padding-right:38px;
+  }
+  .bim-ppt-dialog.bim-ppt-person-export>.modal-hd h2{flex:1 1 100%}
+  .bim-ppt-dialog.bim-ppt-person-export>.modal-hd .close{
+    position:absolute;top:10px;right:10px;
+  }
+}
 /* Selector compacto en la cabecera: no modifica el ancho de la ventana. */
 .bim-ppt-dialog>.modal-hd{display:flex;align-items:center;gap:9px;padding:15px 18px}
 .bim-ppt-dialog>.modal-hd h2{flex:1 1 auto;min-width:0;font-size:13px}
