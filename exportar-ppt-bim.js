@@ -582,7 +582,10 @@ function pptBimPackSlides(items,byPerson=false){
   if(pages.length>1&&pages[pages.length-1].length===1){
     const prior=pages[pages.length-2];
     if(prior.length===3)pages[pages.length-1].unshift(prior.pop());
-    else if(prior.length===2)pages[pages.length-1].unshift(...prior.splice(0));
+    else if(prior.length===2){
+      pages[pages.length-1].unshift(...prior);
+      pages.splice(pages.length-2,1);
+    }
   }
   return pages;
 }
