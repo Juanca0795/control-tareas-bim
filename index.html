@@ -7335,7 +7335,7 @@ function refreshManualEntryDateWindow(){
   if(!allowed&&toggle.checked){
     toggle.checked=false;
     toggleManualEntryDate(false);
-    toast('Cerró el ingreso retroactivo a las 13:00. Se conserva la fecha automática.');
+    toast('Finalizó el horario de ingreso retroactivo (13:00 Perú).');
   }
   section.classList.toggle('hidden',!allowed);
 }
@@ -7385,7 +7385,14 @@ function closeEditor(){
   editingId = null;
 }
 function nextId(){
-  const n = Math.max(0, ...tasks.map(t=>Number((t.id.match(/^BIM-(\d+)$/)||[])[1])||0));
+  // Un ID eliminado no se reutiliza: las fechas históricas y fotografías
+  // quedan ligadas a su identificador original incluso tras eliminarlo.
+  const registeredIds=new Set([
+    ...tasks.map(t=>t.id),
+    ...Object.keys(catalogs.analytics?.createdAtByTask||{}),
+    ...Object.keys(catalogs.analytics?.manualEntryDateByTask||{})
+  ]);
+  const n=Math.max(0,...[...registeredIds].map(id=>Number((String(id).match(/^BIM-(\d+)$/)||[])[1])||0));
   return `BIM-${String(n+1).padStart(3,'0')}`;
 }
 // Los indicadores semanales se calculan internamente, sin campos adicionales en el formulario.
