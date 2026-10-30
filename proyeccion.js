@@ -106,9 +106,16 @@ function weeklyProjectionModel(m,today=todayString()){
 // Modo de visualización de Curva S. No altera los compromisos ni pronósticos.
 let weeklyProjectionMonthlyMode=false;
 // Ventana de la Curva S independiente del selector de compromisos.
-let projectionTrendWeekAnchor=isoWeekKey(new Date());
-let projectionTrendMonthAnchor=todayString().slice(0,7);
+// Se inicializa al dibujar por primera vez: este archivo se carga en <head>
+// antes de que index.html declare isoWeekKey y todayString.
+let projectionTrendWeekAnchor=null;
+let projectionTrendMonthAnchor=null;
+function ensureProjectionTrendAnchors(){
+  if(!projectionTrendWeekAnchor)projectionTrendWeekAnchor=isoWeekKey(new Date());
+  if(!projectionTrendMonthAnchor)projectionTrendMonthAnchor=todayString().slice(0,7);
+}
 function navigateProjectionTrend(direction){
+  ensureProjectionTrendAnchors();
   if(weeklyProjectionMonthlyMode)projectionTrendMonthAnchor=offsetPpcMonth(projectionTrendMonthAnchor,direction);
   else projectionTrendWeekAnchor=neighborWeek(projectionTrendWeekAnchor,direction);
   if(typeof renderWeekly==='function')renderWeekly();
@@ -146,6 +153,7 @@ function projectionPeriodSummary(period,monthly){
     projectionReady:!historic&&planned>0&&(estimated>0||completed===planned)};
 }
 function projectionTrendModel(){
+  ensureProjectionTrendAnchors();
   const monthly=weeklyProjectionMonthlyMode;
   const periods=monthly?
     Array.from({length:9},(_,i)=>offsetPpcMonth(projectionTrendMonthAnchor,i-4)):
