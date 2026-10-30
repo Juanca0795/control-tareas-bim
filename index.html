@@ -4523,6 +4523,34 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
     position:absolute;top:10px;right:10px;
   }
 }
+/* Filtrado cruzado por semana exclusivo de AREA_BIM. Sin cambios al diseño PPTX. */
+.bim-ppt-dialog .bim-ppt-mode [hidden]{display:none!important}
+.bim-ppt-dialog .bim-ppt-week-tools{
+  display:flex;flex-wrap:wrap;align-items:center;gap:9px;
+  padding:9px 11px;border:1px solid var(--border-base);border-radius:9px;
+  background:var(--bg-subtle)
+}
+.bim-ppt-dialog .bim-ppt-week-tools[hidden],
+.bim-ppt-dialog .bim-ppt-week-cross[hidden]{display:none!important}
+.bim-ppt-week-tools>label{
+  font:650 10px Inter,sans-serif;color:var(--ink-secondary)
+}
+.bim-ppt-week-tools select{
+  border:1px solid var(--border-strong);border-radius:6px;
+  color:var(--ink-primary);background:var(--bg-panel);font:650 11px Inter,sans-serif;
+  height:31px;padding:0 8px;min-width:128px;cursor:pointer
+}
+.bim-ppt-week-tools select:focus-visible,
+.bim-ppt-week-cross input:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.bim-ppt-week-cross{display:inline-flex;align-items:center;flex-wrap:wrap;gap:12px;
+  border-left:1px solid var(--border-strong);padding-left:11px}
+.bim-ppt-week-cross label{display:inline-flex;align-items:center;gap:5px;
+  color:var(--ink-primary);font:600 10px Inter,sans-serif;cursor:pointer;white-space:nowrap}
+.bim-ppt-week-cross input{accent-color:var(--accent-blue);width:14px;height:14px}
+.bim-ppt-week-tools select:disabled,.bim-ppt-week-cross input:disabled{opacity:.6;cursor:wait}
+@media(max-width:580px){
+  .bim-ppt-week-cross{border-left:0;padding-left:0;flex-basis:100%}
+}
 /* Selector compacto en la cabecera: no modifica el ancho de la ventana. */
 .bim-ppt-dialog>.modal-hd{display:flex;align-items:center;gap:9px;padding:15px 18px}
 .bim-ppt-dialog>.modal-hd h2{flex:1 1 auto;min-width:0;font-size:13px}
@@ -5633,6 +5661,8 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           title="Por fecha real de culminación de la actividad" onclick="setBimPptMode('culminacion')">Culminación</button>
         <button type="button" data-bim-ppt-mode="reunion" aria-pressed="true"
           title="Siete días previos al día de la reunión" onclick="setBimPptMode('reunion')">Reunión</button>
+        <button type="button" data-bim-ppt-mode="semana" aria-pressed="false" data-bim-ppt-standard-only hidden
+          title="Filtrar por semana y combinar ingreso y culminación" onclick="setBimPptMode('semana')">Por semana</button>
       </div>
       <div id="bim-ppt-day-picker" class="bim-ppt-day-picker"
         onkeydown="handleBimPptMeetingKey(event)">
@@ -5679,6 +5709,20 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     </div>
     <div class="modal-body">
       <p class="bim-ppt-subtitle" id="bim-ppt-week-label"></p>
+      <div id="bim-ppt-week-tools" class="bim-ppt-week-tools" hidden>
+        <label for="bim-ppt-report-week">Semana del reporte</label>
+        <select id="bim-ppt-report-week" aria-label="Seleccionar semana para el reporte PPTX"
+          onchange="setBimPptReportWeek(this.value)"></select>
+        <div id="bim-ppt-week-cross" class="bim-ppt-week-cross" role="group"
+          aria-label="Criterios combinados por semana" hidden>
+          <label><input type="checkbox" id="bim-ppt-cross-ingreso" checked
+            onchange="setBimPptWeekCriterion('ingreso',this.checked)">
+            Ingreso</label>
+          <label><input type="checkbox" id="bim-ppt-cross-culminacion" checked
+            onchange="setBimPptWeekCriterion('culminacion',this.checked)">
+            Culminación</label>
+        </div>
+      </div>
       <p class="bim-ppt-mode-desc" id="bim-ppt-mode-note" aria-live="polite"></p>
       <p class="bim-ppt-note" id="bim-ppt-design-note">
         Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores.
