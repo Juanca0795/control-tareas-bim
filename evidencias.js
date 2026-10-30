@@ -71,10 +71,11 @@ function renderEvidenceEditor(){
   const photoCard=(item,newItem)=>{
     const preview=newItem?item.preview:bimEvidenceSigned.get(item.path)||'';
     return '<article class="bim-evidence-item">'+
-      '<div class="bim-evidence-thumb">'+
+      '<button type="button" class="bim-evidence-thumb" data-bim-evidence-zoom="'+esc(item.id)+'"'+
+      ' aria-label="Ampliar fotografía '+esc(item.name)+'" title="Ver fotografía en pantalla completa">'+
       (preview?'<img src="'+esc(preview)+'" alt="Vista previa de '+esc(item.name)+'" loading="lazy">':
        '<span class="bim-evidence-wait" data-evidence-preview="'+esc(item.id)+'">Cargando…</span>')+
-      '</div><div class="bim-evidence-meta"><span title="'+esc(item.name)+'">'+esc(item.name)+'</span>'+
+      '</button><div class="bim-evidence-meta"><span title="'+esc(item.name)+'">'+esc(item.name)+'</span>'+
       (newItem?'<small>Por guardar</small>':'<small>Guardada en Supabase</small>')+'</div>'+
       '<button type="button" class="bim-evidence-remove" data-evidence-remove="'+esc(item.id)+'"'+
       ' aria-label="Quitar '+esc(item.name)+'" '+(bimEvidenceEditor.busy?'disabled':'')+'>×</button></article>';
@@ -142,6 +143,49 @@ function removeEvidenceFromEditor(id){
   }
   renderEvidenceEditor();
 }
+// El visor funciona tanto para fotografías nuevas (blob: temporal) como
+// para imágenes existentes (URL firmada de Supabase). No modifica el archivo.
+let bimPhotoLightboxPreviousFocus=null;
+function openBimPhotoLightbox(source,title='Fotografía BIM',trigger=null){
+  const modal=document.getElementById('bim-photo-lightbox');
+  const image=document.getElementById('bim-photo-lightbox-image');
+  if(!modal||!image||!source)return;
+  bimPhotoLightboxPreviousFocus=trigger||document.activeElement;
+  image.src=source;
+  image.alt=title;
+  document.getElementById('bim-photo-lightbox-title').textContent=title;
+  modal.hidden=false;
+  document.getElementById('bim-photo-lightbox-close')?.focus();
+}
+function closeBimPhotoLightbox(){
+  const modal=document.getElementById('bim-photo-lightbox');
+  if(!modal||modal.hidden)return;
+  modal.hidden=true;
+  const image=document.getElementById('bim-photo-lightbox-image');
+  if(image)image.removeAttribute('src');
+  if(bimPhotoLightboxPreviousFocus?.isConnected)
+    bimPhotoLightboxPreviousFocus.focus();
+  bimPhotoLightboxPreviousFocus=null;
+}
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&!document.getElementById('bim-photo-lightbox')?.hidden){
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    closeBimPhotoLightbox();
+  }
+},true);
+document.addEventListener('click',event=>{
+  const modal=document.getElementById('bim-photo-lightbox');
+  if(modal&&!modal.hidden&&event.target===modal){
+    closeBimPhotoLightbox();return;
+  }
+  const trigger=event.target.closest?.('[data-bim-evidence-zoom], [data-bim-ppt-thumb]');
+  if(!trigger||modal?.hidden===false)return;
+  const image=trigger.querySelector('img');
+  if(!image?.src)return; // La miniatura aún está cargando.
+  event.preventDefault();
+  openBimPhotoLightbox(image.currentSrc||image.src,image.alt||'Fotografía BIM',trigger);
+});
 document.addEventListener('paste',event=>{
   if(!document.getElementById('modal-back')?.classList.contains('open'))return;
   const files=[...(event.clipboardData?.items||[])].filter(x=>x.kind==='file'&&x.type.startsWith('image/'))
