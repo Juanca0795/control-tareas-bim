@@ -4523,6 +4523,17 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
     position:absolute;top:10px;right:10px;
   }
 }
+/* El cuarto criterio necesita más espacio de cabecera solo en AREA_BIM. */
+.bim-ppt-dialog.bim-ppt-standard-export{width:min(860px,calc(100vw - 24px))}
+@media(max-width:950px){
+  .bim-ppt-dialog.bim-ppt-standard-export>.modal-hd{
+    position:relative;flex-wrap:wrap;gap:7px;padding-right:38px
+  }
+  .bim-ppt-dialog.bim-ppt-standard-export>.modal-hd h2{flex:1 1 100%}
+  .bim-ppt-dialog.bim-ppt-standard-export>.modal-hd .close{
+    position:absolute;top:10px;right:10px
+  }
+}
 /* Filtrado cruzado por semana exclusivo de AREA_BIM. Sin cambios al diseño PPTX. */
 .bim-ppt-dialog .bim-ppt-mode [hidden]{display:none!important}
 .bim-ppt-dialog .bim-ppt-week-tools{
