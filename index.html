@@ -6157,13 +6157,22 @@ function isInterferenceSupportArea(value){
   const meaningful=words.filter(w=>w&&!fillers.has(w));
   return meaningful.length>0&&meaningful.every(w=>/^(?:INTERFERENCIAS?|GASNOR[A-Z0-9]*|ROMA)$/.test(w));
 }
-// Cada actividad con apoyo informado se contabiliza una vez en el alcance.
+// BIM pertenece al área; no es apoyo a OTRAS áreas.
+// Excluir solo del indicador, su desglose y su filtro; nunca modificar datos.
+function isOtherAreaSupport(value){
+  const name=String(value??'').trim();
+  if(!name)return false;
+  const tokens=name.normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLocaleUpperCase('es').split(/[^A-Z0-9]+/).filter(Boolean);
+  return !tokens.includes('BIM');
+}
+// Cada apoyo a otra área se contabiliza una vez en el alcance.
 function supportAreaMetrics(rows){
   const groups=new Map(),originals=new Map();
   let supported=0;
   for(const task of rows){
     const name=String(task.support??'').trim().replace(/\s+/g,' ');
-    if(!name)continue;
+    if(!isOtherAreaSupport(name))continue;
     supported++;
     const area=isEnvironmentalSupportArea(name)?'MEDIO AMBIENTE'
       :isDesignSupportArea(name)?'DISEÑO'
@@ -6835,7 +6844,7 @@ function drillTitle(type, value=''){
     completed:'Entregables completados',
     inProgress:'Entregables en ejecución',
     late:'Entregables vencidos o con límite hoy',
-    support:'Entregables con apoyo registrado en otras áreas',
+    support:'Entregables con apoyo en otras áreas (excluye BIM)',
     soon:'Entregables próximos a vencer (= 3 días)',
     high:'Entregables de Alta Prioridad',
     pending:'Entregables no iniciados',
@@ -6864,7 +6873,7 @@ function drillTasks(a){
     case 'onTime': return a.filter(t=>categoryOf(t.status)!=='done'&&dueDays(t.deadline)>3);
     case 'noDeadline': return a.filter(t=>categoryOf(t.status)!=='done'&&dueDays(t.deadline)===null);
     case 'late': return a.filter(t=>alertStatus(t).sort<=1);
-    case 'support': return a.filter(t=>String(t.support??'').trim().length>0);
+    case 'support': return a.filter(t=>isOtherAreaSupport(t.support));
     case 'soon': return a.filter(t=>alertStatus(t).sort===2);
     case 'high': return a.filter(t=>t.priority==='Alta');
     case 'status': return a.filter(t=>t.status===v);
