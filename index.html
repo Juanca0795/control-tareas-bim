@@ -5773,6 +5773,8 @@ function readWeeklySnapshots(){
 let weeklySnapshots = readWeeklySnapshots();
 let selectedWeek=(()=>{
   const fallback=isoWeekKey(new Date());
+  // Recarga de Proyección: iniciar siempre en la semana actual.
+  if(typeof weeklyInnerTab!=='undefined'&&weeklyInnerTab==='proyeccion')return fallback;
   try{
     const saved=sessionStorage.getItem('area-bim-selected-week')||
       (typeof history!=='undefined'?history.state?.bimSelectedWeek:'');
