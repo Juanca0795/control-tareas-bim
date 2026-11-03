@@ -4584,6 +4584,35 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 .bim-ppt-week-cross label{display:inline-flex;align-items:center;gap:5px;
   color:var(--ink-primary);font:600 10px Inter,sans-serif;cursor:pointer;white-space:nowrap}
 .bim-ppt-week-cross input{accent-color:var(--accent-blue);width:14px;height:14px}
+/* AREA_BIM2: semana compacta a la izquierda de sector en la cabecera. */
+.bim-ppt-dialog.bim-ppt-person-export>.modal-hd{
+  position:relative;flex-wrap:wrap;gap:7px;padding-right:38px
+}
+.bim-ppt-dialog.bim-ppt-person-export>.modal-hd h2{flex:1 1 100%}
+.bim-ppt-dialog.bim-ppt-person-export>.modal-hd .close{
+  position:absolute;top:10px;right:10px
+}
+.bim-ppt-dialog>.modal-hd .bim-ppt-week-tools{
+  flex:0 0 auto;display:inline-flex;flex-direction:column;
+  align-items:flex-start;gap:3px;width:134px;max-width:100%;
+  margin:0;padding:0;border:0;border-radius:0;background:transparent
+}
+.bim-ppt-dialog>.modal-hd .bim-ppt-week-tools>label{
+  white-space:nowrap;font-size:9px;line-height:1.15
+}
+.bim-ppt-dialog>.modal-hd .bim-ppt-week-tools>select{
+  height:30px;width:100%;min-width:0;padding:0 7px;
+  font-size:10px;border-radius:7px
+}
+.bim-ppt-dialog .modal-body>.bim-ppt-week-cross{
+  display:flex;align-self:flex-start;flex-wrap:wrap;gap:12px;
+  margin:0 0 7px;padding:7px 9px;border:1px solid var(--border-base);
+  border-radius:7px;background:var(--bg-subtle)
+}
+@media(max-width:580px){
+  .bim-ppt-dialog>.modal-hd .bim-ppt-week-tools{width:calc(50% - 4px)}
+}
+
 .bim-ppt-week-tools select:disabled,.bim-ppt-week-cross input:disabled{opacity:.6;cursor:wait}
 @media(max-width:580px){
   .bim-ppt-week-cross{border-left:0;padding-left:0;flex-basis:100%}
@@ -5934,6 +5963,11 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   <div class="modal bim-ppt-dialog" role="dialog" aria-modal="true" aria-labelledby="bim-ppt-title">
     <div class="modal-hd">
       <h2 id="bim-ppt-title">EXPORTAR EVIDENCIAS BIM A POWERPOINT</h2>
+      <div id="bim-ppt-week-tools" class="bim-ppt-week-tools" hidden>
+        <label for="bim-ppt-report-week">Semana del reporte</label>
+        <select id="bim-ppt-report-week" aria-label="Seleccionar semana para el reporte PPTX"
+          onchange="setBimPptReportWeek(this.value)"></select>
+      </div>
       <div class="bim-ppt-sector-tools">
         <select id="bim-ppt-sector-filter" aria-label="Filtrar fotografías por sector"
           title="Filtrar por sector" onchange="setBimPptSector(this.value)">
@@ -5995,19 +6029,14 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     </div>
     <div class="modal-body">
       <p class="bim-ppt-subtitle" id="bim-ppt-week-label"></p>
-      <div id="bim-ppt-week-tools" class="bim-ppt-week-tools" hidden>
-        <label for="bim-ppt-report-week">Semana del reporte</label>
-        <select id="bim-ppt-report-week" aria-label="Seleccionar semana para el reporte PPTX"
-          onchange="setBimPptReportWeek(this.value)"></select>
-        <div id="bim-ppt-week-cross" class="bim-ppt-week-cross" role="group"
-          aria-label="Criterios combinados por semana" hidden>
-          <label><input type="checkbox" id="bim-ppt-cross-ingreso" checked
-            onchange="setBimPptWeekCriterion('ingreso',this.checked)">
-            Ingreso</label>
-          <label><input type="checkbox" id="bim-ppt-cross-culminacion" checked
-            onchange="setBimPptWeekCriterion('culminacion',this.checked)">
-            Culminación</label>
-        </div>
+      <div id="bim-ppt-week-cross" class="bim-ppt-week-cross" role="group"
+        aria-label="Criterios combinados por semana" hidden>
+        <label><input type="checkbox" id="bim-ppt-cross-ingreso" checked
+          onchange="setBimPptWeekCriterion('ingreso',this.checked)">
+          Ingreso</label>
+        <label><input type="checkbox" id="bim-ppt-cross-culminacion" checked
+          onchange="setBimPptWeekCriterion('culminacion',this.checked)">
+          Culminación</label>
       </div>
 
       <p class="bim-ppt-mode-desc" id="bim-ppt-mode-note" aria-live="polite"></p>
