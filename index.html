@@ -6685,6 +6685,76 @@ function updateTaskSortHeaders(){
     if(arrow)arrow.textContent=active?taskSortDirection==='asc'?'↑':'↓':'↕';
   });
 }
+// Vistas de filtros reutilizables, guardadas exclusivamente en este navegador.
+const TASK_SAVED_VIEWS_KEY='area-bim-task-saved-views-v1';
+function taskReadSavedViews(){
+  try{
+    const value=JSON.parse(localStorage.getItem(TASK_SAVED_VIEWS_KEY)||'{}');
+    return value&&typeof value==='object'&&!Array.isArray(value)?value:{};
+  }catch(e){return {}}
+}
+function taskWriteSavedViews(value){
+  try{localStorage.setItem(TASK_SAVED_VIEWS_KEY,JSON.stringify(value));return true;}
+  catch(e){toast('No se pudieron guardar las vistas en este navegador.');return false;}
+}
+function refreshTaskSavedViews(){
+  const select=$('#task-saved-view');
+  if(!select)return;
+  const current=select.value;
+  const names=Object.keys(taskReadSavedViews()).sort((a,b)=>a.localeCompare(b,'es'));
+  select.innerHTML='<option value="">Seleccionar vista</option>'+
+    names.map(name=>'<option value="'+esc(name)+'">'+esc(name)+'</option>').join('');
+  select.value=names.includes(current)?current:'';
+}
+function taskViewSnapshot(){
+  return {filters:Object.fromEntries(TASK_CROSS_FIELDS.map(([id])=>[id,$('#'+id)?.value||''])),
+    search:$('#search').value.trim(),
+    weekEnabled:taskWeekFilterEnabled,weekKey:taskWeekFilterKey};
+}
+function saveTaskView(){
+  const name=$('#task-saved-name').value.trim().slice(0,40);
+  if(!name){toast('Escribe un nombre para la vista.');return;}
+  const presets=taskReadSavedViews(),snapshot=taskViewSnapshot();
+  const apply=()=>{
+    const updated={...presets,[name]:snapshot};
+    if(!taskWriteSavedViews(updated))return;
+    refreshTaskSavedViews();
+    $('#task-saved-view').value=name;
+    toast('Vista de filtros guardada: '+name);
+  };
+  if(!Object.prototype.hasOwnProperty.call(presets,name)&&Object.keys(presets).length>=12){
+    toast('Límite de 12 vistas por navegador.');return;
+  }
+  if(Object.prototype.hasOwnProperty.call(presets,name))
+    openConfirm('Actualizar vista guardada','¿Reemplazar la vista «'+name+'» con los filtros actuales?',apply);
+  else apply();
+}
+function applyTaskSavedView(name){
+  if(!name)return;
+  const saved=taskReadSavedViews()[name];
+  if(!saved||typeof saved!=='object'||!saved.filters)return;
+  linkedTaskIds=null;linkedLabel='';
+  $('#search').value=String(saved.search||'');
+  for(const [id] of TASK_CROSS_FIELDS)$('#'+id).value=String(saved.filters[id]||'');
+  taskWeekFilterEnabled=Boolean(saved.weekEnabled);
+  taskWeekFilterKey=typeof saved.weekKey==='string'&&/^\d{4}-W\d{2}$/.test(saved.weekKey)
+    ?saved.weekKey:currentTaskEntryWeek();
+  onTaskFiltersChanged();
+  $('#task-saved-view').value=name;
+  $('#task-saved-name').value=name;
+}
+function deleteTaskView(){
+  const name=$('#task-saved-view').value;
+  if(!name){toast('Selecciona una vista guardada.');return;}
+  openConfirm('Eliminar vista','¿Eliminar la vista «'+name+'» de este navegador?',()=>{
+    const presets=taskReadSavedViews();
+    delete presets[name];
+    if(!taskWriteSavedViews(presets))return;
+    refreshTaskSavedViews();
+    $('#task-saved-name').value='';
+    toast('Vista eliminada.');
+  });
+}
 const TASKS_PER_PAGE=15;
 let currentTaskPage=1;
 let taskFacetAnimateNext=false;
