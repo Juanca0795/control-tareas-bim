@@ -5119,6 +5119,41 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   white-space:nowrap;color:var(--accent-blue);
 }
 #tasks-view .task-week-period[hidden]{display:none!important}
+/* Barra de 8 filtros en una única fila de escritorio.
+   Ningún control puede ensanchar la tarjeta ni provocar scroll horizontal. */
+#tasks-view .controls{
+  display:grid;
+  grid-template-columns:minmax(0,1.8fr) repeat(7,minmax(0,1fr));
+  gap:6px;
+  padding:12px;
+  width:100%;max-width:100%;min-width:0;
+  box-sizing:border-box;
+  align-items:center;
+}
+#tasks-view .controls>input{
+  grid-column:auto;
+  width:100%;min-width:0;max-width:100%;
+  box-sizing:border-box;padding-inline:9px;
+  font-size:10.5px;text-overflow:ellipsis;
+}
+#tasks-view .controls>.select-wrap{min-width:0;max-width:100%;width:100%}
+#tasks-view .controls>.select-wrap>select{
+  width:100%;min-width:0;max-width:100%;
+  box-sizing:border-box;
+  padding-left:7px;padding-right:20px;
+  background-position:right 5px center;
+  text-overflow:ellipsis;white-space:nowrap;
+  font-size:10px;
+}
+/* En tablet y móvil no comprimir filtros hasta hacerlos ilegibles. */
+@media(max-width:1024px){
+  #tasks-view .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #tasks-view .controls>input{grid-column:1/-1}
+}
+@media(max-width:540px){
+  #tasks-view .controls{grid-template-columns:minmax(0,1fr)}
+  #tasks-view .controls>input{grid-column:1}
+}
 @media(max-width:900px){
   #tasks-view .card-head{flex-wrap:wrap;gap:8px}
   #tasks-view .task-head-tools{width:100%;justify-content:flex-start;gap:8px}
@@ -5314,7 +5349,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         </div>
       </div>
       <div class="controls">
-        <input id="search" class="field-input" oninput="onTaskFiltersChanged()" placeholder="Filtrar por código BIM, entregable, colaborador o área de apoyo." aria-label="Buscar tareas">
+        <input id="search" class="field-input" oninput="onTaskFiltersChanged()" placeholder="Buscar código BIM o entregable…" aria-label="Filtrar tareas por código BIM, entregable, colaborador o área de apoyo" title="Buscar código BIM, entregable, colaborador o área de apoyo">
         <div class="select-wrap"><select id="filter-package" onchange="onTaskFiltersChanged()" aria-label="Filtrar paquete"></select></div>
         <div class="select-wrap"><select id="filter-owner" onchange="onTaskFiltersChanged()" aria-label="Filtrar responsable"></select></div>
         <div class="select-wrap"><select id="filter-status" onchange="onTaskFiltersChanged()" aria-label="Filtrar estado"></select></div>
