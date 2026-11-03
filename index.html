@@ -4737,6 +4737,36 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 }
 .bim-ppt-meeting-range button:hover{background:var(--bg-hover)}
 .bim-ppt-meeting-range :is(input,button):disabled{opacity:.6;cursor:wait}
+/* AREA_BIM2: información de reunión + Desde + Hasta en una sola fila.
+   Se acorta únicamente el texto visual; el detalle completo queda en title. */
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range{
+  display:grid;grid-template-columns:minmax(0,1fr) max-content max-content;
+  align-items:center;column-gap:7px;row-gap:5px;
+  width:100%;min-width:0;flex-wrap:nowrap
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range>span{
+  min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;font-size:9.5px
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range label{
+  display:inline-flex;align-items:center;gap:4px;min-width:0;
+  font-size:9.5px;white-space:nowrap
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range input[type=date]{
+  width:112px;min-width:0;height:29px;padding:2px 4px;font-size:9.5px
+}
+/* Si se modifica el rango, el botón auxiliar se muestra debajo sin
+   romper la línea principal de información y fechas. */
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range>#bim-ppt-date-reset{
+  grid-column:1/-1;justify-self:start
+}
+@media(max-width:480px){
+  .bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range{column-gap:4px}
+  .bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range input[type=date]{
+    width:101px;font-size:9px;padding-inline:2px
+  }
+  .bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range label{font-size:9px;gap:2px}
+}
 .bim-ppt-empty{
   margin:0;padding:18px 13px;border:1px dashed var(--border-strong);
   border-radius:8px;color:var(--ink-secondary);font-size:11px;line-height:1.5
