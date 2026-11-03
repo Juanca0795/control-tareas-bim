@@ -625,75 +625,54 @@ function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=fal
   pptBimAddText(slide,'ÁREA BIM · S&P',{x:.45,y:6.87,w:3.4,h:.16,
     fontSize:10,color:'FFFFFF',bold:true,align:'center'});
 }
-/* Ninguna diapositiva debe mezclar sectores. Dentro de cada sector,
- * AREA_BIM conserva el empaquetado por paquete y AREA_BIM2 optimiza por
- * responsable con sus reglas originales de grupos de 3, parejas y singles.
+/* Ordenar las evidencias por sector, pero completar las 3 columnas
+ * consecutivamente, incluso entre sectores. Solo la última diapositiva
+ * puede conservar 1 o 2 columnas sin evidencia.
+ * AREA_BIM mantiene la secuencia por paquete dentro de cada sector;
+ * AREA_BIM2 prioriza los grupos de 3 por responsable antes de los remanentes.
  */
 function pptBimPackSlides(items,byPerson=false){
-  const sectors=new Map();
-  for(const item of items){
-    const sector=pptBimSector(item);
-    if(!sectors.has(sector))sectors.set(sector,[]);
-    sectors.get(sector).push(item);
+  const sectorGroups=new Map();
+  for(const photo of items){
+    const sector=pptBimSector(photo);
+    if(!sectorGroups.has(sector))sectorGroups.set(sector,[]);
+    sectorGroups.get(sector).push(photo);
   }
-  // Orden fijo de lectura, sin depender de la primera foto encontrada.
-  return ['Sector 1','Sector 2','Sector 3','Sin sector']
-    .flatMap(sector=>sectors.has(sector)?pptBimPackSectorSlides(sectors.get(sector),byPerson):[]);
+  const ordered=[];
+  for(const sector of ['Sector 1','Sector 2','Sector 3','Sin sector']){
+    const group=sectorGroups.get(sector);
+    if(group?.length)ordered.push(...pptBimOrderSectorPhotos(group,byPerson));
+  }
+  const pages=[];
+  for(let index=0;index<ordered.length;index+=3)
+    pages.push(ordered.slice(index,index+3));
+  return pages;
 }
-function pptBimPackSectorSlides(items,byPerson=false){
+function pptBimOrderSectorPhotos(items,byPerson=false){
   const groups=new Map();
   for(const item of items){
     const key=String(byPerson?(item.owner||'Sin responsable'):(item.package||'Sin paquete'));
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push(item);
   }
-  const pages=[];
-  if(!byPerson){
-    // Ruta existente de AREA_BIM: no modificar la distribución por paquetes.
-    let page=[];
-    for(const photos of groups.values()){
-      for(const photo of photos){
-        if(page.length===3){pages.push(page);page=[]}
-        page.push(photo);
-      }
-    }
-    if(page.length)pages.push(page);
-    return pages;
-  }
-  // Dar prioridad a responsables con más evidencias; desempatar alfabéticamente.
-  const ordered=[...groups.entries()].sort((a,b)=>
+  if(!byPerson)return [...groups.values()].flat();
+  // AREA_BIM2: conservar completos los tríos de una misma persona primero.
+  const prioritized=[...groups.entries()].sort((a,b)=>
     b[1].length-a[1].length||a[0].localeCompare(b[0],'es',{numeric:true}));
-  const pairs=[],singles=[];
-  for(const [,photos] of ordered){
-    let index=0;
-    while(index+3<=photos.length){
-      pages.push(photos.slice(index,index+3));
-      index+=3;
+  const full=[],pairs=[],singles=[];
+  for(const [,photos] of prioritized){
+    let i=0;
+    while(i+3<=photos.length){
+      full.push(...photos.slice(i,i+3));
+      i+=3;
     }
-    const rest=photos.slice(index);
-    if(rest.length===2)pairs.push(rest);
-    else if(rest.length===1)singles.push(rest[0]);
+    if(photos.length-i===2)pairs.push(photos.slice(i));
+    else if(photos.length-i===1)singles.push(photos[i]);
   }
-  // Completar primero las parejas con fotografías individuales.
-  while(pairs.length&&singles.length){
-    pages.push([...pairs.shift(),singles.shift()]);
-  }
-  // Si quedan solo parejas, se permite mezclar responsables para aprovechar
-  // las tres columnas; si quedan singles, comparten diapositiva.
-  const remaining=[...pairs.flat(),...singles];
-  for(let index=0;index<remaining.length;index+=3)
-    pages.push(remaining.slice(index,index+3));
-  // Evitar que la última página tenga una sola imagen cuando una página
-  // anterior dispone de tres: redistribuir 3+1 como 2+2.
-  if(pages.length>1&&pages[pages.length-1].length===1){
-    const prior=pages[pages.length-2];
-    if(prior.length===3)pages[pages.length-1].unshift(prior.pop());
-    else if(prior.length===2){
-      pages[pages.length-1].unshift(...prior);
-      pages.splice(pages.length-2,1);
-    }
-  }
-  return pages;
+  // Agrupar las parejas con una evidencia individual cuando se pueda.
+  while(pairs.length&&singles.length)
+    full.push(...pairs.shift(),singles.shift());
+  return [...full,...pairs.flat(),...singles];
 }
 function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   if(!Array.isArray(entries)||entries.length<1||entries.length>3)
@@ -702,9 +681,6 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   pptBimMaster(slide,pptx);
   pptBimAddText(slide,'EVIDENCIAS BIM · SEMANA '+week.split('-W')[1],
     {x:.37,y:.80,w:11.9,h:.29,fontSize:18,bold:true});
-  const sector=pptBimSector(entries[0]);
-  if(entries.some(e=>pptBimSector(e)!==sector))
-    throw new Error('Una diapositiva no puede mezclar sectores.');
   // Tres celdas visibles en todas las diapositivas, incluso con 1 o 2 imágenes.
   // Dividir el encabezado anterior en Sector + Paquete/Responsable evita
   // desplazar las imágenes, descripciones, logos y pie de la plantilla.
@@ -720,7 +696,7 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
     slide.addShape(S.rect,{x,y:top+sectorH,w,h:packageH,
       fill:{color:e?'C00000':'FFFFFF'},line:{color:'000000',width:.8}});
     if(e){
-      pptBimAddText(slide,sector.toUpperCase(),
+      pptBimAddText(slide,pptBimSector(e).toUpperCase(),
         {x:x+.10,y:top+.045,w:w-.20,h:.12,fontSize:10,bold:true,
           color:'172B49',align:'center',fit:'shrink'});
       // AREA_BIM muestra paquete; AREA_BIM2 mantiene responsable.
