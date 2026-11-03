@@ -6735,7 +6735,18 @@ function applyTaskSavedView(name){
   if(!saved||typeof saved!=='object'||!saved.filters)return;
   linkedTaskIds=null;linkedLabel='';
   $('#search').value=String(saved.search||'');
-  for(const [id] of TASK_CROSS_FIELDS)$('#'+id).value=String(saved.filters[id]||'');
+  for(const [id,field] of TASK_CROSS_FIELDS){
+    const select=$('#'+id),value=String(saved.filters[id]||'');
+    // Una vista puede contener valores ocultos por el filtro que estaba activo.
+    // Reconstruir opciones temporalmente evita perderlos antes de recalcular facetas.
+    if(value&&![...select.options].some(option=>option.value===value)){
+      const option=document.createElement('option');
+      option.value=value;
+      option.textContent=taskCrossLabel(field,value);
+      select.appendChild(option);
+    }
+    select.value=value;
+  }
   taskWeekFilterEnabled=Boolean(saved.weekEnabled);
   taskWeekFilterKey=typeof saved.weekKey==='string'&&/^\d{4}-W\d{2}$/.test(saved.weekKey)
     ?saved.weekKey:currentTaskEntryWeek();
@@ -8438,7 +8449,7 @@ function renderActiveFilterChips(scope){
   if(!isDash && linkedTaskIds) active.unshift({key:'linked',label:'Dashboard',value:linkedLabel});
   const host=document.getElementById(id);
   host.innerHTML=active.length?`<span class="filter-label">FILTROS ACTIVOS</span>${active.map(x=>
-    `<button class="filter-pill" type="button" data-clear-field="${esc(x.key)}" data-clear-scope="${scope}" title="Quitar filtro ${esc(x.label)}"><b>${esc(x.label)}:</b> ${esc(x.value)} <i aria-hidden="true">×</i></button>`).join('')}
+    `<button class="filter-pill" type="button" data-clear-field="${esc(x.key)}" data-clear-scope="${scope}" title="Quitar filtro ${esc(x.label)}"><b>${esc(x.label)}:</b> ${esc(x.key==='filter-due'?taskCrossLabel('due',x.value):x.value)} <i aria-hidden="true">×</i></button>`).join('')}
     <button type="button" class="clear-all" data-clear-all="${scope}">Limpiar todo</button>`:'';
 }
 document.addEventListener('click',event=>{
