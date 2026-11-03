@@ -49,7 +49,8 @@ function pptBimSector(item){
   return taskSector(item.package)||'Sin sector';
 }
 let pptBimState={items:[],week:'',mode:'reunion',meetingDay:pptBimSavedMeetingDay(),
-  profile:'standard',specialty:'revit',sectorFilter:'',weekFilters:{ingreso:true,culminacion:true},
+  profile:'standard',specialty:'revit',sectorFilter:'',manualMeetingRange:null,
+  weekFilters:{ingreso:true,culminacion:true},
   availableWeeks:[],busy:false,token:0,drafts:new Map()};
 
 function pptBimLib(){
@@ -152,6 +153,18 @@ function pptBimMeetingPeriod(week,meetingDay=3){
   end.setUTCDate(end.getUTCDate()-1);
   return {meeting:localISO(meeting),start:localISO(start),end:localISO(end)};
 }
+// El rango manual solo aplica a esta exportación; nunca altera las fechas de tareas.
+function pptBimMeetingReportPeriod(week,day,manualRange=null){
+  const automatic=pptBimMeetingPeriod(week,day);
+  if(!automatic)return null;
+  return manualRange?.start&&manualRange?.end
+    ?{...automatic,start:manualRange.start,end:manualRange.end}:automatic;
+}
+function pptBimValidRangeDate(value){
+  if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value))return false;
+  const parsed=new Date(value+'T00:00:00Z');
+  return !Number.isNaN(parsed.getTime())&&parsed.toISOString().slice(0,10)===value;
+}
 // La culminación corresponde a la FECHA REAL de término, no a la fecha límite.
 function pptBimCompletionWeek(task){
   const date=String(task.completedAt||'');
@@ -180,8 +193,8 @@ function pptBimSetupWeekSelector(){
     '<option value="'+week+'">SEM'+Number(week.slice(-2))+' · '+week.slice(0,4)+'</option>').join('');
   select.value=pptBimState.week;
 }
-function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,weekFilters=null,sectorFilter=''){
-  const meetingPeriod=mode==='reunion'?pptBimMeetingPeriod(week,meetingDay):null;
+function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,weekFilters=null,sectorFilter='',manualMeetingRange=null){
+  const meetingPeriod=mode==='reunion'?pptBimMeetingReportPeriod(week,meetingDay,manualMeetingRange):null;
   if(mode==='reunion'&&!meetingPeriod)return [];
   const packageFilter=$('#weekly-package')?.value||'';
   const teamFilter=$('#weekly-team')?.value||'';
@@ -295,15 +308,25 @@ function pptBimRefreshModeInfo(){
     ' · '+items.length+' fotografía'+(items.length!==1?'s':'')+
     ' · '+new Set(items.map(pptBimGroupName)).size+(special?' responsable(s)':' paquete(s)');
   const description=$('#bim-ppt-mode-note');
-  if(!description)return;
-  if(pptBimState.mode==='reunion'){
-    const period=pptBimMeetingPeriod(pptBimState.week,pptBimState.meetingDay);
-    description.textContent=period
+  const manualRangeUI=$('#bim-ppt-meeting-range');
+  const reunion=pptBimState.mode==='reunion';
+  if(description)description.hidden=reunion;
+  if(manualRangeUI)manualRangeUI.hidden=!reunion;
+  if(reunion){
+    const period=pptBimMeetingReportPeriod(pptBimState.week,pptBimState.meetingDay,pptBimState.manualMeetingRange);
+    const caption=$('#bim-ppt-meeting-range-caption');
+    if(caption)caption.textContent=period
       ?'Reunión '+PPT_BIM_MEETING_DAYS[pptBimState.meetingDay]+' '+dateDisplay(period.meeting)+
-       ' · Fotografías ingresadas del '+dateDisplay(period.start)+' al '+dateDisplay(period.end)+
-       ' (hora de Perú).'
-      :'No se pudo calcular el periodo de reunión.';
-  }else if(pptBimState.mode==='ingreso'){
+        ' · Fotografías cargadas (Perú):':'No se pudo calcular la reunión';
+    for(const [key,id] of [['start','bim-ppt-date-start'],['end','bim-ppt-date-end']]){
+      const input=$('#'+id);
+      if(input){input.value=period?.[key]||'';input.disabled=pptBimState.busy;}
+    }
+    const reset=$('#bim-ppt-date-reset');
+    if(reset){reset.hidden=!pptBimState.manualMeetingRange;reset.disabled=pptBimState.busy;}
+  }
+  if(!description)return;
+  if(pptBimState.mode==='ingreso'){
     description.textContent='Ingreso: fotografías cargadas durante la semana ISO seleccionada (hora de Perú).';
   }else if(pptBimState.mode==='semana'){
     const ingreso=pptBimState.weekFilters.ingreso,culminacion=pptBimState.weekFilters.culminacion;
@@ -322,7 +345,7 @@ function pptBimRefreshItems(mode=pptBimState.mode){
     pptBimState.drafts.set(pptBimPhotoKey(item),{caption:item.caption,enabled:item.enabled});
   const items=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay,
     pptBimState.profile==='by-person'?pptBimState.specialty:null,
-    pptBimState.weekFilters,pptBimState.sectorFilter);
+    pptBimState.weekFilters,pptBimState.sectorFilter,pptBimState.manualMeetingRange);
   pptBimState.items=items.map(item=>({
     ...item,...(pptBimState.drafts.get(pptBimPhotoKey(item))||{}),enabled:
     pptBimState.drafts.get(pptBimPhotoKey(item))?.enabled??true
@@ -333,6 +356,29 @@ function pptBimRefreshItems(mode=pptBimState.mode){
   if(progress)progress.textContent='';
   renderBimPptExport();
   loadBimPptThumbnails(pptBimState.token);
+}
+function setBimPptMeetingRange(field,value){
+  if(pptBimState.busy||pptBimState.mode!=='reunion'||
+    !$('#bim-ppt-back')?.classList.contains('open')||!['start','end'].includes(field))return;
+  const automatic=pptBimMeetingPeriod(pptBimState.week,pptBimState.meetingDay);
+  const current=pptBimMeetingReportPeriod(
+    pptBimState.week,pptBimState.meetingDay,pptBimState.manualMeetingRange);
+  if(!automatic||!current)return;
+  const next={start:current.start,end:current.end,[field]:value};
+  if(!pptBimValidRangeDate(next.start)||!pptBimValidRangeDate(next.end)||
+    next.start>next.end){
+    toast('Selecciona un rango válido: Desde no puede ser posterior a Hasta.');
+    pptBimRefreshModeInfo();
+    return;
+  }
+  pptBimState.manualMeetingRange=next.start===automatic.start&&next.end===automatic.end?null:next;
+  pptBimRefreshItems();
+}
+function resetBimPptMeetingRange(){
+  if(pptBimState.busy||pptBimState.mode!=='reunion'||
+    !$('#bim-ppt-back')?.classList.contains('open')||!pptBimState.manualMeetingRange)return;
+  pptBimState.manualMeetingRange=null;
+  pptBimRefreshItems();
 }
 function setBimPptSector(value){
   if(pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open')||
@@ -356,6 +402,7 @@ function setBimPptReportWeek(week){
     !pptBimState.availableWeeks.includes(week)||pptBimState.week===week)return;
   closeBimPptMeetingMenu();
   pptBimState.week=week;
+  pptBimState.manualMeetingRange=null;
   pptBimRefreshItems();
 }
 function setBimPptWeekCriterion(criterion,checked){
@@ -459,6 +506,7 @@ function setBimPptMeetingDay(value){
   if(!Number.isInteger(day)||day<1||day>7)return;
   if(day===pptBimState.meetingDay){closeBimPptMeetingMenu(true);return}
   pptBimState.meetingDay=day;
+  pptBimState.manualMeetingRange=null;
   try{localStorage.setItem(PPT_BIM_MEETING_DAY_KEY,String(day))}catch(e){}
   pptBimRefreshItems();
   closeBimPptMeetingMenu(true);
@@ -477,7 +525,7 @@ function openBimPptExport(){
     profile==='by-person'?specialty:null);
   pptBimState={items:items.map(x=>({...x,enabled:true})),
     week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,sectorFilter:'',
-    weekFilters:{ingreso:true,culminacion:true},
+    manualMeetingRange:null,weekFilters:{ingreso:true,culminacion:true},
     availableWeeks:profile==='by-person'?pptBimAvailableWeeks(selectedWeek):[],
     busy:false,token:pptBimState.token+1,drafts:new Map()};
   pptBimSetupWeekSelector();
@@ -772,7 +820,8 @@ async function exportBimPpt(){
     const groups=new Set(included.map(item=>
       byPerson?(item.owner||'Sin responsable'):(item.package||'Sin paquete')));
     pptBimCover(pptx,pptBimState.week,groups.size,included.length,
-      pptBimState.mode==='reunion'?pptBimMeetingPeriod(pptBimState.week,pptBimState.meetingDay):null,
+      pptBimState.mode==='reunion'
+        ?pptBimMeetingReportPeriod(pptBimState.week,pptBimState.meetingDay,pptBimState.manualMeetingRange):null,
       byPerson);
     const decoded=[];
     for(const photo of included){
