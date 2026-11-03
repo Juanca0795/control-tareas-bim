@@ -45,6 +45,11 @@ let weeklyInnerTab=(()=>{
 function syncWeeklySubtab(){
   const tracking=$('#weekly-seguimiento'),forecast=$('#weekly-proyeccion');
   if(!tracking||!forecast)return;
+  // AREA_BIM solo visualiza Proyección; AREA_BIM2 conserva ambas subpestañas.
+  const standard=typeof bimExportProfile==='undefined'||bimExportProfile!=='by-person';
+  if(standard)weeklyInnerTab='proyeccion';
+  const trackingButton=$('#weekly-tab-seguimiento');
+  if(trackingButton)trackingButton.hidden=standard;
   const showingForecast=weeklyInnerTab==='proyeccion';
   tracking.classList.toggle('hidden',showingForecast);
   forecast.classList.toggle('hidden',!showingForecast);
@@ -60,6 +65,8 @@ function syncWeeklySubtab(){
 }
 function switchWeeklySubtab(mode){
   if(!['seguimiento','proyeccion'].includes(mode))return;
+  if(mode==='seguimiento'&&
+    (typeof bimExportProfile==='undefined'||bimExportProfile!=='by-person'))return;
   // Al entrar a Proyección semanal se parte de la semana vigente.
   if(mode==='proyeccion'&&weeklyInnerTab!=='proyeccion'&&!weeklyProjectionMonthlyMode){
     selectedWeek=isoWeekKey(new Date());
