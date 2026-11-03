@@ -5119,12 +5119,11 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   white-space:nowrap;color:var(--accent-blue);
 }
 #tasks-view .task-week-period[hidden]{display:none!important}
-/* Búsqueda flexible + 7 selectores con ancho ceñido a sus etiquetas.
-   Los anchos reservan únicamente el texto del filtro y su chevrón.
-   Las selecciones largas se truncan, sin ampliar la fila ni la página. */
+/* Espacio suficiente para leer completas las etiquetas predeterminadas.
+   El buscador absorbe el resto; los filtros nunca ensanchan la página. */
 #tasks-view .controls{
   display:grid;
-  grid-template-columns:minmax(0,1fr) 122px 147px 112px 132px 118px 133px 144px;
+  grid-template-columns:minmax(220px,1fr) 133px 166px 126px 144px 129px 151px 168px;
   gap:6px;
   padding:12px;
   width:100%;max-width:100%;min-width:0;
@@ -5143,13 +5142,13 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 #tasks-view .controls>.select-wrap>select{
   width:100%;min-width:0;max-width:100%;
   box-sizing:border-box;
-  padding-left:7px;padding-right:19px;
-  background-position:right 5px center;
-  text-overflow:ellipsis;white-space:nowrap;
+  padding-left:7px;padding-right:22px;
+  background-position:right 7px center;
+  text-overflow:clip;white-space:nowrap;
   font-size:10px;
 }
-/* Cuando ya no cabe una fila legible, distribuir los filtros sin desbordar. */
-@media(max-width:1320px){
+/* En anchos menores se evita cortar etiquetas reordenando los controles. */
+@media(max-width:1440px){
   #tasks-view .controls{grid-template-columns:repeat(4,minmax(0,1fr))}
   #tasks-view .controls>input{grid-column:1/-1}
 }
@@ -6376,6 +6375,8 @@ function crossFilterOptions(fields,sourceRows){
     if(current&&!available.includes(current))
       el.insertAdjacentHTML('beforeend','<option value="'+esc(current)+'" disabled>'+esc(current)+' (sin coincidencias)</option>');
     el.value=current;
+    // Mostrar también la selección completa al pasar el mouse (nombres largos).
+    el.title=el.selectedOptions?.[0]?.textContent||label;
     el.closest('.select-wrap')?.classList.toggle('filter-selected',Boolean(current));
   }
 }
