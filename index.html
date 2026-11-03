@@ -483,7 +483,7 @@ button.stat:hover {
   background-size: 11px 11px;
 }
 
-/* High-Density Engineering Table: 10 columnas, con nivel BIM y apoyo visibles */
+/* High-Density Engineering Table: 11 columnas, con sector automático, nivel BIM y apoyo visibles */
 .table-wrap { width: 100%; overflow-x: auto; }
 .task-table {
   border-collapse: collapse;
@@ -1563,7 +1563,7 @@ button.owner-item.selected {border-color:var(--accent-blue);background:var(--bg-
 .task-table th{padding:15px 9px;font-size:9.8px;letter-spacing:.075em;text-align:center}
 .task-table td{padding:15px 8px;font-size:11.5px}
 .task-table th:nth-child(2),.task-table td:nth-child(2){text-align:left}
-.task-table th:nth-child(5),.task-table td:nth-child(5){text-align:left}
+.task-table th:nth-child(6),.task-table td:nth-child(6){text-align:left}
 .task-table tr:hover{background:var(--bg-hover)}
 .task-table tr.task-row-selected {background:var(--bg-selected);box-shadow:inset 3px 0 var(--accent-blue)}
 .task-table tbody tr.task-row-completed {opacity:.66;filter:saturate(.55)}
@@ -5217,10 +5217,11 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             <col style="width:8%">
             <col style="width:23%">
             <col style="width:7%">
-            <col style="width:8%">
-            <col style="width:11%">
+            <col style="width:6%">
+            <col style="width:6%">
             <col style="width:9%">
-            <col style="width:7%">
+            <col style="width:8%">
+            <col style="width:6%">
             <col style="width:9%">
             <col style="width:9%">
             <col style="width:9%">
@@ -5231,6 +5232,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
               <th>Entregable / Descripción Técnica</th>
               <th>LOI</th>
               <th>Paquete</th>
+              <th>Sector</th>
               <th>Responsable</th>
               <th>Disciplina</th>
               <th>Prioridad</th>
@@ -5849,6 +5851,16 @@ const SVG_ICONS = {
 };
 
 function unique(a){ return Array.from(new Set(a.filter(Boolean))).sort((x,y)=>x.localeCompare(y,'es',{numeric:true})); }
+// Clasificación visual del sector según el paquete. No modifica los registros existentes.
+function taskSector(packageName){
+  const match=/^\s*paquete\s*0*(\d+)\s*$/i.exec(String(packageName||''));
+  if(!match)return '';
+  const number=Number(match[1]);
+  if(number>=1&&number<=9)return 'Sector 1';
+  if(number===20||number===21)return 'Sector 2';
+  if(number>=30&&number<=33)return 'Sector 3';
+  return '';
+}
 function normalizeMonthlyAnalytics(input){
   const validDate=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+'T00:00:00Z'));
   const dates=input?.createdAtByTask&&typeof input.createdAtByTask==='object'&&!Array.isArray(input.createdAtByTask)
@@ -6579,11 +6591,13 @@ function renderTasks(){
     const al = alertStatus(t);
     const lodHtml = t.lod ? `<span class="lod-badge">${esc(t.lod)}</span>` : `<span class="cell-empty">-</span>`;
     const supportHtml = t.support ? `<span class="support-text">${esc(t.support)}</span>` : `<span class="cell-empty">-</span>`;
+    const sector=taskSector(t.package);
     return `<tr data-task-row="${esc(t.id)}" tabindex="0" title="${esc(taskRegistrationHint(t))}" class="${selectedTaskId===t.id?'task-row-selected ':''}${isDone?'task-row-completed':''}${animateFacet?' task-facet-enter':''}">
       <td><span class="id">${esc(displayCodes.get(t.id)||t.id)}</span></td>
       <td><div class="task-name">${esc(t.title)}${taskEvidenceBadge(t.id)}</div></td>
       <td>${lodHtml}</td>
       <td>${esc(t.package)}</td>
+      <td>${sector?esc(sector):'<span class="cell-empty">—</span>'}</td>
       <td>${taskOwnerFilter(t.owner)}</td>
       <td>${taskFacetChip('team',t.team,'todo')}</td>
       <td><span class="chip ${clsPriority(t.priority)}">${esc(t.priority)}</span></td>
@@ -6594,16 +6608,18 @@ function renderTasks(){
         <span class="chip ${al.cls}">${esc(al.text)}</span>
       </td>
     </tr>`;
-  }).join('') || `<tr class="task-row-empty"><td colspan="10" class="empty">No se encontraron entregables para los criterios seleccionados.</td></tr>`;
+  }).join('') || `<tr class="task-row-empty"><td colspan="11" class="empty">No se encontraron entregables para los criterios seleccionados.</td></tr>`;
   // Vista compacta para móviles; reutiliza las mismas tareas y el editor existente.
   $('#tasks-mobile-cards').innerHTML=visible.length?visible.map(t=>{
     const alert=alertStatus(t);
+    const sector=taskSector(t.package);
     return `<article class="task-mobile-card${categoryOf(t.status)==='done'?' task-mobile-completed':''}${animateFacet?' task-facet-enter':''}" aria-label="Entregable ${esc(displayCodes.get(t.id)||t.id)}">
       <div class="task-mobile-card-head"><span class="id">${esc(displayCodes.get(t.id)||t.id)}</span>${taskFacetChip('status',t.status,clsStatus(t.status))}</div>
       <h3 class="task-mobile-title" title="${esc(t.title)}">${esc(t.title)}${taskEvidenceBadge(t.id)}</h3>
       <dl class="task-mobile-facts">
         <div><dt>LOI</dt><dd>${t.lod?`<span class="lod-badge">${esc(t.lod)}</span>`:'<span class="cell-empty">—</span>'}</dd></div>
         <div><dt>PAQUETE</dt><dd title="${esc(t.package)}">${esc(t.package)||'—'}</dd></div>
+        <div><dt>SECTOR</dt><dd>${sector?esc(sector):'<span class="cell-empty">—</span>'}</dd></div>
         <div><dt>RESPONSABLE</dt><dd title="${esc(t.owner)}">${taskOwnerFilter(t.owner)}</dd></div>
         <div><dt>DISCIPLINA</dt><dd>${taskFacetChip('team',t.team,'todo')}</dd></div>
         <div><dt>PRIORIDAD</dt><dd><span class="chip ${clsPriority(t.priority)}">${esc(t.priority)}</span></dd></div>
