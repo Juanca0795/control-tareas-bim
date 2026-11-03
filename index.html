@@ -7316,8 +7316,10 @@ function switchView(v, authenticated=false){
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
   $('#weekly-ppt-launch').classList.toggle('hidden',v!=='weekly');
-  $('#weekly-subtabs').classList.toggle('hidden',v!=='weekly');
-  $('.sidebar').classList.toggle('weekly-subtabs-visible',v==='weekly');
+  // AREA_BIM accede directamente a Proyección; solo AREA_BIM2 usa subpestañas.
+  const showWeeklySubtabs=v==='weekly'&&bimExportProfile==='by-person';
+  $('#weekly-subtabs').classList.toggle('hidden',!showWeeklySubtabs);
+  $('.sidebar').classList.toggle('weekly-subtabs-visible',showWeeklySubtabs);
   // La sesión del navegador recuerda la vista, sin almacenar datos de tareas.
   // Salir de Control Semanal revoca el acceso de esta pestaña; reentrar exige clave.
   try{
