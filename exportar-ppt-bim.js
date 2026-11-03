@@ -44,8 +44,12 @@ function pptBimGroupName(item){
     ?item.owner||'Sin responsable'
     :item.package||'Sin paquete';
 }
+// Misma clasificación utilizada por la columna Sector de Control de Tareas.
+function pptBimSector(item){
+  return taskSector(item.package)||'Sin sector';
+}
 let pptBimState={items:[],week:'',mode:'reunion',meetingDay:pptBimSavedMeetingDay(),
-  profile:'standard',specialty:'revit',weekFilters:{ingreso:true,culminacion:true},
+  profile:'standard',specialty:'revit',sectorFilter:'',weekFilters:{ingreso:true,culminacion:true},
   availableWeeks:[],busy:false,token:0,drafts:new Map()};
 
 function pptBimLib(){
@@ -176,7 +180,7 @@ function pptBimSetupWeekSelector(){
     '<option value="'+week+'">SEM'+Number(week.slice(-2))+' · '+week.slice(0,4)+'</option>').join('');
   select.value=pptBimState.week;
 }
-function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,weekFilters=null){
+function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,weekFilters=null,sectorFilter=''){
   const meetingPeriod=mode==='reunion'?pptBimMeetingPeriod(week,meetingDay):null;
   if(mode==='reunion'&&!meetingPeriod)return [];
   const packageFilter=$('#weekly-package')?.value||'';
@@ -186,6 +190,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   for(const task of tasks){
     // El perfil original nunca entra en esta condición ni cambia su selección.
     if(specialty&&pptBimSpecialtyForOwner(task.owner)!==specialty)continue;
+    if(sectorFilter&&pptBimSector(task)!==sectorFilter)continue;
     if((packageFilter&&task.package!==packageFilter)||
        (teamFilter&&task.team!==teamFilter)||
        (ownerFilter&&task.owner!==ownerFilter))continue;
@@ -234,6 +239,11 @@ function pptBimRefreshModeInfo(){
     button.setAttribute('aria-pressed',String(button.dataset.bimPptMode===pptBimState.mode));
     button.disabled=pptBimState.busy;
   });
+  const sectorSelect=$('#bim-ppt-sector-filter');
+  if(sectorSelect){
+    sectorSelect.value=pptBimState.sectorFilter;
+    sectorSelect.disabled=pptBimState.busy;
+  }
   const weekTools=$('#bim-ppt-week-tools'),weekSelector=$('#bim-ppt-report-week');
   const crossFilter=$('#bim-ppt-week-cross');
   if(weekTools)weekTools.hidden=!special;
@@ -263,8 +273,8 @@ function pptBimRefreshModeInfo(){
   }else closeBimPptSpecialtyMenu();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: fotografías agrupadas por <strong>responsable</strong> y filtradas por Civil 3D o Revit. El modo Por semana permite combinar Ingreso y Culminación sin duplicar fotos. No se incluyen los cuatro colaboradores excluidos. Se conservan los filtros de paquete, disciplina y colaborador.'
-    :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de paquete, disciplina y colaborador.';
+    ?'Perfil AREA_BIM2: fotografías agrupadas por <strong>responsable</strong> y filtradas por Civil 3D o Revit. El modo Por semana permite combinar Ingreso y Culminación sin duplicar fotos. No se incluyen los cuatro colaboradores excluidos. Se conservan los filtros de sector, paquete, disciplina y colaborador.'
+    :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
   if(dayPicker)dayPicker.hidden=pptBimState.mode!=='reunion';
@@ -311,7 +321,7 @@ function pptBimRefreshItems(mode=pptBimState.mode){
     pptBimState.drafts.set(pptBimPhotoKey(item),{caption:item.caption,enabled:item.enabled});
   const items=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay,
     pptBimState.profile==='by-person'?pptBimState.specialty:null,
-    pptBimState.weekFilters);
+    pptBimState.weekFilters,pptBimState.sectorFilter);
   pptBimState.items=items.map(item=>({
     ...item,...(pptBimState.drafts.get(pptBimPhotoKey(item))||{}),enabled:
     pptBimState.drafts.get(pptBimPhotoKey(item))?.enabled??true
@@ -322,6 +332,13 @@ function pptBimRefreshItems(mode=pptBimState.mode){
   if(progress)progress.textContent='';
   renderBimPptExport();
   loadBimPptThumbnails(pptBimState.token);
+}
+function setBimPptSector(value){
+  if(pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open')||
+    !['','Sector 1','Sector 2','Sector 3','Sin sector'].includes(value))return;
+  if(value===pptBimState.sectorFilter)return;
+  pptBimState.sectorFilter=value;
+  pptBimRefreshItems();
 }
 function setBimPptMode(mode){
   if(pptBimState.busy||!['ingreso','culminacion','reunion','semana'].includes(mode)||
@@ -457,7 +474,7 @@ function openBimPptExport(){
   const items=pptBimItemsForWeek(selectedWeek,'reunion',meetingDay,
     profile==='by-person'?specialty:null);
   pptBimState={items:items.map(x=>({...x,enabled:true})),
-    week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,
+    week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,sectorFilter:'',
     weekFilters:{ingreso:true,culminacion:true},
     availableWeeks:profile==='by-person'?pptBimAvailableWeeks(selectedWeek):[],
     busy:false,token:pptBimState.token+1,drafts:new Map()};
@@ -608,12 +625,22 @@ function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=fal
   pptBimAddText(slide,'ÁREA BIM · S&P',{x:.45,y:6.87,w:3.4,h:.16,
     fontSize:10,color:'FFFFFF',bold:true,align:'center'});
 }
-/* AREA_BIM mantiene intacto el empaquetado consecutivo por paquete.
- * AREA_BIM2 optimiza por responsable: páginas de 3 fotografías de una persona
- * primero, luego combina remanentes de 2+1 o de distintas personas.
- * Solo queda una fotografía sola cuando no hay otra disponible en el informe.
+/* Ninguna diapositiva debe mezclar sectores. Dentro de cada sector,
+ * AREA_BIM conserva el empaquetado por paquete y AREA_BIM2 optimiza por
+ * responsable con sus reglas originales de grupos de 3, parejas y singles.
  */
 function pptBimPackSlides(items,byPerson=false){
+  const sectors=new Map();
+  for(const item of items){
+    const sector=pptBimSector(item);
+    if(!sectors.has(sector))sectors.set(sector,[]);
+    sectors.get(sector).push(item);
+  }
+  // Orden fijo de lectura, sin depender de la primera foto encontrada.
+  return ['Sector 1','Sector 2','Sector 3','Sin sector']
+    .flatMap(sector=>sectors.has(sector)?pptBimPackSectorSlides(sectors.get(sector),byPerson):[]);
+}
+function pptBimPackSectorSlides(items,byPerson=false){
   const groups=new Map();
   for(const item of items){
     const key=String(byPerson?(item.owner||'Sin responsable'):(item.package||'Sin paquete'));
@@ -674,7 +701,12 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   const S=pptx.ShapeType,slide=pptx.addSlide();
   pptBimMaster(slide,pptx);
   pptBimAddText(slide,'EVIDENCIAS BIM · SEMANA '+week.split('-W')[1],
-    {x:.37,y:.80,w:11.9,h:.29,fontSize:18,bold:true});
+    {x:.37,y:.80,w:9.4,h:.29,fontSize:18,bold:true});
+  const sector=pptBimSector(entries[0]);
+  if(entries.some(e=>pptBimSector(e)!==sector))
+    throw new Error('Una diapositiva no puede mezclar sectores.');
+  pptBimAddText(slide,sector.toUpperCase(),
+    {x:10.23,y:.83,w:2.68,h:.24,fontSize:12,bold:true,align:'right',color:'172B49'});
   const start=.28,totalWidth=12.801,top=1.13,redH=.673,picH=3.746,captionH=.961;
   // La plantilla conserva tres columnas fijas; cada evidencia llena un espacio de izquierda a derecha.
   // Si hay 1 o 2 fotografías, las columnas restantes quedan vacías.
@@ -762,7 +794,7 @@ async function exportBimPpt(){
       decoded.push({...photo,...loaded});
       if(status)status.textContent='Preparando imágenes '+decoded.length+' de '+included.length+'…';
     }
-    // AREA_BIM2: agrupar por persona; AREA_BIM conserva las páginas por paquete.
+    // Mantener las reglas de cada perfil dentro de cada sector, sin mezclarlos.
     const pages=pptBimPackSlides(decoded,byPerson);
     for(const entries of pages)pptBimEvidenceSlide(pptx,pptBimState.week,entries,byPerson);
     if(status)status.textContent='Generando PPTX editable…';
