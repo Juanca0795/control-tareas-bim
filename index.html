@@ -6318,7 +6318,10 @@ const TASK_CROSS_FIELDS=[
   ['filter-package','package','Todos los paquetes'],
   ['filter-owner','owner','Todos los colaboradores'],
   ['filter-status','status','Todos los estados'],
-  ['filter-team','team','Todas las disciplinas']
+  ['filter-team','team','Todas las disciplinas'],
+  ['filter-sector','sector','Todos los sectores'],
+  ['filter-priority','priority','Todas las prioridades'],
+  ['filter-due','due','Todos los vencimientos']
 ];
 const DASH_CROSS_FIELDS=[
   ['dash-package','package','Todos los paquetes'],
@@ -6332,6 +6335,22 @@ const WEEKLY_CROSS_FIELDS=[
   ['weekly-team','team','Todas las disciplinas'],
   ['weekly-owner','owner','Todos los colaboradores']
 ];
+function taskDueBucket(t){
+  const code=alertStatus(t).sort;
+  return ({0:'overdue',1:'today',2:'soon',3:'ontime',8:'no-date',9:'completed'})[code]||'no-date';
+}
+const TASK_DUE_LABELS={
+  overdue:'Vencidas',today:'Vencen hoy',soon:'Próximos 3 días',
+  ontime:'En plazo','no-date':'Sin fecha límite',completed:'Completadas'
+};
+function taskCrossValue(row,field){
+  if(field==='sector')return taskSector(row.package);
+  if(field==='due')return taskDueBucket(row);
+  return row[field];
+}
+function taskCrossLabel(field,value){
+  return field==='due'?TASK_DUE_LABELS[value]||value:value;
+}
 function crossFilterOptions(fields,sourceRows){
   // Capturar selecciones ANTES de modificar ningún select.
   const selected=Object.fromEntries(fields.map(([id])=>[id,document.getElementById(id)?.value||'']));
@@ -6339,16 +6358,16 @@ function crossFilterOptions(fields,sourceRows){
     const el=document.getElementById(id);
     if(!el)continue;
     const rows=sourceRows.filter(row=>fields.every(([otherId,otherField])=>
-      otherId===id||!selected[otherId]||row[otherField]===selected[otherId]));
+      otherId===id||!selected[otherId]||taskCrossValue(row,otherField)===selected[otherId]));
     const counts=new Map();
     for(const row of rows){
-      const value=row[field];
+      const value=taskCrossValue(row,field);
       if(typeof value==='string'&&value)counts.set(value,(counts.get(value)||0)+1);
     }
     const available=unique([...counts.keys()]);
     const current=selected[id];
     el.innerHTML='<option value="">'+esc(label)+'</option>'+
-      available.map(value=>'<option value="'+esc(value)+'">'+esc(value)+' ('+counts.get(value)+')</option>').join('');
+      available.map(value=>'<option value="'+esc(value)+'">'+esc(taskCrossLabel(field,value))+' ('+counts.get(value)+')</option>').join('');
     // Si un registro desaparece por sincronización, mantener visible su filtro
     // hasta que el usuario lo quite: nunca borrar selecciones silenciosamente.
     if(current&&!available.includes(current))
@@ -6361,7 +6380,7 @@ function taskCrossSource(){
   const query=$('#search').value.trim().toLocaleLowerCase('es');
   return tasks.filter(t=>(!linkedTaskIds||linkedTaskIds.has(t.id))&&
     (!taskWeekFilterEnabled||taskEntryWeek(t)===taskWeekFilterKey)&&
-    (!query||[t.id,t.title,t.owner,t.package,t.support].join(' ').toLocaleLowerCase('es').includes(query)));
+    (!query||[t.id,t.title,t.owner,t.package,t.support,taskSector(t.package)].join(' ').toLocaleLowerCase('es').includes(query)));
 }
 function refreshFilters(){
   crossFilterOptions(TASK_CROSS_FIELDS,taskCrossSource());
@@ -6616,10 +6635,62 @@ function updateTaskWeekControls(){
     label.textContent=weekShort(week)+' · '+dateDisplay(localISO(weekStart(week)))+' – '+dateDisplay(weekEnd(week));
   }
 }
+// Apariencia local: no cambia Supabase, PPC, fotografías ni identificadores.
+const TASK_VIEW_PREFS_KEY='area-bim-task-view-preferences-v1';
+let taskDensity=(()=>{
+  try{
+    const v=JSON.parse(localStorage.getItem(TASK_VIEW_PREFS_KEY)||'{}').density;
+    return ['compact','normal','comfortable'].includes(v)?v:'normal';
+  }catch(e){return 'normal'}
+})();
+const TASK_SORT_KEYS=['code','title','lod','package','sector','owner','team',
+  'priority','status','support','deadline'];
+let taskSortField='code',taskSortDirection='desc';
+function setTaskDensity(value){
+  if(!['compact','normal','comfortable'].includes(value))return;
+  taskDensity=value;
+  try{localStorage.setItem(TASK_VIEW_PREFS_KEY,JSON.stringify({density:value}))}catch(e){}
+  const box=$('#tasks-view .table-wrap');
+  if(box)box.dataset.density=value;
+}
+function setTaskSort(field){
+  if(!TASK_SORT_KEYS.includes(field))return;
+  taskSortDirection=taskSortField===field&&taskSortDirection==='asc'?'desc':'asc';
+  taskSortField=field;
+  currentTaskPage=1;
+  selectedTaskId=null;
+  renderTasks();
+}
+function taskSortValue(t,field){
+  if(field==='sector')return taskSector(t.package);
+  if(field==='priority')return ({Baja:1,Media:2,Alta:3})[t.priority]||0;
+  return String(t[field]||'').trim();
+}
+function taskCompareRows(a,b){
+  if(taskSortField==='code')return taskSortDirection==='asc'
+    ?taskChronologicalOrder(a,b):recentTaskFirst(a,b);
+  const va=taskSortValue(a,taskSortField),vb=taskSortValue(b,taskSortField);
+  const emptyA=va===''||va===0,emptyB=vb===''||vb===0;
+  if(emptyA!==emptyB)return emptyA?1:-1;
+  const raw=typeof va==='number'&&typeof vb==='number'?va-vb:
+    String(va).localeCompare(String(vb),'es',{numeric:true,sensitivity:'base'});
+  return raw?(taskSortDirection==='asc'?raw:-raw):recentTaskFirst(a,b);
+}
+function updateTaskSortHeaders(){
+  document.querySelectorAll('#tasks-view .task-table thead th[data-task-sort]').forEach(th=>{
+    const active=th.dataset.taskSort===taskSortField;
+    th.setAttribute('aria-sort',active
+      ?taskSortDirection==='asc'?'ascending':'descending':'none');
+    const arrow=th.querySelector('.task-sort-indicator');
+    if(arrow)arrow.textContent=active?taskSortDirection==='asc'?'↑':'↓':'↕';
+  });
+}
 const TASKS_PER_PAGE=15;
 let currentTaskPage=1;
 let taskFacetAnimateNext=false;
 function onTaskFiltersChanged(){
+  const savedSelect=$('#task-saved-view');
+  if(savedSelect)savedSelect.value='';
   currentTaskPage=1;
   selectedTaskId=null;
   hoveredTaskId=null;
@@ -6745,15 +6816,19 @@ function filteredTasks(){
     (!linkedTaskIds || linkedTaskIds.has(t.id)) &&
     (!taskWeekFilterEnabled || taskEntryWeek(t)===taskWeekFilterKey) &&
     (!q || [t.id, t.title, t.owner, t.package, t.support].join(' ').toLocaleLowerCase('es').includes(q)) &&
-    (!$('#filter-package').value || t.package === $('#filter-package').value) &&
-    (!$('#filter-owner').value || t.owner === $('#filter-owner').value) &&
-    (!$('#filter-status').value || t.status === $('#filter-status').value) &&
-    (!$('#filter-team').value || t.team === $('#filter-team').value)
-  ).sort(recentTaskFirst);
+    TASK_CROSS_FIELDS.every(([id,field])=>
+      !$('#'+id).value||taskCrossValue(t,field)===$('#'+id).value)
+  ).sort(taskCompareRows);
 }
 
 function renderTasks(){
   updateTaskWeekControls();
+  updateTaskSortHeaders();
+  const densitySelect=$('#task-density');
+  if(densitySelect)densitySelect.value=taskDensity;
+  const tableWrap=$('#tasks-view .table-wrap');
+  if(tableWrap)tableWrap.dataset.density=taskDensity;
+  refreshTaskSavedViews();
   const animateFacet=taskFacetAnimateNext;
   taskFacetAnimateNext=false;
   crossFilterOptions(TASK_CROSS_FIELDS,taskCrossSource());
@@ -7246,7 +7321,7 @@ function openDrillInControl(){
   linkedTaskIds = new Set(list.map(t=>t.id));
   linkedLabel = drillTitle(dashboardDrill?.type, dashboardDrill?.value);
   $('#search').value = '';
-  for(const sel of ['#filter-package','#filter-owner','#filter-status','#filter-team']) $(sel).value = '';
+  for(const [id] of TASK_CROSS_FIELDS) $('#'+id).value = '';
   currentTaskPage=1;
   switchView('tasks');
   renderTasks();
@@ -8221,7 +8296,9 @@ function renderActiveFilterChips(scope){
     ['dash-package','Paquete'],['dash-team','Disciplina'],['dash-owner','Responsable'],
     ['dash-state','Estado'],['dash-priority','Prioridad']]:[
     ['filter-package','Paquete'],['filter-owner','Responsable'],
-    ['filter-status','Estado'],['filter-team','Disciplina'],['search','Búsqueda']];
+    ['filter-status','Estado'],['filter-team','Disciplina'],
+    ['filter-sector','Sector'],['filter-priority','Prioridad'],
+    ['filter-due','Vencimiento'],['search','Búsqueda']];
   const active=data.map(([key,label])=>({key,label,value:document.getElementById(key)?.value?.trim()||''})).filter(x=>x.value);
   if(!isDash && linkedTaskIds) active.unshift({key:'linked',label:'Dashboard',value:linkedLabel});
   const host=document.getElementById(id);
@@ -8241,7 +8318,7 @@ document.addEventListener('click',event=>{
   if(all){
     if(all.dataset.clearAll==='dash') clearDashFilters();
     else {
-      for(const id of ['search','filter-package','filter-owner','filter-status','filter-team'])document.getElementById(id).value='';
+      for(const id of ['search',...TASK_CROSS_FIELDS.map(([id])=>id)])document.getElementById(id).value='';
       linkedTaskIds=null;linkedLabel='';onTaskFiltersChanged();
     }
   }
