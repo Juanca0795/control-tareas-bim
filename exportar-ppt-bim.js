@@ -316,9 +316,15 @@ function pptBimRefreshModeInfo(){
   if(reunion){
     const period=pptBimMeetingReportPeriod(pptBimState.week,pptBimState.meetingDay,pptBimState.manualMeetingRange);
     const caption=$('#bim-ppt-meeting-range-caption');
-    if(caption)caption.textContent=period
-      ?'Reunión '+PPT_BIM_MEETING_DAYS[pptBimState.meetingDay]+' '+dateDisplay(period.meeting)+
-        ' · Fotografías cargadas (Perú):':'No se pudo calcular la reunión';
+    if(caption){
+      const fullCaption=period
+        ?'Reunión '+PPT_BIM_MEETING_DAYS[pptBimState.meetingDay]+' '+dateDisplay(period.meeting)+
+          ' · Fotografías cargadas (Perú):':'No se pudo calcular la reunión';
+      caption.textContent=period&&special
+        ?'Reunión '+PPT_BIM_MEETING_DAYS[pptBimState.meetingDay].slice(0,3)+'. '+
+          dateDisplay(period.meeting)+' · Fotos (PE):':fullCaption;
+      caption.title=fullCaption;
+    }
     for(const [key,id] of [['start','bim-ppt-date-start'],['end','bim-ppt-date-end']]){
       const input=$('#'+id);
       if(input){input.value=period?.[key]||'';input.disabled=pptBimState.busy;}
