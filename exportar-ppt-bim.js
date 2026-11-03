@@ -235,7 +235,8 @@ function pptBimPhotoKey(item){return item.taskId+'|'+item.id}
 function pptBimRefreshModeInfo(){
   const special=pptBimState.profile==='by-person';
   document.querySelectorAll('[data-bim-ppt-mode]').forEach(button=>{
-    button.hidden=!special&&button.dataset.bimPptMode==='semana';
+    // AREA_BIM muestra solamente Reunión; AREA_BIM2 conserva todos los criterios.
+    button.hidden=!special&&button.dataset.bimPptMode!=='reunion';
     button.setAttribute('aria-pressed',String(button.dataset.bimPptMode===pptBimState.mode));
     button.disabled=pptBimState.busy;
   });
@@ -341,6 +342,7 @@ function setBimPptSector(value){
   pptBimRefreshItems();
 }
 function setBimPptMode(mode){
+  if(pptBimState.profile!=='by-person'&&mode!=='reunion')return;
   if(pptBimState.busy||!['ingreso','culminacion','reunion','semana'].includes(mode)||
     (mode==='semana'&&pptBimState.profile!=='by-person')||
     !$('#bim-ppt-back')?.classList.contains('open')||mode===pptBimState.mode)return;
