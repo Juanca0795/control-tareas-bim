@@ -4225,6 +4225,8 @@ textarea,
   font-size:10px;font-weight:700;letter-spacing:.025em;padding:8px 12px;
   min-height:34px;border-radius:6px;cursor:pointer;white-space:nowrap;
 }
+/* Respetar el ocultamiento del botón Seguimiento según el perfil autenticado. */
+.sidebar .weekly-subtab[hidden]{display:none!important}
 .sidebar .weekly-subtab.active{
   background:var(--bg-panel);border-color:var(--border-strong);
   color:var(--accent-blue);box-shadow:0 2px 10px rgba(0,0,0,.08);
@@ -7432,6 +7434,8 @@ function validateSettingsAuth(event){
   }
   const target=authTarget;
   bimExportProfile=user==='AREA_BIM2'?'by-person':'standard';
+  // Si se cambia el perfil mientras Control Semanal está abierto, actualizar su vista.
+  if(currentView==='weekly'&&typeof syncWeeklySubtab==='function')syncWeeklySubtab();
   try{
     if(target==='weeklyAccess'||currentView==='weekly')
       sessionStorage.setItem('area-bim-weekly-export-profile',bimExportProfile);
