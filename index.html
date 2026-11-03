@@ -5579,7 +5579,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             <div class="bim-entry-date-fields hidden" id="bim-entry-date-fields">
               <label for="f-entry-date">Fecha de ingreso de la tarea</label>
               <input type="date" id="f-entry-date" min="2026-10-01">
-              <small>Disponible hasta la 1:00 p. m. (hora de Perú). No modifica el plazo de entrega.</small>
+              <small>Disponible hasta el 30/10/2026 a las 1:00 p. m. (hora de Perú). No modifica el plazo de entrega.</small>
             </div>
           </div>
           <div class="form-field">
@@ -7587,7 +7587,7 @@ $('#task-form').addEventListener('keydown',event=>{
   switchBimEditorTab(next,{focus:true});
 });
 
-// Ventana de regularización de fechas: antes de las 13:00 en Perú.
+// Regularización excepcional: finalizó el 30/10/2026 a las 13:00 (Perú).
 // Solo regula la UI. El sello de auditoría created_at sigue en Supabase.
 function peruEntryClock(){
   const parts=Object.fromEntries(new Intl.DateTimeFormat('en-GB',{
@@ -7597,7 +7597,8 @@ function peruEntryClock(){
   return {date:parts.year+'-'+parts.month+'-'+parts.day,
     hour:Number(parts.hour),minute:Number(parts.minute)};
 }
-function canSetManualEntryDate(){return peruEntryClock().hour<13;}
+const MANUAL_ENTRY_DEADLINE_PERU = Date.parse('2026-10-30T13:00:00-05:00');
+function canSetManualEntryDate(){return Date.now()<MANUAL_ENTRY_DEADLINE_PERU;}
 function toggleManualEntryDate(enabled){
   const section=$('#bim-entry-date-fields'),input=$('#f-entry-date');
   section.classList.toggle('hidden',!enabled);
