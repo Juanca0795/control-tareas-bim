@@ -4549,8 +4549,8 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   height:min(790px,calc(100dvh - 34px));
   max-height:calc(100dvh - 34px);
 }
-/* Sólo AREA_BIM2 necesita espacio para el selector adicional. */
-.bim-ppt-dialog.bim-ppt-person-export{width:min(860px,calc(100vw - 24px))}
+/* AREA_BIM2 compacto: el ancho se ajusta a la fila de filtros, sin panel vacío a la derecha. */
+.bim-ppt-dialog.bim-ppt-person-export{width:min(590px,calc(100vw - 24px))}
 @media(max-width:950px){
   .bim-ppt-dialog.bim-ppt-person-export>.modal-hd{
     position:relative;flex-wrap:wrap;gap:7px;padding-right:38px;
@@ -4588,16 +4588,37 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
    Los controles se agrupan de izquierda a derecha y la X permanece fija. */
 .bim-ppt-dialog.bim-ppt-person-export>.modal-hd{
   position:relative;display:flex;flex-wrap:wrap;
-  justify-content:flex-start;align-content:flex-start;
-  column-gap:8px;row-gap:7px;padding-right:38px
+  justify-content:flex-start;align-content:flex-start;align-items:flex-end;
+  column-gap:6px;row-gap:6px;padding-right:38px
 }
 .bim-ppt-dialog.bim-ppt-person-export>.modal-hd h2{flex:1 1 100%}
 .bim-ppt-dialog.bim-ppt-person-export>.modal-hd .close{
   position:absolute;top:10px;right:10px
 }
+/* La fila de filtros termina alineada en una única línea base, sin separaciones
+   proporcionales ni espacios en blanco adicionales. */
+.bim-ppt-dialog.bim-ppt-person-export>.modal-hd .bim-ppt-mode{
+  height:30px;box-sizing:border-box;padding:2px
+}
+.bim-ppt-dialog.bim-ppt-person-export>.modal-hd .bim-ppt-mode button{
+  height:24px;padding-inline:7px
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-item-title{
+  grid-template-columns:110px minmax(0,1fr) minmax(0,150px)
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-item-title span{
+  max-width:150px
+}
+@media(max-width:680px){
+  .bim-ppt-dialog.bim-ppt-person-export .bim-ppt-item-title{
+    grid-template-columns:83px minmax(0,1fr) minmax(0,115px)
+  }
+  .bim-ppt-dialog.bim-ppt-person-export .bim-ppt-item-title span{max-width:115px}
+}
+
 .bim-ppt-dialog>.modal-hd .bim-ppt-week-tools{
   flex:0 0 auto;display:inline-flex;flex-direction:column;
-  align-items:flex-start;gap:3px;width:134px;max-width:100%;
+  align-items:flex-start;gap:3px;width:128px;max-width:100%;
   margin:0;padding:0;border:0;border-radius:0;background:transparent
 }
 .bim-ppt-dialog>.modal-hd .bim-ppt-week-tools>label{
