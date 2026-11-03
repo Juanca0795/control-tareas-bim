@@ -4586,6 +4586,25 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 @media(max-width:580px){
   .bim-ppt-week-cross{border-left:0;padding-left:0;flex-basis:100%}
 }
+/* Filtro por sector para AREA_BIM y AREA_BIM2: sin ampliar el modal. */
+.bim-ppt-dialog .bim-ppt-sector-tools{
+  display:flex;flex-wrap:wrap;align-items:center;gap:9px;
+  padding:8px 11px;border:1px solid var(--border-base);border-radius:9px;
+  background:var(--bg-subtle)
+}
+.bim-ppt-sector-tools label{
+  font:650 10px Inter,sans-serif;color:var(--ink-secondary)
+}
+.bim-ppt-sector-tools select{
+  height:31px;min-width:150px;max-width:100%;
+  border:1px solid var(--border-strong);border-radius:6px;
+  color:var(--ink-primary);background:var(--bg-panel);
+  font:650 11px Inter,sans-serif;padding:0 8px;cursor:pointer
+}
+.bim-ppt-sector-tools select:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:2px
+}
+.bim-ppt-sector-tools select:disabled{opacity:.6;cursor:wait}
 /* Selector compacto en la cabecera: no modifica el ancho de la ventana. */
 .bim-ppt-dialog>.modal-hd{display:flex;align-items:center;gap:9px;padding:15px 18px}
 .bim-ppt-dialog>.modal-hd h2{flex:1 1 auto;min-width:0;font-size:13px}
@@ -5770,6 +5789,17 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             onchange="setBimPptWeekCriterion('culminacion',this.checked)">
             Culminación</label>
         </div>
+      </div>
+      <div class="bim-ppt-sector-tools">
+        <label for="bim-ppt-sector-filter">Sector</label>
+        <select id="bim-ppt-sector-filter" aria-label="Filtrar fotografías por sector"
+          onchange="setBimPptSector(this.value)">
+          <option value="">Todos los sectores</option>
+          <option value="Sector 1">Sector 1</option>
+          <option value="Sector 2">Sector 2</option>
+          <option value="Sector 3">Sector 3</option>
+          <option value="Sin sector">Sin sector</option>
+        </select>
       </div>
       <p class="bim-ppt-mode-desc" id="bim-ppt-mode-note" aria-live="polite"></p>
       <p class="bim-ppt-note" id="bim-ppt-design-note">
