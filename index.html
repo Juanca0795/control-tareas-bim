@@ -7898,6 +7898,59 @@ function keepValidEditorOption(field,value){
   return [...select.options].some(option=>option.value===value)?value:'';
 }
 
+// Comprobaciones preventivas: sector visual, coherencia de fechas y posibles duplicados.
+let editorQualityAcknowledgement='';
+function normalizeBimTaskTitle(value){
+  return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .toLocaleLowerCase('es').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
+}
+function findEditorDuplicate(title,packageName,excludeId){
+  const normalized=normalizeBimTaskTitle(title);
+  const packageKey=normalizeBimTaskTitle(packageName);
+  if(!normalized||!packageKey)return null;
+  return tasks.find(t=>t.id!==excludeId&&normalizeBimTaskTitle(t.package)===packageKey&&
+    normalizeBimTaskTitle(t.title)===normalized)||null;
+}
+function editorExpectedEntryDate(){
+  const edited=editingId?tasks.find(t=>t.id===editingId):null;
+  if($('#f-entry-date-toggle')?.checked&&canSetManualEntryDate())return $('#f-entry-date').value;
+  return edited?taskCreationDate(edited)||peruEntryClock().date:peruEntryClock().date;
+}
+function editorQualityIssues(){
+  const title=$('#f-title')?.value||'',packageName=$('#f-package')?.value||'';
+  const deadline=$('#f-deadline')?.value||'',entry=editorExpectedEntryDate();
+  const duplicate=findEditorDuplicate(title,packageName,editingId);
+  return {duplicate,dateInconsistent:Boolean(deadline&&entry&&deadline<entry),deadline,entry};
+}
+function updateEditorQualityHints(){
+  const sectorNode=$('#editor-sector-preview');
+  if(!sectorNode)return;
+  const pkg=$('#f-package')?.value||'';
+  sectorNode.textContent='Sector detectado: '+(taskSector(pkg)||'Sin sector asignado');
+  const {duplicate,dateInconsistent,deadline,entry}=editorQualityIssues();
+  const duplicateNode=$('#editor-duplicate-warning');
+  if(duplicateNode){
+    duplicateNode.classList.toggle('hidden',!duplicate);
+    duplicateNode.textContent=duplicate?'Posible duplicado: '+duplicate.id+
+      ' ya tiene el mismo título y paquete. Revisa antes de guardar.':'';
+  }
+  const dateNode=$('#editor-date-warning');
+  if(dateNode){
+    dateNode.classList.toggle('hidden',!dateInconsistent);
+    dateNode.textContent=dateInconsistent?
+      'Revisa las fechas: el vencimiento '+dateDisplay(deadline)+
+      ' es anterior al ingreso '+dateDisplay(entry)+'. Puedes confirmarlo al guardar.':'';
+  }
+}
+$('#task-form').addEventListener('input',()=>{
+  editorQualityAcknowledgement='';
+  updateEditorQualityHints();
+});
+$('#task-form').addEventListener('change',()=>{
+  editorQualityAcknowledgement='';
+  updateEditorQualityHints();
+});
+
 /* El cambio de pestaña no recrea los campos ni elimina fotografías en espera. */
 let bimEditorActiveTab='details';
 function switchBimEditorTab(mode,{focus=false}={}){
@@ -7956,7 +8009,7 @@ function toggleManualEntryDate(enabled){
   section.classList.toggle('hidden',!enabled);
   input.required=Boolean(enabled);
   if(enabled&&!input.value)input.value=peruEntryClock().date;
-
+  updateEditorQualityHints();
 }
 function refreshManualEntryDateWindow(){
   const modal=$('#modal-back');
@@ -7972,6 +8025,7 @@ function refreshManualEntryDateWindow(){
 }
 setInterval(refreshManualEntryDateWindow,30000);
 function openEditor(id=null){
+  editorQualityAcknowledgement='';
   editingId = id;
   const t = id ? tasks.find(x=>x.id===id) : null;
   if(id && !t) return;
@@ -8004,6 +8058,7 @@ function openEditor(id=null){
   switchBimEditorTab('details');
   updateBimEditorPhotoCount();
   refreshEditorDeadlinePreview();
+  updateEditorQualityHints();
   $('#f-title').focus();
 }
 function closeEditor(){
@@ -8108,6 +8163,16 @@ async function saveEditor(e){
   };
   if(!obj.title || !obj.package || !obj.team || !obj.owner || !obj.priority || !obj.status){
     toast('Completa todos los campos obligatorios.');
+    return;
+  }
+  // Avisos preventivos sin imponer cambios a registros existentes.
+  const quality=editorQualityIssues();
+  const approvalKey=JSON.stringify([obj.title,obj.package,obj.team,obj.owner,obj.deadline,
+    obj.status,quality.entry,quality.duplicate?.id||'',quality.dateInconsistent]);
+  if((quality.duplicate||quality.dateInconsistent)&&editorQualityAcknowledgement!==approvalKey){
+    editorQualityAcknowledgement=approvalKey;
+    updateEditorQualityHints();
+    toast('Se detectó una advertencia. Revisa los avisos y pulsa Guardar otra vez para confirmar.');
     return;
   }
   // Una sola transacción de formulario: evita dobles clics durante la carga asíncrona.
