@@ -4584,9 +4584,12 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 .bim-ppt-week-cross label{display:inline-flex;align-items:center;gap:5px;
   color:var(--ink-primary);font:600 10px Inter,sans-serif;cursor:pointer;white-space:nowrap}
 .bim-ppt-week-cross input{accent-color:var(--accent-blue);width:14px;height:14px}
-/* AREA_BIM2: semana compacta a la izquierda de sector en la cabecera. */
+/* AREA_BIM2: barra compacta, sin distribución "space-between".
+   Los controles se agrupan de izquierda a derecha y la X permanece fija. */
 .bim-ppt-dialog.bim-ppt-person-export>.modal-hd{
-  position:relative;flex-wrap:wrap;gap:7px;padding-right:38px
+  position:relative;display:flex;flex-wrap:wrap;
+  justify-content:flex-start;align-content:flex-start;
+  column-gap:8px;row-gap:7px;padding-right:38px
 }
 .bim-ppt-dialog.bim-ppt-person-export>.modal-hd h2{flex:1 1 100%}
 .bim-ppt-dialog.bim-ppt-person-export>.modal-hd .close{
