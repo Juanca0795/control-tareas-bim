@@ -6344,7 +6344,7 @@ const TASK_DUE_LABELS={
   ontime:'En plazo','no-date':'Sin fecha límite',completed:'Completadas'
 };
 function taskCrossValue(row,field){
-  if(field==='sector')return taskSector(row.package);
+  if(field==='sector')return taskSector(row.package)||'Sin sector';
   if(field==='due')return taskDueBucket(row);
   return row[field];
 }
@@ -7925,7 +7925,7 @@ function findEditorDuplicate(title,packageName,excludeId){
 function editorExpectedEntryDate(){
   const edited=editingId?tasks.find(t=>t.id===editingId):null;
   if($('#f-entry-date-toggle')?.checked&&canSetManualEntryDate())return $('#f-entry-date').value;
-  return edited?taskCreationDate(edited)||peruEntryClock().date:peruEntryClock().date;
+  return edited?taskCreationDate(edited):peruEntryClock().date;
 }
 function editorQualityIssues(){
   const title=$('#f-title')?.value||'',packageName=$('#f-package')?.value||'';
