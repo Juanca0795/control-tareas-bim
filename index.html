@@ -4807,6 +4807,19 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 }
 
 
+/* Complemento BIM dentro de la tarjeta de apoyo: jerarquía secundaria. */
+:is(#dashboard-view,#tasks-view) .kpi-support .support-bim-complement{
+  display:flex;align-items:baseline;gap:5px;min-width:0;
+  margin:-3px 0 5px;line-height:1.25;white-space:nowrap;
+  color:var(--ink-secondary);
+}
+:is(#dashboard-view,#tasks-view) .kpi-support .support-bim-complement strong{
+  font:650 13px var(--font-mono);font-variant-numeric:tabular-nums;
+}
+:is(#dashboard-view,#tasks-view) .kpi-support .support-bim-complement span{
+  font-size:9px;font-weight:700;letter-spacing:.04em;color:var(--ink-muted);
+}
+
 /* APOYO EN OTRAS ÁREAS · mismo brillo AEC Obsidian y carga visual por hover.
    Solo presentación: no toca los porcentajes, filtros ni el comportamiento de la tarjeta. */
 :is(#dashboard-view,#tasks-view) .stat.kpi-support{
@@ -6258,7 +6271,7 @@ function refreshFilters(){
   crossFilterOptions(DASH_CROSS_FIELDS,tasks);
 }
 
-function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,proportion=null,badge=null,tone='neutral',rightText='',extraMarkup=''){
+function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,proportion=null,badge=null,tone='neutral',rightText='',extraMarkup='',remainderPercent=null){
   const percent=Number.isFinite(proportion)?Math.max(0,Math.min(100,proportion)):null;
   const safeTone=['neutral','cyan','green','blue','pink','teal'].includes(tone)?tone:'neutral';
   const text=badge?.text||'';
@@ -6269,6 +6282,7 @@ function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,pr
       <span class="val">${esc(val)}</span>
       ${text?`<span class="stat-kpi-badge ${badgeKind}" ${badge.help&&!extraMarkup?`title="${esc(badge.help)}"`:''}>${esc(text)}</span>`:''}
     </div>
+    ${remainderPercent===null?'':`<div class="support-bim-complement"><strong>${esc(remainderPercent)}</strong><span>BIM</span></div>`}
     <div class="stat-detail-line"><span class="foot">${esc(foot)}</span>${rightText?`<strong class="stat-right">${esc(rightText)}</strong>`:''}</div>
     ${percent===null?'':`<span class="stat-meter" aria-hidden="true"><i style="width:${percent}%"></i></span>`}
     ${extraMarkup}
@@ -6447,8 +6461,8 @@ function makeStats(rows,interactive=false){
      help:'Variación respecto a la última lectura real guardada del mes anterior ('+before.capturedOn+').'};
   if(!hasFullScope){trend.text='Sin comparativa filtrada';trend.kind='neutral';}
   const badge=(text,kind='neutral',help='')=>({text,kind,help});
-  const one=(label,value,foot,icon,accent,drill,tone,pct=null,mark=null,right='',extra='')=>
-    statCard(label,value,foot,icon,accent,interactive?drill:'',Boolean(selected&&selected.type===drill),pct,mark,tone,right,extra);
+  const one=(label,value,foot,icon,accent,drill,tone,pct=null,mark=null,right='',extra='',remainderPercent=null)=>
+    statCard(label,value,foot,icon,accent,interactive?drill:'',Boolean(selected&&selected.type===drill),pct,mark,tone,right,extra,remainderPercent);
   const running=rows.filter(t=>categoryOf(t.status)==='progress');
   const onSchedule=running.filter(t=>!t.deadline||dueDays(t.deadline)>0).length;
   const support=supportAreaMetrics(rows);
@@ -6467,7 +6481,8 @@ function makeStats(rows,interactive=false){
       support.supported+' de '+support.total+' actividades con apoyo',
       SVG_ICONS.support,'blue','support','teal',support.percent,
       support.percent.toFixed(1)==='0.0'?null:badge(support.primaryArea,'neutral',support.areaHelp),
-      '',supportAreaPopover(support,interactive?'dashboard':'tasks'))
+      '',supportAreaPopover(support,interactive?'dashboard':'tasks'),
+      (support.total?100-support.percent:0).toFixed(1)+'%')
   ].join('');
 }
 
