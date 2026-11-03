@@ -676,7 +676,9 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   pptBimAddText(slide,'EVIDENCIAS BIM · SEMANA '+week.split('-W')[1],
     {x:.37,y:.80,w:11.9,h:.29,fontSize:18,bold:true});
   const start=.28,totalWidth=12.801,top=1.13,redH=.673,picH=3.746,captionH=.961;
-  const gap=.015,slotWidth=(totalWidth-gap*(entries.length-1))/entries.length;
+  // La plantilla conserva tres columnas fijas; cada evidencia llena un espacio de izquierda a derecha.
+  // Si hay 1 o 2 fotografías, las columnas restantes quedan vacías.
+  const gap=.015,slotWidth=(totalWidth-gap*2)/3;
   for(let k=0;k<entries.length;k++){
     const e=entries[k],x=start+k*(slotWidth+gap),w=slotWidth;
     slide.addShape(S.rect,{x,y:top,w,h:redH,
