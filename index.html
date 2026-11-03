@@ -4654,6 +4654,36 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 .bim-ppt-dialog .bim-ppt-mode-desc{
   flex:0 0 auto;margin:0;font-size:10px;line-height:1.4;color:var(--ink-muted)
 }
+/* Rango editable de fotografías: en la misma zona del texto de reunión. */
+.bim-ppt-dialog .bim-ppt-mode-desc[hidden],
+.bim-ppt-dialog .bim-ppt-meeting-range[hidden],
+.bim-ppt-dialog .bim-ppt-meeting-range button[hidden]{display:none!important}
+.bim-ppt-meeting-range{
+  display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;min-width:0;
+  font:500 10px Inter,sans-serif;color:var(--ink-muted);line-height:1.4
+}
+.bim-ppt-meeting-range>span{flex:0 1 auto}
+.bim-ppt-meeting-range label{
+  display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
+  font:600 10px Inter,sans-serif;color:var(--ink-secondary)
+}
+.bim-ppt-meeting-range input[type=date]{
+  width:125px;min-width:0;box-sizing:border-box;height:29px;
+  padding:3px 5px;border:1px solid var(--border-strong);border-radius:6px;
+  background:var(--bg-subtle);color:var(--ink-primary);
+  font:600 10px Inter,sans-serif;cursor:pointer
+}
+.bim-ppt-meeting-range input[type=date]:focus-visible,
+.bim-ppt-meeting-range button:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:2px
+}
+.bim-ppt-meeting-range button{
+  min-height:29px;padding:3px 7px;border:1px solid var(--border-strong);
+  border-radius:6px;background:var(--bg-subtle);color:var(--ink-secondary);
+  font:650 10px Inter,sans-serif;cursor:pointer
+}
+.bim-ppt-meeting-range button:hover{background:var(--bg-hover)}
+.bim-ppt-meeting-range :is(input,button):disabled{opacity:.6;cursor:wait}
 .bim-ppt-empty{
   margin:0;padding:18px 13px;border:1px dashed var(--border-strong);
   border-radius:8px;color:var(--ink-secondary);font-size:11px;line-height:1.5
@@ -5802,6 +5832,21 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
       </div>
 
       <p class="bim-ppt-mode-desc" id="bim-ppt-mode-note" aria-live="polite"></p>
+      <div class="bim-ppt-meeting-range" id="bim-ppt-meeting-range" hidden
+        aria-label="Seleccionar fechas de fotografías para la reunión">
+        <span id="bim-ppt-meeting-range-caption"></span>
+        <label for="bim-ppt-date-start">Desde
+          <input type="date" id="bim-ppt-date-start" aria-label="Fotografías desde la fecha"
+            onchange="setBimPptMeetingRange('start',this.value)">
+        </label>
+        <label for="bim-ppt-date-end">Hasta
+          <input type="date" id="bim-ppt-date-end" aria-label="Fotografías hasta la fecha"
+            onchange="setBimPptMeetingRange('end',this.value)">
+        </label>
+        <button type="button" id="bim-ppt-date-reset" hidden
+          title="Volver a los siete días anteriores a la reunión"
+          onclick="resetBimPptMeetingRange()">Restablecer fechas</button>
+      </div>
       <p class="bim-ppt-note" id="bim-ppt-design-note">
         Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores.
         Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía
