@@ -5119,11 +5119,12 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   white-space:nowrap;color:var(--accent-blue);
 }
 #tasks-view .task-week-period[hidden]{display:none!important}
-/* Barra de 8 filtros en una única fila de escritorio.
-   Ningún control puede ensanchar la tarjeta ni provocar scroll horizontal. */
+/* Búsqueda flexible + 7 selectores con ancho ceñido a sus etiquetas.
+   Los anchos reservan únicamente el texto del filtro y su chevrón.
+   Las selecciones largas se truncan, sin ampliar la fila ni la página. */
 #tasks-view .controls{
   display:grid;
-  grid-template-columns:minmax(0,1.8fr) repeat(7,minmax(0,1fr));
+  grid-template-columns:minmax(0,1fr) 122px 147px 112px 132px 118px 133px 144px;
   gap:6px;
   padding:12px;
   width:100%;max-width:100%;min-width:0;
@@ -5133,20 +5134,26 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 #tasks-view .controls>input{
   grid-column:auto;
   width:100%;min-width:0;max-width:100%;
-  box-sizing:border-box;padding-inline:9px;
+  box-sizing:border-box;padding-inline:10px;
   font-size:10.5px;text-overflow:ellipsis;
 }
-#tasks-view .controls>.select-wrap{min-width:0;max-width:100%;width:100%}
+#tasks-view .controls>.select-wrap{
+  min-width:0;max-width:100%;width:100%;
+}
 #tasks-view .controls>.select-wrap>select{
   width:100%;min-width:0;max-width:100%;
   box-sizing:border-box;
-  padding-left:7px;padding-right:20px;
+  padding-left:7px;padding-right:19px;
   background-position:right 5px center;
   text-overflow:ellipsis;white-space:nowrap;
   font-size:10px;
 }
-/* En tablet y móvil no comprimir filtros hasta hacerlos ilegibles. */
-@media(max-width:1024px){
+/* Cuando ya no cabe una fila legible, distribuir los filtros sin desbordar. */
+@media(max-width:1320px){
+  #tasks-view .controls{grid-template-columns:repeat(4,minmax(0,1fr))}
+  #tasks-view .controls>input{grid-column:1/-1}
+}
+@media(max-width:760px){
   #tasks-view .controls{grid-template-columns:repeat(2,minmax(0,1fr))}
   #tasks-view .controls>input{grid-column:1/-1}
 }
