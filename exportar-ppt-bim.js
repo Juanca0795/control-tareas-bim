@@ -701,28 +701,38 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   const S=pptx.ShapeType,slide=pptx.addSlide();
   pptBimMaster(slide,pptx);
   pptBimAddText(slide,'EVIDENCIAS BIM · SEMANA '+week.split('-W')[1],
-    {x:.37,y:.80,w:9.4,h:.29,fontSize:18,bold:true});
+    {x:.37,y:.80,w:11.9,h:.29,fontSize:18,bold:true});
   const sector=pptBimSector(entries[0]);
   if(entries.some(e=>pptBimSector(e)!==sector))
     throw new Error('Una diapositiva no puede mezclar sectores.');
-  pptBimAddText(slide,sector.toUpperCase(),
-    {x:10.23,y:.83,w:2.68,h:.24,fontSize:12,bold:true,align:'right',color:'172B49'});
+  // Tres celdas visibles en todas las diapositivas, incluso con 1 o 2 imágenes.
+  // Dividir el encabezado anterior en Sector + Paquete/Responsable evita
+  // desplazar las imágenes, descripciones, logos y pie de la plantilla.
   const start=.28,totalWidth=12.801,top=1.13,redH=.673,picH=3.746,captionH=.961;
-  // La plantilla conserva tres columnas fijas; cada evidencia llena un espacio de izquierda a derecha.
-  // Si hay 1 o 2 fotografías, las columnas restantes quedan vacías.
+  const sectorH=.21,packageH=redH-sectorH;
   const gap=.015,slotWidth=(totalWidth-gap*2)/3;
-  for(let k=0;k<entries.length;k++){
-    const e=entries[k],x=start+k*(slotWidth+gap),w=slotWidth;
-    slide.addShape(S.rect,{x,y:top,w,h:redH,
-      fill:{color:'C00000'},line:{color:'000000',width:.8}});
-    // El perfil original usa paquete; AREA_BIM2 usa responsable como título.
-    pptBimAddText(slide,String(byPerson?(e.owner||'Sin responsable'):(e.package||'Sin paquete')).toUpperCase(),
-      {x:x+.10,y:top+.13,w:w-.2,h:.37,fontSize:16,bold:true,color:'FFFFFF',align:'center',
-        fit:'shrink'});
+  for(let k=0;k<3;k++){
+    const e=entries[k]||null,x=start+k*(slotWidth+gap),w=slotWidth;
+    // Celda superior: sector del paquete. Celda inferior: paquete o responsable.
+    // Las columnas sin evidencia conservan las celdas, pero sin datos ni colores.
+    slide.addShape(S.rect,{x,y:top,w,h:sectorH,
+      fill:{color:e?'E9EFF5':'FFFFFF'},line:{color:'000000',width:.8}});
+    slide.addShape(S.rect,{x,y:top+sectorH,w,h:packageH,
+      fill:{color:e?'C00000':'FFFFFF'},line:{color:'000000',width:.8}});
+    if(e){
+      pptBimAddText(slide,sector.toUpperCase(),
+        {x:x+.10,y:top+.045,w:w-.20,h:.12,fontSize:10,bold:true,
+          color:'172B49',align:'center',fit:'shrink'});
+      // AREA_BIM muestra paquete; AREA_BIM2 mantiene responsable.
+      pptBimAddText(slide,String(byPerson?(e.owner||'Sin responsable'):(e.package||'Sin paquete')).toUpperCase(),
+        {x:x+.10,y:top+sectorH+.072,w:w-.20,h:.31,fontSize:16,bold:true,
+          color:'FFFFFF',align:'center',fit:'shrink'});
+    }
     slide.addShape(S.rect,{x,y:top+redH,w,h:picH,
       fill:{color:'FFFFFF'},line:{color:'000000',width:.8}});
     slide.addShape(S.rect,{x,y:top+redH+picH,w,h:captionH,
       fill:{color:'FFFFFF'},line:{color:'000000',width:.8}});
+    if(!e)continue;
     const frame={x:x+.16,y:top+redH+.13,w:w-.32,h:picH-.26};
     const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
     slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
