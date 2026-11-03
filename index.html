@@ -5152,20 +5152,6 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 #weekly-view .weekly-pending-empty{font-size:11px;color:var(--ink-muted);margin:10px 0}
 
 /* CONTROL DE TAREAS — orden interactivo, columnas fijas y densidad por vista. */
-#tasks-view .task-table th .task-sort-button{
-  display:inline-flex;align-items:center;justify-content:center;gap:5px;
-  width:100%;min-height:28px;padding:0;border:0;background:transparent;
-  font:inherit;font-weight:inherit;letter-spacing:inherit;text-transform:inherit;
-  color:inherit;text-align:center;cursor:pointer;white-space:normal;overflow-wrap:anywhere
-}
-#tasks-view .task-table th .task-sort-button:hover,
-#tasks-view .task-table th .task-sort-button:focus-visible{color:var(--accent-blue)}
-#tasks-view .task-table th .task-sort-button:focus-visible{
-  outline:2px solid var(--accent-blue);outline-offset:2px;border-radius:4px
-}
-#tasks-view .task-sort-indicator{font-size:12px;flex:none;opacity:.55}
-#tasks-view .task-table th[aria-sort="ascending"] .task-sort-indicator,
-#tasks-view .task-table th[aria-sort="descending"] .task-sort-indicator{color:var(--accent-blue);opacity:1}
 #tasks-view .table-wrap .task-table thead th:nth-child(1),
 #tasks-view .table-wrap .task-table thead th:nth-child(2){
   position:sticky;top:0;z-index:6;background:var(--bg-subtle)
@@ -5188,21 +5174,11 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   display:inline-flex;align-items:center;gap:5px;white-space:nowrap;
   font:600 10px Inter,sans-serif;color:var(--ink-secondary)
 }
-#tasks-view .task-density-tool select,
-#tasks-view .task-saved-views select,
-#tasks-view .task-saved-views input{
+#tasks-view .task-density-tool select{
   height:30px;min-width:0;border:1px solid var(--border-strong);border-radius:6px;
   padding:0 7px;color:var(--ink-primary);background:var(--bg-subtle);
   font:600 10px Inter,sans-serif
 }
-#tasks-view .task-saved-views{
-  display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding:8px 12px;
-  border-block:1px solid var(--border-base);background:var(--bg-subtle)
-}
-#tasks-view .task-saved-views label{font-size:10px;font-weight:700;color:var(--ink-secondary)}
-#tasks-view .task-saved-views select{max-width:190px}
-#tasks-view .task-saved-views input{width:165px;max-width:100%}
-#tasks-view .task-saved-views .btn{min-height:30px;font-size:10px}
 #tasks-view .table-wrap[data-density="compact"] .task-table td{padding:6px 7px;line-height:1.22}
 #tasks-view .table-wrap[data-density="compact"] .task-table th{padding:7px 6px}
 #tasks-view .table-wrap[data-density="compact"] .task-table .task-name{line-height:1.3}
@@ -5219,12 +5195,6 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   font-size:10px;line-height:1.45;font-weight:600
 }
 .editor-quality-warning.hidden{display:none!important}
-@media(max-width:760px){
-  #tasks-view .task-saved-views{padding:8px;gap:6px}
-  #tasks-view .task-saved-views select{flex:1 1 140px}
-  #tasks-view .task-saved-views input{flex:1 1 130px}
-}
-
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -5353,15 +5323,6 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         <div class="select-wrap"><select id="filter-priority" onchange="onTaskFiltersChanged()" aria-label="Filtrar prioridad"></select></div>
         <div class="select-wrap"><select id="filter-due" onchange="onTaskFiltersChanged()" aria-label="Filtrar vencimiento"></select></div>
       </div>
-      <div class="task-saved-views" role="group" aria-label="Vistas de filtros guardadas">
-        <label for="task-saved-view">Vistas guardadas</label>
-        <select id="task-saved-view" onchange="applyTaskSavedView(this.value)" aria-label="Aplicar vista guardada">
-          <option value="">Seleccionar vista</option>
-        </select>
-        <input id="task-saved-name" type="text" maxlength="40" placeholder="Nombre de la vista" aria-label="Nombre para guardar filtros">
-        <button class="btn small" type="button" onclick="saveTaskView()">Guardar vista</button>
-        <button class="btn small" type="button" onclick="deleteTaskView()">Eliminar</button>
-      </div>
       <div id="task-filter-chips" class="active-filters" aria-live="polite"></div>
       <div id="task-linked-banner" class="dashboard-selected hidden">
         <span id="task-linked-text"></span>
@@ -5384,17 +5345,17 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           </colgroup>
           <thead>
             <tr>
-              <th data-task-sort="code" aria-sort="descending"><button type="button" class="task-sort-button" onclick="setTaskSort('code')" aria-label="Ordenar por Código">Código<span class="task-sort-indicator" aria-hidden="true">↓</span></button></th>
-              <th data-task-sort="title" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('title')" aria-label="Ordenar por Entregable / Descripción Técnica">Entregable / Descripción Técnica<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="lod" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('lod')" aria-label="Ordenar por LOI">LOI<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="package" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('package')" aria-label="Ordenar por Paquete">Paquete<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="sector" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('sector')" aria-label="Ordenar por Sector">Sector<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="owner" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('owner')" aria-label="Ordenar por Responsable">Responsable<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="team" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('team')" aria-label="Ordenar por Disciplina">Disciplina<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="priority" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('priority')" aria-label="Ordenar por Prioridad">Prioridad<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="status" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('status')" aria-label="Ordenar por Estado">Estado<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="support" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('support')" aria-label="Ordenar por Apoyo en otras áreas">Apoyo en otras áreas<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
-              <th data-task-sort="deadline" aria-sort="none"><button type="button" class="task-sort-button" onclick="setTaskSort('deadline')" aria-label="Ordenar por Vencimiento">Vencimiento<span class="task-sort-indicator" aria-hidden="true">↕</span></button></th>
+              <th>Código</th>
+              <th>Entregable / Descripción Técnica</th>
+              <th>LOI</th>
+              <th>Paquete</th>
+              <th>Sector</th>
+              <th>Responsable</th>
+              <th>Disciplina</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th>Apoyo en otras áreas</th>
+              <th>Vencimiento</th>
             </tr>
           </thead>
           <tbody id="tasks-tbody"></tbody>
@@ -6643,9 +6604,6 @@ let taskDensity=(()=>{
     return ['compact','normal','comfortable'].includes(v)?v:'normal';
   }catch(e){return 'normal'}
 })();
-const TASK_SORT_KEYS=['code','title','lod','package','sector','owner','team',
-  'priority','status','support','deadline'];
-let taskSortField='code',taskSortDirection='desc';
 function setTaskDensity(value){
   if(!['compact','normal','comfortable'].includes(value))return;
   taskDensity=value;
@@ -6653,125 +6611,10 @@ function setTaskDensity(value){
   const box=$('#tasks-view .table-wrap');
   if(box)box.dataset.density=value;
 }
-function setTaskSort(field){
-  if(!TASK_SORT_KEYS.includes(field))return;
-  taskSortDirection=taskSortField===field&&taskSortDirection==='asc'?'desc':'asc';
-  taskSortField=field;
-  currentTaskPage=1;
-  selectedTaskId=null;
-  renderTasks();
-}
-function taskSortValue(t,field){
-  if(field==='sector')return taskSector(t.package);
-  if(field==='priority')return ({Baja:1,Media:2,Alta:3})[t.priority]||0;
-  return String(t[field]||'').trim();
-}
-function taskCompareRows(a,b){
-  if(taskSortField==='code')return taskSortDirection==='asc'
-    ?taskChronologicalOrder(a,b):recentTaskFirst(a,b);
-  const va=taskSortValue(a,taskSortField),vb=taskSortValue(b,taskSortField);
-  const emptyA=va===''||va===0,emptyB=vb===''||vb===0;
-  if(emptyA!==emptyB)return emptyA?1:-1;
-  const raw=typeof va==='number'&&typeof vb==='number'?va-vb:
-    String(va).localeCompare(String(vb),'es',{numeric:true,sensitivity:'base'});
-  return raw?(taskSortDirection==='asc'?raw:-raw):recentTaskFirst(a,b);
-}
-function updateTaskSortHeaders(){
-  document.querySelectorAll('#tasks-view .task-table thead th[data-task-sort]').forEach(th=>{
-    const active=th.dataset.taskSort===taskSortField;
-    th.setAttribute('aria-sort',active
-      ?taskSortDirection==='asc'?'ascending':'descending':'none');
-    const arrow=th.querySelector('.task-sort-indicator');
-    if(arrow)arrow.textContent=active?taskSortDirection==='asc'?'↑':'↓':'↕';
-  });
-}
-// Vistas de filtros reutilizables, guardadas exclusivamente en este navegador.
-const TASK_SAVED_VIEWS_KEY='area-bim-task-saved-views-v1';
-function taskReadSavedViews(){
-  try{
-    const value=JSON.parse(localStorage.getItem(TASK_SAVED_VIEWS_KEY)||'{}');
-    return value&&typeof value==='object'&&!Array.isArray(value)?value:{};
-  }catch(e){return {}}
-}
-function taskWriteSavedViews(value){
-  try{localStorage.setItem(TASK_SAVED_VIEWS_KEY,JSON.stringify(value));return true;}
-  catch(e){toast('No se pudieron guardar las vistas en este navegador.');return false;}
-}
-function refreshTaskSavedViews(){
-  const select=$('#task-saved-view');
-  if(!select)return;
-  const current=select.value;
-  const names=Object.keys(taskReadSavedViews()).sort((a,b)=>a.localeCompare(b,'es'));
-  select.innerHTML='<option value="">Seleccionar vista</option>'+
-    names.map(name=>'<option value="'+esc(name)+'">'+esc(name)+'</option>').join('');
-  select.value=names.includes(current)?current:'';
-}
-function taskViewSnapshot(){
-  return {filters:Object.fromEntries(TASK_CROSS_FIELDS.map(([id])=>[id,$('#'+id)?.value||''])),
-    search:$('#search').value.trim(),
-    weekEnabled:taskWeekFilterEnabled,weekKey:taskWeekFilterKey};
-}
-function saveTaskView(){
-  const name=$('#task-saved-name').value.trim().slice(0,40);
-  if(!name){toast('Escribe un nombre para la vista.');return;}
-  const presets=taskReadSavedViews(),snapshot=taskViewSnapshot();
-  const apply=()=>{
-    const updated={...presets,[name]:snapshot};
-    if(!taskWriteSavedViews(updated))return;
-    refreshTaskSavedViews();
-    $('#task-saved-view').value=name;
-    toast('Vista de filtros guardada: '+name);
-  };
-  if(!Object.prototype.hasOwnProperty.call(presets,name)&&Object.keys(presets).length>=12){
-    toast('Límite de 12 vistas por navegador.');return;
-  }
-  if(Object.prototype.hasOwnProperty.call(presets,name))
-    openConfirm('Actualizar vista guardada','¿Reemplazar la vista «'+name+'» con los filtros actuales?',apply);
-  else apply();
-}
-function applyTaskSavedView(name){
-  if(!name)return;
-  const saved=taskReadSavedViews()[name];
-  if(!saved||typeof saved!=='object'||!saved.filters)return;
-  linkedTaskIds=null;linkedLabel='';
-  $('#search').value=String(saved.search||'');
-  for(const [id,field] of TASK_CROSS_FIELDS){
-    const select=$('#'+id),value=String(saved.filters[id]||'');
-    // Una vista puede contener valores ocultos por el filtro que estaba activo.
-    // Reconstruir opciones temporalmente evita perderlos antes de recalcular facetas.
-    if(value&&![...select.options].some(option=>option.value===value)){
-      const option=document.createElement('option');
-      option.value=value;
-      option.textContent=taskCrossLabel(field,value);
-      select.appendChild(option);
-    }
-    select.value=value;
-  }
-  taskWeekFilterEnabled=Boolean(saved.weekEnabled);
-  taskWeekFilterKey=typeof saved.weekKey==='string'&&/^\d{4}-W\d{2}$/.test(saved.weekKey)
-    ?saved.weekKey:currentTaskEntryWeek();
-  onTaskFiltersChanged();
-  $('#task-saved-view').value=name;
-  $('#task-saved-name').value=name;
-}
-function deleteTaskView(){
-  const name=$('#task-saved-view').value;
-  if(!name){toast('Selecciona una vista guardada.');return;}
-  openConfirm('Eliminar vista','¿Eliminar la vista «'+name+'» de este navegador?',()=>{
-    const presets=taskReadSavedViews();
-    delete presets[name];
-    if(!taskWriteSavedViews(presets))return;
-    refreshTaskSavedViews();
-    $('#task-saved-name').value='';
-    toast('Vista eliminada.');
-  });
-}
 const TASKS_PER_PAGE=15;
 let currentTaskPage=1;
 let taskFacetAnimateNext=false;
 function onTaskFiltersChanged(){
-  const savedSelect=$('#task-saved-view');
-  if(savedSelect)savedSelect.value='';
   currentTaskPage=1;
   selectedTaskId=null;
   hoveredTaskId=null;
@@ -6899,17 +6742,15 @@ function filteredTasks(){
     (!q || [t.id, t.title, t.owner, t.package, t.support].join(' ').toLocaleLowerCase('es').includes(q)) &&
     TASK_CROSS_FIELDS.every(([id,field])=>
       !$('#'+id).value||taskCrossValue(t,field)===$('#'+id).value)
-  ).sort(taskCompareRows);
+  ).sort(recentTaskFirst);
 }
 
 function renderTasks(){
   updateTaskWeekControls();
-  updateTaskSortHeaders();
   const densitySelect=$('#task-density');
   if(densitySelect)densitySelect.value=taskDensity;
   const tableWrap=$('#tasks-view .table-wrap');
   if(tableWrap)tableWrap.dataset.density=taskDensity;
-  refreshTaskSavedViews();
   const animateFacet=taskFacetAnimateNext;
   taskFacetAnimateNext=false;
   crossFilterOptions(TASK_CROSS_FIELDS,taskCrossSource());
