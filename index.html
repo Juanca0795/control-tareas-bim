@@ -4588,20 +4588,18 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
 @media(max-width:580px){
   .bim-ppt-week-cross{border-left:0;padding-left:0;flex-basis:100%}
 }
-/* Filtro por sector para AREA_BIM y AREA_BIM2: sin ampliar el modal. */
-.bim-ppt-dialog .bim-ppt-sector-tools{
-  display:flex;flex-wrap:wrap;align-items:center;gap:9px;
-  padding:8px 11px;border:1px solid var(--border-base);border-radius:9px;
-  background:var(--bg-subtle)
+/* El sector comparte la cabecera con los modos: un único select sin
+   recuadro, márgenes, etiqueta visible ni fila que ocupe todo el ancho. */
+.bim-ppt-dialog>.modal-hd .bim-ppt-sector-tools{
+  display:inline-flex;align-items:center;flex:0 0 auto;
+  width:max-content;min-width:0;max-width:100%;margin:0;padding:0;
+  border:0;background:transparent
 }
-.bim-ppt-sector-tools label{
-  font:650 10px Inter,sans-serif;color:var(--ink-secondary)
-}
-.bim-ppt-sector-tools select{
-  height:31px;min-width:150px;max-width:100%;
-  border:1px solid var(--border-strong);border-radius:6px;
-  color:var(--ink-primary);background:var(--bg-panel);
-  font:650 11px Inter,sans-serif;padding:0 8px;cursor:pointer
+.bim-ppt-dialog>.modal-hd .bim-ppt-sector-tools select{
+  display:block;width:max-content;min-width:0;max-width:100%;height:30px;
+  box-sizing:border-box;border:1px solid var(--border-strong);border-radius:7px;
+  color:var(--ink-primary);background:var(--bg-subtle);
+  font:650 10px Inter,sans-serif;padding:0 5px;cursor:pointer;white-space:nowrap
 }
 .bim-ppt-sector-tools select:focus-visible{
   outline:2px solid var(--accent-blue);outline-offset:2px
@@ -5723,6 +5721,16 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   <div class="modal bim-ppt-dialog" role="dialog" aria-modal="true" aria-labelledby="bim-ppt-title">
     <div class="modal-hd">
       <h2 id="bim-ppt-title">EXPORTAR EVIDENCIAS BIM A POWERPOINT</h2>
+      <div class="bim-ppt-sector-tools">
+        <select id="bim-ppt-sector-filter" aria-label="Filtrar fotografías por sector"
+          title="Filtrar por sector" onchange="setBimPptSector(this.value)">
+          <option value="">Todos los sectores</option>
+          <option value="Sector 1">Sector 1</option>
+          <option value="Sector 2">Sector 2</option>
+          <option value="Sector 3">Sector 3</option>
+          <option value="Sin sector">Sin sector</option>
+        </select>
+      </div>
       <div class="bim-ppt-mode" role="group" aria-label="Seleccionar criterio de exportación">
         <button type="button" data-bim-ppt-mode="ingreso" aria-pressed="false"
           title="Por fecha de carga de la fotografía" onclick="setBimPptMode('ingreso')">Ingreso</button>
@@ -5792,17 +5800,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             Culminación</label>
         </div>
       </div>
-      <div class="bim-ppt-sector-tools">
-        <label for="bim-ppt-sector-filter">Sector</label>
-        <select id="bim-ppt-sector-filter" aria-label="Filtrar fotografías por sector"
-          onchange="setBimPptSector(this.value)">
-          <option value="">Todos los sectores</option>
-          <option value="Sector 1">Sector 1</option>
-          <option value="Sector 2">Sector 2</option>
-          <option value="Sector 3">Sector 3</option>
-          <option value="Sin sector">Sin sector</option>
-        </select>
-      </div>
+
       <p class="bim-ppt-mode-desc" id="bim-ppt-mode-note" aria-live="polite"></p>
       <p class="bim-ppt-note" id="bim-ppt-design-note">
         Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores.
