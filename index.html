@@ -5160,6 +5160,77 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   #tasks-view .controls{grid-template-columns:minmax(0,1fr)}
   #tasks-view .controls>input{grid-column:1}
 }
+/* Menús de facetas propios en escritorio. Los select originales siguen
+   almacenando el valor y activando exactamente los filtros cruzados existentes.
+   El panel flotante evita el recorte de la tarjeta y la altura vacía nativa. */
+#tasks-view .controls.task-filter-enhanced .select-wrap{position:relative}
+#tasks-view .controls.task-filter-enhanced .select-wrap>select{
+  position:absolute!important;top:0;left:0;
+  width:1px!important;height:1px!important;min-width:0!important;
+  opacity:0;pointer-events:none;overflow:hidden;padding:0!important;
+}
+#tasks-view .task-filter-trigger{display:none}
+#tasks-view .controls.task-filter-enhanced .task-filter-trigger{
+  display:flex;align-items:center;justify-content:space-between;gap:5px;
+  width:100%;height:36px;min-width:0;max-width:100%;padding:0 7px;
+  background:var(--bg-subtle);border:1px solid var(--border-base);
+  border-radius:8px;color:var(--ink-primary);font:600 10px var(--font-sans);
+  text-align:left;cursor:pointer;box-sizing:border-box;
+}
+#tasks-view .task-filter-trigger .task-filter-trigger-text{
+  min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1
+}
+#tasks-view .task-filter-trigger svg{width:12px;height:12px;flex:none;opacity:.7}
+#tasks-view .controls.task-filter-enhanced .select-wrap.filter-selected .task-filter-trigger,
+#tasks-view .controls.task-filter-enhanced .task-filter-trigger[aria-expanded="true"]{
+  border-color:var(--accent-blue);background:var(--bg-selected);
+}
+#tasks-view .controls.task-filter-enhanced .task-filter-trigger:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:2px
+}
+/* Portal unido a body: no depende del overflow:hidden de la tarjeta. */
+.task-filter-popup{
+  position:fixed;z-index:11000;display:flex;flex-direction:column;
+  max-height:min(330px,calc(100dvh - 24px));min-width:0;
+  background:var(--bg-panel);color:var(--ink-primary);
+  border:1px solid var(--border-strong);border-radius:9px;
+  box-shadow:0 13px 34px rgba(0,0,0,.34);overflow:hidden;
+  font-family:var(--font-sans);box-sizing:border-box;
+}
+.task-filter-popup .task-filter-search{
+  flex:0 0 auto;box-sizing:border-box;height:33px;margin:7px;
+  width:calc(100% - 14px);font-size:11px
+}
+.task-filter-popup .task-filter-list{
+  min-height:0;overflow-y:auto;overscroll-behavior:contain;
+  padding:4px;scrollbar-width:thin
+}
+.task-filter-popup .task-filter-choice{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:10px;
+  width:100%;min-height:33px;padding:8px 9px;border:0;border-radius:6px;
+  background:transparent;color:var(--ink-primary);
+  text-align:left;font:550 11px/1.38 var(--font-sans);
+  cursor:pointer;white-space:normal;overflow-wrap:anywhere
+}
+.task-filter-popup .task-filter-choice:hover,
+.task-filter-popup .task-filter-choice:focus-visible{
+  background:var(--bg-hover);outline:none
+}
+.task-filter-popup .task-filter-choice[aria-selected="true"]{
+  background:var(--bg-selected);color:var(--accent-blue);font-weight:700
+}
+.task-filter-popup .task-filter-choice[aria-selected="true"]::after{
+  content:"✓";flex:none;font-size:12px
+}
+.task-filter-popup .task-filter-choice:disabled{
+  opacity:.48;cursor:not-allowed
+}
+.task-filter-popup .task-filter-empty{
+  margin:0;padding:10px;color:var(--ink-secondary);font-size:11px
+}
+@media(prefers-reduced-motion:reduce){
+  .task-filter-popup *{scroll-behavior:auto!important}
+}
 @media(max-width:900px){
   #tasks-view .card-head{flex-wrap:wrap;gap:8px}
   #tasks-view .task-head-tools{width:100%;justify-content:flex-start;gap:8px}
@@ -6379,7 +6450,195 @@ function crossFilterOptions(fields,sourceRows){
     el.title=el.selectedOptions?.[0]?.textContent||label;
     el.closest('.select-wrap')?.classList.toggle('filter-selected',Boolean(current));
   }
+  if(fields===TASK_CROSS_FIELDS)syncTaskFilterTriggers();
 }
+// Interfaz progresiva: select nativo en móvil/táctil, menú compacto en escritorio.
+const taskFilterDesktop=window.matchMedia('(min-width:1025px) and (pointer:fine)');
+let taskFilterPopup=null;
+function closeTaskFilterPopup(restoreFocus=false){
+  if(!taskFilterPopup)return;
+  const {popup,trigger}=taskFilterPopup;
+  popup.remove();
+  trigger.setAttribute('aria-expanded','false');
+  taskFilterPopup=null;
+  if(restoreFocus&&trigger.isConnected)trigger.focus({preventScroll:true});
+}
+function syncTaskFilterTriggers(){
+  for(const [id,,label] of TASK_CROSS_FIELDS){
+    const select=document.getElementById(id);
+    const trigger=select?.parentElement?.querySelector('.task-filter-trigger');
+    if(!trigger)continue;
+    const labelText=select.selectedOptions?.[0]?.textContent||label;
+    trigger.querySelector('.task-filter-trigger-text').textContent=labelText;
+    trigger.title=labelText;
+    trigger.setAttribute('aria-label',label+': '+labelText);
+  }
+  // La lista desplegada se reconstruye al abrirla; no conserva opciones caducadas.
+  if(taskFilterPopup)closeTaskFilterPopup();
+}
+function setTaskFilterDesktopMode(){
+  const controls=$('#tasks-view .controls');
+  if(!controls)return;
+  const desktop=taskFilterDesktop.matches;
+  controls.classList.toggle('task-filter-enhanced',desktop);
+  for(const [id] of TASK_CROSS_FIELDS){
+    const select=document.getElementById(id);
+    const trigger=select?.parentElement?.querySelector('.task-filter-trigger');
+    if(!select||!trigger)continue;
+    select.tabIndex=desktop?-1:0;
+    if(desktop)select.setAttribute('aria-hidden','true');
+    else select.removeAttribute('aria-hidden');
+    trigger.tabIndex=desktop?0:-1;
+  }
+  closeTaskFilterPopup();
+}
+function normalizeTaskFilterSearch(text){
+  return String(text||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+}
+function openTaskFilterPopup(id,keyboard=false){
+  const select=document.getElementById(id);
+  const trigger=select?.parentElement?.querySelector('.task-filter-trigger');
+  if(!select||!trigger||!taskFilterDesktop.matches)return;
+  if(taskFilterPopup?.id===id){closeTaskFilterPopup();return}
+  closeTaskFilterPopup();
+  const popup=document.createElement('div');
+  popup.className='task-filter-popup';
+  popup.id='task-filter-menu-'+id;
+  popup.setAttribute('aria-label',select.getAttribute('aria-label')||'Filtrar');
+  const list=document.createElement('div');
+  list.className='task-filter-list';
+  list.setAttribute('role','listbox');
+  list.setAttribute('aria-label',select.getAttribute('aria-label')||'Opciones de filtro');
+  const filterable=id==='filter-package'||id==='filter-owner';
+  let search=null;
+  if(filterable){
+    search=document.createElement('input');
+    search.type='search';search.className='field-input task-filter-search';
+    search.placeholder='Buscar en las opciones…';
+    search.setAttribute('aria-label','Buscar opciones del filtro');
+    popup.appendChild(search);
+  }
+  popup.appendChild(list);
+  document.body.appendChild(popup);
+  trigger.setAttribute('aria-expanded','true');
+  taskFilterPopup={id,popup,trigger,list,search};
+  function focusOption(index,delta){
+    const buttons=[...list.querySelectorAll('.task-filter-choice:not(:disabled)')];
+    if(!buttons.length)return;
+    const next=Math.min(buttons.length-1,Math.max(0,index+delta));
+    buttons[next].focus({preventScroll:true});
+    buttons[next].scrollIntoView({block:'nearest'});
+  }
+  function draw(query=''){
+    list.replaceChildren();
+    const needle=normalizeTaskFilterSearch(query.trim());
+    const opts=[...select.options].filter(option=>
+      !needle||normalizeTaskFilterSearch(option.textContent).includes(needle));
+    for(const option of opts){
+      const btn=document.createElement('button');
+      btn.type='button';btn.className='task-filter-choice';
+      btn.setAttribute('role','option');
+      btn.setAttribute('aria-selected',String(option.value===select.value));
+      btn.textContent=option.textContent;
+      btn.disabled=option.disabled;
+      btn.dataset.value=option.value;
+      btn.addEventListener('click',()=>{
+        if(btn.disabled)return;
+        const changed=select.value!==option.value;
+        closeTaskFilterPopup();
+        if(changed){
+          select.value=option.value;
+          select.dispatchEvent(new Event('change',{bubbles:true}));
+        }
+        trigger.focus({preventScroll:true});
+      });
+      list.appendChild(btn);
+    }
+    if(!opts.length){
+      const message=document.createElement('p');
+      message.className='task-filter-empty';
+      message.textContent='Sin coincidencias';
+      list.appendChild(message);
+    }
+  }
+  draw();
+  if(search)search.addEventListener('input',()=>draw(search.value));
+  popup.addEventListener('keydown',event=>{
+    if(event.key==='Escape'){
+      event.preventDefault();event.stopPropagation();closeTaskFilterPopup(true);return;
+    }
+    if(event.key==='Tab'){closeTaskFilterPopup();return;}
+    if(!['ArrowDown','ArrowUp','Home','End'].includes(event.key))return;
+    event.preventDefault();
+    const active=[...list.querySelectorAll('.task-filter-choice:not(:disabled)')];
+    const index=active.indexOf(document.activeElement);
+    if(!active.length)return;
+    const next=event.key==='Home'?0:event.key==='End'?active.length-1:
+      event.key==='ArrowDown'?Math.min(active.length-1,index+1):
+      Math.max(0,index<0?active.length-1:index-1);
+    focusOption(next,0);
+  });
+  const rect=trigger.getBoundingClientRect();
+  const preferred=id==='filter-owner'?330:id==='filter-package'?260:235;
+  const width=Math.min(window.innerWidth-20,Math.max(rect.width,preferred));
+  popup.style.width=width+'px';
+  popup.style.left=Math.max(10,Math.min(rect.left,window.innerWidth-width-10))+'px';
+  const availableBelow=window.innerHeight-rect.bottom-12;
+  const availableAbove=rect.top-12;
+  const popupHeight=Math.min(popup.scrollHeight,330);
+  const showAbove=availableBelow<Math.min(popupHeight,160)&&availableAbove>availableBelow;
+  const available=Math.max(60,showAbove?availableAbove:availableBelow);
+  popup.style.maxHeight=Math.min(330,available)+'px';
+  popup.style.top=(showAbove?Math.max(10,rect.top-Math.min(popupHeight,available)-5):
+    Math.max(10,rect.bottom+5))+'px';
+  if(search)search.focus({preventScroll:true});
+  else if(keyboard)focusOption(Math.max(0,[...select.options].findIndex(o=>o.value===select.value)),0);
+}
+function initTaskFilterMenus(){
+  const controls=$('#tasks-view .controls');
+  if(!controls||controls.dataset.filterMenuReady)return;
+  controls.dataset.filterMenuReady='true';
+  for(const [id,,label] of TASK_CROSS_FIELDS){
+    const select=document.getElementById(id);
+    if(!select)continue;
+    const trigger=document.createElement('button');
+    trigger.type='button';trigger.className='task-filter-trigger';
+    trigger.setAttribute('aria-haspopup','listbox');
+    trigger.setAttribute('aria-controls','task-filter-menu-'+id);
+    trigger.setAttribute('aria-expanded','false');
+    trigger.setAttribute('aria-label',label);
+    const span=document.createElement('span');
+    span.className='task-filter-trigger-text';
+    const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');
+    const path=document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d','m6 9 6 6 6-6');
+    path.setAttribute('fill','none');path.setAttribute('stroke','currentColor');
+    path.setAttribute('stroke-width','2');
+    svg.appendChild(path);
+    trigger.append(span,svg);
+    select.parentElement.appendChild(trigger);
+    trigger.addEventListener('click',()=>openTaskFilterPopup(id));
+    trigger.addEventListener('keydown',event=>{
+      if(event.key==='ArrowDown'||event.key==='Enter'||event.key===' '){
+        event.preventDefault();openTaskFilterPopup(id,true);
+      }
+      if(event.key==='Escape')closeTaskFilterPopup();
+    });
+  }
+  taskFilterDesktop.addEventListener('change',setTaskFilterDesktopMode);
+  document.addEventListener('pointerdown',event=>{
+    if(taskFilterPopup&&!taskFilterPopup.popup.contains(event.target)&&
+      !taskFilterPopup.trigger.contains(event.target))closeTaskFilterPopup();
+  });
+  document.addEventListener('scroll',event=>{
+    if(taskFilterPopup&&!taskFilterPopup.popup.contains(event.target))closeTaskFilterPopup();
+  },true);
+  window.addEventListener('resize',()=>closeTaskFilterPopup(),{passive:true});
+  syncTaskFilterTriggers();
+  setTaskFilterDesktopMode();
+}
+
 function taskCrossSource(){
   const query=$('#search').value.trim().toLocaleLowerCase('es');
   return tasks.filter(t=>(!linkedTaskIds||linkedTaskIds.has(t.id))&&
@@ -9276,6 +9535,7 @@ function confirmWeeklyClose(){
 }
 updateWeeklyFilters();
 
+initTaskFilterMenus();
 renderAll();
 syncThemeButton();
 wireEvidenceControls();
