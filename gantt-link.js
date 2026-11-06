@@ -587,9 +587,18 @@ function selectGanttActivity(){
   }else if(ganttAutoTitle&&title.value===ganttAutoTitle){
     title.value='';
     ganttAutoTitle='';
+    document.getElementById('f-gantt-group').value='';
   }
   syncGanttEditorControls();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
+}
+function handleGanttActivityKeydown(event){
+  if(event.key!=='Delete'&&event.key!=='Backspace')return;
+  const input=document.getElementById('f-gantt-activity');
+  if(input.disabled||!input.value)return;
+  event.preventDefault();
+  input.value='';
+  selectGanttActivity();
 }
 function selectGanttGroup(){
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
