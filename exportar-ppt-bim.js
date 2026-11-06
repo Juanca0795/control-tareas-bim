@@ -181,6 +181,9 @@ function pptBimAvailableWeeks(anchor){
   for(const task of tasks){
     const completed=pptBimCompletionWeek(task);
     if(completed)available.add(completed);
+    const entered=taskCreationDate(task);
+    if(/^\d{4}-\d{2}-\d{2}$/.test(entered))
+      available.add(isoWeekKey(new Date(entered+'T12:00:00')));
     for(const photo of taskEvidenceRecords(task.id)){
       const ingreso=pptBimIngresoWeek(photo);
       if(ingreso)available.add(ingreso);
@@ -706,32 +709,45 @@ function closeBimPptExport(){
 function renderBimPptExport(){
   const area=$('#bim-ppt-list');
   if(!area)return;
+  const byPerson=pptBimState.profile==='by-person';
   const groups=new Map();
-  pptBimState.items.forEach((x,index)=>{
-    const name=pptBimGroupName(x);
-    if(!groups.has(name))groups.set(name,[]);
-    groups.get(name).push({x,index});
+  pptBimState.items.forEach((item,index)=>{
+    const key=byPerson&&item.empty?'__sin_capturas__':pptBimGroupName(item);
+    if(!groups.has(key))groups.set(key,[]);
+    groups.get(key).push({x:item,index});
   });
-  area.innerHTML=pptBimState.items.length?[...groups].map(([name,group])=>
-    '<section class="bim-ppt-group"><h3>'+esc(name)+
-    ' <span>'+group.length+' fotografía(s)</span></h3><div class="bim-ppt-items">'+
-    group.map(({x,index})=>
-      '<article class="bim-ppt-item">'+
-      '<div class="bim-ppt-item-title"><label><input type="checkbox" data-bim-ppt-check="'+index+'"'+
-      (x.enabled?' checked':'')+'> Incluir</label>'+
-      '<label class="bim-ppt-caption-label" for="bim-ppt-caption-'+index+'">Descripción para el PPT</label>'+
-      '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+
-      ' · Foto '+x.photoIndex+' de '+x.photoCount+'</span></div>'+
-      '<button type="button" class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'"'+
-      ' aria-label="Ver fotografía '+(index+1)+' en pantalla completa" title="Ampliar fotografía">Vista previa</button>'+
-      '<div class="bim-ppt-fields">'+
-      '<textarea id="bim-ppt-caption-'+index+'" data-bim-ppt-caption="'+index+'" maxlength="240" rows="2">'+
-      esc(x.caption)+'</textarea></div></article>').join('')+
-    '</div></section>').join(''):
+  area.innerHTML=pptBimState.items.length?[...groups].map(([name,group])=>{
+    const missing=name==='__sin_capturas__';
+    const heading=missing?'ACTIVIDADES SIN CAPTURAS':name;
+    const photoCount=group.filter(({x})=>!x.empty).length;
+    const taskCount=new Set(group.map(({x})=>x.taskId)).size;
+    const countLabel=byPerson
+      ?taskCount+' actividad'+(taskCount===1?'':'es')+' · '+photoCount+' foto'+(photoCount===1?'':'s')
+      :photoCount+' fotografía(s)';
+    return '<section class="bim-ppt-group"><h3>'+esc(heading)+
+      ' <span>'+countLabel+'</span></h3><div class="bim-ppt-items">'+
+      group.map(({x,index})=>
+        '<article class="bim-ppt-item">'+
+        '<div class="bim-ppt-item-title"><label><input type="checkbox" data-bim-ppt-check="'+index+'"'+
+        (x.enabled?' checked':'')+'> Incluir</label>'+
+        '<label class="bim-ppt-caption-label" for="bim-ppt-caption-'+index+'">Descripción para el PPT</label>'+
+        '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+
+        (x.empty?' · '+esc(x.owner||'Sin responsable')+' · Sin captura':
+          ' · Foto '+x.photoIndex+' de '+x.photoCount)+'</span></div>'+
+        (x.empty
+          ?'<div class="bim-ppt-thumb bim-ppt-thumb-empty" role="img" aria-label="Actividad sin captura">SIN CAPTURA</div>'
+          :'<button type="button" class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'"'+
+            ' aria-label="Ver fotografía '+(index+1)+' en pantalla completa" title="Ampliar fotografía">Vista previa</button>')+
+        '<div class="bim-ppt-fields">'+
+        '<textarea id="bim-ppt-caption-'+index+'" data-bim-ppt-caption="'+index+'" maxlength="240" rows="2">'+
+        esc(x.caption)+'</textarea></div></article>').join('')+
+      '</div></section>';
+  }).join(''):
     '<p class="bim-ppt-empty">'+
-      (pptBimState.profile==='by-person'&&pptBimSelectedPeople()?.size===0?
+      (byPerson&&pptBimSelectedPeople()?.size===0?
         'No hay colaboradores marcados. Abre Personal y selecciona al menos uno.':
-        'No hay fotografías para la semana y el criterio seleccionados. Puedes cambiar el criterio arriba.')+
+        (byPerson?'No hay actividades con los filtros seleccionados.':
+          'No hay fotografías para la semana y el criterio seleccionados. Puedes cambiar el criterio arriba.'))+
     '</p>';
   updateBimPptSelectedCounter();
 }
@@ -742,9 +758,15 @@ function updateBimPptSelectedCounter(){
   if(target){
     const labels=included.map(pptBimGroupName);
     const isPerson=pptBimState.profile==='by-person';
-    target.textContent=included.length+' imágenes · '+new Set(labels).size+
-      (isPerson?' responsables':' paquetes')+' · '+
-      included.reduce((n,x,i)=>n+(i===0||labels[i-1]!==labels[i]?1:0),0)+' grupos';
+    if(isPerson){
+      const photos=included.filter(x=>!x.empty).length;
+      target.textContent=new Set(included.map(x=>x.taskId)).size+' actividades · '+
+        photos+' fotos · '+new Set(labels).size+' responsables';
+    }else{
+      target.textContent=included.length+' imágenes · '+new Set(labels).size+
+        ' paquetes · '+
+        included.reduce((n,x,i)=>n+(i===0||labels[i-1]!==labels[i]?1:0),0)+' grupos';
+    }
   }
   const btn=$('#bim-ppt-download');
   if(btn)btn.disabled=pptBimState.busy||!included.length;
@@ -766,7 +788,7 @@ async function loadBimPptThumbnails(token){
   for(let idx=0;idx<pptBimState.items.length;idx++){
     if(token!==pptBimState.token)return;
     const item=pptBimState.items[idx],el=document.querySelector('[data-bim-ppt-thumb="'+idx+'"]');
-    if(!el)continue;
+    if(!el||item.empty)continue;
     try{
       const url=await window.bimEvidenceCloud.url(item.path);
       if(token!==pptBimState.token)return;
