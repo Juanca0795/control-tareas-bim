@@ -6,7 +6,7 @@ const VGG_CSS="\n#bim-gantt-overlay{position:fixed;inset:0;background:rgba(4,9,2
 const S=window.BIM_GANTT_VIEW_SOURCE;
 if(!S)return;
 const st={owner:'',group:'',week:'',status:'',search:'',oriol:true,selected:''};
-let overlay=null,bodyOverflow='';
+let overlay=null,bodyOverflow='',lastTrigger=null;
 const columns=[['ID',56],['EDT',62],['Actividad / hito',320],['Responsable',152],
  ['Tipo',54],['Dur. (dc)',67],['Inicio',87],['Fin',87],['Predecesor',83],['Dependencia',83],['Desfase (dc)',86]];
 const pad=x=>String(x).padStart(2,'0');
@@ -164,9 +164,12 @@ function redrawGroups(){
 function close(){
  if(!overlay||overlay.hidden)return;
  overlay.hidden=true;document.body.style.overflow=bodyOverflow;
- const button=document.getElementById('weekly-gantt-viewer-launch');if(button)button.focus();
+ if(lastTrigger&&lastTrigger.isConnected&&typeof lastTrigger.focus==='function')lastTrigger.focus();
+ lastTrigger=null;
 }
 function open(){
+ // Recordar el botón que abrió el visor en cualquiera de las tres pestañas.
+ lastTrigger=document.activeElement;
  if(!overlay){
   overlay=document.createElement('div');
   overlay.id='bim-gantt-overlay';overlay.hidden=true;
