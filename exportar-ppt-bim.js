@@ -239,25 +239,37 @@ function pptBimCompletionWeek(task){
   const parsed=new Date(date+'T12:00:00');
   return Number.isNaN(parsed.getTime())?'':isoWeekKey(parsed);
 }
-/* AREA_BIM2: registrar una tarea significa que se trabajó en su día/semana
- * de ingreso, incluso si después se completó. La fecha declarada/retroactiva
- * es la misma que utiliza Control de Tareas. La fecha límite y la culminación
- * posterior NO trasladan esa tarea a otra semana en "Por semana". */
-function pptBimTaskMatchesReport(task,week,mode,weekFilters,meetingPeriod=null){
-  const entryWeek=taskEntryWeek(task);
-  const completionWeek=pptBimCompletionWeek(task);
-  if(mode==='semana')return entryWeek===week;
-  if(mode==='ingreso')return entryWeek===week;
-  if(mode==='culminacion')return completionWeek===week;
-  if(mode==='reunion'){
-    if(!meetingPeriod)return false;
-    const entry=String(taskCreationDate(task)||'').slice(0,10);
-    const completed=categoryOf(task.status)==='done'
-      ?String(task.completedAt||'').slice(0,10):'';
-    const matches=date=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&
-      date>=meetingPeriod.start&&date<=meetingPeriod.end;
-    return matches(entry)||matches(completed);
+/* AREA_BIM2: continuidad semanal según el período de ejecución.
+ * Inicio: fecha de ingreso declarada, incluidas las retroactivas.
+ * Fin previsto: fecha límite, o ingreso si no existe plazo.
+ * Fin real: cuando la tarea está completada, usar la fecha real de cierre.
+ * Si se terminó en SEM45 aunque vencía en SEM46, NO aparece en SEM46.
+ * No usar la fecha de carga de fotos como prueba de una semana activa. */
+function pptBimTaskActivityRange(task){
+  const start=String(taskCreationDate(task)||'').slice(0,10);
+  if(!pptBimValidRangeDate(start))return null;
+  const deadline=String(task.deadline||'').slice(0,10);
+  let end=pptBimValidRangeDate(deadline)&&deadline>=start?deadline:start;
+  const completed=String(task.completedAt||'').slice(0,10);
+  if(categoryOf(task.status)==='done'&&pptBimValidRangeDate(completed)){
+    // Un cierre anticipado acorta el rango; uno tardío lo prolonga.
+    end=completed>=start?completed:start;
   }
+  return {start,end};
+}
+function pptBimTaskMatchesReport(task,week,mode,weekFilters,meetingPeriod=null){
+  const active=pptBimTaskActivityRange(task);
+  if(mode==='semana'){
+    const monday=weekStart(week);
+    if(!active||!monday)return false;
+    return active.start<=weekEnd(week)&&active.end>=localISO(monday);
+  }
+  if(mode==='reunion'){
+    return !!active&&!!meetingPeriod&&
+      active.start<=meetingPeriod.end&&active.end>=meetingPeriod.start;
+  }
+  if(mode==='ingreso')return taskEntryWeek(task)===week;
+  if(mode==='culminacion')return pptBimCompletionWeek(task)===week;
   return false;
 }
 // Disponibilidad: ventana de nueve semanas más períodos con evidencia real.
@@ -265,11 +277,17 @@ function pptBimAvailableWeeks(anchor){
   const available=new Set([anchor]);
   for(let offset=-4;offset<=4;offset++)available.add(neighborWeek(anchor,offset));
   for(const task of tasks){
-    const completed=pptBimCompletionWeek(task);
-    if(completed)available.add(completed);
-    const entered=taskCreationDate(task);
-    if(/^\d{4}-\d{2}-\d{2}$/.test(entered))
-      available.add(isoWeekKey(new Date(entered+'T12:00:00')));
+    const active=pptBimTaskActivityRange(task);
+    if(active){
+      const first=isoWeekKey(new Date(active.start+'T12:00:00'));
+      const last=isoWeekKey(new Date(active.end+'T12:00:00'));
+      // Se incluyen semanas sin fotografías si pertenecen al rango previsto.
+      let current=first;
+      for(let count=0;count<156&&current<=last;count++){
+        available.add(current);
+        current=neighborWeek(current,1);
+      }
+    }
     for(const photo of taskEvidenceRecords(task.id)){
       const ingreso=pptBimIngresoWeek(photo);
       if(ingreso)available.add(ingreso);
@@ -308,8 +326,8 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
     if((packageFilter&&task.package!==packageFilter)||
        (teamFilter&&task.team!==teamFilter)||
        (ownerFilter&&task.owner!==ownerFilter))continue;
-    // AREA_BIM2: cada actividad pertenece solo a su semana de ingreso,
-    // esté en progreso o completada; no por su plazo ni por fotos posteriores.
+    // AREA_BIM2: una actividad aparece en cada semana prevista desde su ingreso,
+    // salvo las posteriores a su fecha real de culminación.
     if(specialty&&!pptBimTaskMatchesReport(
       task,week,mode,weekFilters,meetingPeriod))continue;
     // AREA_BIM conserva su flujo original de evidencia sin cambios.
@@ -591,7 +609,7 @@ function pptBimRefreshModeInfo(){
   pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: en Por semana se incluyen todas las tareas ingresadas en la semana seleccionada, estén completadas o en progreso. Solo se muestran sus fotografías cargadas esa semana; con Añadir tablas, las actividades sin fotos de la semana se exportan al final. Se mantienen los filtros de sector, paquete, especialidad y personal.'
+    ?'Perfil AREA_BIM2: Por semana incluye las actividades previstas desde el ingreso hasta la fecha límite; si se completan, el período termina en su fecha real de culminación. Cada semana muestra solo las fotografías cargadas en ella y, con Añadir tablas, las actividades sin fotos van al final. Se mantienen los filtros de sector, paquete, especialidad y personal.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -644,8 +662,8 @@ function pptBimRefreshModeInfo(){
     description.textContent='Ingreso: fotografías cargadas durante la semana ISO seleccionada (hora de Perú).';
   }else if(pptBimState.mode==='semana'){
     description.textContent='SEM'+Number(pptBimState.week.slice(-2))+
-      ': todas las actividades ingresadas esta semana, sin importar su estado. '+
-      'Fotografías cargadas en la semana y tablas finales para las que no tienen capturas.';
+      ': actividades cuyo período entre ingreso y fecha límite o cierre real '+
+      'incluye esta semana. Se muestran solo sus fotografías de la semana; sin ellas, tabla final.';
   }else{
     description.textContent='Culminación: fotografías de actividades completadas durante esta semana; no implica que la foto se haya tomado ese día.';
   }
