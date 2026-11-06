@@ -4213,6 +4213,15 @@ textarea,
 #weekly-view .weekly-cnc-item .cnc-cause{color:var(--accent-blue);font-weight:650}
 
 
+/* Accesos compactos al visor Gantt, parte superior izquierda del Dashboard y Control de Tareas. */
+.gantt-page-quickbar{display:flex;align-items:center;justify-content:flex-start;margin:0 0 10px;gap:8px}
+.gantt-page-view-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  width:auto;min-height:33px;padding:6px 12px!important;border:1px solid var(--border-strong)!important;
+  background:var(--bg-subtle)!important;color:var(--accent-blue)!important;font-size:11px;
+  font-weight:750;border-radius:7px;white-space:nowrap;cursor:pointer}
+.gantt-page-view-button:hover{border-color:var(--accent-blue)!important;background:var(--bg-hover)!important}
+.gantt-page-view-button:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.gantt-page-view-button span{font-size:16px;line-height:1}
 /* Acceso al Gantt original: integrar con controles de Seguimiento. */
 #weekly-view #weekly-gantt-viewer-launch{
   min-height:30px;white-space:nowrap;border:1px solid var(--border-strong);
@@ -5485,6 +5494,12 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   </div>
   <!-- VISTA: CONTROL DE TAREAS (10 columnas, sin columna de acción) -->
   <div id="tasks-view" class="hidden">
+    <div class="gantt-page-quickbar" aria-label="Acceso al cronograma Gantt">
+      <button type="button" class="btn small gantt-page-view-button" id="tasks-gantt-viewer-launch"
+        onclick="openBimGanttViewer()" title="Visualizar el cronograma Gantt del Excel">
+        <span aria-hidden="true">▦</span> Visualizar Gantt
+      </button>
+    </div>
     <section id="task-stats" class="stat-grid" aria-label="Indicadores de tareas"></section>
 
     <section class="card">
@@ -5688,6 +5703,12 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 
   <!-- VISTA: DASHBOARD SALA DE CONTROL -->
   <div id="dashboard-view">
+    <div class="gantt-page-quickbar" aria-label="Acceso al cronograma Gantt">
+      <button type="button" class="btn small gantt-page-view-button" id="dashboard-gantt-viewer-launch"
+        onclick="openBimGanttViewer()" title="Visualizar el cronograma Gantt del Excel">
+        <span aria-hidden="true">▦</span> Visualizar Gantt
+      </button>
+    </div>
     <section class="card dash-filters">
       <span id="dash-scope-heading">SEGMENTAR ALCANCE</span>
       <div class="select-wrap"><select id="dash-package" onchange="renderDashboard()" aria-label="Filtrar paquete dashboard"></select></div>
