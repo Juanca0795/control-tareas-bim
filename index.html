@@ -6355,6 +6355,23 @@ function mergeCloudBackupDeletedIds(remote,local){
     list.filter(id=>typeof id==='string'&&id.length>0&&id.length<=160):[];
   return [...new Set([...valid(remote),...valid(local)])];
 }
+function normalizeGanttViewerColumns(input){
+  // Configuración compartida del visor. Cada navegador recibe la misma selección.
+  const hidden=Array.isArray(input?.hidden)?[...new Set(input.hidden.filter(n=>
+    Number.isInteger(n)&&n>=0&&n<11))].sort((a,b)=>a-b).slice(0,10):[];
+  const updatedAt=typeof input?.updatedAt==='string'&&
+    Number.isFinite(Date.parse(input.updatedAt))?input.updatedAt:'';
+  return {hidden,updatedAt};
+}
+function mergeGanttViewerColumns(remote,local){
+  const cloud=normalizeGanttViewerColumns(remote),own=normalizeGanttViewerColumns(local);
+  if(!cloud.updatedAt)return own;
+  if(!own.updatedAt)return cloud;
+  return own.updatedAt>cloud.updatedAt?own:cloud;
+}
+function notifyGanttViewerColumns(){
+  window.dispatchEvent(new Event('bim-gantt-columns-updated'));
+}
 function normalizeCatalogs(input){
   const result = {};
   for(const key of ['packages','owners','teams']){
@@ -6373,6 +6390,7 @@ function normalizeCatalogs(input){
   result.weeklyForecasts=normalizeWeeklyForecasts(input?.weeklyForecasts);
   result.evidenceByTask=normalizeEvidenceByTask(input?.evidenceByTask);
   result.ganttLinksByTask=normalizeGanttLinks(input?.ganttLinksByTask);
+  result.ganttViewerColumns=normalizeGanttViewerColumns(input?.ganttViewerColumns);
   // Copias completas en el JSONB de bim_catalogs, sin cambiar el esquema.
   // Nunca copiar backups dentro del payload de otro backup.
   result.deletedBackupIds=mergeCloudBackupDeletedIds(input?.deletedBackupIds,[]);
@@ -6387,6 +6405,17 @@ function readCatalogs(){
   return normalizeCatalogs(DEFAULT_CATALOGS);
 }
 let catalogs = readCatalogs();
+window.bimGanttColumnPreferences={
+  read:()=>normalizeGanttViewerColumns(catalogs.ganttViewerColumns),
+  save(hidden){
+    const previous=normalizeGanttViewerColumns(catalogs.ganttViewerColumns);
+    const next=normalizeGanttViewerColumns({hidden,updatedAt:new Date().toISOString()});
+    if(JSON.stringify(previous.hidden)===JSON.stringify(next.hidden))return previous;
+    catalogs.ganttViewerColumns=next;
+    persist(); // Guardado compartido en bim_catalogs.data, no solo en este navegador.
+    return next;
+  }
+};
 let settingsTab = 'packages';
 let settingsEditing = null;
 
@@ -9902,9 +9931,11 @@ async function load(){
         merged.weeklyForecasts=mergeWeeklyForecasts(fromCloud.weeklyForecasts,catalogs.weeklyForecasts);
         merged.evidenceByTask=mergeEvidenceByTask(fromCloud.evidenceByTask,catalogs.evidenceByTask);
         merged.ganttLinksByTask=mergeGanttLinks(fromCloud.ganttLinksByTask,catalogs.ganttLinksByTask);
+        merged.ganttViewerColumns=mergeGanttViewerColumns(fromCloud.ganttViewerColumns,catalogs.ganttViewerColumns);
         merged.deletedBackupIds=mergeCloudBackupDeletedIds(fromCloud.deletedBackupIds,catalogs.deletedBackupIds);
         merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups,merged.deletedBackupIds);
         catalogs=normalizeCatalogs(merged);
+        notifyGanttViewerColumns();
         ids=cloudIds;
         weeklySnapshots=cloudWeeks;
         syncCatalogsWithTasks();
@@ -9916,6 +9947,7 @@ async function load(){
     }
     tasks=cloudTasks;ids=cloudIds;
     if(c.data?.[0]?.data)catalogs=normalizeCatalogs(c.data[0].data);
+    notifyGanttViewerColumns();
     weeklySnapshots=cloudWeeks;
     syncCatalogsWithTasks();ready=1;
     if(captureMonthlyStats())persist();else renderAll();
@@ -9970,6 +10002,13 @@ async function save(){
     catalogsToSave.ganttLinksByTask=mergeGanttLinks(
       latestCatalogs.data?.[0]?.data?.ganttLinksByTask,catalogsToSave.ganttLinksByTask);
     catalogs.ganttLinksByTask=catalogsToSave.ganttLinksByTask;
+    // La vista de columnas de otra sesión nunca se sustituye por una copia antigua.
+    catalogsToSave.ganttViewerColumns=mergeGanttViewerColumns(
+      latestCatalogs.data?.[0]?.data?.ganttViewerColumns,catalogsToSave.ganttViewerColumns);
+    const currentGanttColumns=JSON.stringify(catalogs.ganttViewerColumns?.hidden||[]);
+    catalogs.ganttViewerColumns=catalogsToSave.ganttViewerColumns;
+    if(currentGanttColumns!==JSON.stringify(catalogs.ganttViewerColumns.hidden))
+      notifyGanttViewerColumns();
     const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
     if(gone.length){
       const deleted=await d.from('bim_tasks').delete().in('id',gone);
