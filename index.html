@@ -6488,6 +6488,41 @@ function taskSector(packageName){
   if(number>=30&&number<=33)return 'Sector 3';
   return '';
 }
+// Avances reales del PPC Gantt por actividad y semana (porcentaje acumulado).
+// Se guardan en bim_catalogs.data para compartirlos entre dispositivos.
+function normalizeGanttWeeklyProgress(input){
+  const out={};
+  if(!input||typeof input!=='object'||Array.isArray(input))return out;
+  for(const [week,records] of Object.entries(input)){
+    if(!/^\d{4}-W\d{2}$/.test(week)||!records||
+      typeof records!=='object'||Array.isArray(records))continue;
+    const clean={};
+    for(const [id,record] of Object.entries(records)){
+      if(!/^[A-Za-z0-9_-]{1,64}$/.test(id)||!record||
+        typeof record!=='object'||Array.isArray(record))continue;
+      const actual=record.actual;
+      if(actual!==null&&(!Number.isFinite(actual)||actual<0||actual>100))continue;
+      const updatedAt=String(record.updatedAt||'');
+      if(!/^\d{4}-\d{2}-\d{2}T/.test(updatedAt)||
+        !Number.isFinite(Date.parse(updatedAt)))continue;
+      clean[id]={actual,updatedAt};
+    }
+    if(Object.keys(clean).length)out[week]=clean;
+  }
+  return out;
+}
+function mergeGanttWeeklyProgress(cloud,local){
+  const a=normalizeGanttWeeklyProgress(cloud),b=normalizeGanttWeeklyProgress(local);
+  const out={};
+  for(const week of new Set([...Object.keys(a),...Object.keys(b)])){
+    const rows={...a[week]};
+    for(const [id,entry] of Object.entries(b[week]||{})){
+      if(!rows[id]||entry.updatedAt>rows[id].updatedAt)rows[id]=entry;
+    }
+    if(Object.keys(rows).length)out[week]=rows;
+  }
+  return out;
+}
 function normalizeMonthlyAnalytics(input){
   const validDate=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(v)&&!Number.isNaN(Date.parse(v+'T00:00:00Z'));
   const dates=input?.createdAtByTask&&typeof input.createdAtByTask==='object'&&!Array.isArray(input.createdAtByTask)
@@ -6590,6 +6625,7 @@ function normalizeCatalogs(input){
   result.analytics=normalizeMonthlyAnalytics(input?.analytics);
   result.cncRecords=normalizeCncRecords(input?.cncRecords);
   result.weeklyForecasts=normalizeWeeklyForecasts(input?.weeklyForecasts);
+  result.ganttWeeklyProgress=normalizeGanttWeeklyProgress(input?.ganttWeeklyProgress);
   result.evidenceByTask=normalizeEvidenceByTask(input?.evidenceByTask);
   result.ganttLinksByTask=normalizeGanttLinks(input?.ganttLinksByTask);
   result.ganttViewerColumns=normalizeGanttViewerColumns(input?.ganttViewerColumns);
@@ -10136,6 +10172,7 @@ async function load(){
         merged.analytics=mergeMonthlyAnalytics(fromCloud.analytics,catalogs.analytics);
         merged.cncRecords=mergeCncRecords(fromCloud.cncRecords,catalogs.cncRecords);
         merged.weeklyForecasts=mergeWeeklyForecasts(fromCloud.weeklyForecasts,catalogs.weeklyForecasts);
+        merged.ganttWeeklyProgress=mergeGanttWeeklyProgress(fromCloud.ganttWeeklyProgress,catalogs.ganttWeeklyProgress);
         merged.evidenceByTask=mergeEvidenceByTask(fromCloud.evidenceByTask,catalogs.evidenceByTask);
         merged.ganttLinksByTask=mergeGanttLinks(fromCloud.ganttLinksByTask,catalogs.ganttLinksByTask);
         merged.ganttViewerColumns=mergeGanttViewerColumns(fromCloud.ganttViewerColumns,catalogs.ganttViewerColumns);
@@ -10204,6 +10241,9 @@ async function save(){
     catalogs.cncRecords=catalogsToSave.cncRecords;
     catalogsToSave.weeklyForecasts=mergeWeeklyForecasts(latestCatalogs.data?.[0]?.data?.weeklyForecasts,catalogsToSave.weeklyForecasts);
     catalogs.weeklyForecasts=catalogsToSave.weeklyForecasts;
+    catalogsToSave.ganttWeeklyProgress=mergeGanttWeeklyProgress(
+      latestCatalogs.data?.[0]?.data?.ganttWeeklyProgress,catalogsToSave.ganttWeeklyProgress);
+    catalogs.ganttWeeklyProgress=catalogsToSave.ganttWeeklyProgress;
     catalogsToSave.evidenceByTask=mergeEvidenceByTask(latestCatalogs.data?.[0]?.data?.evidenceByTask,catalogsToSave.evidenceByTask);
     catalogs.evidenceByTask=catalogsToSave.evidenceByTask;
     catalogsToSave.ganttLinksByTask=mergeGanttLinks(
