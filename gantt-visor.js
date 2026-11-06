@@ -1,11 +1,11 @@
-const VGG_CSS="\n#bim-gantt-overlay{position:fixed;inset:0;background:rgba(4,9,20,.82);z-index:99990;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}\n#bim-gantt-overlay[hidden]{display:none!important}\n#bim-gantt-overlay *{box-sizing:border-box}\n#bim-gantt-modal{display:flex;flex-direction:column;width:min(97vw,1800px);height:min(94dvh,1100px);min-width:0;max-height:100dvh;overflow:hidden;border:1px solid var(--border-strong,#334155);border-radius:12px;background:var(--bg-panel,#10182a);color:var(--ink-primary,#f8fafc);box-shadow:0 20px 80px #0009}\n#bim-gantt-modal.max{width:100vw;height:100dvh;border-radius:0;border:0}\n#bim-gantt-overlay:has(#bim-gantt-modal.max){padding:0}\n.vgg-header{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-base,#344052)}\n.vgg-header h2{font-size:13px;font-weight:800;margin:0 0 4px;letter-spacing:.02em}\n.vgg-header p{font-size:10px;color:var(--ink-secondary,#aab6ca);margin:0;line-height:1.5}\n.vgg-header-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}\n.vgg-header-actions button{background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-base,#334155);border-radius:6px;padding:7px 10px;cursor:pointer;font-size:10px}\n.vgg-controls{padding:9px 15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-base,#334155)}\n.vgg-controls label{font-size:10px;color:var(--ink-secondary,#cbd5e1);display:flex;gap:5px;align-items:center}\n.vgg-controls select,.vgg-controls input[type=search]{max-width:170px;height:30px;border:1px solid var(--border-base,#334155);border-radius:6px;padding:4px 7px;background:var(--bg-subtle,#1e293b);font-size:10px;color:var(--ink-primary,#f8fafc)}\n.vgg-controls input[type=search]{width:165px}\n.vgg-controls input[type=checkbox]{accent-color:#25c7e5}\n.vgg-count{margin-left:auto;font-size:10px;color:var(--ink-secondary,#94a3b8)}\n.vgg-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#f8fafc;scrollbar-width:thin}\n.vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Arial,Inter,sans-serif;font-size:10px;color:#293850;background:#fff}\n.vgg-table th,.vgg-table td{border-bottom:1px solid #c4ccd6;border-right:1px solid #bbc5d2;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:28px}\n.vgg-table thead th{position:sticky;color:#f7fbff;text-align:center;background:#1d2d4d;font-weight:750;z-index:8}\n.vgg-table thead .vgg-week th{top:0;height:25px}\n.vgg-table thead .vgg-date th{top:25px;height:23px}\n.vgg-table thead .vgg-weekday th{top:48px;height:25px}\n.vgg-table thead th.vgg-meta{top:0;z-index:11}\n.vgg-table .vgg-fixed-0{position:sticky;left:0;z-index:5}\n.vgg-table .vgg-fixed-1{position:sticky;left:56px;z-index:5}\n.vgg-table .vgg-fixed-2{position:sticky;left:118px;z-index:5}\n.vgg-table thead .vgg-fixed-0,.vgg-table thead .vgg-fixed-1,.vgg-table thead .vgg-fixed-2{z-index:14}\n.vgg-table tbody tr.vgg-activity td{background:#fff}\n.vgg-table tbody tr.vgg-activity:nth-child(even) td{background:#f4f6f9}\n.vgg-table tbody tr.vgg-activity:hover td:not(.scheduled){background:#e6effd!important}\n.vgg-table tbody tr.vgg-activity{cursor:pointer}\n.vgg-table tr.vgg-owner-row td{background:#29466e;color:#f0f5fd;font-weight:750}\n.vgg-table tr.vgg-group-row td{background:#3a597f;color:#f2f6fc;font-weight:700}\n.vgg-table tr.vgg-owner-row td{letter-spacing:.03em}\n.vgg-table tr.vgg-group-row td{color:#f1f6fc}\n.vgg-table .vgg-id{font-weight:800;color:#324c78;text-align:center}\n.vgg-table .vgg-center{text-align:center}\n.vgg-table .vgg-day{padding:0}\n.vgg-table td.vgg-day.weekend{background:#e4e8ef!important}\n.vgg-table .vgg-date th.weekend,.vgg-table .vgg-weekday th.weekend{background:#2b3a55;color:#f7cda7}\n/* Relleno completo de celda para cada día de programación. */\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled{background:#5682bd!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.done{background:#2d9c89!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.late{background:#d39843!important}\n.vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{background:#7698c4!important}\n.vgg-table tbody tr.vgg-activity:hover td.vgg-day.scheduled{filter:brightness(1.09)}\n.vgg-table tbody td.vgg-day.today{box-shadow:inset 2px 0 #2c8fc9,inset -2px 0 #2c8fc9}\n.vgg-table .vgg-title{overflow:hidden;text-overflow:ellipsis}\n.vgg-table .vgg-oriol{opacity:.73}\n.vgg-detail{border-top:1px solid var(--border-base,#334155);padding:8px 14px;font-size:10px;line-height:1.5;min-height:35px;max-height:85px;overflow:auto;color:var(--ink-secondary,#cbd5e1)}\n.vgg-detail b{color:var(--ink-primary,#fff)}\n.vgg-footer{padding:7px 13px;display:flex;gap:13px;flex-wrap:wrap;align-items:center;background:var(--bg-subtle,#1e293b);font-size:9px;color:var(--ink-secondary,#aebed2)}\n.vgg-chip{display:inline-flex;gap:5px;align-items:center}\n.vgg-chip i{width:14px;height:10px;background:#5682bd}\n.vgg-chip i.done{background:#2d9c89}\n.vgg-chip i.late{background:#d39843}\n.vgg-chip i.group{background:#7698c4}\n@media(max-width:780px){#bim-gantt-overlay{padding:0}#bim-gantt-modal{width:100vw;height:100dvh;border-radius:0}.vgg-header{padding:9px}.vgg-controls{padding:7px}.vgg-count{margin-left:0}}\n";
+const VGG_CSS="\n#bim-gantt-overlay{position:fixed;inset:0;background:rgba(4,9,20,.82);z-index:99990;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}\n#bim-gantt-overlay[hidden]{display:none!important}\n#bim-gantt-overlay *{box-sizing:border-box}\n#bim-gantt-modal{display:flex;flex-direction:column;width:min(97vw,1800px);height:min(94dvh,1100px);min-width:0;max-height:100dvh;overflow:hidden;border:1px solid var(--border-strong,#334155);border-radius:12px;background:var(--bg-panel,#10182a);color:var(--ink-primary,#f8fafc);box-shadow:0 20px 80px #0009}\n#bim-gantt-modal.max{width:100vw;height:100dvh;border-radius:0;border:0}\n#bim-gantt-overlay:has(#bim-gantt-modal.max){padding:0}\n.vgg-header{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-base,#344052)}\n.vgg-header h2{font-size:13px;font-weight:800;margin:0 0 4px;letter-spacing:.02em}\n.vgg-header p{font-size:10px;color:var(--ink-secondary,#aab6ca);margin:0;line-height:1.5}\n.vgg-header-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}\n.vgg-header-actions button{background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-base,#334155);border-radius:6px;padding:7px 10px;cursor:pointer;font-size:10px}\n.vgg-controls{padding:9px 15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-base,#334155)}\n.vgg-controls label{font-size:10px;color:var(--ink-secondary,#cbd5e1);display:flex;gap:5px;align-items:center}\n.vgg-controls select,.vgg-controls input[type=search]{max-width:170px;height:30px;border:1px solid var(--border-base,#334155);border-radius:6px;padding:4px 7px;background:var(--bg-subtle,#1e293b);font-size:10px;color:var(--ink-primary,#f8fafc)}\n.vgg-controls input[type=search]{width:165px}\n.vgg-controls input[type=checkbox]{accent-color:#25c7e5}\n.vgg-count{margin-left:auto;font-size:10px;color:var(--ink-secondary,#94a3b8)}\n.vgg-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#f8fafc;scrollbar-width:thin}\n.vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Arial,Inter,sans-serif;font-size:10px;color:#293850;background:#fff}\n.vgg-table th,.vgg-table td{border-bottom:1px solid #c4ccd6;border-right:1px solid #bbc5d2;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:28px}\n.vgg-table thead th{position:sticky;color:#f7fbff;text-align:center;background:#1d2d4d;font-weight:750;z-index:8}\n.vgg-table thead .vgg-week th{top:0;height:25px}\n.vgg-table thead .vgg-date th{top:25px;height:23px}\n.vgg-table thead .vgg-weekday th{top:48px;height:25px}\n.vgg-table thead th.vgg-meta{top:0;z-index:11}\n.vgg-table .vgg-fixed-0{position:sticky;left:0;z-index:5}\n.vgg-table .vgg-fixed-1{position:sticky;left:56px;z-index:5}\n.vgg-table .vgg-fixed-2{position:sticky;left:118px;z-index:5}\n.vgg-table thead .vgg-fixed-0,.vgg-table thead .vgg-fixed-1,.vgg-table thead .vgg-fixed-2{z-index:14}\n.vgg-table tbody tr.vgg-activity td{background:#fff}\n.vgg-table tbody tr.vgg-activity:nth-child(even) td{background:#f4f6f9}\n.vgg-table tbody tr.vgg-activity:hover td:not(.scheduled){background:#e6effd!important}\n.vgg-table tbody tr.vgg-activity{cursor:pointer}\n.vgg-table tr.vgg-owner-row td{background:#29466e;color:#f0f5fd;font-weight:750}\n.vgg-table tr.vgg-group-row td{background:#3a597f;color:#f2f6fc;font-weight:700}\n.vgg-table tr.vgg-owner-row td{letter-spacing:.03em}\n.vgg-table tr.vgg-group-row td{color:#f1f6fc}\n.vgg-table .vgg-id{font-weight:800;color:#324c78;text-align:center}\n.vgg-table .vgg-center{text-align:center}\n.vgg-table .vgg-day{padding:0}\n.vgg-table td.vgg-day.weekend{background:#e4e8ef!important}\n.vgg-table thead tr.vgg-week th.excel-week-dark,\n.vgg-table thead tr.vgg-date th.excel-week-dark,\n.vgg-table thead tr.vgg-weekday th.excel-week-dark{background:#1b2a49;color:#fff}\n.vgg-table thead tr.vgg-week th.excel-week-light,\n.vgg-table thead tr.vgg-date th.excel-week-light,\n.vgg-table thead tr.vgg-weekday th.excel-week-light{background:#dce3ee;color:#1b2a49}\n.vgg-table thead tr.vgg-date th.nonwork,\n.vgg-table thead tr.vgg-weekday th.nonwork{color:#f04e64!important;font-weight:900}\n.vgg-table thead tr.vgg-date th.excel-week-light.nonwork,\n.vgg-table thead tr.vgg-weekday th.excel-week-light.nonwork{color:#c52442!important}\n.vgg-table td.vgg-day.holiday:not(.scheduled),\n.vgg-table td.vgg-day.day-off:not(.scheduled){background:#f6cfcb!important}\n.vgg-table tbody tr.vgg-activity:hover td.vgg-day.day-off:not(.scheduled){background:#f6cfcb!important}\n.vgg-table td.vgg-day.scheduled .vgg-cell-percent{display:flex;align-items:center;justify-content:center;\n  width:100%;height:100%;font:750 7.8px/1 Arial,sans-serif;color:#fff;\n  letter-spacing:-.25px;font-variant-numeric:tabular-nums}\n/* Relleno completo de celda para cada día de programación. */\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled{background:#5682bd!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.done{background:#2d9c89!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.late{background:#d39843!important}\n.vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{background:#7698c4!important}\n.vgg-table tbody tr.vgg-activity:hover td.vgg-day.scheduled{filter:brightness(1.09)}\n.vgg-table tbody td.vgg-day.today{box-shadow:inset 2px 0 #2c8fc9,inset -2px 0 #2c8fc9}\n.vgg-table .vgg-title{overflow:hidden;text-overflow:ellipsis}\n.vgg-table .vgg-oriol{opacity:.73}\n.vgg-detail{border-top:1px solid var(--border-base,#334155);padding:8px 14px;font-size:10px;line-height:1.5;min-height:35px;max-height:85px;overflow:auto;color:var(--ink-secondary,#cbd5e1)}\n.vgg-detail b{color:var(--ink-primary,#fff)}\n.vgg-footer{padding:7px 13px;display:flex;gap:13px;flex-wrap:wrap;align-items:center;background:var(--bg-subtle,#1e293b);font-size:9px;color:var(--ink-secondary,#aebed2)}\n.vgg-chip{display:inline-flex;gap:5px;align-items:center}\n.vgg-chip i{width:14px;height:10px;background:#5682bd}\n.vgg-chip i.done{background:#2d9c89}\n.vgg-chip i.late{background:#d39843}\n.vgg-chip i.group{background:#7698c4}\n@media(max-width:780px){#bim-gantt-overlay{padding:0}#bim-gantt-modal{width:100vw;height:100dvh;border-radius:0}.vgg-header{padding:9px}.vgg-controls{padding:7px}.vgg-count{margin-left:0}}\n";
 
 /* Réplica visual de la hoja Gant en Excel. Datos de gantt-visor-data.js. Sólo lectura. */
 (function(){
 'use strict';
 const S=window.BIM_GANTT_VIEW_SOURCE;
 if(!S)return;
-const st={owner:'',group:'',week:'',status:'',search:'',oriol:true,selected:''};
+const st={owner:'',group:'',week:'',status:'',search:'',selected:''};
 let overlay=null,bodyOverflow='',lastTrigger=null;
 const columns=[['ID',56],['EDT',62],['Actividad / hito',320],['Responsable',152],
  ['Tipo',54],['Dur. (dc)',67],['Inicio',87],['Fin',87],['Predecesor',83],['Dependencia',83],['Desfase (dc)',86]];
@@ -49,7 +49,6 @@ function taskState(row){
 function visibleActivities(){
  return S.rows.filter(row=>{
   if(row.kind!=='activity')return false;
-  if(!st.oriol&&isOriol(row.owner))return false;
   if(st.owner&&row.owner!==st.owner)return false;
   if(st.group&&row.group!==st.group)return false;
   if(st.week&&!allDates.some(d=>week(d)===st.week&&d>=row.start&&d<=row.end))return false;
@@ -70,21 +69,58 @@ function keptRows(activities){
  }
  return result;
 }
+function weekTone(d){
+ return Number(week(d).slice(1))%2===0?'excel-week-dark':'excel-week-light';
+}
+function nonWorkingDate(d){
+ return S.holidays?.[d]||'';
+}
+function dayInfo(d){
+ const dow=new Date(d+'T12:00:00Z').getUTCDay();
+ const weekend=dow===0||dow===6;
+ const holiday=Boolean(nonWorkingDate(d));
+ return {dow,weekend,holiday,mark:weekend||holiday,
+   note:nonWorkingDate(d)||(weekend?(dow===6?'Sábado':'Domingo'):'')};
+}
+function excelPercent(value){
+ const n=Number(value);
+ if(!Number.isFinite(n)||n<=0)return '';
+ const percent=n*100;
+ // Formato de Excel: [=0]"";[<0.1]0.0%;0%
+ return (n<0.1?percent.toFixed(1):Math.round(percent).toString())+'%';
+}
 function weekHeaders(days){
- const chunks=[];let last='',size=0;
- days.forEach(d=>{const w=week(d);if(last&&w!==last){chunks.push([last,size]);size=0;}last=w;size++;});
- if(size)chunks.push([last,size]);
- return chunks.map(c=>'<th colspan="'+c[1]+'">'+c[0]+'</th>').join('');
+ const chunks=[];let last='',size=0,tone='';
+ days.forEach(d=>{
+  const w=week(d);
+  if(last&&w!==last){chunks.push([last,size,tone]);size=0;}
+  last=w;size++;tone=weekTone(d);
+ });
+ if(size)chunks.push([last,size,tone]);
+ return chunks.map(c=>'<th class="'+c[2]+'" colspan="'+c[1]+'">'+c[0]+'</th>').join('');
 }
 function dayBar(row,d,state){
- const day=new Date(d+'T00:00:00Z').getUTCDay(),weekend=day===0||day===6;
+ const info=dayInfo(d);
  const today=d===(typeof todayString==='function'?todayString():new Date().toISOString().slice(0,10));
- const cls='vgg-day'+(weekend?' weekend':'')+(today?' today':'');
- if(d<row.start||d>row.end)return '<td class="'+cls+'"></td>';
- const status=row.kind==='group'?' group':state.state==='completed'?
-  (state.late?' late':' done'):'';
- return '<td class="'+cls+' scheduled'+status+'" title="'+
-  escapeText(row.title+' | '+readable(row.start)+' - '+readable(row.end))+'"></td>';
+ const personalLeave=S.nonWorkingByOwner?.[row.owner||'']?.[d]||'';
+ const cls='vgg-day'+(info.weekend?' weekend':'')+(info.holiday?' holiday':'')+
+  (personalLeave?' day-off':'')+(today?' today':'');
+ const label=personalLeave||info.note||'';
+ // Los grupos Resumen conservan su franja continua, como en Excel.
+ if(row.kind==='group'){
+  if(d<row.start||d>row.end)return '<td class="'+cls+'"></td>';
+  return '<td class="'+cls+' scheduled group" title="'+
+    escapeText(row.title+' | '+readable(row.start)+' - '+readable(row.end))+'"></td>';
+ }
+ // Los porcentajes del calendario provienen de las celdas M:AP del Excel:
+ // evitan colorear como trabajo sábados, domingos o días libres sin carga.
+ const value=row.percentByDay?.[String(Number(d.slice(8,10)))]||0;
+ if(!value)return '<td class="'+cls+'"'+(label?' title="'+escapeText(label)+'"':'')+'></td>';
+ const status=state.state==='completed'?(state.late?' late':' done'):'';
+ const pct=excelPercent(value);
+ return '<td class="'+cls+' scheduled'+status+'" title="'+escapeText(row.id+
+  ' · Carga programada: '+pct+' · '+d+(label?' · '+label:''))+'">'+
+  '<span class="vgg-cell-percent">'+pct+'</span></td>';
 }
 function rowMeta(row){
  const items=[row.id||'',row.edt||'',row.title||'',row.owner||'',row.type||'',
@@ -107,12 +143,14 @@ function render(){
  ).join('')+weekHeaders(days)+'</tr>';
  const dnames=['D','L','M','X','J','V','S'];
  const dates='<tr class="vgg-date">'+days.map(d=>{
-  const wd=new Date(d+'T00:00:00Z').getUTCDay();
-  return '<th'+(wd===0||wd===6?' class="weekend"':'')+'>'+Number(d.slice(-2))+'</th>';
+  const info=dayInfo(d);
+  return '<th class="'+weekTone(d)+(info.mark?' nonwork':'')+
+   '" title="'+escapeText(info.note||d)+'">'+Number(d.slice(-2))+'</th>';
  }).join('')+'</tr>';
  const dows='<tr class="vgg-weekday">'+days.map(d=>{
-  const wd=new Date(d+'T00:00:00Z').getUTCDay();
-  return '<th'+(wd===0||wd===6?' class="weekend"':'')+'>'+dnames[wd]+'</th>';
+  const info=dayInfo(d);
+  return '<th class="'+weekTone(d)+(info.mark?' nonwork':'')+
+   '" title="'+escapeText(info.note||d)+'">'+dnames[info.dow]+'</th>';
  }).join('')+'</tr>';
  let body='';
  for(const row of rows){
@@ -190,7 +228,6 @@ function open(){
    '<option value="unassigned">Sin asignar</option><option value="pending">Pendiente</option>'+
    '<option value="completed">Completada</option></select></label>'+
    '<input id="vgg-search" type="search" placeholder="Buscar actividad / ID" aria-label="Buscar actividad">'+
-   '<label title="Oriol no participa en el PPC Gantt"><input id="vgg-oriol" type="checkbox" checked> Ver Oriol</label>'+
    '<span class="vgg-count" id="vgg-count"></span></div>'+
    '<div class="vgg-scroll"><table class="vgg-table" id="vgg-table" aria-label="Cronograma Gantt basado en Excel"></table></div>'+
    '<div class="vgg-detail" id="vgg-detail"></div>'+
@@ -198,7 +235,7 @@ function open(){
    '<span class="vgg-chip"><i class="done"></i> Culminado</span>'+
    '<span class="vgg-chip"><i class="late"></i> Culminado fuera de plazo</span>'+
    '<span class="vgg-chip"><i class="group"></i> Grupo</span>'+
-   '<span>Oriol visible, excluido del PPC · Excel de noviembre 2026 · Copia sin sincronización</span>'+
+   '<span>Porcentajes = carga diaria programada en Excel · Oriol fuera del PPC · Copia sin sincronización</span>'+
    '</footer></section>';
   document.body.appendChild(overlay);
   overlay.addEventListener('click',ev=>{
@@ -221,9 +258,6 @@ function open(){
   });
   document.getElementById('vgg-search').addEventListener('input',ev=>{
    st.search=ev.target.value.trim();st.selected='';render();
-  });
-  document.getElementById('vgg-oriol').addEventListener('change',ev=>{
-   st.oriol=ev.target.checked;st.selected='';render();
   });
   overlay.addEventListener('keydown',ev=>{
    if(ev.key==='Escape'){ev.preventDefault();close();return;}
