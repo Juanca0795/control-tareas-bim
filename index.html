@@ -4213,6 +4213,12 @@ textarea,
 #weekly-view .weekly-cnc-item .cnc-cause{color:var(--accent-blue);font-weight:650}
 
 
+/* Acceso al Gantt original: integrar con controles de Seguimiento. */
+#weekly-view #weekly-gantt-viewer-launch{
+  min-height:30px;white-space:nowrap;border:1px solid var(--border-strong);
+  background:var(--bg-subtle);color:var(--accent-blue);font-weight:750;font-size:10px;
+}
+#weekly-view #weekly-gantt-viewer-launch:hover{background:var(--bg-hover);border-color:var(--accent-blue)}
 /* CONTROL SEMANAL — subpestañas exclusivas del encabezado superior. */
 .sidebar.weekly-subtabs-visible nav[role="tablist"]{margin-left:0}
 .sidebar .weekly-subtabs{
@@ -5613,6 +5619,9 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         <div class="weekly-card-head">
           <div><h2 id="weekly-trend-heading">EVOLUCIÓN DEL CUMPLIMIENTO PPC</h2><p id="weekly-trend-subtitle">Porcentaje de compromisos cumplidos en la semana planificada · Meta LPS 85%</p></div>
           <div class="weekly-trend-controls">
+            <button type="button" id="weekly-gantt-viewer-launch" class="btn small" 
+              onclick="openBimGanttViewer()" title="Visualizar el cronograma original del Excel en HTML, sin editarlo"
+              aria-label="Visualizar Gantt de noviembre en una tabla calendario">Visualizar Gantt</button>
             <label class="weekly-monthly-toggle" title="Mostrar también el PPC operativo">
               <input id="weekly-ppc-operational" type="checkbox" onchange="toggleWeeklyPpcOperational(this.checked)">
               <span>PPC Operativo</span>
@@ -6181,6 +6190,8 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 
 <script async src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" onload="if(typeof currentView!=='undefined'){if(currentView==='dashboard')renderDashboard();if(currentView==='weekly')renderWeekly()}"></script>
 <script src="gantt-link.js"></script>
+<script src="gantt-visor-data.js"></script>
+<script src="gantt-visor.js"></script>
 <script>
 'use strict';
 const SEED = [];
