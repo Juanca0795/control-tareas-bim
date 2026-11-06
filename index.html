@@ -9295,7 +9295,7 @@ function weeklyTrend(m){
       '<span>No existen compromisos PPC verificables en el período seleccionado.</span>':
       `<span>PPC Gantt medio: <strong>${mean.toFixed(1)}%</strong> · ${known.length} ${monthly?'mes(es)':'semana(s)'} con compromisos</span>
       <span class="weekly-benchmark ${delta>0?'above':delta<0?'below':'at-goal'}">${delta>0?'↑ +':delta<0?'↓ −':'= '}${Math.abs(delta).toFixed(1)} pp ${delta>0?'por encima de':delta<0?'por debajo de':'en'} la meta LPS (85%)</span>`;
-  if(!known.length){
+  if(!known.length&&!(weeklyPpcSourceMode==='compare'&&operativeMeanVals.length)){
     weeklyEmpty(node,'Todavía no existen compromisos verificables en las semanas transcurridas.');
     return;
   }
