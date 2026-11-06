@@ -5921,44 +5921,27 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           </div>
         </div>
 
-        <div class="form-section-head"><span class="section-index">G</span><div><h3>VINCULACIÓN GANTT</h3><p>Asocia este entregable a una actividad programada (opcional)</p></div></div>
+        <div class="form-section-head"><span class="section-index">G</span><div><h3>ASIGNACIÓN DE ACTIVIDAD</h3><p>Elige una actividad del Gantt o escribe la tarea manualmente</p></div></div>
         <div class="gantt-link-panel" id="gantt-link-panel">
-          <div class="gantt-mode-row" role="group" aria-label="Modo de vinculación con el Gantt">
+          <div class="gantt-mode-row" role="group" aria-label="Modo de registro de actividad">
             <label><input type="radio" name="f-gantt-mode" value="select" checked onchange="updateGanttEditorMode()"> Por selección</label>
             <label><input type="radio" name="f-gantt-mode" value="manual" onchange="updateGanttEditorMode()"> Manual</label>
           </div>
           <div id="gantt-select-fields">
             <div class="form-grid">
               <div class="form-field">
-                <label for="f-gantt-group">Grupo del Gantt</label>
-                <select id="f-gantt-group" onchange="refreshGanttActivityOptions('')">
-                  <option value="">Seleccionar agrupación</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label for="f-gantt-activity">Actividad disponible</label>
-                <select id="f-gantt-activity" onchange="updateGanttEditorInfo()">
+                <label for="f-gantt-activity">Actividad del Gantt</label>
+                <select id="f-gantt-activity" onchange="selectGanttActivity()" required>
                   <option value="">Seleccionar actividad disponible</option>
                 </select>
               </div>
-            </div>
-            <p id="gantt-responsible-note" class="gantt-responsible-note" role="status" aria-live="polite">Selecciona primero un colaborador.</p>
-            <label class="gantt-link-toggle"><input type="checkbox" id="f-gantt-show-assigned" onchange="refreshGanttActivityOptions()"> Mostrar actividades ya asignadas (requiere confirmación)</label>
-          </div>
-          <div id="gantt-manual-fields" class="hidden">
-            <div class="form-grid">
               <div class="form-field">
-                <label for="f-gantt-manual-group">Grupo / categoría</label>
-                <input class="field-input" id="f-gantt-manual-group" type="text" maxlength="120" list="gantt-group-suggestions" autocomplete="off" placeholder="Ej.: Organización del modelo">
-                <datalist id="gantt-group-suggestions"></datalist>
-              </div>
-              <div class="form-field">
-                <label for="f-gantt-manual-activity">Nombre o código de la actividad</label>
-                <input class="field-input" id="f-gantt-manual-activity" type="text" maxlength="180" autocomplete="off" placeholder="Actividad nueva o código A07">
+                <label for="f-gantt-group">Grupo del Gantt (automático)</label>
+                <input id="f-gantt-group" class="field-input gantt-readonly-group" type="text"
+                  placeholder="Se completará automáticamente" readonly tabindex="-1">
               </div>
             </div>
           </div>
-          <p id="gantt-link-info" role="status" aria-live="polite">Vinculación opcional. El PPC operativo conserva sus reglas actuales.</p>
           <div id="editor-gantt-warning" class="editor-quality-warning hidden" role="status" aria-live="polite"></div>
         </div>
         <div class="form-section-head"><span class="section-index">02</span><div><h3>PARÁMETROS BIM Y ESTADO</h3><p>Nivel de desarrollo y seguimiento operativo</p></div></div>
@@ -8212,7 +8195,7 @@ function updateEditorQualityHints(){
   if(ganttNode){
     ganttNode.classList.toggle('hidden',!ganttDuplicate&&!ganttLink?.invalid);
     ganttNode.textContent=ganttLink?.invalid?
-      'Para vincular manualmente, completa tanto el grupo como la actividad.':
+      'Selecciona una actividad del Gantt o cambia al modo Manual.':
       ganttDuplicate?'Esta actividad del Gantt ya está vinculada con '+ganttDuplicate.id+
       '. Puedes reutilizarla si confirmas el aviso al guardar.':'';
   }
@@ -8459,7 +8442,7 @@ async function saveEditor(e){
   // Avisos preventivos sin imponer cambios a registros existentes.
   const quality=editorQualityIssues();
   if(quality.ganttLink?.invalid){
-    toast('Completa el grupo y el nombre de la actividad Gantt manual.');
+    toast('Selecciona una actividad del Gantt o cambia al modo Manual.');
     return;
   }
   const approvalKey=JSON.stringify([obj.title,obj.package,obj.team,obj.owner,obj.deadline,
