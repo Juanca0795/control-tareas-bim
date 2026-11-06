@@ -4225,6 +4225,18 @@ textarea,
 .sidebar #header-gantt-viewer-launch:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
 .sidebar #header-gantt-viewer-launch.hidden{display:none!important}
 .sidebar #header-gantt-viewer-launch svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.8;fill:none}
+/* En Control Semanal, el botón forma parte de la misma fila de Seguimiento y Proyección. */
+.sidebar .weekly-subtabs #header-gantt-viewer-launch{
+  margin-right:3px;
+  min-height:34px;
+  flex-shrink:0;
+}
+@media(max-width:760px){
+  .sidebar .weekly-subtabs #header-gantt-viewer-launch{
+    padding-inline:7px;font-size:9px;gap:4px;
+  }
+  .sidebar .weekly-subtabs #header-gantt-viewer-launch svg{width:13px;height:13px}
+}
 @media(max-width:650px){
   .sidebar nav:has(#header-gantt-viewer-launch:not(.hidden)){
     grid-template-columns:repeat(4,minmax(0,1fr));
@@ -7928,13 +7940,13 @@ function switchView(v, authenticated=false){
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
   $('#weekly-ppt-launch').classList.toggle('hidden',v!=='weekly');
-  // El mismo botón Gantt acompaña a la pestaña activa: a su izquierda,
-  // también cuando el usuario está en Control Semanal.
+  // En Control Semanal, ubicar Visualizar Gantt JUSTO ANTES de Seguimiento.
+  // En Dashboard y Control de tareas, mantenerlo junto al botón de su vista.
   const ganttLaunch=$('#header-gantt-viewer-launch');
-  const activeNavTab=$('#nav-'+v);
-  if(ganttLaunch&&activeNavTab&&activeNavTab.parentElement){
+  const destination=v==='weekly'?$('#weekly-tab-seguimiento'):$('#nav-'+v);
+  if(ganttLaunch&&destination?.parentElement){
     ganttLaunch.classList.remove('hidden');
-    activeNavTab.parentElement.insertBefore(ganttLaunch,activeNavTab);
+    destination.parentElement.insertBefore(ganttLaunch,destination);
   }
   // Ambos perfiles (AREA_BIM y AREA_BIM2) muestran Seguimiento y Proyección.
   // El perfil de exportación PPT sigue siendo independiente.
