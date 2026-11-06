@@ -156,14 +156,28 @@ async function pptBimValidateBlob(blob,slideCount,imageCount){
     if(root.getElementsByTagName('parsererror').length)
       throw new Error('XML inválido dentro de la presentación: '+path);
     if(/^ppt\/slides\/slide\d+\.xml$/.test(path)){
-      const nodes=root.getElementsByTagNameNS(
-        'http://schemas.openxmlformats.org/presentationml/2006/main','cNvPr');
+      const pns='http://schemas.openxmlformats.org/presentationml/2006/main';
+      const ans='http://schemas.openxmlformats.org/drawingml/2006/main';
+      const nodes=root.getElementsByTagNameNS(pns,'cNvPr');
       const ids=new Set();
       for(const node of nodes){
         const id=Number(node.getAttribute('id'));
         if(!Number.isSafeInteger(id)||id<1||ids.has(id))
           throw new Error('PPTX con identificadores duplicados o inválidos: '+path);
         ids.add(id);
+      }
+      // La caja gráfica de una tabla debe cubrir la suma de alturas de sus filas.
+      // Un h implícito de 1" con filas mayores es incompatible con PowerPoint.
+      for(const frame of root.getElementsByTagNameNS(pns,'graphicFrame')){
+        const table=frame.getElementsByTagNameNS(ans,'tbl')[0];
+        const extent=frame.getElementsByTagNameNS(ans,'ext')[0];
+        if(!table||!extent)continue;
+        const height=Number(extent.getAttribute('cy'));
+        const rows=[...table.getElementsByTagNameNS(ans,'tr')];
+        const total=rows.reduce((sum,row)=>sum+Number(row.getAttribute('h')||0),0);
+        if(!Number.isFinite(height)||!Number.isFinite(total)||total<=0||
+          Math.abs(height-total)>9144)
+          throw new Error('Tabla con altura de contenedor incorrecta en '+path);
       }
     }
   }
@@ -1179,8 +1193,11 @@ function pptBimMissingActivitySlides(pptx,week,items){
     })];
     // Tabla real (no cuadros de imagen): editable como tabla en PowerPoint.
     slide.addTable(rows,{
-      x:.28,y:tableY,w:12.78,colW:widths,
-      rowH:[headerH,...page.map(({h})=>h)],
+      x:.28,y:tableY,w:12.78,
+      // PptxGenJS 4.0.0 usa h=1" si se omite, incluso cuando rowH
+      // totaliza más. Ese contenedor incorrecto provoca aviso de reparación.
+      h:headerH+page.reduce((sum,entry)=>sum+entry.h,0),
+      colW:widths,rowH:[headerH,...page.map(({h})=>h)],
       autoPage:false,fontFace:'Arial',fontSize:9.5,
       valign:'mid',margin:.055,
       border:{type:'solid',color:'BFC5CE',pt:.55}
