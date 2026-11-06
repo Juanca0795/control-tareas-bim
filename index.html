@@ -5926,7 +5926,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           <div id="gantt-select-fields" class="form-grid">
             <div class="form-field">
               <label for="f-gantt-activity">Actividad del Gantt</label>
-              <select id="f-gantt-activity" onchange="selectGanttActivity()">
+              <select id="f-gantt-activity" onchange="selectGanttActivity()" onkeydown="handleGanttActivityKeydown(event)">
                 <option value="">Seleccionar actividad del Gantt</option>
               </select>
             </div>
