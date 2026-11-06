@@ -6369,16 +6369,6 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     </div>
     <div class="modal-body">
       <p class="bim-ppt-subtitle" id="bim-ppt-week-label"></p>
-      <div id="bim-ppt-week-cross" class="bim-ppt-week-cross" role="group"
-        aria-label="Criterios combinados por semana" hidden>
-        <label><input type="checkbox" id="bim-ppt-cross-ingreso" checked
-          onchange="setBimPptWeekCriterion('ingreso',this.checked)">
-          Ingreso</label>
-        <label><input type="checkbox" id="bim-ppt-cross-culminacion" checked
-          onchange="setBimPptWeekCriterion('culminacion',this.checked)">
-          Culminación</label>
-      </div>
-
       <div id="bim-ppt-export-content-wrap" class="bim-ppt-export-content-wrap" hidden>
         <label for="bim-ppt-export-content">Contenido PPTX</label>
         <select id="bim-ppt-export-content" aria-label="Elegir contenido para diagnosticar el PowerPoint"
