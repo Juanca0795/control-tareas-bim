@@ -253,7 +253,9 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   const meetingPeriod=mode==='reunion'?pptBimMeetingReportPeriod(week,meetingDay,manualMeetingRange):null;
   if(mode==='reunion'&&!meetingPeriod)return [];
   const packageFilter=$('#weekly-package')?.value||'';
-  const teamFilter=$('#weekly-team')?.value||'';
+  // Para una especialidad explícita del selector, ignorar el filtro global
+  // de disciplina de Control Semanal; el selector debe poder cambiar a GIS.
+  const teamFilter=specialty?.startsWith('team:')?'':($('#weekly-team')?.value||'');
   const ownerFilter=$('#weekly-owner')?.value||'';
   const out=[];
   for(const task of tasks){
@@ -436,18 +438,22 @@ function setBimPptAllPeople(enabled){
  * Se descubren en los registros sin evidencia que cumplen los filtros actuales,
  * incluidos los equipos con únicamente actividades tabulares (por ejemplo GIS).
  * Revit/Civil 3D conservan su clasificación anterior por responsable. */
+/* AREA_BIM2: las opciones de especialidad NO dependen de fotografías ni de
+ * "ownerCandidates". Una disciplina con tareas sin fotos (GIS, por ejemplo)
+ * debe aparecer aun si el filtro semanal de disciplina está en Revit. */
 function pptBimTableSpecialties(){
   if(pptBimState.profile!=='by-person'||!pptBimState.includeTables)return [];
-  const candidates=pptBimItemsForWeek(pptBimState.week,pptBimState.mode,
-    pptBimState.meetingDay,null,pptBimState.weekFilters,
-    pptBimState.sectorFilter,pptBimState.manualMeetingRange,true);
-  const excluded=new Set(['revit','rvt','civil','civil 3d','civil3d','c3d']);
+  const ignored=new Set(['revit','rvt','civil','civil 3d','civil3d','c3d']);
   const teams=new Map();
-  for(const item of candidates){
-    if(!item.empty||pptBimSpecialtyForOwner(item.owner)==='excluded')continue;
-    const key=pptBimNormalizeOwner(item.team);
-    if(!key||excluded.has(key))continue;
-    if(!teams.has(key))teams.set(key,String(item.team).trim());
+  const sector=pptBimState.sectorFilter||'';
+  const packageFilter=$('#weekly-package')?.value||'';
+  for(const task of tasks){
+    if(sector&&pptBimSector(task)!==sector)continue;
+    if(packageFilter&&task.package!==packageFilter)continue;
+    const name=String(task.team||'').trim();
+    const key=pptBimNormalizeOwner(name);
+    if(!key||ignored.has(key))continue;
+    if(!teams.has(key))teams.set(key,name);
   }
   return [...teams].map(([key,label])=>({value:'team:'+key,label}))
     .sort((a,b)=>a.label.localeCompare(b.label,'es',{numeric:true}));
