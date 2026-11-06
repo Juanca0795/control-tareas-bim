@@ -859,7 +859,7 @@ function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=fal
   const slide=pptx.addSlide();
   pptBimMaster(slide,pptx);
   const S=pptx.ShapeType;
-  pptBimAddText(slide,'REPORTE FOTOGRÁFICO BIM',
+  pptBimAddText(slide,byPerson?'REPORTE SEMANAL DE ACTIVIDADES BIM':'REPORTE FOTOGRÁFICO BIM',
     {x:.55,y:1.04,w:12.15,h:.65,fontSize:30,bold:true,color:'172B49'});
   slide.addShape(S.rect,{x:.55,y:1.89,w:12.18,h:.12,fill:{color:'C00000'},line:{color:'C00000'}});
   pptBimAddText(slide,'CONTROL SEMANAL · '+week.replace('-W',' / SEMANA '),
@@ -999,6 +999,83 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   pptBimAddText(slide,label+' · '+week.replace('-W',' / S'),
     {x:.17,y:6.88,w:3.83,h:.16,fontSize:10,color:'FFFFFF',bold:true,align:'center',fit:'shrink'});
 }
+/* AREA_BIM2: actividades sin fotografías en tablas nativas editables de PowerPoint.
+ * Se ordenan por responsable y sector, se deduplican por código y se paginan
+ * sin mezclar con la cuadrícula de tres evidencias fotográficas. */
+function pptBimMissingActivitySlides(pptx,week,items){
+  const unique=new Map();
+  for(const item of items){
+    if(item.empty&&!unique.has(item.taskId))unique.set(item.taskId,item);
+  }
+  if(!unique.size)return 0;
+  const entries=[...unique.values()];
+  const sectorOrder=sector=>['Sector 1','Sector 2','Sector 3','Sin sector'].indexOf(sector);
+  entries.sort((a,b)=>
+    pptBimNormalizeOwner(a.owner).localeCompare(pptBimNormalizeOwner(b.owner),'es',{numeric:true})||
+    sectorOrder(pptBimSector(a))-sectorOrder(pptBimSector(b))||
+    (a.package||'').localeCompare(b.package||'','es',{numeric:true})||
+    a.taskId.localeCompare(b.taskId,'es',{numeric:true}));
+  // El ancho combinado de las siete columnas es 12.78 pulgadas (plantilla 16:9).
+  const widths=[1.05,4.29,2.18,1.46,1.09,1.31,1.40];
+  const headers=['CÓDIGO BIM','ACTIVIDAD','RESPONSABLE','DISCIPLINA','SECTOR','PAQUETE','ESTADO'];
+  const tableY=1.54,headerH=.45,maxY=6.61;
+  const rowHeight=item=>{
+    const chars=String(item.caption||item.title||'').length;
+    const lines=Math.max(1,Math.ceil(chars/48));
+    const ownerLines=Math.ceil(String(item.owner||'').length/28);
+    return Math.min(1.32,Math.max(.61,.57+Math.max(0,lines-2)*.17+
+      (ownerLines>2?.1:0)));
+  };
+  const pages=[];
+  let page=[],height=headerH;
+  for(const item of entries){
+    const h=rowHeight(item);
+    if(page.length&&tableY+height+h>maxY){
+      pages.push(page);page=[];height=headerH;
+    }
+    page.push({item,h});height+=h;
+  }
+  if(page.length)pages.push(page);
+  pages.forEach((page,index)=>{
+    const slide=pptx.addSlide();
+    pptBimMaster(slide,pptx);
+    pptBimAddText(slide,'ACTIVIDADES SIN EVIDENCIA FOTOGRÁFICA · SEMANA '+week.split('-W')[1],
+      {x:.37,y:.79,w:12.55,h:.30,fontSize:16.6,bold:true});
+    pptBimAddText(slide,'Registros sin capturas en el período seleccionado · Ordenados por responsable y sector',
+      {x:.38,y:1.18,w:12.4,h:.20,fontSize:10,color:'626B78'});
+    const headerRow=headers.map(name=>({text:name,options:{
+      fill:{color:'C00000'},color:'FFFFFF',bold:true,fontFace:'Arial',
+      fontSize:9.4,align:'center',valign:'mid',margin:.045
+    }}));
+    const rows=[headerRow,...page.map(({item},rowIndex)=>{
+      const bg={color:rowIndex%2?'F1F4F8':'FFFFFF'};
+      const values=[
+        item.taskId,String(item.caption||item.title||'').replace(/\s+/g,' ').trim(),
+        item.owner||'Sin responsable',item.team||'Sin disciplina',
+        pptBimSector(item),item.package||'Sin paquete',item.status||'Sin estado'
+      ];
+      return values.map((value,col)=>({text:String(value),options:{
+        fill:bg,color:'172B49',fontFace:'Arial',
+        fontSize:col===1?10.4:col===2?9.8:9.3,
+        bold:col===0,align:col===1?'left':'center',
+        valign:'mid',margin:.065
+      }}));
+    })];
+    // Tabla real (no cuadros de imagen): editable como tabla en PowerPoint.
+    slide.addTable(rows,{
+      x:.28,y:tableY,w:12.78,colW:widths,
+      rowH:[headerH,...page.map(({h})=>h)],
+      autoPage:false,fontFace:'Arial',fontSize:9.5,
+      valign:'mid',margin:.055,
+      border:{type:'solid',color:'BFC5CE',pt:.55}
+    });
+    pptBimAddText(slide,'ACTIVIDADES SIN CAPTURAS · '+entries.length+' REGISTROS · '+
+      (index+1)+' / '+pages.length,
+      {x:.32,y:6.75,w:12.5,h:.19,fontSize:9,color:'5A5A5A'});
+  });
+  return pages.length;
+}
+
 async function pptBimDecodeImage(blob){
   // PPTX no admite WebP de manera fiable: normalizamos a JPG dentro del navegador.
   const bmp=await createImageBitmap(blob);
@@ -1061,11 +1138,12 @@ async function exportBimPpt(){
       processedPhotos++;
       if(status)status.textContent='Preparando imágenes '+processedPhotos+' de '+photoCount+'…';
     }
-    // Mantener las reglas de cada perfil dentro de cada sector, sin mezclarlos.
+    // AREA_BIM2: fotos en tres columnas completas; al final, tablas por actividad.
     const pages=pptBimPackSlides(decoded,byPerson);
     for(const entries of pages)pptBimEvidenceSlide(pptx,pptBimState.week,entries,byPerson);
+    const tableSlides=byPerson?pptBimMissingActivitySlides(pptx,pptBimState.week,decoded):0;
     if(status)status.textContent='Generando PPTX editable…';
-    const totalSlides=1+pages.length;
+    const totalSlides=1+pages.length+tableSlides;
     const generated=await pptx.write({outputType:'blob',compression:true});
     const blob=generated instanceof Blob?generated:new Blob([generated],
       {type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
