@@ -49,7 +49,7 @@ function pptBimSector(item){
   return taskSector(item.package)||'Sin sector';
 }
 let pptBimState={items:[],week:'',mode:'reunion',meetingDay:pptBimSavedMeetingDay(),
-  profile:'standard',specialty:'revit',sectorFilter:'',manualMeetingRange:null,
+  profile:'standard',specialty:'revit',includeTables:false,sectorFilter:'',manualMeetingRange:null,
   weekFilters:{ingreso:true,culminacion:true},
   // AREA_BIM2: null = todas las personas disponibles de la especialidad.
   selectedOwners:{revit:null,civil:null},ownerCandidates:[],
@@ -258,7 +258,13 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   const out=[];
   for(const task of tasks){
     // El perfil original nunca entra en esta condición ni cambia su selección.
-    if(specialty&&pptBimSpecialtyForOwner(task.owner)!==specialty)continue;
+    if(specialty){
+      if(specialty.startsWith('team:')){
+        // Las especialidades adicionales (ej. GIS) se basan en la disciplina registrada.
+        if(pptBimSpecialtyForOwner(task.owner)==='excluded'||
+          pptBimNormalizeOwner(task.team)!==specialty.slice(5))continue;
+      }else if(pptBimSpecialtyForOwner(task.owner)!==specialty)continue;
+    }
     if(sectorFilter&&pptBimSector(task)!==sectorFilter)continue;
     if((packageFilter&&task.package!==packageFilter)||
        (teamFilter&&task.team!==teamFilter)||
@@ -329,7 +335,8 @@ function pptBimAvailablePeople(){
   const people=new Map();
   for(const item of pptBimState.ownerCandidates||[]){
     const key=pptBimNormalizeOwner(item.owner);
-    if(!key||pptBimSpecialtyForOwner(item.owner)!==pptBimState.specialty)continue;
+    // ownerCandidates ya está filtrado por especialidad (nombre o disciplina).
+    if(!key)continue;
     if(!people.has(key))people.set(key,{key,name:item.owner,taskIds:new Set()});
     people.get(key).taskIds.add(item.taskId);
   }
@@ -425,6 +432,54 @@ function setBimPptAllPeople(enabled){
   pptBimState.selectedOwners[pptBimState.specialty]=enabled?null:[];
   pptBimRefreshItems();
 }
+/* Especialidades adicionales: aparecen solo al activar "Añadir tablas".
+ * Se descubren en los registros sin evidencia que cumplen los filtros actuales,
+ * incluidos los equipos con únicamente actividades tabulares (por ejemplo GIS).
+ * Revit/Civil 3D conservan su clasificación anterior por responsable. */
+function pptBimTableSpecialties(){
+  if(pptBimState.profile!=='by-person'||!pptBimState.includeTables)return [];
+  const candidates=pptBimItemsForWeek(pptBimState.week,pptBimState.mode,
+    pptBimState.meetingDay,null,pptBimState.weekFilters,
+    pptBimState.sectorFilter,pptBimState.manualMeetingRange,true);
+  const excluded=new Set(['revit','rvt','civil','civil 3d','civil3d','c3d']);
+  const teams=new Map();
+  for(const item of candidates){
+    if(!item.empty||pptBimSpecialtyForOwner(item.owner)==='excluded')continue;
+    const key=pptBimNormalizeOwner(item.team);
+    if(!key||excluded.has(key))continue;
+    if(!teams.has(key))teams.set(key,String(item.team).trim());
+  }
+  return [...teams].map(([key,label])=>({value:'team:'+key,label}))
+    .sort((a,b)=>a.label.localeCompare(b.label,'es',{numeric:true}));
+}
+function pptBimSpecialtyName(value){
+  if(value==='civil')return 'Civil 3D';
+  if(value==='revit')return 'Revit';
+  return pptBimTableSpecialties().find(opt=>opt.value===value)?.label||'Revit';
+}
+function pptBimRenderSpecialties(){
+  const menu=$('#bim-ppt-specialty-menu');
+  if(!menu)return;
+  const options=[
+    {value:'revit',label:'Revit'},{value:'civil',label:'Civil 3D'},
+    ...pptBimTableSpecialties()
+  ];
+  menu.innerHTML=options.map(option=>
+    '<button type="button" role="option" data-bim-specialty="'+esc(option.value)+'" '+
+    'aria-selected="'+(pptBimState.specialty===option.value)+'" '+
+    'onclick="setBimPptSpecialty(this.dataset.bimSpecialty)">'+
+    esc(option.label)+'</button>').join('');
+}
+function setBimPptIncludeTables(checked){
+  if(pptBimState.profile!=='by-person'||pptBimState.busy||
+    !$('#bim-ppt-back')?.classList.contains('open'))return;
+  pptBimState.includeTables=!!checked;
+  if(!pptBimState.includeTables&&pptBimState.specialty.startsWith('team:'))
+    pptBimState.specialty='revit';
+  closeBimPptPeopleMenu();
+  closeBimPptSpecialtyMenu();
+  pptBimRefreshItems();
+}
 function pptBimRefreshModeInfo(){
   const special=pptBimState.profile==='by-person';
   document.querySelectorAll('[data-bim-ppt-mode]').forEach(button=>{
@@ -456,11 +511,18 @@ function pptBimRefreshModeInfo(){
   }
   const specialtyPicker=$('#bim-ppt-specialty-picker');
   const specialtyTrigger=$('#bim-ppt-specialty-trigger');
+  const tablesToggle=$('#bim-ppt-tables-toggle'),tablesCheck=$('#bim-ppt-include-tables');
+  if(tablesToggle)tablesToggle.hidden=!special;
+  if(tablesCheck){
+    tablesCheck.checked=special&&pptBimState.includeTables;
+    tablesCheck.disabled=pptBimState.busy;
+  }
   if(specialtyPicker)specialtyPicker.hidden=!special;
   if(specialtyTrigger)specialtyTrigger.disabled=pptBimState.busy;
   if(special){
+    pptBimRenderSpecialties();
     const specialtyLabel=$('#bim-ppt-specialty-label');
-    if(specialtyLabel)specialtyLabel.textContent=pptBimState.specialty==='civil'?'Civil 3D':'Revit';
+    if(specialtyLabel)specialtyLabel.textContent=pptBimSpecialtyName(pptBimState.specialty);
     document.querySelectorAll('[data-bim-specialty]').forEach(option=>{
       option.setAttribute('aria-selected',String(option.dataset.bimSpecialty===pptBimState.specialty));
       option.disabled=pptBimState.busy;
@@ -469,7 +531,7 @@ function pptBimRefreshModeInfo(){
   pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: fotografías ordenadas por responsable y sector, distribuidas de tres en tres sin espacios intermedios. Las actividades sin fotografías en el período aparecen al final en una tabla editable, incluida la disciplina GIS. Se conservan los filtros de semana, sector, disciplina, paquete y colaborador.'
+    ?'Perfil AREA_BIM2: fotos en grupos de tres ordenadas por persona y sector. Marca Añadir tablas para incluir actividades sin capturas al final y activar disciplinas con registros solo tabulares, como GIS. Se conservan los filtros de semana, sector, disciplina, paquete y colaborador.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -538,7 +600,7 @@ function pptBimRefreshItems(mode=pptBimState.mode){
   const allItems=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay,
     pptBimState.profile==='by-person'?pptBimState.specialty:null,
     pptBimState.weekFilters,pptBimState.sectorFilter,pptBimState.manualMeetingRange,
-    pptBimState.profile==='by-person');
+    pptBimState.profile==='by-person'&&pptBimState.includeTables);
   pptBimState.ownerCandidates=pptBimState.profile==='by-person'?allItems:[];
   const selected=pptBimState.profile==='by-person'?pptBimSelectedPeople():null;
   const items=selected===null?allItems:allItems.filter(item=>
@@ -686,7 +748,8 @@ function handleBimPptSpecialtyKey(event){
 }
 function setBimPptSpecialty(value){
   if(pptBimState.profile!=='by-person'||pptBimState.busy||
-    !$('#bim-ppt-back')?.classList.contains('open')||!['revit','civil'].includes(value))return;
+    !$('#bim-ppt-back')?.classList.contains('open')||
+    !['revit','civil',...pptBimTableSpecialties().map(opt=>opt.value)].includes(value))return;
   if(value!==pptBimState.specialty){
     closeBimPptPeopleMenu();
     pptBimState.specialty=value;
@@ -733,9 +796,9 @@ function openBimPptExport(){
   const meetingDay=pptBimSavedMeetingDay();
   const specialty='revit';
   const items=pptBimItemsForWeek(selectedWeek,'reunion',meetingDay,
-    profile==='by-person'?specialty:null,null,'',null,profile==='by-person');
+    profile==='by-person'?specialty:null,null,'',null,false);
   pptBimState={items:items.map(x=>({...x,enabled:true})),
-    week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,sectorFilter:'',
+    week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,includeTables:false,sectorFilter:'',
     manualMeetingRange:null,weekFilters:{ingreso:true,culminacion:true},
     selectedOwners:{revit:null,civil:null},
     ownerCandidates:profile==='by-person'?items:[],
@@ -1196,7 +1259,9 @@ async function exportBimPpt(){
     blob=await pptBimRepairShapeIdentifiers(blob);
     if(status)status.textContent='Validando integridad del archivo PowerPoint…';
     await pptBimValidateBlob(blob,totalSlides,photoCount);
-    const suffix=byPerson?'_'+(pptBimState.specialty==='civil'?'Civil3D':'Revit'):'';
+    const suffix=byPerson?'_'+pptBimSpecialtyName(pptBimState.specialty)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^A-Za-z0-9_-]/g,''):'';
     pptBimDownloadBlob(blob,'Reporte_BIM'+suffix+'_'+pptBimState.week.replace('-','_')+'.pptx');
     if(status)status.textContent='Presentación generada: '+totalSlides+' diapositivas.';
     toast('Presentación PPTX generada correctamente.');
