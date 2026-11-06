@@ -337,7 +337,15 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
     for(const photo of taskEvidenceRecords(task.id)){
       if(!matchesCompletion)continue;
       if(mode==='ingreso'&&pptBimIngresoWeek(photo)!==week)continue;
-      if(mode==='semana'&&pptBimIngresoWeek(photo)!==week)continue;
+      if(mode==='semana'){
+        // Trabajo en progreso: únicamente fotos incorporadas esta semana.
+        // Cierre real en esta semana: reporte de cierre con evidencias
+        // acumuladas desde semanas anteriores (nunca fotos posteriores).
+        const photoWeek=pptBimIngresoWeek(photo);
+        const closingThisWeek=pptBimCompletionWeek(task)===week;
+        if(photoWeek!==week&&
+          (!closingThisWeek||!photoWeek||photoWeek>week))continue;
+      }
       if(mode==='reunion'){
         const ingreso=pptBimIngresoDate(photo);
         if(!ingreso||ingreso<meetingPeriod.start||ingreso>meetingPeriod.end)continue;
@@ -609,7 +617,7 @@ function pptBimRefreshModeInfo(){
   pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: Por semana incluye las actividades previstas desde el ingreso hasta la fecha límite; si se completan, el período termina en su fecha real de culminación. Cada semana muestra solo las fotografías cargadas en ella y, con Añadir tablas, las actividades sin fotos van al final. Se mantienen los filtros de sector, paquete, especialidad y personal.'
+    ?'Perfil AREA_BIM2: Por semana incluye actividades desde el ingreso hasta el cierre real o fecha límite. Las tareas en progreso muestran fotos de esa semana; las completadas en la semana muestran también sus fotos históricas. Con Añadir tablas, las actividades sin fotos seleccionadas van al final. Se mantienen los filtros de sector, paquete, especialidad y personal.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -662,8 +670,8 @@ function pptBimRefreshModeInfo(){
     description.textContent='Ingreso: fotografías cargadas durante la semana ISO seleccionada (hora de Perú).';
   }else if(pptBimState.mode==='semana'){
     description.textContent='SEM'+Number(pptBimState.week.slice(-2))+
-      ': actividades cuyo período entre ingreso y fecha límite o cierre real '+
-      'incluye esta semana. Se muestran solo sus fotografías de la semana; sin ellas, tabla final.';
+      ': tareas en progreso, fotos de esta semana; tareas completadas en esta semana, '+
+      'también fotos de semanas anteriores. Sin fotografías seleccionadas, tabla final.';
   }else{
     description.textContent='Culminación: fotografías de actividades completadas durante esta semana; no implica que la foto se haya tomado ese día.';
   }
