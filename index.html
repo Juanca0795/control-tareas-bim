@@ -4807,6 +4807,53 @@ html[data-theme="light"] #weekly-view .proj-task-date input{color-scheme:light}
   }
   .bim-ppt-dialog.bim-ppt-person-export .bim-ppt-meeting-range label{font-size:9px;gap:2px}
 }
+/* AREA_BIM2: selección por checks de colaboradores según Revit / Civil 3D. */
+.bim-ppt-dialog.bim-ppt-person-export>.modal-hd{z-index:7;overflow:visible}
+.bim-ppt-dialog .bim-ppt-people-picker{
+  position:relative;display:inline-flex;flex:0 0 auto;align-items:center;min-width:0
+}
+.bim-ppt-dialog .bim-ppt-people-picker[hidden],
+.bim-ppt-dialog .bim-ppt-people-menu[hidden]{display:none!important}
+.bim-ppt-people-trigger{
+  display:inline-flex;align-items:center;justify-content:space-between;gap:8px;
+  height:30px;max-width:142px;padding:0 9px;
+  background:var(--bg-subtle);color:var(--ink-primary);
+  border:1px solid var(--border-strong);border-radius:7px;
+  font:650 10px Inter,sans-serif;cursor:pointer;white-space:nowrap
+}
+.bim-ppt-people-trigger svg{width:10px;height:10px;flex:none}
+.bim-ppt-people-trigger[aria-expanded="true"]{border-color:var(--accent-blue)}
+.bim-ppt-people-trigger:focus-visible,.bim-ppt-people-menu button:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:2px
+}
+.bim-ppt-people-trigger:disabled{opacity:.55;cursor:wait}
+.bim-ppt-people-menu{
+  position:absolute;right:0;top:calc(100% + 5px);z-index:40;
+  width:min(308px,calc(100vw - 46px));max-height:min(310px,52dvh);
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--bg-panel);color:var(--ink-primary);
+  border:1px solid var(--border-strong);border-radius:9px;
+  box-shadow:0 14px 30px rgba(0,0,0,.4)
+}
+.bim-ppt-people-options{overflow:auto;min-height:0;flex:1;padding:7px}
+.bim-ppt-people-option{
+  display:flex;align-items:center;gap:7px;cursor:pointer;
+  border-radius:6px;padding:7px 6px;font-size:10px;line-height:1.3
+}
+.bim-ppt-people-option:hover{background:var(--bg-hover)}
+.bim-ppt-people-option input{flex:none;accent-color:var(--accent-blue);width:14px;height:14px}
+.bim-ppt-people-option .name{flex:1;min-width:0;overflow-wrap:anywhere}
+.bim-ppt-people-option .photo-count{flex:none;color:var(--ink-secondary);font-size:9px}
+.bim-ppt-people-empty{padding:10px;font-size:10px;color:var(--ink-secondary)}
+.bim-ppt-people-actions{
+  display:flex;gap:6px;padding:8px;border-top:1px solid var(--border-base)
+}
+.bim-ppt-people-actions button{
+  flex:1;padding:7px;border:1px solid var(--border-strong);border-radius:6px;
+  background:var(--bg-subtle);color:var(--accent-blue);
+  font:650 10px Inter,sans-serif;cursor:pointer
+}
+.bim-ppt-people-actions button:hover{background:var(--bg-hover)}
 .bim-ppt-empty{
   margin:0;padding:18px 13px;border:1px dashed var(--border-strong);
   border-radius:8px;color:var(--ink-secondary);font-size:11px;line-height:1.5
@@ -6158,6 +6205,25 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             onclick="setBimPptSpecialty('revit')">Revit</button>
           <button type="button" role="option" data-bim-specialty="civil" aria-selected="false"
             onclick="setBimPptSpecialty('civil')">Civil 3D</button>
+        </div>
+      </div>
+      <div id="bim-ppt-people-picker" class="bim-ppt-people-picker" hidden>
+        <button type="button" id="bim-ppt-people-trigger" class="bim-ppt-people-trigger"
+          aria-label="Seleccionar colaboradores para exportación PPTX"
+          aria-expanded="false" aria-controls="bim-ppt-people-menu"
+          onclick="toggleBimPptPeopleMenu()">
+          <span id="bim-ppt-people-label">Personal</span>
+          <svg viewBox="0 0 10 10" aria-hidden="true" fill="none">
+            <path d="m2 4 3 3 3-3" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <div id="bim-ppt-people-menu" class="bim-ppt-people-menu" hidden>
+          <div id="bim-ppt-people-options" class="bim-ppt-people-options"
+            role="group" aria-label="Colaboradores de la especialidad seleccionada"></div>
+          <div class="bim-ppt-people-actions">
+            <button type="button" onclick="setBimPptAllPeople(true)">Todos</button>
+            <button type="button" onclick="setBimPptAllPeople(false)">Ninguno</button>
+          </div>
         </div>
       </div>
       <button type="button" class="close" onclick="closeBimPptExport()" aria-label="Cerrar exportación">×</button>
