@@ -239,18 +239,14 @@ function pptBimCompletionWeek(task){
   const parsed=new Date(date+'T12:00:00');
   return Number.isNaN(parsed.getTime())?'':isoWeekKey(parsed);
 }
-/* AREA_BIM2: considerar SOLAMENTE tareas de la semana/período elegido.
- * La fecha de ingreso respeta la fecha declarada/retroactiva de Control de Tareas;
- * la culminación se toma del día real de finalización, nunca del plazo estimado.
- * Las capturas no hacen que una actividad de semanas anteriores pase a ser
- * una actividad nueva en el reporte seleccionado. */
+/* AREA_BIM2: registrar una tarea significa que se trabajó en su día/semana
+ * de ingreso, incluso si después se completó. La fecha declarada/retroactiva
+ * es la misma que utiliza Control de Tareas. La fecha límite y la culminación
+ * posterior NO trasladan esa tarea a otra semana en "Por semana". */
 function pptBimTaskMatchesReport(task,week,mode,weekFilters,meetingPeriod=null){
   const entryWeek=taskEntryWeek(task);
   const completionWeek=pptBimCompletionWeek(task);
-  if(mode==='semana'){
-    return (weekFilters?.ingreso!==false&&entryWeek===week)||
-      (weekFilters?.culminacion!==false&&completionWeek===week);
-  }
+  if(mode==='semana')return entryWeek===week;
   if(mode==='ingreso')return entryWeek===week;
   if(mode==='culminacion')return completionWeek===week;
   if(mode==='reunion'){
@@ -312,9 +308,8 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
     if((packageFilter&&task.package!==packageFilter)||
        (teamFilter&&task.team!==teamFilter)||
        (ownerFilter&&task.owner!==ownerFilter))continue;
-    // En AREA_BIM2 el período corresponde a la ACTIVIDAD, no solo a
-    // la fecha en que se subió alguna foto. Excluir entradas de semanas
-    // anteriores aunque aún estén pendientes o carezcan de capturas.
+    // AREA_BIM2: cada actividad pertenece solo a su semana de ingreso,
+    // esté en progreso o completada; no por su plazo ni por fotos posteriores.
     if(specialty&&!pptBimTaskMatchesReport(
       task,week,mode,weekFilters,meetingPeriod))continue;
     // AREA_BIM conserva su flujo original de evidencia sin cambios.
@@ -324,12 +319,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
     for(const photo of taskEvidenceRecords(task.id)){
       if(!matchesCompletion)continue;
       if(mode==='ingreso'&&pptBimIngresoWeek(photo)!==week)continue;
-      if(mode==='semana'){
-        // OR inclusivo de los criterios; cada fotografía se emite una sola vez.
-        const ingreso=weekFilters?.ingreso!==false&&pptBimIngresoWeek(photo)===week;
-        const culminacion=weekFilters?.culminacion!==false&&pptBimCompletionWeek(task)===week;
-        if(!ingreso&&!culminacion)continue;
-      }
+      if(mode==='semana'&&pptBimIngresoWeek(photo)!==week)continue;
       if(mode==='reunion'){
         const ingreso=pptBimIngresoDate(photo);
         if(!ingreso||ingreso<meetingPeriod.start||ingreso>meetingPeriod.end)continue;
@@ -568,19 +558,10 @@ function pptBimRefreshModeInfo(){
     sectorSelect.disabled=pptBimState.busy;
   }
   const weekTools=$('#bim-ppt-week-tools'),weekSelector=$('#bim-ppt-report-week');
-  const crossFilter=$('#bim-ppt-week-cross');
   if(weekTools)weekTools.hidden=!special;
   if(weekSelector){
     weekSelector.disabled=pptBimState.busy;
     weekSelector.value=pptBimState.week;
-  }
-  if(crossFilter)crossFilter.hidden=!special||pptBimState.mode!=='semana';
-  for(const criterion of ['ingreso','culminacion']){
-    const checkbox=$('#bim-ppt-cross-'+criterion);
-    if(checkbox){
-      checkbox.checked=!!pptBimState.weekFilters[criterion];
-      checkbox.disabled=pptBimState.busy;
-    }
   }
   const specialtyPicker=$('#bim-ppt-specialty-picker');
   const specialtyTrigger=$('#bim-ppt-specialty-trigger');
@@ -610,7 +591,7 @@ function pptBimRefreshModeInfo(){
   pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: solo actividades ingresadas o completadas en la semana seleccionada (o dentro del período de Reunión). Las fotos se ordenan por persona y sector en grupos de tres; con Añadir tablas, las actividades de ese mismo período sin capturas van al final. Se respetan los filtros de sector, paquete, disciplina y personal.'
+    ?'Perfil AREA_BIM2: en Por semana se incluyen todas las tareas ingresadas en la semana seleccionada, estén completadas o en progreso. Solo se muestran sus fotografías cargadas esa semana; con Añadir tablas, las actividades sin fotos de la semana se exportan al final. Se mantienen los filtros de sector, paquete, especialidad y personal.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -662,12 +643,9 @@ function pptBimRefreshModeInfo(){
   if(pptBimState.mode==='ingreso'){
     description.textContent='Ingreso: fotografías cargadas durante la semana ISO seleccionada (hora de Perú).';
   }else if(pptBimState.mode==='semana'){
-    const ingreso=pptBimState.weekFilters.ingreso,culminacion=pptBimState.weekFilters.culminacion;
-    description.textContent='SEM'+Number(pptBimState.week.slice(-2))+' · '+
-      (ingreso&&culminacion?
-        'Ingreso o culminación de actividades en esta semana, sin duplicados. Fotografías del período y tablas finales para actividades sin capturas.':
-        ingreso?'Solo actividades ingresadas esta semana; sus capturas del período y las tareas sin captura en tablas.':
-        'Solo actividades completadas esta semana; sus capturas y las tareas sin captura en tablas.');
+    description.textContent='SEM'+Number(pptBimState.week.slice(-2))+
+      ': todas las actividades ingresadas esta semana, sin importar su estado. '+
+      'Fotografías cargadas en la semana y tablas finales para las que no tienen capturas.';
   }else{
     description.textContent='Culminación: fotografías de actividades completadas durante esta semana; no implica que la foto se haya tomado ese día.';
   }
@@ -741,19 +719,6 @@ function setBimPptReportWeek(week){
   closeBimPptMeetingMenu();
   pptBimState.week=week;
   pptBimState.manualMeetingRange=null;
-  pptBimRefreshItems();
-}
-function setBimPptWeekCriterion(criterion,checked){
-  if(pptBimState.profile!=='by-person'||pptBimState.mode!=='semana'||
-    pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open')||
-    !['ingreso','culminacion'].includes(criterion))return;
-  const next={...pptBimState.weekFilters,[criterion]:Boolean(checked)};
-  if(!next.ingreso&&!next.culminacion){
-    toast('Selecciona Ingreso o Culminación como mínimo.');
-    pptBimRefreshModeInfo();
-    return;
-  }
-  pptBimState.weekFilters=next;
   pptBimRefreshItems();
 }
 // Menú propio: sin los márgenes adicionales del desplegable nativo del navegador.
