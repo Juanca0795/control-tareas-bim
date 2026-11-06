@@ -263,8 +263,10 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
     if(specialty){
       if(specialty.startsWith('team:')){
         // Las especialidades adicionales (ej. GIS) se basan en la disciplina registrada.
-        if(pptBimSpecialtyForOwner(task.owner)==='excluded'||
-          pptBimNormalizeOwner(task.team)!==specialty.slice(5))continue;
+        // La exclusión por responsable pertenece solo a los perfiles de
+        // Revit/Civil 3D. Al escoger GIS u otra disciplina explícita,
+        // incluir sus actividades aunque el responsable esté excluido allí.
+        if(pptBimNormalizeOwner(task.team)!==specialty.slice(5))continue;
       }else if(pptBimSpecialtyForOwner(task.owner)!==specialty)continue;
     }
     if(sectorFilter&&pptBimSector(task)!==sectorFilter)continue;
