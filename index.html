@@ -9069,8 +9069,10 @@ let weeklyPendingDetailsOpen=false;
 function toggleWeeklyPendingDetails(){
   weeklyPendingDetailsOpen=!weeklyPendingDetailsOpen;
   const month=monthOfPpcWeek(selectedWeek);
-  renderWeeklyPendingDetails(weeklyPpcMonthlyMode?monthlyPpcMetrics(month):weeklyMetrics(selectedWeek),
-    weeklyPpcMonthlyMode);
+  const selectedMetric=weeklyPpcSourceMode==='compare'?
+    (weeklyPpcMonthlyMode?monthlyPpcMetrics(month):weeklyMetrics(selectedWeek)):
+    ganttPpcMetric(weeklyPpcMonthlyMode?month:selectedWeek,weeklyPpcMonthlyMode);
+  renderWeeklyPendingDetails(selectedMetric,weeklyPpcMonthlyMode);
   const card=document.querySelector('#weekly-kpis .weekly-kpi-pending-button');
   if(card)card.setAttribute('aria-expanded',String(weeklyPendingDetailsOpen));
 }
@@ -9079,6 +9081,26 @@ function renderWeeklyPendingDetails(metric,monthly){
   if(!target)return;
   target.hidden=!weeklyPendingDetailsOpen;
   if(!weeklyPendingDetailsOpen){target.innerHTML='';return;}
+  if(weeklyPpcSourceMode!=='compare'){
+    const pending=metric.rows.filter(activity=>!activity.isDone);
+    const period=monthly?ppcMonthlyLabel(metric.period):weekShort(metric.period);
+    const rows=pending.map(a=>'<tr><td>'+esc(a.id)+'</td>'+
+      '<td class="weekly-pending-title">'+esc(a.title)+'</td>'+
+      '<td>'+esc(a.owner)+'</td><td>'+esc(a.group)+'</td>'+
+      '<td>'+esc(a.state)+'</td><td>'+esc(dateDisplay(a.plannedEnd))+'</td>'+
+      (monthly?'<td>'+esc(weekShort(isoWeekKey(new Date(a.plannedEnd+'T12:00:00'))))+'</td>':'')+
+      '</tr>').join('');
+    target.innerHTML='<div class="weekly-pending-head"><div><strong>PENDIENTES GANTT · '+esc(period)+
+      '</strong><p>'+pending.length+' actividad(es) del Excel sin culminación verificada al corte · Solo lectura</p>'+
+      '</div><button type="button" class="btn small" onclick="toggleWeeklyPendingDetails()" '+
+      'aria-label="Ocultar actividades pendientes del Gantt">Cerrar</button></div>'+
+      (pending.length?'<div class="weekly-pending-scroll"><table><thead><tr>'+
+        '<th>Código</th><th>Actividad Gantt</th><th>Responsable</th><th>Grupo</th>'+
+        '<th>Estado</th><th>Fin programado</th>'+
+        (monthly?'<th>Semana</th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div>':
+        '<p class="weekly-pending-empty">No hay actividades Gantt pendientes en el período seleccionado.</p>');
+    return;
+  }
   const scope=monthly?metric.weekMetrics:[metric];
   const currentTasks=new Map(tasks.map(t=>[t.id,t]));
   const pending=scope.flatMap(week=>week.rows
@@ -9107,7 +9129,7 @@ function renderWeeklyPendingDetails(metric,monthly){
 }
 function weeklyKpiCard(title,value,foot,kind='',difference=null){
   const icon=title==='COMPROMETIDAS'?'▢':title==='CUMPLIDAS'?'✓':
-    (title==='PPC SEMANAL'||title==='PPC MENSUAL')?'↗':title==='PENDIENTES'||title==='ARRASTRE'?'◷':
+    (title.startsWith('PPC '))?'↗':title==='PENDIENTES'||title==='ARRASTRE'?'◷':
     title==='PUNTUALIDAD'?'◉':'!';
   const differenceLabel=(difference!==null&&Number.isFinite(difference))
     ?(difference>0?'↑ +':difference<0?'↓ −':'= ')+Math.abs(difference).toFixed(1)+' pp vs anterior':'';
@@ -9115,7 +9137,7 @@ function weeklyKpiCard(title,value,foot,kind='',difference=null){
   const interactive=title==='PENDIENTES';
   const tagName=interactive?'button':'article';
   const attrs=interactive?'type="button" onclick="toggleWeeklyPendingDetails()" class="weekly-kpi weekly-kpi-pending-button '+kind+'" aria-controls="weekly-pending-details" aria-expanded="'+String(weeklyPendingDetailsOpen)+'" title="Mostrar u ocultar tareas pendientes"':
-    'class="weekly-kpi '+kind+' '+((title==='PPC SEMANAL'||title==='PPC MENSUAL')?'ppc-highlight':'')+'"';
+    'class="weekly-kpi '+kind+' '+(title.startsWith('PPC ')?'ppc-highlight':'')+'"';
   return `<${tagName} ${attrs}>
       <div class="weekly-kpi-header"><span class="label">${esc(title)}</span><span class="weekly-kpi-icon" aria-hidden="true">${icon}</span></div>
       <div class="weekly-kpi-value"><strong class="number">${esc(value)}</strong>${tag}</div>
@@ -9280,22 +9302,26 @@ function weeklyTrend(m){
   if(typeof Chart!=='undefined'){
     const c=weeklyChartOptions();
     node.innerHTML='<canvas role="img" aria-label="Evolución PPC operativo y PPC Gantt Excel, meta LPS 85% y referencia de la semana seleccionada"></canvas>';
-    const fillGradient=({chart})=>{
+    // Degradados independientes bajo las dos curvas, también en modo comparativo.
+    // Una serie 0% no tiene altura de área: su gradiente será visible al avanzar.
+    const ppcGradient=(rgb,topAlpha,bottomAlpha)=>({chart})=>{
       const {ctx,chartArea}=chart;
-      if(!chartArea)return 'rgba(37,199,229,.12)';
+      if(!chartArea)return 'rgba('+rgb+','+topAlpha+')';
       const gradient=ctx.createLinearGradient(0,chartArea.top,0,chartArea.bottom);
-      gradient.addColorStop(0,'rgba(37,199,229,.29)');
-      gradient.addColorStop(1,'rgba(37,199,229,.015)');
+      gradient.addColorStop(0,'rgba('+rgb+','+topAlpha+')');
+      gradient.addColorStop(1,'rgba('+rgb+','+bottomAlpha+')');
       return gradient;
     };
+    const ganttFill=ppcGradient('243,187,103',.24,.012);
+    const operationalFill=ppcGradient('37,199,229',.26,.012);
     const datasets=[{
       label:'PPC Gantt',data:ganttVals,borderColor:'#f3bb67',
-      backgroundColor:'rgba(243,187,103,.10)',fill:'origin',
+      backgroundColor:ganttFill,fill:'origin',
       tension:.28,pointRadius:4,pointHoverRadius:6,borderWidth:2.6,spanGaps:false
     }];
     if(weeklyPpcSourceMode==='compare')datasets.push({
       label:'PPC Operativo',data:operationalVals,borderColor:'#25c7e5',
-      backgroundColor:fillGradient,borderWidth:2.5,fill:false,
+      backgroundColor:operationalFill,borderWidth:2.5,fill:'origin',
       pointRadius:4,pointHoverRadius:6,tension:.22,spanGaps:false
     });
     datasets.push({label:'Meta LPS (85%)',data:weeks.map(()=>goal),borderColor:c.pink,
@@ -9644,27 +9670,37 @@ function renderWeekly(forceMotion=false){
   const weekMetric=weeklyMetrics(selectedWeek);
   const month=monthOfPpcWeek(selectedWeek);
   const monthly=weeklyPpcMonthlyMode;
-  const m=monthly?monthlyPpcMetrics(month):weekMetric;
-  const previous=monthly?monthlyPpcMetrics(offsetPpcMonth(month,-1)):weeklyMetrics(neighborWeek(selectedWeek,-1));
+  const operativeMetric=monthly?monthlyPpcMetrics(month):weekMetric;
+  const operativePrevious=monthly?monthlyPpcMetrics(offsetPpcMonth(month,-1)):
+    weeklyMetrics(neighborWeek(selectedWeek,-1));
+  const useOperative=weeklyPpcSourceMode==='compare';
+  // Las tarjetas y su detalle reflejan el check de PPC Operativo.
+  // El cálculo operativo, CNC y la proyección conservan su fuente original.
+  const m=useOperative?operativeMetric:ganttPpcMetric(monthly?month:selectedWeek,monthly);
+  const previous=useOperative?operativePrevious:
+    ganttPpcMetric(monthly?offsetPpcMonth(month,-1):neighborWeek(selectedWeek,-1),monthly);
   const compare=$('#weekly-compare').checked;
   const delta=compare&&m.ppc!==null&&previous.ppc!==null?m.ppc-previous.ppc:null;
   const status=$('#weekly-info'),overallWeek=weeklyRaw(selectedWeek);
   status.className='weekly-status-strip '+(m.closed?'done':m.planned?'':'warn');
   const comparison=delta===null?'':(delta>0?'↑ +':delta<0?'↓ −':'= ')+Math.abs(delta).toFixed(1)+
     ' pp respecto a '+(monthly?ppcMonthlyLabel(previous.month):weekShort(previous.week));
-  const description=monthly?
-    (month>todayString().slice(0,7)?'Mes futuro: programación provisional.':
-      month===todayString().slice(0,7)?'Mes en curso: resultados provisionales hasta el corte.':
-      'Mes finalizado: resultados verificados de sus semanas.'):
-    (m.closed?'Semana archivada: resultados fijados al cierre.':
-      m.planned?'Semana abierta: resultados operativos provisionales.':
-      'No hay compromisos de esta semana en el alcance seleccionado.');
+  const description=!useOperative?
+    (m.future?'Compromisos Gantt futuros: resultado no evaluable todavía.':
+      'Compromisos programados según la fecha de fin del Excel · Oriol excluido.'):
+    monthly?
+      (month>todayString().slice(0,7)?'Mes futuro: programación provisional.':
+        month===todayString().slice(0,7)?'Mes en curso: resultados provisionales hasta el corte.':
+        'Mes finalizado: resultados verificados de sus semanas.'):
+      (m.closed?'Semana archivada: resultados fijados al cierre.':
+        m.planned?'Semana abierta: resultados operativos provisionales.':
+        'No hay compromisos de esta semana en el alcance seleccionado.');
   const periodName=monthly?ppcMonthlyLabel(month):weekShort(selectedWeek);
   const unscheduledNote=m.unscheduled?
     '<span class="weekly-status-context"> · '+m.unscheduled+
       ' tarea'+(m.unscheduled===1?'':'s')+' sin fecha límite fuera del PPC</span>':'';
-  status.innerHTML=`<span><b class="weekly-status-label">${monthly?'COMPROMISOS DEL MES:':'COMPROMISOS REGISTRADOS:'}</b>
-    ${m.planned} tarea${m.planned!==1?'s':''} planificada${m.planned!==1?'s':''} para ${monthly?'este mes':'esta semana'}.
+  status.innerHTML=`<span><b class="weekly-status-label">${!useOperative?'COMPROMISOS GANTT:':monthly?'COMPROMISOS DEL MES:':'COMPROMISOS REGISTRADOS:'}</b>
+    ${m.planned} ${useOperative?'tarea':'actividad'}${m.planned!==1?'s':''} planificada${m.planned!==1?'s':''} para ${monthly?'este mes':'esta semana'}.
     <span class="weekly-status-context">${esc(description)}</span>
     ${unscheduledNote}
     ${comparison?`<span class="weekly-status-comparison">${esc(comparison)}</span>`:''}
@@ -9672,14 +9708,19 @@ function renderWeekly(forceMotion=false){
   // El cierre de semanas continúa siendo exclusivo de la semana seleccionada.
   $('#weekly-close-btn').disabled=overallWeek.closed||!overallWeek.rows.length;
   $('#weekly-close-btn').textContent=overallWeek.closed?'✓ Semana cerrada':'✓ Cerrar semana';
-  $('#weekly-kpis').setAttribute('aria-label',monthly?'Resultados KPI mensuales':'Resultados KPI semanales');
+  $('#weekly-kpis').setAttribute('aria-label',
+    (monthly?'Resultados KPI mensuales':'Resultados KPI semanales')+
+    (useOperative?' · PPC Operativo':' · PPC Gantt Excel'));
   $('#weekly-kpis').innerHTML=[
-    weeklyKpiCard(monthly?'PPC MENSUAL':'PPC SEMANAL',pct(m.ppc),
-      m.ppc===null&&((monthly?month: selectedWeek)>(monthly?todayString().slice(0,7):isoWeekKey(new Date())))?
+    weeklyKpiCard(useOperative?(monthly?'PPC OPERATIVO MENSUAL':'PPC OPERATIVO'):
+      (monthly?'PPC GANTT MENSUAL':'PPC GANTT'),pct(m.ppc),
+      m.ppc===null&&((monthly?month:selectedWeek)>(monthly?todayString().slice(0,7):isoWeekKey(new Date())))?
         (monthly?'Mes aún no iniciado':'Semana aún no iniciada'):
         'Cumplidas / comprometidas',m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
-    weeklyKpiCard('COMPROMETIDAS',m.planned,monthly?'Plan mensual · '+(m.closed?'cerrado':'provisional'):
-      (m.closed?'Base archivada del período':'Plan semanal · provisional')),
+    weeklyKpiCard('COMPROMETIDAS',m.planned,useOperative?
+      (monthly?'Plan mensual · '+(m.closed?'cerrado':'provisional'):
+        (m.closed?'Base archivada del período':'Plan semanal · provisional')):
+      'Actividades con fin programado en Excel'),
     weeklyKpiCard('CUMPLIDAS',m.completed,'Cierres verificados hasta el corte','positive'),
     weeklyKpiCard('PENDIENTES',m.remaining,'Sin cierre verificado al corte',m.remaining?'warning':''),
     weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?
@@ -9692,7 +9733,7 @@ function renderWeekly(forceMotion=false){
   renderWeeklyPendingDetails(m,monthly);
   if(weeklyInnerTab==='seguimiento'){
     weeklyTrend(weekMetric);
-    if(monthly)monthlyCncPanel(m);
+    if(monthly)monthlyCncPanel(operativeMetric);
     else weeklyCncPanel(weekMetric);
   }
   renderWeeklyProjection(weekMetric);
