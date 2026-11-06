@@ -5588,6 +5588,25 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 .bim-ppt-dialog .bim-ppt-tables-toggle:focus-within{
   border-color:var(--accent-blue);outline:1px solid var(--accent-blue)
 }
+
+/* AREA_BIM2: diagnóstico de contenido opcional, sin añadir controles a la fila superior. */
+.bim-ppt-dialog .bim-ppt-export-content-wrap[hidden]{display:none!important}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-export-content-wrap{
+  display:flex;flex-wrap:wrap;align-items:center;gap:7px;
+  padding:2px 0 7px;color:var(--ink-muted)
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-export-content-wrap label{
+  font-size:10px;font-weight:750;color:var(--ink-primary)
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-export-content-wrap select{
+  padding:5px 9px;min-height:28px;max-width:200px;
+  border:1px solid var(--border-strong);border-radius:7px;
+  background:var(--bg-subtle);color:var(--ink-primary);
+  font:650 10px Inter,sans-serif
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-export-content-wrap span{
+  flex:1 1 200px;font-size:10px;line-height:1.35
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -6358,6 +6377,17 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         <label><input type="checkbox" id="bim-ppt-cross-culminacion" checked
           onchange="setBimPptWeekCriterion('culminacion',this.checked)">
           Culminación</label>
+      </div>
+
+      <div id="bim-ppt-export-content-wrap" class="bim-ppt-export-content-wrap" hidden>
+        <label for="bim-ppt-export-content">Contenido PPTX</label>
+        <select id="bim-ppt-export-content" aria-label="Elegir contenido para diagnosticar el PowerPoint"
+          onchange="setBimPptExportContent(this.value)">
+          <option value="ambos">Fotografías + tablas</option>
+          <option value="fotos">Solo fotografías</option>
+          <option value="tablas">Solo tablas</option>
+        </select>
+        <span>Elige el contenido para comprobar qué provoca el aviso de reparación.</span>
       </div>
 
       <p class="bim-ppt-mode-desc" id="bim-ppt-mode-note" aria-live="polite"></p>
