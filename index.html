@@ -7928,9 +7928,14 @@ function switchView(v, authenticated=false){
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
   $('#weekly-ppt-launch').classList.toggle('hidden',v!=='weekly');
-  // El Gantt se consulta desde el encabezado en Dashboard y Control de Tareas.
-  // Seguimiento conserva su botón propio dentro de Evolución PPC.
-  $('#header-gantt-viewer-launch').classList.toggle('hidden',v==='weekly');
+  // El mismo botón Gantt acompaña a la pestaña activa: a su izquierda,
+  // también cuando el usuario está en Control Semanal.
+  const ganttLaunch=$('#header-gantt-viewer-launch');
+  const activeNavTab=$('#nav-'+v);
+  if(ganttLaunch&&activeNavTab&&activeNavTab.parentElement){
+    ganttLaunch.classList.remove('hidden');
+    activeNavTab.parentElement.insertBefore(ganttLaunch,activeNavTab);
+  }
   // Ambos perfiles (AREA_BIM y AREA_BIM2) muestran Seguimiento y Proyección.
   // El perfil de exportación PPT sigue siendo independiente.
   const showWeeklySubtabs=v==='weekly';
