@@ -5665,10 +5665,6 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             <button type="button" id="weekly-gantt-viewer-launch" class="btn small" 
               onclick="openBimGanttViewer()" title="Visualizar el cronograma original del Excel en HTML, sin editarlo"
               aria-label="Visualizar Gantt de noviembre en una tabla calendario">Visualizar Gantt</button>
-            <label class="weekly-monthly-toggle" title="Mostrar también el PPC operativo">
-              <input id="weekly-ppc-operational" type="checkbox" onchange="toggleWeeklyPpcOperational(this.checked)">
-              <span>PPC Operativo</span>
-            </label>
             <label class="weekly-monthly-toggle" title="Alternar entre PPC semanal y mensual">
               <input id="weekly-ppc-monthly" type="checkbox" onchange="toggleWeeklyPpcMonthlyMode(this.checked)">
               <span>PPC mensual</span>
@@ -5676,7 +5672,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             <span class="weekly-mini-badge" id="weekly-trend-range">Sin semanas registradas</span>
           </div>
         </div>
-        <div class="weekly-trend-key"><span class="gantt-achieved"><i></i> PPC Gantt</span><span id="weekly-trend-operational-key"><i class="achieved"></i> PPC Operativo</span><span><i class="goal"></i> Meta LPS 85%</span><span id="weekly-trend-progress-key" hidden><i class="reference"></i><span id="weekly-trend-progress-label">PPC de la semana</span></span></div>
+        <div class="weekly-trend-key"><span class="gantt-achieved"><i></i> PPC Gantt</span><span><i class="goal"></i> Meta LPS 85%</span><span id="weekly-trend-progress-key" hidden><i class="reference"></i><span id="weekly-trend-progress-label">PPC de la semana</span></span></div>
         <div id="weekly-trend-chart" class="weekly-chart-content"></div>
         <div class="weekly-trend-footer" id="weekly-trend-footer"></div>
         <section class="gantt-ppc-summary" id="weekly-gantt-summary" aria-label="Detalle del PPC Gantt"></section>
@@ -9274,9 +9270,12 @@ function weeklyPpcHistoryWeeks(){
 // Vista mensual solo de presentación: los compromisos almacenados siguen
 // perteneciendo a su semana ISO. El mes se asigna por el jueves de la semana.
 let weeklyPpcMonthlyMode=false;
+// PPC Operativo temporalmente oculto. Se conserva su cálculo para futura reactivación.
+const WEEKLY_OPERATIONAL_PPC_VISIBLE=false;
 let weeklyPpcSourceMode='gantt';
 function toggleWeeklyPpcOperational(enabled){
-  weeklyPpcSourceMode=enabled?'compare':'gantt';
+  // Bloqueo de presentación: nunca mostrar PPC Operativo mientras esté suspendido.
+  weeklyPpcSourceMode=WEEKLY_OPERATIONAL_PPC_VISIBLE&&enabled?'compare':'gantt';
   renderWeekly();
 }
 function toggleWeeklyPpcMonthlyMode(enabled){
@@ -9332,6 +9331,7 @@ function monthlyPpcMetrics(month){
       localISO(new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5)),0)))};
 }
 function weeklyTrend(m){
+  if(!WEEKLY_OPERATIONAL_PPC_VISIBLE)weeklyPpcSourceMode='gantt';
   const monthly=weeklyPpcMonthlyMode;
   const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer');
   const weeks=monthly?monthlyPpcHistoryMonths():weeklyPpcHistoryWeeks();
@@ -9392,7 +9392,7 @@ function weeklyTrend(m){
   }
   if(typeof Chart!=='undefined'){
     const c=weeklyChartOptions();
-    node.innerHTML='<canvas role="img" aria-label="Evolución PPC operativo y PPC Gantt Excel, meta LPS 85% y referencia de la semana seleccionada"></canvas>';
+    node.innerHTML='<canvas role="img" aria-label="Evolución PPC Gantt Excel, meta LPS 85% y referencia de la semana seleccionada"></canvas>';
     // Degradados independientes bajo las dos curvas, también en modo comparativo.
     // Una serie 0% no tiene altura de área: su gradiente será visible al avanzar.
     const ppcGradient=(rgb,topAlpha,bottomAlpha)=>({chart})=>{
@@ -9750,6 +9750,7 @@ function weeklyBacklogChart(){
 }
 function renderWeekly(forceMotion=false){
   if(!$('#weekly-view')||currentView!=='weekly')return;
+  if(!WEEKLY_OPERATIONAL_PPC_VISIBLE)weeklyPpcSourceMode='gantt';
   syncWeeklySubtab();
   disposeWeeklyCharts();
   document.querySelectorAll('.weekly-chart-card').forEach(card=>card.classList.remove('weekly-is-empty'));
