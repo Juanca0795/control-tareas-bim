@@ -546,6 +546,21 @@ function closeGanttActivityDropdown({restoreFocus=false}={}){
   trigger.setAttribute('aria-expanded','false');
   if(restoreFocus)trigger.focus();
 }
+// Cerrar el listado al pulsar fuera de su contenedor, sin modificar la selección.
+document.addEventListener('pointerdown',event=>{
+  const list=document.getElementById('f-gantt-activity-list');
+  const picker=document.querySelector('.gantt-activity-picker');
+  if(!list||list.hidden||!picker)return;
+  if(picker.contains(event.target))return;
+  closeGanttActivityDropdown();
+},true);
+// Escape también lo cierra aunque el foco haya pasado a otro control.
+document.addEventListener('keydown',event=>{
+  if(event.key!=='Escape')return;
+  const list=document.getElementById('f-gantt-activity-list');
+  if(!list||list.hidden)return;
+  closeGanttActivityDropdown();
+});
 function renderGanttActivityDropdown(){
   const select=document.getElementById('f-gantt-activity');
   const trigger=document.getElementById('f-gantt-activity-trigger');
