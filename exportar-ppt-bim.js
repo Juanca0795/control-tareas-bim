@@ -51,6 +51,8 @@ function pptBimSector(item){
 let pptBimState={items:[],week:'',mode:'reunion',meetingDay:pptBimSavedMeetingDay(),
   profile:'standard',specialty:'revit',sectorFilter:'',manualMeetingRange:null,
   weekFilters:{ingreso:true,culminacion:true},
+  // AREA_BIM2: null = todas las personas disponibles de la especialidad.
+  selectedOwners:{revit:null,civil:null},ownerCandidates:[],
   availableWeeks:[],busy:false,token:0,drafts:new Map()};
 
 function pptBimLib(){
@@ -245,6 +247,97 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   return out;
 }
 function pptBimPhotoKey(item){return item.taskId+'|'+item.id}
+
+/* AREA_BIM2 — selector por persona sobre la especialidad existente.
+ * La elección se aplica antes de mostrar fotos y antes de generar el PPTX.
+ * Revit y Civil 3D mantienen casillas independientes en la misma sesión. */
+function pptBimAvailablePeople(){
+  const people=new Map();
+  for(const item of pptBimState.ownerCandidates||[]){
+    const key=pptBimNormalizeOwner(item.owner);
+    if(!key||pptBimSpecialtyForOwner(item.owner)!==pptBimState.specialty)continue;
+    if(!people.has(key))people.set(key,{key,name:item.owner,count:0});
+    people.get(key).count++;
+  }
+  return [...people.values()].sort((a,b)=>
+    a.name.localeCompare(b.name,'es',{numeric:true,sensitivity:'base'}));
+}
+function pptBimSelectedPeople(){
+  const chosen=pptBimState.selectedOwners?.[pptBimState.specialty];
+  return Array.isArray(chosen)?new Set(chosen):null;
+}
+function pptBimRenderPeoplePicker(){
+  const special=pptBimState.profile==='by-person';
+  const picker=$('#bim-ppt-people-picker');
+  if(!picker)return;
+  picker.hidden=!special;
+  if(!special){closeBimPptPeopleMenu();return;}
+  const people=pptBimAvailablePeople();
+  const selected=pptBimSelectedPeople();
+  const chosen=selected===null?people.length:
+    people.filter(x=>selected.has(x.key)).length;
+  const label=$('#bim-ppt-people-label');
+  if(label)label.textContent='Personal '+chosen+'/'+people.length;
+  const trigger=$('#bim-ppt-people-trigger');
+  if(trigger){
+    trigger.disabled=pptBimState.busy||!people.length;
+    trigger.setAttribute('aria-label','Seleccionar colaboradores de '+
+      (pptBimState.specialty==='civil'?'Civil 3D':'Revit')+
+      ': '+chosen+' de '+people.length);
+  }
+  const menu=$('#bim-ppt-people-options');
+  if(!menu)return;
+  menu.innerHTML=people.length?people.map(person=>
+    '<label class="bim-ppt-people-option"><input type="checkbox" data-bim-ppt-person="'+
+    esc(person.key)+'" value="'+esc(person.key)+'"'+
+    (selected===null||selected.has(person.key)?' checked':'')+
+    (pptBimState.busy?' disabled':'')+'>'+
+    '<span class="name">'+esc(person.name)+'</span>'+
+    '<span class="photo-count">'+person.count+' foto'+(person.count!==1?'s':'')+
+    '</span></label>').join(''):
+    '<div class="bim-ppt-people-empty">No hay fotografías de esta especialidad con los filtros actuales.</div>';
+  picker.querySelectorAll('.bim-ppt-people-actions button').forEach(button=>{
+    button.disabled=pptBimState.busy||!people.length;
+  });
+}
+function closeBimPptPeopleMenu(restoreFocus=false){
+  const menu=$('#bim-ppt-people-menu'),trigger=$('#bim-ppt-people-trigger');
+  if(!menu||!trigger)return;
+  menu.hidden=true;
+  trigger.setAttribute('aria-expanded','false');
+  if(restoreFocus)trigger.focus();
+}
+function toggleBimPptPeopleMenu(){
+  if(pptBimState.profile!=='by-person'||pptBimState.busy)return;
+  const menu=$('#bim-ppt-people-menu'),trigger=$('#bim-ppt-people-trigger');
+  if(!menu||!trigger||trigger.disabled)return;
+  const opening=menu.hidden;
+  if(!opening){closeBimPptPeopleMenu();return;}
+  closeBimPptSpecialtyMenu();
+  closeBimPptMeetingMenu();
+  menu.hidden=false;
+  trigger.setAttribute('aria-expanded','true');
+}
+function setBimPptPerson(key,checked){
+  if(pptBimState.profile!=='by-person'||pptBimState.busy)return;
+  const people=pptBimAvailablePeople(),keys=people.map(x=>x.key);
+  if(!keys.includes(key))return;
+  const saved=pptBimSelectedPeople();
+  const next=new Set(saved===null?keys:saved);
+  if(checked)next.add(key);else next.delete(key);
+  pptBimState.selectedOwners[pptBimState.specialty]=
+    keys.every(x=>next.has(x))?null:[...next];
+  pptBimRefreshItems();
+  // Conservar el foco del check al reconstruir la vista previa.
+  const newInput=[...document.querySelectorAll('[data-bim-ppt-person]')]
+    .find(input=>input.value===key);
+  newInput?.focus();
+}
+function setBimPptAllPeople(enabled){
+  if(pptBimState.profile!=='by-person'||pptBimState.busy)return;
+  pptBimState.selectedOwners[pptBimState.specialty]=enabled?null:[];
+  pptBimRefreshItems();
+}
 function pptBimRefreshModeInfo(){
   const special=pptBimState.profile==='by-person';
   document.querySelectorAll('[data-bim-ppt-mode]').forEach(button=>{
@@ -286,9 +379,10 @@ function pptBimRefreshModeInfo(){
       option.disabled=pptBimState.busy;
     });
   }else closeBimPptSpecialtyMenu();
+  pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: fotografías agrupadas por <strong>responsable</strong> y filtradas por Civil 3D o Revit. El modo Por semana permite combinar Ingreso y Culminación sin duplicar fotos. No se incluyen los cuatro colaboradores excluidos. Se conservan los filtros de sector, paquete, disciplina y colaborador.'
+    ?'Perfil AREA_BIM2: fotografías agrupadas por <strong>responsable</strong> y filtradas por Civil 3D o Revit. Usa <strong>Personal</strong> para elegir quiénes incluir en el PPTX. El modo Por semana permite combinar Ingreso y Culminación sin duplicar fotos. Se excluyen los cuatro colaboradores definidos para este perfil. Se conservan los filtros de sector, paquete, disciplina y colaborador.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -350,9 +444,13 @@ function pptBimRefreshItems(mode=pptBimState.mode){
   // Conservar descripciones y casillas por fotografía al cambiar día o criterio.
   for(const item of pptBimState.items)
     pptBimState.drafts.set(pptBimPhotoKey(item),{caption:item.caption,enabled:item.enabled});
-  const items=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay,
+  const allItems=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay,
     pptBimState.profile==='by-person'?pptBimState.specialty:null,
     pptBimState.weekFilters,pptBimState.sectorFilter,pptBimState.manualMeetingRange);
+  pptBimState.ownerCandidates=pptBimState.profile==='by-person'?allItems:[];
+  const selected=pptBimState.profile==='by-person'?pptBimSelectedPeople():null;
+  const items=selected===null?allItems:allItems.filter(item=>
+    selected.has(pptBimNormalizeOwner(item.owner)));
   pptBimState.items=items.map(item=>({
     ...item,...(pptBimState.drafts.get(pptBimPhotoKey(item))||{}),enabled:
     pptBimState.drafts.get(pptBimPhotoKey(item))?.enabled??true
@@ -498,6 +596,7 @@ function setBimPptSpecialty(value){
   if(pptBimState.profile!=='by-person'||pptBimState.busy||
     !$('#bim-ppt-back')?.classList.contains('open')||!['revit','civil'].includes(value))return;
   if(value!==pptBimState.specialty){
+    closeBimPptPeopleMenu();
     pptBimState.specialty=value;
     pptBimRefreshItems();
   }
@@ -506,6 +605,11 @@ function setBimPptSpecialty(value){
 document.addEventListener('click',event=>{
   if(!event.target.closest('#bim-ppt-day-picker'))closeBimPptMeetingMenu();
   if(!event.target.closest('#bim-ppt-specialty-picker'))closeBimPptSpecialtyMenu();
+  if(!event.target.closest('#bim-ppt-people-picker'))closeBimPptPeopleMenu();
+});
+document.addEventListener('change',event=>{
+  const check=event.target.closest('[data-bim-ppt-person]');
+  if(check)setBimPptPerson(check.value,check.checked);
 });
 function setBimPptMeetingDay(value){
   if(pptBimState.busy||!$('#bim-ppt-back')?.classList.contains('open'))return;
@@ -533,6 +637,8 @@ function openBimPptExport(){
   pptBimState={items:items.map(x=>({...x,enabled:true})),
     week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,sectorFilter:'',
     manualMeetingRange:null,weekFilters:{ingreso:true,culminacion:true},
+    selectedOwners:{revit:null,civil:null},
+    ownerCandidates:profile==='by-person'?items:[],
     availableWeeks:profile==='by-person'?pptBimAvailableWeeks(selectedWeek):[],
     busy:false,token:pptBimState.token+1,drafts:new Map()};
   pptBimSetupWeekSelector();
@@ -547,6 +653,7 @@ function closeBimPptExport(){
   if(pptBimState.busy)return;
   closeBimPptMeetingMenu();
   closeBimPptSpecialtyMenu();
+  closeBimPptPeopleMenu();
   $('#bim-ppt-back').classList.remove('open');
   document.body.style.overflow='';
   pptBimState.token++;
@@ -577,7 +684,11 @@ function renderBimPptExport(){
       '<textarea id="bim-ppt-caption-'+index+'" data-bim-ppt-caption="'+index+'" maxlength="240" rows="2">'+
       esc(x.caption)+'</textarea></div></article>').join('')+
     '</div></section>').join(''):
-    '<p class="bim-ppt-empty">No hay fotografías para la semana y el criterio seleccionados. Puedes cambiar el criterio arriba.</p>';
+    '<p class="bim-ppt-empty">'+
+      (pptBimState.profile==='by-person'&&pptBimSelectedPeople()?.size===0?
+        'No hay colaboradores marcados. Abre Personal y selecciona al menos uno.':
+        'No hay fotografías para la semana y el criterio seleccionados. Puedes cambiar el criterio arriba.')+
+    '</p>';
   updateBimPptSelectedCounter();
 }
 function updateBimPptSelectedCounter(){
@@ -798,7 +909,9 @@ async function pptBimDecodeImage(blob){
 }
 async function exportBimPpt(){
   if(pptBimState.busy)return;
-  const included=pptBimState.items.filter(x=>x.enabled);
+  const selected=pptBimState.profile==='by-person'?pptBimSelectedPeople():null;
+  const included=pptBimState.items.filter(x=>x.enabled&&
+    (selected===null||selected.has(pptBimNormalizeOwner(x.owner))));
   if(!included.length){toast('Selecciona al menos una fotografía.');return}
   if(!window.bimEvidenceCloud?.ready()){toast('No hay conexión con Supabase Storage.');return}
   const runToken=pptBimState.token,btn=$('#bim-ppt-download'),status=$('#bim-ppt-progress');
