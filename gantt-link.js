@@ -501,74 +501,131 @@ function ganttGroups(responsible=''){
     .filter(a=>a.owner===responsible).map(a=>a.group))]
     .sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
 }
-/* Selección directa: primero actividad, el grupo se determina automáticamente. */
-function refreshGanttForOwner(keepId){
-  refreshGanttActivityOptions(keepId);
+/* La interacción decide el tipo de actividad, sin radios ni mensajes redundantes.
+   Gantt seleccionado => descripción inactiva, grupo asignado automáticamente.
+   Descripción escrita => actividad inactiva, grupo elegible del responsable. */
+let ganttAutoTitle='';
+function ganttEditorActivity(){
+  return ganttActivityById(document.getElementById('f-gantt-activity')?.value||'');
 }
-function ganttEditorMode(){
-  return document.querySelector('input[name="f-gantt-mode"]:checked')?.value||'select';
+function ganttEditorGroupOptions(keepGroup){
+  const groupSelect=document.getElementById('f-gantt-group');
+  const owner=document.getElementById('f-owner')?.value||'';
+  const responsible=ganttResponsibleForOwner(owner);
+  const groups=ganttGroups(responsible);
+  const keep=keepGroup===undefined?groupSelect.value:keepGroup;
+  groupSelect.innerHTML='<option value="">Seleccionar grupo del Gantt</option>'+
+    groups.map(group=>'<option value="'+esc(group)+'">'+esc(group)+'</option>').join('');
+  groupSelect.value=groups.includes(keep)?keep:'';
 }
-function updateGanttEditorMode(){
-  const manual=ganttEditorMode()==='manual';
-  document.getElementById('gantt-select-fields').classList.toggle('hidden',manual);
-  const title=document.getElementById('f-title');
-  title.readOnly=!manual;
-  title.placeholder=manual?'Ej.: Coordinación de interferencias MEP vs Estructuras':
-    'Selecciona una actividad del Gantt para completar la descripción';
-  const label=document.querySelector('label[for="f-title"]');
-  if(label)label.textContent=manual?'Descripción del entregable / tarea *':
-    'Descripción del entregable (desde Gantt) *';
-  document.getElementById('f-gantt-activity').required=!manual;
-  updateGanttEditorInfo();
+function refreshGanttForOwner(keepId,keepGroup){
+  const previousActivity=ganttEditorActivity();
+  const currentTitle=document.getElementById('f-title');
+  const selectedBefore=keepId===undefined?
+    document.getElementById('f-gantt-activity').value:keepId;
+  const groupBefore=keepGroup===undefined?
+    document.getElementById('f-gantt-group').value:keepGroup;
+  // Si cambia el responsable, una actividad ajena al nuevo responsable deja de estar vinculada.
+  refreshGanttActivityOptions(selectedBefore);
+  const selectedAfter=ganttEditorActivity();
+  if(previousActivity&&!selectedAfter&&currentTitle.value===previousActivity.title){
+    currentTitle.value='';
+    ganttAutoTitle='';
+  }
+  ganttEditorGroupOptions(groupBefore);
+  syncGanttEditorControls();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function refreshGanttActivityOptions(keepId){
   const select=document.getElementById('f-gantt-activity');
   const responsible=ganttResponsibleForOwner(document.getElementById('f-owner')?.value||'');
-  const prevId=keepId===undefined?select.value:keepId;
+  const previous=keepId===undefined?select.value:keepId;
   const available=window.BIM_GANTT_ACTIVITIES.filter(a=>a.owner===responsible).filter(a=>
     !ganttLinkedTask({mode:'select',activityId:a.id,group:a.group,name:a.title},editingId));
-  const groups=[...new Set(available.map(a=>a.group))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
-  const sortedActivities=available.slice().sort((a,b)=>a.id.localeCompare(b.id,'es',{numeric:true}));
-  select.innerHTML='<option value="">'+(!responsible?'Selecciona primero un colaborador':
-    available.length?'Seleccionar actividad del Gantt':'Sin actividades disponibles')+'</option>'+
-    groups.map(group=>'<optgroup label="'+esc(group)+'">'+
-      sortedActivities.filter(a=>a.group===group)
-        .map(a=>'<option value="'+esc(a.id)+'">'+esc(a.id+' — '+a.title)+'</option>').join('')+
+  const groupNames=[...new Set(available.map(a=>a.group))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const sorted=available.slice().sort((a,b)=>a.id.localeCompare(b.id,'es',{numeric:true}));
+  select.innerHTML='<option value="">Seleccionar actividad del Gantt</option>'+
+    groupNames.map(group=>'<optgroup label="'+esc(group)+'">'+sorted.filter(a=>a.group===group)
+      .map(a=>'<option value="'+esc(a.id)+'">'+esc(a.id+' — '+a.title)+'</option>').join('')+
       '</optgroup>').join('');
-  select.value=available.some(a=>a.id===prevId)?prevId:'';
-  select.disabled=!responsible||!available.length;
-  updateGanttEditorInfo();
+  select.value=available.some(a=>a.id===previous)?previous:'';
+}
+function syncGanttEditorControls(){
+  const title=document.getElementById('f-title');
+  const activity=document.getElementById('f-gantt-activity');
+  const group=document.getElementById('f-gantt-group');
+  const selected=ganttEditorActivity();
+  const hasManualTitle=Boolean(title.value.trim())&&!selected;
+  if(selected){
+    title.value=selected.title;
+    ganttAutoTitle=selected.title;
+    group.value=selected.group;
+  }
+  title.disabled=Boolean(selected);
+  activity.disabled=hasManualTitle||!ganttResponsibleForOwner(
+    document.getElementById('f-owner')?.value||'')||
+    !activity.querySelector('option[value]:not([value=""])');
+  group.disabled=Boolean(selected)||!ganttResponsibleForOwner(
+    document.getElementById('f-owner')?.value||'');
+  group.required=false;
+  title.placeholder='Ej.: Coordinación de interferencias MEP vs Estructuras';
+  const label=document.querySelector('label[for="f-title"]');
+  if(label)label.textContent='Descripción del entregable / tarea *';
+}
+function handleGanttDescriptionInput(){
+  // El texto propio inhabilita el selector de actividades, no el grupo.
+  ganttAutoTitle='';
+  syncGanttEditorControls();
+  if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
+}
+function selectGanttActivity(){
+  const activity=ganttEditorActivity();
+  const title=document.getElementById('f-title');
+  if(activity){
+    title.value=activity.title;
+    ganttAutoTitle=activity.title;
+  }else if(ganttAutoTitle&&title.value===ganttAutoTitle){
+    title.value='';
+    ganttAutoTitle='';
+  }
+  syncGanttEditorControls();
+  if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
+}
+function selectGanttGroup(){
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function initializeGanttEditor(task){
   const link=catalogs.ganttLinksByTask?.[task?.id];
-  // Una tarea existente sin enlace debe conservar su descripción y entrar en modo manual.
-  const mode=link?.mode==='select'?'select':task?'manual':'select';
-  document.querySelectorAll('input[name="f-gantt-mode"]').forEach(r=>r.checked=r.value===mode);
-  refreshGanttForOwner(link?.mode==='select'?link.activityId:'');
-  updateGanttEditorMode();
+  ganttAutoTitle='';
+  // Mantener la asociación Gantt original al editarla; registros sin enlace siguen manuales.
+  const selected=link?.mode==='select'?link.activityId:'';
+  const manualGroup=link?.mode==='manual'?link.group:'';
+  refreshGanttActivityOptions(selected);
+  ganttEditorGroupOptions(selected?ganttActivityById(selected)?.group:manualGroup);
+  if(selected&&ganttEditorActivity()){
+    document.getElementById('f-title').value=ganttEditorActivity().title;
+    ganttAutoTitle=ganttEditorActivity().title;
+  }
+  syncGanttEditorControls();
 }
 function collectGanttEditorLink(){
-  // Manual significa escribir la descripción habitual: no crea un enlace Gantt.
-  if(ganttEditorMode()==='manual')return null;
-  const id=document.getElementById('f-gantt-activity').value;
-  if(!id)return {invalid:true};
-  const activity=ganttActivityById(id);
-  if(!activity||activity.owner!==ganttResponsibleForOwner(
-    document.getElementById('f-owner')?.value||''))return {invalid:true};
-  return {mode:'select',activityId:activity.id,group:activity.group,name:activity.title};
+  const activity=ganttEditorActivity();
+  if(activity){
+    if(activity.owner!==ganttResponsibleForOwner(
+      document.getElementById('f-owner')?.value||''))return {invalid:true};
+    return {mode:'select',activityId:activity.id,group:activity.group,name:activity.title};
+  }
+  // La actividad escrita se agrupa bajo un grupo Gantt del responsable, si fue elegido.
+  const title=document.getElementById('f-title').value.trim();
+  const group=document.getElementById('f-gantt-group').value;
+  const responsible=ganttResponsibleForOwner(document.getElementById('f-owner')?.value||'');
+  if(!title||!group)return null;
+  if(!ganttGroups(responsible).includes(group))return {invalid:true};
+  return {mode:'manual',activityId:'',group,name:title.slice(0,180)};
 }
-function updateGanttEditorInfo({fillTitle=false}={}){
-  const activity=ganttActivityById(document.getElementById('f-gantt-activity').value);
-  const group=document.getElementById('f-gantt-group');
-  group.value=activity?.group||'';
-  if(fillTitle&&ganttEditorMode()==='select'&&activity)
-    document.getElementById('f-title').value=activity.title;
-}
-function selectGanttActivity(){
-  updateGanttEditorInfo({fillTitle:true});
-  if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
+function updateGanttEditorInfo(){
+  // Mantener compatibilidad con actualizaciones del panel de calidad.
+  // No modificar controles ni la descripción durante la validación.
 }
 function ganttTaskLabel(id){
   const link=catalogs.ganttLinksByTask?.[id];
@@ -581,10 +638,8 @@ function ganttTaskLabel(id){
   const css=document.createElement('style');
   css.textContent=[
     '.gantt-link-panel{border:1px solid var(--border-base);border-radius:10px;padding:12px;background:var(--bg-subtle);margin:5px 0 13px}',
-    '.gantt-mode-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:11px}',
-    '.gantt-mode-row label{font-size:11px;font-weight:650;display:inline-flex;gap:6px;align-items:center;cursor:pointer}',
     '.gantt-link-panel .form-grid{margin:0}',
-    '.gantt-readonly-group{color:var(--ink-secondary);background:var(--bg-panel)!important;cursor:default}',
+    '#f-gantt-group:disabled,#f-title:disabled{opacity:.72;cursor:not-allowed}',
     '.gantt-task-label{display:block;font-size:10px;font-weight:600;opacity:.75;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.task-mobile-title .gantt-task-label{white-space:normal}'
   ].join('\n');
