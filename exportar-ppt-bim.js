@@ -307,6 +307,17 @@ function closeBimPptPeopleMenu(restoreFocus=false){
   trigger.setAttribute('aria-expanded','false');
   if(restoreFocus)trigger.focus();
 }
+function positionBimPptPeopleMenu(){
+  const menu=$('#bim-ppt-people-menu'),trigger=$('#bim-ppt-people-trigger');
+  if(!menu||!trigger||menu.hidden)return;
+  const header=menu.parentElement;
+  if(!header)return;
+  const box=header.getBoundingClientRect(),anchor=trigger.getBoundingClientRect();
+  const width=Math.min(menu.offsetWidth||308,Math.max(1,box.width-24));
+  const left=Math.max(12,Math.min(anchor.right-box.left-width,box.width-width-12));
+  menu.style.left=left+'px';
+  menu.style.right='auto';
+}
 function toggleBimPptPeopleMenu(){
   if(pptBimState.profile!=='by-person'||pptBimState.busy)return;
   const menu=$('#bim-ppt-people-menu'),trigger=$('#bim-ppt-people-trigger');
@@ -317,6 +328,7 @@ function toggleBimPptPeopleMenu(){
   closeBimPptMeetingMenu();
   menu.hidden=false;
   trigger.setAttribute('aria-expanded','true');
+  positionBimPptPeopleMenu();
 }
 function setBimPptPerson(key,checked){
   if(pptBimState.profile!=='by-person'||pptBimState.busy)return;
@@ -606,6 +618,12 @@ document.addEventListener('click',event=>{
   if(!event.target.closest('#bim-ppt-day-picker'))closeBimPptMeetingMenu();
   if(!event.target.closest('#bim-ppt-specialty-picker'))closeBimPptSpecialtyMenu();
   if(!event.target.closest('#bim-ppt-people-picker')&&!event.target.closest('#bim-ppt-people-menu'))closeBimPptPeopleMenu();
+});
+window.addEventListener('resize',()=>{
+  if(!$('#bim-ppt-people-menu')?.hidden)positionBimPptPeopleMenu();
+});
+$('#bim-ppt-back')?.querySelector('.bim-ppt-toolbar')?.addEventListener('scroll',()=>{
+  if(!$('#bim-ppt-people-menu')?.hidden)positionBimPptPeopleMenu();
 });
 document.addEventListener('change',event=>{
   const check=event.target.closest('[data-bim-ppt-person]');
