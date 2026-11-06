@@ -746,7 +746,7 @@ function ganttPpcMetric(period,monthly=false){
     return monthly?a.plannedEnd.slice(0,7)===period:
       isoWeekKey(new Date(a.plannedEnd+'T12:00:00'))===period;
   });
-  const cutoff=monthly?period+'-31':weekEnd(period);
+  const cutoff=monthly?new Date(Date.UTC(Number(period.slice(0,4)),Number(period.slice(5)),0)).toISOString().slice(0,10):weekEnd(period);
   const today=todayString();
   const observedUntil=cutoff<today?cutoff:today;
   const future=monthly?period>today.slice(0,7):
@@ -796,7 +796,7 @@ function ganttPpcDetailsHtml(metric,periodName){
     '<td>'+esc(a.completedOn?dateDisplay(a.completedOn):'—')+'</td>'+
     '<td>'+esc(a.state)+(a.late?' · Fuera de plazo':'')+'</td></tr>').join('');
   const label=metric.future?'Período futuro: PPC todavía no evaluable.':
-    'Cumplidas hasta el corte del período; los cierres después del viernes no se anticipan.';
+    'Se cuentan las culminaciones verificadas hasta el corte semanal o mensual; los cierres posteriores no se anticipan.';
   return '<div class="gantt-ppc-summary-metrics">'+
     '<span><b>'+current+'</b><small>PPC Gantt</small></span>'+
     '<span><b>'+metric.planned+'</b><small>Programadas</small></span>'+
@@ -834,6 +834,7 @@ function ganttTaskLabel(id){
     '.gantt-activity-option{display:block;width:100%;border:0;border-bottom:1px solid var(--border-base);background:transparent;padding:8px 10px;text-align:left;white-space:normal;overflow-wrap:anywhere;font:inherit;font-size:11px;color:var(--ink-primary);cursor:pointer}',
     '.gantt-activity-option:hover,.gantt-activity-option:focus-visible{background:var(--bg-selected)}',
     '.gantt-activity-option.selected{background:var(--bg-selected);font-weight:700}',
+    '.gantt-ppc-source-note{font-size:9.5px;color:var(--ink-muted);margin-bottom:9px}',
     '.gantt-ppc-summary{border-top:1px solid var(--border-base);padding-top:11px;margin-top:10px}',
     '.gantt-ppc-summary-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:8px}',
     '.gantt-ppc-summary-metrics span{padding:8px 9px;border:1px solid var(--border-base);border-radius:8px;background:var(--bg-subtle);display:flex;flex-direction:column;gap:2px;min-width:0}',
