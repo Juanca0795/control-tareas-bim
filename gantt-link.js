@@ -932,7 +932,7 @@ function ganttPpcDetailsHtml(metric,periodName){
     'Ingresa el avance REAL ACUMULADO al cierre de esta semana (0 a 100 %). La meta acumulada viene del Gantt Excel. La tarea completada en Control de Tareas equivale automáticamente a 100 %.';
   const details='<details class="gantt-ppc-details" '+(ganttPpcDetailsOpen?'open ':'')+'>'+
     '<summary onclick="ganttPpcDetailsOpen=!this.parentNode.open">Ver compromisos semanales Gantt · '+
-    esc(periodName)+'</summary><div class="gantt-ppc-table-scroll"><table><thead><tr>'+
+    esc(periodName)+' · registrar avance real</summary><div class="gantt-ppc-table-scroll"><table><thead><tr>'+
     '<th>ID</th><th>Actividad</th><th>Responsable</th>'+
     (metric.monthly?'<th>Semana</th>':'')+
     '<th>Meta semana</th><th>Meta acumulada</th><th>Real acumulado</th>'+
@@ -972,7 +972,10 @@ function ganttTaskLabel(id){
     '.gantt-ppc-summary{border-top:1px solid var(--border-base);padding-top:11px;margin-top:10px}',
     '.gantt-ppc-details summary{cursor:pointer;font-size:10.5px;font-weight:700;color:var(--accent-blue);padding:7px 3px}',
     '.gantt-ppc-table-scroll{max-height:320px;overflow:auto;border:1px solid var(--border-base);border-radius:8px}',
-    '.gantt-ppc-table-scroll table{width:100%;min-width:720px;border-collapse:collapse;font-size:10px}',
+    '.gantt-ppc-table-scroll table{width:100%;min-width:940px;border-collapse:collapse;font-size:10px}',
+    '.gantt-ppc-actual-input{width:82px;min-width:68px;max-width:100%;padding:5px 6px;border:1px solid var(--border-strong);border-radius:6px;background:var(--bg-panel);color:var(--ink-primary);font:600 10px Inter,sans-serif;text-align:center}',
+    '.gantt-ppc-actual-input:focus{outline:2px solid var(--accent-blue);outline-offset:1px}',
+    '.gantt-ppc-actual-input:disabled{opacity:.45;cursor:not-allowed}',
     '.gantt-ppc-table-scroll th,.gantt-ppc-table-scroll td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--border-base);vertical-align:top}',
     '.gantt-ppc-table-scroll th{position:sticky;top:0;background:var(--bg-panel);color:var(--ink-secondary);z-index:1}',
     '.gantt-ppc-table-scroll td small{display:block;font-size:9px;color:var(--ink-muted);margin-top:2px}',
