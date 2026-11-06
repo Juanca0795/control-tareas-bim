@@ -45,16 +45,15 @@ let weeklyInnerTab=(()=>{
 function syncWeeklySubtab(){
   const tracking=$('#weekly-seguimiento'),forecast=$('#weekly-proyeccion');
   if(!tracking||!forecast)return;
-  // AREA_BIM muestra Proyección directamente, sin subpestañas innecesarias.
-  // AREA_BIM2 conserva Seguimiento y Proyección con su navegación habitual.
-  const standard=typeof bimExportProfile==='undefined'||bimExportProfile!=='by-person';
-  if(standard)weeklyInnerTab='proyeccion';
-  $('#weekly-subtabs')?.classList.toggle('hidden',currentView!=='weekly'||standard);
-  $('.sidebar')?.classList.toggle('weekly-subtabs-visible',currentView==='weekly'&&!standard);
+  // Seguimiento y Proyección están disponibles en AREA_BIM y AREA_BIM2.
+  // El permiso adicional de exportación PPT no determina la navegación.
+  const showSubtabs=currentView==='weekly';
+  $('#weekly-subtabs')?.classList.toggle('hidden',!showSubtabs);
+  $('.sidebar')?.classList.toggle('weekly-subtabs-visible',showSubtabs);
   const trackingButton=$('#weekly-tab-seguimiento');
   const forecastButton=$('#weekly-tab-proyeccion');
-  if(trackingButton)trackingButton.hidden=standard;
-  if(forecastButton)forecastButton.hidden=standard;
+  if(trackingButton)trackingButton.hidden=false;
+  if(forecastButton)forecastButton.hidden=false;
   const showingForecast=weeklyInnerTab==='proyeccion';
   tracking.classList.toggle('hidden',showingForecast);
   forecast.classList.toggle('hidden',!showingForecast);
@@ -70,8 +69,6 @@ function syncWeeklySubtab(){
 }
 function switchWeeklySubtab(mode){
   if(!['seguimiento','proyeccion'].includes(mode))return;
-  if(mode==='seguimiento'&&
-    (typeof bimExportProfile==='undefined'||bimExportProfile!=='by-person'))return;
   // Al entrar a Proyección semanal se parte de la semana vigente.
   if(mode==='proyeccion'&&weeklyInnerTab!=='proyeccion'&&!weeklyProjectionMonthlyMode){
     selectedWeek=isoWeekKey(new Date());
