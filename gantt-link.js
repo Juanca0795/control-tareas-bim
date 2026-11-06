@@ -357,7 +357,7 @@ window.BIM_GANTT_ACTIVITIES=[
     "group": "Pkt de replanteo – paquete 9 (bim y costos)",
     "title": "Desarrollo de pkt e integración bim-costos",
     "owner": "Juan Carlos Cova",
-    "plannedStart": "2026-11-02",
+    "plannedStart": "2026-11-04",
     "plannedEnd": "2026-11-20"
   },
   {
