@@ -5925,10 +5925,19 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         <div class="gantt-link-panel" id="gantt-link-panel">
           <div id="gantt-select-fields" class="form-grid">
             <div class="form-field">
-              <label for="f-gantt-activity">Actividad del Gantt</label>
-              <select id="f-gantt-activity" onchange="selectGanttActivity()" onkeydown="handleGanttActivityKeydown(event)">
-                <option value="">Seleccionar actividad del Gantt</option>
-              </select>
+              <label for="f-gantt-activity-trigger">Actividad del Gantt</label>
+              <div class="gantt-activity-picker">
+                <select id="f-gantt-activity" hidden tabindex="-1" aria-hidden="true">
+                  <option value="">Seleccionar actividad del Gantt</option>
+                </select>
+                <button id="f-gantt-activity-trigger" type="button" class="gantt-activity-trigger"
+                  aria-haspopup="listbox" aria-controls="f-gantt-activity-list" aria-expanded="false"
+                  onclick="toggleGanttActivityDropdown()"
+                  onkeydown="handleGanttActivityKeydown(event);handleGanttDropdownKeydown(event)">Seleccionar actividad del Gantt</button>
+                <div id="f-gantt-activity-list" class="gantt-activity-options" role="listbox"
+                  aria-label="Actividades disponibles del Gantt" onkeydown="handleGanttDropdownKeydown(event)"
+                  onclick="const option=event.target.closest('[data-gantt-option]');if(option)chooseGanttActivity(option.dataset.ganttOption)" hidden></div>
+              </div>
             </div>
             <div class="form-field">
               <label for="f-gantt-group">Grupo del Gantt</label>
