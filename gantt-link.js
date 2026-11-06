@@ -736,26 +736,64 @@ function updateGanttEditorInfo(){
 /* PPC Gantt: calendario de Excel (fin programado) versus culminación en AREA_BIM.
    Una actividad Axx = un compromiso. Las no vinculadas permanecen en el denominador.
    Los enlaces de grupo manual NO satisfacen un Axx sin referencia explícita. */
-function ganttPpcMetric(period,monthly=false){
+/* PPC Gantt — planificación por SEMANA según los porcentajes diarios del Excel.
+ * Cada avance planificado en una semana constituye un compromiso semanal propio.
+ * Los porcentajes reales no se infieren del plan: se registran como valores
+ * acumulados por actividad y semana en bim_catalogs.data.ganttWeeklyProgress.
+ * Una tarea BIM vinculada con fecha real de cierre verificada equivale a 100%.
+ * Una actividad terminada antes del lunes no se vuelve a comprometer.
+ * El PPC Operativo permanece separado y oculto. */
+let ganttPpcDetailsOpen=false;
+function ganttPpcEvents(activity){
+  const source=window.BIM_GANTT_VIEW_SOURCE;
+  const row=source?.rows?.find(r=>r.kind==='activity'&&r.id===activity.id);
+  const entries=[];
+  const month=String(row?.start||activity.plannedStart||'').slice(0,7);
+  if(/^20\d{2}-\d\d$/.test(month)&&row?.percentByDay){
+    for(const [day,share] of Object.entries(row.percentByDay)){
+      const date=month+'-'+String(day).padStart(2,'0');
+      if(/^20\d{2}-\d\d-\d\d$/.test(date)&&
+         Number.isFinite(Number(share))&&Number(share)>0)
+        entries.push({date,share:Number(share)});
+    }
+  }
+  // Sin distribución diaria verificable, conservar el compromiso original:
+  // 100% en la fecha de fin, nunca inventar porcentajes por semana.
+  if(!entries.length&&/^20\d{2}-\d\d-\d\d$/.test(activity.plannedEnd||''))
+    return [{date:activity.plannedEnd,share:1}];
+  const total=entries.reduce((sum,r)=>sum+r.share,0);
+  return total>0?entries.map(r=>({date:r.date,share:r.share/total}))
+    .sort((a,b)=>a.date.localeCompare(b.date)):[];
+}
+function ganttPpcTarget(events,week){
+  const monday=weekStart(week);
+  if(!monday)return null;
+  const start=localISO(monday),end=weekEnd(week);
+  let weekly=0,cumulative=0;
+  for(const event of events){
+    if(event.date<=end)cumulative+=event.share;
+    if(event.date>=start&&event.date<=end)weekly+=event.share;
+  }
+  if(weekly<.000001)return null;
+  const clamp=n=>Math.min(100,Math.max(0,n*100));
+  return {weeklyTarget:clamp(weekly),plannedCumulative:clamp(cumulative)};
+}
+function ganttPpcLatestActual(activityId,week){
+  const progress=catalogs.ganttWeeklyProgress||{};
+  const active=Object.keys(progress).filter(w=>w<=week).sort().reverse();
+  for(const w of active){
+    const rec=progress[w]?.[activityId];
+    if(rec&&Number.isFinite(rec.actual))return {week:w,actual:rec.actual};
+  }
+  return null;
+}
+function ganttPpcWeekMetric(week){
   const source=Array.isArray(window.BIM_GANTT_ACTIVITIES)?window.BIM_GANTT_ACTIVITIES:[];
   const activeOwner=document.getElementById('weekly-owner')?.value||'';
   const responsible=activeOwner?ganttResponsibleForOwner(activeOwner):'';
-  const available=source.filter(a=>{
-    // Exclusión solicitada: Oriol no participa en el PPC Gantt, aunque
-    // sus actividades permanezcan intactas en el catálogo y en el HTML.
-    if(ganttText(a.owner)===ganttText('Oriol Huera Diaz'))return false;
-    if(!a.plannedEnd||!/^20\d{2}-\d\d-\d\d$/.test(a.plannedEnd))return false;
-    if(activeOwner&&a.owner!==responsible)return false;
-    return monthly?a.plannedEnd.slice(0,7)===period:
-      isoWeekKey(new Date(a.plannedEnd+'T12:00:00'))===period;
-  });
-  const cutoff=monthly?new Date(Date.UTC(Number(period.slice(0,4)),Number(period.slice(5)),0)).toISOString().slice(0,10):weekEnd(period);
-  const today=todayString();
-  const observedUntil=cutoff<today?cutoff:today;
-  const future=monthly?period>today.slice(0,7):
-    period>isoWeekKey(new Date());
-  const snapshot=monthly?null:weeklySnapshot(period);
-  const snapRows=new Map((snapshot?.rows||[]).map(row=>[row.id,row]));
+  const end=weekEnd(week),monday=weekStart(week),start=monday?localISO(monday):'';
+  const today=todayString(),observedUntil=end<today?end:today;
+  const future=week>isoWeekKey(new Date());
   const byActivity=new Map();
   for(const task of tasks){
     const link=catalogs.ganttLinksByTask?.[task.id];
@@ -763,60 +801,147 @@ function ganttPpcMetric(period,monthly=false){
     if(!byActivity.has(link.activityId))byActivity.set(link.activityId,[]);
     byActivity.get(link.activityId).push(task);
   }
-  let completed=0,unassigned=0,assigned=0,late=0,unknownDate=0;
-  let onTime=0,delayed=0,dueAtCutoff=0;
-  const rows=available.map(activity=>{
+  const rows=[];
+  for(const activity of source){
+    if(ganttText(activity.owner)===ganttText('Oriol Huera Diaz'))continue;
+    if(activeOwner&&activity.owner!==responsible)continue;
+    const target=ganttPpcTarget(ganttPpcEvents(activity),week);
+    if(!target)continue;
     const matches=byActivity.get(activity.id)||[];
-    const isAssigned=matches.length>0;
-    if(isAssigned)assigned++;else unassigned++;
-    let completedOn='',isDone=false;
+    let completedOn='';
     for(const task of matches){
-      const closed=snapRows.get(task.id);
-      const done=closed?closed.done:categoryOf(task.status)==='done';
-      const realDate=closed?closed.completedAt:task.completedAt;
-      if(done&&realDate&&realDate<=observedUntil){
-        if(!isDone||realDate<completedOn)completedOn=realDate;
-        isDone=true;
-      }else if(done&&!realDate)unknownDate++;
+      if(categoryOf(task.status)!=='done')continue;
+      const realDate=String(task.completedAt||'');
+      if(!/^20\d{2}-\d\d-\d\d$/.test(realDate)||realDate>today)continue;
+      if(!completedOn||realDate<completedOn)completedOn=realDate;
     }
-    if(isDone){
-      completed++;
-      if(completedOn>activity.plannedEnd)late++;
-      else onTime++;
-    }else if(activity.plannedEnd<observedUntil){
-      delayed++;
-    }else if(activity.plannedEnd===observedUntil){
-      dueAtCutoff++;
-    }
-    return {id:activity.id,title:activity.title,group:activity.group,owner:activity.owner,
-      plannedEnd:activity.plannedEnd,linkedTaskIds:matches.map(t=>t.id),
-      completedOn,isDone,late:isDone&&completedOn>activity.plannedEnd,
-      state:isDone?'Cumplida':isAssigned?'Pendiente':'Sin asignar'};
-  });
-  const punctualityBase=onTime+late+delayed+dueAtCutoff;
-  return {period,monthly,planned:available.length,completed,remaining:available.length-completed,
-    assigned,unassigned,late,lateCompleted:late,unknownDate,rows,future,observedUntil,
+    // Si la actividad se cerró en SEM45, ya no genera compromiso en SEM46.
+    if(completedOn&&start&&completedOn<start)continue;
+    const closingByCutoff=!!completedOn&&completedOn<=observedUntil;
+    const saved=catalogs.ganttWeeklyProgress?.[week]?.[activity.id];
+    const recordedActual=Number.isFinite(saved?.actual)?saved.actual:null;
+    const latest=ganttPpcLatestActual(activity.id,week);
+    const realCumulative=closingByCutoff?100:latest?.actual??null;
+    const hasEvidence=realCumulative!==null;
+    const isDone=!future&&hasEvidence&&
+      realCumulative+.01>=target.plannedCumulative;
+    const state=future?'Programada':
+      !hasEvidence?'Sin avance registrado':
+      isDone?'Cumplida':week===isoWeekKey(new Date())?'En evaluación':'Incumplida';
+    rows.push({
+      id:activity.id,title:activity.title,group:activity.group,owner:activity.owner,
+      week,plannedEnd:activity.plannedEnd,linkedTaskIds:matches.map(t=>t.id),
+      weeklyTarget:target.weeklyTarget,plannedCumulative:target.plannedCumulative,
+      recordedActual,realCumulative,realSourceWeek:latest?.week||'',
+      completedOn:closingByCutoff?completedOn:'',
+      isClosedByTask:closingByCutoff,isAssigned:matches.length>0,
+      hasEvidence,isDone,state,late:false
+    });
+  }
+  const planned=rows.length,completed=rows.filter(a=>a.isDone).length;
+  const assigned=rows.filter(a=>a.isAssigned).length;
+  const measured=rows.filter(a=>a.hasEvidence).length;
+  const delayed=end<today?planned-completed:0;
+  const dueAtCutoff=end===today?planned-completed:0;
+  // No se deduce puntualidad a partir de la fecha en la que se editó un %;
+  // hace falta una fecha real de logro para calcularla.
+  const onTime=rows.filter(a=>a.isDone&&a.completedOn&&a.completedOn<=end).length;
+  const punctualityBase=rows.filter(a=>a.completedOn).length;
+  return {period:week,week,monthly:false,planned,completed,remaining:planned-completed,
+    assigned,unassigned:planned-assigned,measured,late:0,lateCompleted:0,
+    unknownDate:0,rows,future,observedUntil,
     onTime,delayed,dueAtCutoff,punctualityBase,
-    closed:!future&&observedUntil>=cutoff,unscheduled:0,
-    ppc:future||!available.length?null:100*completed/available.length,
+    closed:!future&&observedUntil>=end,unscheduled:0,
+    ppc:future||!planned||!measured?null:100*completed/planned,
     punctuality:future||!punctualityBase?null:100*onTime/punctualityBase};
 }
+function ganttPpcMetric(period,monthly=false){
+  if(!monthly)return ganttPpcWeekMetric(period);
+  // PPC mensual = compromisos de todas las semanas ISO asignadas al mes.
+  // Una actividad de dos semanas cuenta una vez POR SEMANA, no una vez por mes.
+  const weeks=weeksAssignedToPpcMonth(period);
+  const list=weeks.map(ganttPpcWeekMetric);
+  const total=key=>list.reduce((n,m)=>n+(m[key]||0),0);
+  const planned=total('planned'),completed=total('completed'),measured=total('measured');
+  const today=todayString(),future=period>today.slice(0,7);
+  const cutoff=localISO(new Date(Date.UTC(Number(period.slice(0,4)),
+    Number(period.slice(5)),0)));
+  const onTime=total('onTime'),punctualityBase=total('punctualityBase');
+  return {period,month:period,monthly:true,weeks,weekMetrics:list,rows:list.flatMap(m=>m.rows),
+    planned,completed,remaining:planned-completed,measured,
+    assigned:total('assigned'),unassigned:total('unassigned'),late:total('late'),
+    lateCompleted:total('lateCompleted'),unknownDate:0,
+    future,observedUntil:cutoff<today?cutoff:today,
+    onTime,delayed:total('delayed'),dueAtCutoff:total('dueAtCutoff'),punctualityBase,
+    closed:!future&&cutoff<=today,unscheduled:0,
+    ppc:future||!planned||!measured?null:100*completed/planned,
+    punctuality:future||!punctualityBase?null:100*onTime/punctualityBase};
+}
+function setGanttWeeklyActual(activityId,week,input){
+  if(!/^[A-Za-z0-9_-]{1,64}$/.test(activityId)||!/^\d{4}-W\d{2}$/.test(week))return;
+  if(week>isoWeekKey(new Date())){
+    toast('No puedes registrar avance real para una semana futura.');return;
+  }
+  const value=String(input??'').trim();
+  const actual=value===''?null:Number(value);
+  if(actual!==null&&(!Number.isFinite(actual)||actual<0||actual>100)){
+    toast('El avance real debe estar entre 0 y 100 %.');
+    renderWeekly();return;
+  }
+  const metric=ganttPpcWeekMetric(week);
+  const activity=metric.rows.find(a=>a.id===activityId);
+  if(!activity){toast('El compromiso no existe para esa semana.');return;}
+  if(activity.recordedActual===actual)return;
+  const progress=catalogs.ganttWeeklyProgress||(catalogs.ganttWeeklyProgress={});
+  const rows=progress[week]||(progress[week]={});
+  rows[activityId]={actual,updatedAt:new Date().toISOString()};
+  ganttPpcDetailsOpen=!!document.querySelector('#weekly-gantt-summary details')?.open;
+  persist();
+  const details=document.querySelector('#weekly-gantt-summary details');
+  if(details&&ganttPpcDetailsOpen)details.open=true;
+  toast(actual===null?'Avance real retirado':'Avance real guardado: '+actual+' %');
+}
 function ganttPpcDetailsHtml(metric,periodName){
-  if(!metric.planned)return '<p class="gantt-ppc-empty">No hay actividades del Excel programadas en '+esc(periodName)+
+  if(!metric.planned)return '<p class="gantt-ppc-empty">No hay compromisos del Excel en '+esc(periodName)+
     ' para el responsable seleccionado.</p>';
-  const rows=metric.rows.map(a=>
-    '<tr><td>'+esc(a.id)+'</td><td>'+esc(a.title)+
-    '<small>'+esc(a.group)+'</small></td><td>'+esc(a.owner)+'</td>'+
-    '<td>'+esc(dateDisplay(a.plannedEnd))+'</td><td>'+esc(a.linkedTaskIds.join(', ')||'—')+'</td>'+
-    '<td>'+esc(a.completedOn?dateDisplay(a.completedOn):'—')+'</td>'+
-    '<td>'+esc(a.state)+(a.late?' · Fuera de plazo':'')+'</td></tr>').join('');
-  const label=metric.future?'Período futuro: PPC todavía no evaluable.':
-    'Se cuentan las culminaciones verificadas hasta el corte semanal o mensual; los cierres posteriores no se anticipan.';
-  return '<details class="gantt-ppc-details"><summary>Ver actividades del Gantt · '+esc(periodName)+
-   '</summary><div class="gantt-ppc-table-scroll"><table><thead><tr><th>ID</th><th>Actividad</th>'+
-    '<th>Responsable Gantt</th><th>Fin Excel</th><th>Tarea BIM</th><th>Culminación real</th>'+
-    '<th>Evaluación</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-    '<p>'+esc(label)+' Una actividad sin asignar permanece en la programación.</p></details>';
+  const fmt=n=>n===null||!Number.isFinite(n)?'—':
+    Number(n.toFixed(2)).toLocaleString('es-PE',{maximumFractionDigits:2})+' %';
+  const future=metric.future;
+  const rows=metric.rows.map(a=>{
+    const real=a.realCumulative===null?'Sin registro':fmt(a.realCumulative);
+    const edit=!metric.monthly&&!a.isClosedByTask?
+      '<input class="gantt-ppc-actual-input" type="number" min="0" max="100" step="0.01" '+
+        'value="'+(a.recordedActual===null?'':String(a.recordedActual))+'" '+
+        'placeholder="0–100" '+(future?'disabled ':'')+
+        'aria-label="Avance real acumulado de '+esc(a.id)+' '+esc(weekShort(a.week))+'" '+
+        'onchange="setGanttWeeklyActual(\''+a.id+'\',\''+a.week+'\',this.value)">':
+      '<strong>'+real+'</strong>';
+    const note=a.isClosedByTask?'Cierre BIM verificado':
+      a.realSourceWeek&&a.realSourceWeek!==a.week?'Último dato: '+weekShort(a.realSourceWeek):
+      a.recordedActual!==null?'Registrado':'';
+    return '<tr><td>'+esc(a.id)+'</td><td>'+esc(a.title)+
+      '<small>'+esc(a.group)+'</small></td><td>'+esc(a.owner)+'</td>'+
+      (metric.monthly?'<td>'+esc(weekShort(a.week))+'</td>':'')+
+      '<td>'+fmt(a.weeklyTarget)+'</td><td>'+fmt(a.plannedCumulative)+'</td>'+
+      '<td>'+edit+'<small>'+esc(note)+'</small></td>'+
+      '<td>'+esc(a.linkedTaskIds.join(', ')||'—')+'</td>'+
+      '<td>'+esc(a.state)+'</td></tr>';
+  }).join('');
+  const note=metric.monthly?
+    'PPC mensual: suma de los compromisos semanales, sin evaluar la actividad completa una sola vez. Cambia a PPC semanal para registrar avances.':
+    'Ingresa el avance REAL ACUMULADO al cierre de esta semana (0 a 100 %). La meta acumulada viene del Gantt Excel. La tarea completada en Control de Tareas equivale automáticamente a 100 %.';
+  const details='<details class="gantt-ppc-details" '+(ganttPpcDetailsOpen?'open ':'')+'>'+
+    '<summary onclick="ganttPpcDetailsOpen=!this.parentNode.open">Ver compromisos semanales Gantt · '+
+    esc(periodName)+'</summary><div class="gantt-ppc-table-scroll"><table><thead><tr>'+
+    '<th>ID</th><th>Actividad</th><th>Responsable</th>'+
+    (metric.monthly?'<th>Semana</th>':'')+
+    '<th>Meta semana</th><th>Meta acumulada</th><th>Real acumulado</th>'+
+    '<th>Tarea BIM</th><th>Evaluación</th></tr></thead><tbody>'+rows+
+    '</tbody></table></div><p>'+esc(note)+'</p></details>';
+  return '<p class="gantt-ppc-source-note">Fuente: Gantt Excel · '+
+    metric.planned+' compromisos · '+metric.completed+' cumplidos · '+
+    (metric.planned-metric.measured)+' sin avance real verificado. '+
+    'Meta LPS: 85 %.</p>'+details;
 }
 function ganttTaskLabel(id){
   const link=catalogs.ganttLinksByTask?.[id];
