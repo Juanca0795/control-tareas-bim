@@ -9269,7 +9269,7 @@ function weeklyTrend(m){
       const periodLabel=monthly?ppcMonthlyLabel(selectedPeriod):weekShort(selectedPeriod);
       const filterNote=$('#weekly-package')?.value||$('#weekly-team')?.value?
         ' · El Gantt no usa filtros de paquete/disciplina':'';
-      summary.innerHTML='<div class="gantt-ppc-source-note">GANTT EXCEL · Copia del 05/11/2026 (sin sincronización automática)'+
+      summary.innerHTML='<div class="gantt-ppc-source-note">GANTT EXCEL · Copia del 05/11/2026 (sin sincronización automática) · Oriol excluido del PPC Gantt'+
         ($('#weekly-owner')?.value?' · '+esc(detail.rows[0]?.owner||'Responsable filtrado'):' · Todos los responsables')+
         filterNote+'</div>'+ganttPpcDetailsHtml(detail,periodLabel);
     }else summary.innerHTML='';
