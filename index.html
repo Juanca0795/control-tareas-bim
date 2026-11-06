@@ -5573,6 +5573,21 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   outline:2px solid var(--accent-blue);outline-offset:1px
 }
 
+
+/* AREA_BIM2: check compacto de tablas, junto a especialidad en la única fila. */
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-tables-toggle{
+  display:inline-flex;flex:0 0 auto;align-items:center;gap:5px;
+  height:30px;padding:0 7px;border:1px solid var(--border-strong);
+  border-radius:7px;background:var(--bg-subtle);color:var(--ink-primary);
+  font:650 10px Inter,sans-serif;white-space:nowrap;cursor:pointer
+}
+.bim-ppt-dialog .bim-ppt-tables-toggle[hidden]{display:none!important}
+.bim-ppt-dialog .bim-ppt-tables-toggle input{
+  width:13px;height:13px;margin:0;flex:none;accent-color:var(--accent-blue);cursor:pointer
+}
+.bim-ppt-dialog .bim-ppt-tables-toggle:focus-within{
+  border-color:var(--accent-blue);outline:1px solid var(--accent-blue)
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -6304,6 +6319,12 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             onclick="setBimPptSpecialty('civil')">Civil 3D</button>
         </div>
       </div>
+      <label id="bim-ppt-tables-toggle" class="bim-ppt-tables-toggle" hidden
+        title="Incluir tablas de actividades sin fotografías y habilitar disciplinas como GIS">
+        <input type="checkbox" id="bim-ppt-include-tables"
+          onchange="setBimPptIncludeTables(this.checked)">
+        <span>Añadir tablas</span>
+      </label>
       <div id="bim-ppt-people-picker" class="bim-ppt-people-picker" hidden>
         <button type="button" id="bim-ppt-people-trigger" class="bim-ppt-people-trigger"
           aria-label="Seleccionar colaboradores para exportación PPTX"
