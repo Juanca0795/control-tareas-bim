@@ -5613,12 +5613,9 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
         <div class="weekly-card-head">
           <div><h2 id="weekly-trend-heading">EVOLUCIÓN DEL CUMPLIMIENTO PPC</h2><p id="weekly-trend-subtitle">Porcentaje de compromisos cumplidos en la semana planificada · Meta LPS 85%</p></div>
           <div class="weekly-trend-controls">
-            <label class="weekly-ppc-source-control" for="weekly-ppc-source">Medición
-              <select id="weekly-ppc-source" onchange="setWeeklyPpcSourceMode(this.value)" aria-label="Seleccionar medición de PPC">
-                <option value="compare" selected>Comparar ambos</option>
-                <option value="operational">PPC Operativo</option>
-                <option value="gantt">PPC Gantt</option>
-              </select>
+            <label class="weekly-monthly-toggle" title="Mostrar también el PPC operativo">
+              <input id="weekly-ppc-operational" type="checkbox" onchange="toggleWeeklyPpcOperational(this.checked)">
+              <span>PPC Operativo</span>
             </label>
             <label class="weekly-monthly-toggle" title="Alternar entre PPC semanal y mensual">
               <input id="weekly-ppc-monthly" type="checkbox" onchange="toggleWeeklyPpcMonthlyMode(this.checked)">
@@ -5627,7 +5624,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             <span class="weekly-mini-badge" id="weekly-trend-range">Sin semanas registradas</span>
           </div>
         </div>
-        <div class="weekly-trend-key"><span><i class="achieved"></i> <span id="weekly-trend-main-key-label">PPC Operativo</span></span><span id="weekly-trend-gantt-key" class="gantt-achieved"><i></i> PPC Gantt</span><span><i class="goal"></i> Meta LPS 85%</span><span id="weekly-trend-progress-key" hidden><i class="reference"></i><span id="weekly-trend-progress-label">PPC de la semana</span></span></div>
+        <div class="weekly-trend-key"><span class="gantt-achieved"><i></i> PPC Gantt</span><span id="weekly-trend-operational-key"><i class="achieved"></i> PPC Operativo</span><span><i class="goal"></i> Meta LPS 85%</span><span id="weekly-trend-progress-key" hidden><i class="reference"></i><span id="weekly-trend-progress-label">PPC de la semana</span></span></div>
         <div id="weekly-trend-chart" class="weekly-chart-content"></div>
         <div class="weekly-trend-footer" id="weekly-trend-footer"></div>
         <section class="gantt-ppc-summary" id="weekly-gantt-summary" aria-label="Detalle del PPC Gantt"></section>
@@ -9164,10 +9161,9 @@ function weeklyPpcHistoryWeeks(){
 // Vista mensual solo de presentación: los compromisos almacenados siguen
 // perteneciendo a su semana ISO. El mes se asigna por el jueves de la semana.
 let weeklyPpcMonthlyMode=false;
-let weeklyPpcSourceMode='compare';
-function setWeeklyPpcSourceMode(mode){
-  if(!['compare','operational','gantt'].includes(mode))return;
-  weeklyPpcSourceMode=mode;
+let weeklyPpcSourceMode='gantt';
+function toggleWeeklyPpcOperational(enabled){
+  weeklyPpcSourceMode=enabled?'compare':'gantt';
   renderWeekly();
 }
 function toggleWeeklyPpcMonthlyMode(enabled){
@@ -9229,17 +9225,13 @@ function weeklyTrend(m){
   const label=monthly?ppcMonthlyLabel:weekShort;
   const range=$('#weekly-trend-range'),referenceKey=$('#weekly-trend-progress-key');
   const heading=$('#weekly-trend-heading'),subtitle=$('#weekly-trend-subtitle');
-  const selector=$('#weekly-ppc-monthly'),sourceSelector=$('#weekly-ppc-source');
+  const selector=$('#weekly-ppc-monthly'),operationalToggle=$('#weekly-ppc-operational');
   if(selector)selector.checked=monthly;
-  if(sourceSelector)sourceSelector.value=weeklyPpcSourceMode;
-  const sourceName=weeklyPpcSourceMode==='gantt'?'GANTT':weeklyPpcSourceMode==='compare'?'COMPARATIVO':'OPERATIVO';
-  heading.textContent='EVOLUCIÓN PPC '+sourceName+(monthly?' · MENSUAL':'');
-  subtitle.textContent=weeklyPpcSourceMode==='operational'?
-    'Cumplimiento de las tareas operativas programadas · Meta LPS 85%':
-    'Comparación con fechas de fin del Gantt Excel · Meta LPS 85%';
-  const ganttKey=$('#weekly-trend-gantt-key'),firstKey=$('#weekly-trend-main-key-label');
-  if(ganttKey)ganttKey.hidden=weeklyPpcSourceMode!=='compare';
-  if(firstKey)firstKey.textContent=weeklyPpcSourceMode==='gantt'?'PPC Gantt':'PPC Operativo';
+  if(operationalToggle)operationalToggle.checked=weeklyPpcSourceMode==='compare';
+  heading.textContent='EVOLUCIÓN PPC GANTT'+(monthly?' · MENSUAL':'');
+  subtitle.textContent='Cumplimiento de actividades programadas en el Gantt Excel · Meta LPS 85%';
+  const operativeKey=$('#weekly-trend-operational-key');
+  if(operativeKey)operativeKey.hidden=weeklyPpcSourceMode!=='compare';
   if(range)range.textContent=!weeks.length?'Sin períodos registrados':
     (monthly?'Desde '+label(weeks[0])+' · 9 meses':'Desde '+label(weeks[0])+' · 9 semanas');
   const nowWeek=monthly?todayString().slice(0,7):isoWeekKey(new Date());
@@ -9251,28 +9243,20 @@ function weeklyTrend(m){
   });
   const ganttMetrics=weeks.map(w=>ganttPpcMetric(w,monthly));
   const ganttVals=ganttMetrics.map((g,i)=>weeks[i]>nowWeek?null:g.ppc);
-  const vals=weeklyPpcSourceMode==='gantt'?ganttVals:operationalVals;
+  const vals=ganttVals;
   const known=vals.filter(Number.isFinite);
   const ganttKnown=ganttVals.filter(Number.isFinite);
   const mean=known.length?known.reduce((a,b)=>a+b,0)/known.length:null;
   const ganttMean=ganttKnown.length?ganttKnown.reduce((a,b)=>a+b,0)/ganttKnown.length:null;
   const goal=85,delta=mean===null?null:mean-goal;
   const selectedPeriod=monthly?monthOfPpcWeek(selectedWeek):selectedWeek;
-  const selectedPpc=selectedPeriod<=nowWeek?
-    (weeklyPpcSourceMode==='gantt'?ganttPpcMetric(selectedPeriod,monthly).ppc:
-      (monthly?monthlyPpcMetrics(selectedPeriod):weeklyMetrics(selectedPeriod)).ppc):null;
+  const selectedPpc=selectedPeriod<=nowWeek?ganttPpcMetric(selectedPeriod,monthly).ppc:null;
   const summary=$('#weekly-gantt-summary');
   if(summary){
-    summary.hidden=weeklyPpcSourceMode==='operational';
-    if(!summary.hidden){
-      const detail=ganttPpcMetric(selectedPeriod,monthly);
-      const periodLabel=monthly?ppcMonthlyLabel(selectedPeriod):weekShort(selectedPeriod);
-      const filterNote=$('#weekly-package')?.value||$('#weekly-team')?.value?
-        ' · El Gantt no usa filtros de paquete/disciplina':'';
-      summary.innerHTML='<div class="gantt-ppc-source-note">GANTT EXCEL · Copia del 05/11/2026 (sin sincronización automática) · Oriol excluido del PPC Gantt'+
-        ($('#weekly-owner')?.value?' · '+esc(detail.rows[0]?.owner||'Responsable filtrado'):' · Todos los responsables')+
-        filterNote+'</div>'+ganttPpcDetailsHtml(detail,periodLabel);
-    }else summary.innerHTML='';
+    const detail=ganttPpcMetric(selectedPeriod,monthly);
+    const periodLabel=monthly?ppcMonthlyLabel(selectedPeriod):weekShort(selectedPeriod);
+    summary.hidden=false;
+    summary.innerHTML=ganttPpcDetailsHtml(detail,periodLabel);
   }
   const hasReference=Number.isFinite(selectedPpc)&&weeks.includes(selectedPeriod);
   referenceKey.hidden=!hasReference;
@@ -9283,14 +9267,13 @@ function weeklyTrend(m){
     operativeMeanVals.reduce((a,b)=>a+b,0)/operativeMeanVals.length:null;
   const percent=v=>v===null?'—':v.toFixed(1)+'%';
   footer.innerHTML=weeklyPpcSourceMode==='compare'?
-    '<span>PPC Operativo medio: <strong>'+percent(operativeMean)+
-    '</strong> · PPC Gantt medio: <strong>'+percent(ganttMean)+'</strong></span>'+
-    '<span class="gantt-ppc-note">Gantt: actividades del Excel con fin programado en el período</span>':
+    '<span>PPC Gantt medio: <strong>'+percent(ganttMean)+
+    '</strong> · PPC Operativo medio: <strong>'+percent(operativeMean)+'</strong></span>':
     mean===null?
       '<span>No existen compromisos PPC verificables en el período seleccionado.</span>':
-      `<span>PPC medio del período: <strong>${mean.toFixed(1)}%</strong> · ${known.length} ${monthly?'mes(es)':'semana(s)'} con compromisos</span>
+      `<span>PPC Gantt medio: <strong>${mean.toFixed(1)}%</strong> · ${known.length} ${monthly?'mes(es)':'semana(s)'} con compromisos</span>
       <span class="weekly-benchmark ${delta>0?'above':delta<0?'below':'at-goal'}">${delta>0?'↑ +':delta<0?'↓ −':'= '}${Math.abs(delta).toFixed(1)} pp ${delta>0?'por encima de':delta<0?'por debajo de':'en'} la meta LPS (85%)</span>`;
-  if(!known.length&&!(weeklyPpcSourceMode==='compare'&&ganttKnown.length)){
+  if(!known.length){
     weeklyEmpty(node,'Todavía no existen compromisos verificables en las semanas transcurridas.');
     return;
   }
@@ -9305,17 +9288,14 @@ function weeklyTrend(m){
       gradient.addColorStop(1,'rgba(37,199,229,.015)');
       return gradient;
     };
-    const ganttOnly=weeklyPpcSourceMode==='gantt';
-    const datasets=[
-      {label:ganttOnly?'PPC Gantt':'PPC Operativo',
-        data:vals,borderColor:ganttOnly?'#f3bb67':'#25c7e5',
-        backgroundColor:ganttOnly?'rgba(243,187,103,.10)':fillGradient,
-        fill:'origin',tension:.28,pointRadius:4,pointHoverRadius:6,
-        borderWidth:2.6,spanGaps:false}
-    ];
-    if(weeklyPpcSourceMode==='compare')datasets.push({
+    const datasets=[{
       label:'PPC Gantt',data:ganttVals,borderColor:'#f3bb67',
-      backgroundColor:'rgba(243,187,103,.12)',borderWidth:2.5,fill:false,
+      backgroundColor:'rgba(243,187,103,.10)',fill:'origin',
+      tension:.28,pointRadius:4,pointHoverRadius:6,borderWidth:2.6,spanGaps:false
+    }];
+    if(weeklyPpcSourceMode==='compare')datasets.push({
+      label:'PPC Operativo',data:operationalVals,borderColor:'#25c7e5',
+      backgroundColor:fillGradient,borderWidth:2.5,fill:false,
       pointRadius:4,pointHoverRadius:6,tension:.22,spanGaps:false
     });
     datasets.push({label:'Meta LPS (85%)',data:weeks.map(()=>goal),borderColor:c.pink,
@@ -9413,7 +9393,7 @@ function weeklyTrend(m){
     <div class="weekly-fallback-row"><span>${esc(label(w))}</span>
     <span class="weekly-track"><b style="width:${Number.isFinite(vals[i])?vals[i]:0}%"></b></span>
     <b>${Number.isFinite(vals[i])?vals[i].toFixed(1)+'%':'—'}${weeklyPpcSourceMode==='compare'?
-      ' · Gantt '+(Number.isFinite(ganttVals[i])?ganttVals[i].toFixed(1)+'%':'—'):''}</b></div>`).join('')+
+      ' · Operativo '+(Number.isFinite(operationalVals[i])?operationalVals[i].toFixed(1)+'%':'—'):''}</b></div>`).join('')+
     '<div class="weekly-fallback-row"><span>Meta LPS</span><span></span><b>85%</b></div>'+
     (hasReference?'<div class="weekly-fallback-row"><span>PPC '+esc(label(selectedPeriod))+
     '</span><span></span><b>'+selectedPpc.toFixed(1)+'%</b></div>':'')+'</div>';
