@@ -501,11 +501,11 @@ function ganttGroups(responsible=''){
     .filter(a=>a.owner===responsible).map(a=>a.group))]
     .sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
 }
-function refreshGanttForOwner(keepId){
+function refreshGanttForOwner(keepId,keepGroup){
   const owner=document.getElementById('f-owner')?.value||'';
   const responsible=ganttResponsibleForOwner(owner);
   const groupEl=document.getElementById('f-gantt-group');
-  const groupBefore=groupEl.value;
+  const groupBefore=keepGroup===undefined?groupEl.value:keepGroup;
   const activityBefore=keepId===undefined?
     document.getElementById('f-gantt-activity').value:keepId;
   const groups=ganttGroups(responsible);
@@ -564,7 +564,8 @@ function initializeGanttEditor(task){
   groupEl.value=link?.mode==='select'?(activity?.group||link?.group||''):'';
   document.getElementById('f-gantt-manual-group').value=link?.mode==='manual'?(link.group||''):'';
   document.getElementById('f-gantt-manual-activity').value=link?.mode==='manual'?(link.name||''):'';
-  refreshGanttForOwner(link?.mode==='select'?link.activityId:'');
+  refreshGanttForOwner(link?.mode==='select'?link.activityId:'',
+    link?.mode==='select'?(activity?.group||link?.group||''):'');
   updateGanttEditorMode();
 }
 function collectGanttEditorLink(){
