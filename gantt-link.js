@@ -733,6 +733,82 @@ function updateGanttEditorInfo(){
   // Mantener compatibilidad con actualizaciones del panel de calidad.
   // No modificar controles ni la descripción durante la validación.
 }
+/* PPC Gantt: calendario de Excel (fin programado) versus culminación en AREA_BIM.
+   Una actividad Axx = un compromiso. Las no vinculadas permanecen en el denominador.
+   Los enlaces de grupo manual NO satisfacen un Axx sin referencia explícita. */
+function ganttPpcMetric(period,monthly=false){
+  const source=Array.isArray(window.BIM_GANTT_ACTIVITIES)?window.BIM_GANTT_ACTIVITIES:[];
+  const activeOwner=document.getElementById('weekly-owner')?.value||'';
+  const responsible=activeOwner?ganttResponsibleForOwner(activeOwner):'';
+  const available=source.filter(a=>{
+    if(!a.plannedEnd||!/^20\d{2}-\d\d-\d\d$/.test(a.plannedEnd))return false;
+    if(activeOwner&&a.owner!==responsible)return false;
+    return monthly?a.plannedEnd.slice(0,7)===period:
+      isoWeekKey(new Date(a.plannedEnd+'T12:00:00'))===period;
+  });
+  const cutoff=monthly?period+'-31':weekEnd(period);
+  const today=todayString();
+  const observedUntil=cutoff<today?cutoff:today;
+  const future=monthly?period>today.slice(0,7):
+    period>isoWeekKey(new Date());
+  const snapshot=monthly?null:weeklySnapshot(period);
+  const snapRows=new Map((snapshot?.rows||[]).map(row=>[row.id,row]));
+  const byActivity=new Map();
+  for(const task of tasks){
+    const link=catalogs.ganttLinksByTask?.[task.id];
+    if(!link||link.mode!=='select'||!link.activityId)continue;
+    if(!byActivity.has(link.activityId))byActivity.set(link.activityId,[]);
+    byActivity.get(link.activityId).push(task);
+  }
+  let completed=0,unassigned=0,assigned=0,late=0,unknownDate=0;
+  const rows=available.map(activity=>{
+    const matches=byActivity.get(activity.id)||[];
+    const isAssigned=matches.length>0;
+    if(isAssigned)assigned++;else unassigned++;
+    let completedOn='',isDone=false;
+    for(const task of matches){
+      const closed=snapRows.get(task.id);
+      const done=closed?closed.done:categoryOf(task.status)==='done';
+      const realDate=closed?closed.completedAt:task.completedAt;
+      if(done&&realDate&&realDate<=observedUntil){
+        if(!isDone||realDate<completedOn)completedOn=realDate;
+        isDone=true;
+      }else if(done&&!realDate)unknownDate++;
+    }
+    if(isDone){completed++;if(completedOn>activity.plannedEnd)late++;}
+    return {id:activity.id,title:activity.title,group:activity.group,owner:activity.owner,
+      plannedEnd:activity.plannedEnd,linkedTaskIds:matches.map(t=>t.id),
+      completedOn,isDone,late:isDone&&completedOn>activity.plannedEnd,
+      state:isDone?'Cumplida':isAssigned?'Pendiente':'Sin asignar'};
+  });
+  return {period,monthly,planned:available.length,completed,remaining:available.length-completed,
+    assigned,unassigned,late,unknownDate,rows,future,observedUntil,
+    ppc:future||!available.length?null:100*completed/available.length};
+}
+function ganttPpcDetailsHtml(metric,periodName){
+  if(!metric.planned)return '<p class="gantt-ppc-empty">No hay actividades del Excel programadas en '+esc(periodName)+
+    ' para el responsable seleccionado.</p>';
+  const current=metric.ppc===null?'—':metric.ppc.toFixed(1)+'%';
+  const rows=metric.rows.map(a=>
+    '<tr><td>'+esc(a.id)+'</td><td>'+esc(a.title)+
+    '<small>'+esc(a.group)+'</small></td><td>'+esc(a.owner)+'</td>'+
+    '<td>'+esc(dateDisplay(a.plannedEnd))+'</td><td>'+esc(a.linkedTaskIds.join(', ')||'—')+'</td>'+
+    '<td>'+esc(a.completedOn?dateDisplay(a.completedOn):'—')+'</td>'+
+    '<td>'+esc(a.state)+(a.late?' · Fuera de plazo':'')+'</td></tr>').join('');
+  const label=metric.future?'Período futuro: PPC todavía no evaluable.':
+    'Cumplidas hasta el corte del período; los cierres después del viernes no se anticipan.';
+  return '<div class="gantt-ppc-summary-metrics">'+
+    '<span><b>'+current+'</b><small>PPC Gantt</small></span>'+
+    '<span><b>'+metric.planned+'</b><small>Programadas</small></span>'+
+    '<span><b>'+metric.completed+'</b><small>Cumplidas</small></span>'+
+    '<span><b>'+metric.remaining+'</b><small>Pendientes</small></span>'+
+    '<span><b>'+metric.unassigned+'</b><small>Sin asignar</small></span>'+
+    '</div><details class="gantt-ppc-details"><summary>Ver actividades del Gantt · '+esc(periodName)+
+    '</summary><div class="gantt-ppc-table-scroll"><table><thead><tr><th>ID</th><th>Actividad</th>'+
+    '<th>Responsable Gantt</th><th>Fin Excel</th><th>Tarea BIM</th><th>Culminación real</th>'+
+    '<th>Evaluación</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<p>'+esc(label)+' Una actividad sin asignar permanece en la programación.</p></details>';
+}
 function ganttTaskLabel(id){
   const link=catalogs.ganttLinksByTask?.[id];
   if(!link||link.mode==='none')return '';
@@ -758,6 +834,22 @@ function ganttTaskLabel(id){
     '.gantt-activity-option{display:block;width:100%;border:0;border-bottom:1px solid var(--border-base);background:transparent;padding:8px 10px;text-align:left;white-space:normal;overflow-wrap:anywhere;font:inherit;font-size:11px;color:var(--ink-primary);cursor:pointer}',
     '.gantt-activity-option:hover,.gantt-activity-option:focus-visible{background:var(--bg-selected)}',
     '.gantt-activity-option.selected{background:var(--bg-selected);font-weight:700}',
+    '.gantt-ppc-summary{border-top:1px solid var(--border-base);padding-top:11px;margin-top:10px}',
+    '.gantt-ppc-summary-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:8px}',
+    '.gantt-ppc-summary-metrics span{padding:8px 9px;border:1px solid var(--border-base);border-radius:8px;background:var(--bg-subtle);display:flex;flex-direction:column;gap:2px;min-width:0}',
+    '.gantt-ppc-summary-metrics b{font-size:16px;color:var(--ink-primary);font-variant-numeric:tabular-nums}',
+    '.gantt-ppc-summary-metrics small{font-size:9px;color:var(--ink-secondary)}',
+    '.gantt-ppc-details summary{cursor:pointer;font-size:10.5px;font-weight:700;color:var(--accent-blue);padding:7px 3px}',
+    '.gantt-ppc-table-scroll{max-height:320px;overflow:auto;border:1px solid var(--border-base);border-radius:8px}',
+    '.gantt-ppc-table-scroll table{width:100%;min-width:720px;border-collapse:collapse;font-size:10px}',
+    '.gantt-ppc-table-scroll th,.gantt-ppc-table-scroll td{padding:7px 9px;text-align:left;border-bottom:1px solid var(--border-base);vertical-align:top}',
+    '.gantt-ppc-table-scroll th{position:sticky;top:0;background:var(--bg-panel);color:var(--ink-secondary);z-index:1}',
+    '.gantt-ppc-table-scroll td small{display:block;font-size:9px;color:var(--ink-muted);margin-top:2px}',
+    '.gantt-ppc-details p,.gantt-ppc-empty{font-size:10px;color:var(--ink-secondary);margin:5px 0}',
+    '.weekly-ppc-source-control{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-secondary)}',
+    '.weekly-ppc-source-control select{height:30px;font-size:10px;max-width:145px;padding:4px 7px}',
+    '.weekly-trend-key .gantt-achieved i{display:inline-block;width:14px;height:2px;background:#f3bb67;margin-right:5px}',
+    '@media(max-width:620px){.gantt-ppc-summary-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.weekly-trend-controls{flex-wrap:wrap}}',
     '.gantt-link-panel .form-grid{margin:0}',
     '#f-gantt-group:disabled,#f-title:disabled{opacity:.72;cursor:not-allowed}',
     '.gantt-task-label{display:block;font-size:10px;font-weight:600;opacity:.75;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
