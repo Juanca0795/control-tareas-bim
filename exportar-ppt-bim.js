@@ -239,6 +239,31 @@ function pptBimCompletionWeek(task){
   const parsed=new Date(date+'T12:00:00');
   return Number.isNaN(parsed.getTime())?'':isoWeekKey(parsed);
 }
+/* AREA_BIM2: considerar SOLAMENTE tareas de la semana/período elegido.
+ * La fecha de ingreso respeta la fecha declarada/retroactiva de Control de Tareas;
+ * la culminación se toma del día real de finalización, nunca del plazo estimado.
+ * Las capturas no hacen que una actividad de semanas anteriores pase a ser
+ * una actividad nueva en el reporte seleccionado. */
+function pptBimTaskMatchesReport(task,week,mode,weekFilters,meetingPeriod=null){
+  const entryWeek=taskEntryWeek(task);
+  const completionWeek=pptBimCompletionWeek(task);
+  if(mode==='semana'){
+    return (weekFilters?.ingreso!==false&&entryWeek===week)||
+      (weekFilters?.culminacion!==false&&completionWeek===week);
+  }
+  if(mode==='ingreso')return entryWeek===week;
+  if(mode==='culminacion')return completionWeek===week;
+  if(mode==='reunion'){
+    if(!meetingPeriod)return false;
+    const entry=String(taskCreationDate(task)||'').slice(0,10);
+    const completed=categoryOf(task.status)==='done'
+      ?String(task.completedAt||'').slice(0,10):'';
+    const matches=date=>/^\d{4}-\d{2}-\d{2}$/.test(date)&&
+      date>=meetingPeriod.start&&date<=meetingPeriod.end;
+    return matches(entry)||matches(completed);
+  }
+  return false;
+}
 // Disponibilidad: ventana de nueve semanas más períodos con evidencia real.
 function pptBimAvailableWeeks(anchor){
   const available=new Set([anchor]);
@@ -287,8 +312,12 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
     if((packageFilter&&task.package!==packageFilter)||
        (teamFilter&&task.team!==teamFilter)||
        (ownerFilter&&task.owner!==ownerFilter))continue;
-    // AREA_BIM conserva su exclusión por fecha de culminación.
-    // AREA_BIM2 debe mostrar también tareas que no tienen fotografías para el período.
+    // En AREA_BIM2 el período corresponde a la ACTIVIDAD, no solo a
+    // la fecha en que se subió alguna foto. Excluir entradas de semanas
+    // anteriores aunque aún estén pendientes o carezcan de capturas.
+    if(specialty&&!pptBimTaskMatchesReport(
+      task,week,mode,weekFilters,meetingPeriod))continue;
+    // AREA_BIM conserva su flujo original de evidencia sin cambios.
     const matchesCompletion=mode!=='culminacion'||pptBimCompletionWeek(task)===week;
     if(!matchesCompletion&&!includeEmpty)continue;
     let matchedPhotos=0;
@@ -463,7 +492,12 @@ function pptBimTableSpecialties(){
   const teams=new Map();
   const sector=pptBimState.sectorFilter||'';
   const packageFilter=$('#weekly-package')?.value||'';
+  const meeting=pptBimState.mode==='reunion'
+    ?pptBimMeetingReportPeriod(pptBimState.week,pptBimState.meetingDay,
+      pptBimState.manualMeetingRange):null;
   for(const task of tasks){
+    if(!pptBimTaskMatchesReport(task,pptBimState.week,pptBimState.mode,
+      pptBimState.weekFilters,meeting))continue;
     if(sector&&pptBimSector(task)!==sector)continue;
     if(packageFilter&&task.package!==packageFilter)continue;
     const name=String(task.team||'').trim();
@@ -576,7 +610,7 @@ function pptBimRefreshModeInfo(){
   pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: fotos en grupos de tres ordenadas por persona y sector. Marca Añadir tablas para incluir actividades sin capturas al final y activar disciplinas con registros solo tabulares, como GIS. Se conservan los filtros de semana, sector, disciplina, paquete y colaborador.'
+    ?'Perfil AREA_BIM2: solo actividades ingresadas o completadas en la semana seleccionada (o dentro del período de Reunión). Las fotos se ordenan por persona y sector en grupos de tres; con Añadir tablas, las actividades de ese mismo período sin capturas van al final. Se respetan los filtros de sector, paquete, disciplina y personal.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -631,9 +665,9 @@ function pptBimRefreshModeInfo(){
     const ingreso=pptBimState.weekFilters.ingreso,culminacion=pptBimState.weekFilters.culminacion;
     description.textContent='SEM'+Number(pptBimState.week.slice(-2))+' · '+
       (ingreso&&culminacion?
-        'Ingreso O Culminación: fotos de ingreso o tareas completadas esta semana, sin duplicados. Las actividades sin fotos van en la tabla final.':
-        ingreso?'Solo ingreso: fotos cargadas esta semana; actividades sin fotos en tabla final.':
-        'Solo culminación: fotos de tareas completadas esta semana; actividades sin fotos en tabla final.');
+        'Ingreso o culminación de actividades en esta semana, sin duplicados. Fotografías del período y tablas finales para actividades sin capturas.':
+        ingreso?'Solo actividades ingresadas esta semana; sus capturas del período y las tareas sin captura en tablas.':
+        'Solo actividades completadas esta semana; sus capturas y las tareas sin captura en tablas.');
   }else{
     description.textContent='Culminación: fotografías de actividades completadas durante esta semana; no implica que la foto se haya tomado ese día.';
   }
