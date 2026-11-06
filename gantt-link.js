@@ -197,7 +197,7 @@ window.BIM_GANTT_ACTIVITIES=[
     "group": "Interferencias",
     "title": "Coordinación con sc: agua y desagüe sector 02",
     "owner": "Roger Cabrera",
-    "plannedStart": "2026-11-21",
+    "plannedStart": "2026-11-23",
     "plannedEnd": "2026-11-23"
   },
   {
@@ -341,7 +341,7 @@ window.BIM_GANTT_ACTIVITIES=[
     "group": "Planos generales – sector 3 (igapro)",
     "title": "Planos de paquetes 30, 31, 32 y 33",
     "owner": "Juan Carlos Cova",
-    "plannedStart": "2026-11-01",
+    "plannedStart": "2026-11-02",
     "plannedEnd": "2026-11-09"
   },
   {
@@ -349,7 +349,7 @@ window.BIM_GANTT_ACTIVITIES=[
     "group": "Zonificación geotécnica y capacidad portante",
     "title": "Elaboración de planos geotécnicos",
     "owner": "Juan Carlos Cova",
-    "plannedStart": "2026-11-01",
+    "plannedStart": "2026-11-02",
     "plannedEnd": "2026-11-06"
   },
   {
@@ -357,7 +357,7 @@ window.BIM_GANTT_ACTIVITIES=[
     "group": "Pkt de replanteo – paquete 9 (bim y costos)",
     "title": "Desarrollo de pkt e integración bim-costos",
     "owner": "Juan Carlos Cova",
-    "plannedStart": "2026-11-01",
+    "plannedStart": "2026-11-02",
     "plannedEnd": "2026-11-20"
   },
   {
