@@ -1154,7 +1154,7 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   pptBimAddText(slide,label+' · '+week.replace('-W',' / S'),
     {x:.17,y:6.88,w:3.83,h:.16,fontSize:10,color:'FFFFFF',bold:true,align:'center',fit:'shrink'});
 }
-/* AREA_BIM2: actividades sin fotografías en tablas nativas editables de PowerPoint.
+/* AREA_BIM2: actividades sin fotografías en cuadrículas editables de PowerPoint.
  * Se ordenan por responsable y sector, se deduplican por código y se paginan
  * sin mezclar con la cuadrícula de tres evidencias fotográficas. */
 function pptBimMissingActivitySlides(pptx,week,items){
