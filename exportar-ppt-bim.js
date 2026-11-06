@@ -245,6 +245,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
         id:'sin-captura-'+task.id,path:'',empty:true,taskId:task.id,
         package:task.package||'Sin paquete',
         team:task.team||'',owner:task.owner||'',
+        status:task.status||'',deadline:task.deadline||'',
         title:task.title||task.id,caption:task.title||task.id,
         name:'Sin captura',photoIndex:0,photoCount:0
       });
@@ -253,6 +254,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   out.sort((a,b)=>
     Number(!!a.empty)-Number(!!b.empty)||
     (specialty?a.owner.localeCompare(b.owner,'es',{numeric:true}):a.package.localeCompare(b.package,'es',{numeric:true}))||
+    (specialty?pptBimSector(a).localeCompare(pptBimSector(b),'es',{numeric:true}):0)||
     (specialty?a.package.localeCompare(b.package,'es',{numeric:true}):0)||
     a.taskId.localeCompare(b.taskId,'es',{numeric:true})||
     a.id.localeCompare(b.id));
@@ -416,7 +418,7 @@ function pptBimRefreshModeInfo(){
   pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: todas las actividades según los filtros de responsable y especialidad. Las fotografías disponibles se presentan primero; las actividades sin capturas para el período aparecen al final con un recuadro vacío. El modo Por semana combina Ingreso y Culminación sin duplicar fotos. Se mantienen los filtros de sector, paquete, disciplina y colaborador.'
+    ?'Perfil AREA_BIM2: fotografías ordenadas por responsable y sector, distribuidas de tres en tres sin espacios intermedios. Las actividades sin fotografías en el período aparecen al final en una tabla editable, incluida la disciplina GIS. Se conservan los filtros de semana, sector, disciplina, paquete y colaborador.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -712,19 +714,39 @@ function renderBimPptExport(){
   const byPerson=pptBimState.profile==='by-person';
   const groups=new Map();
   pptBimState.items.forEach((item,index)=>{
-    const key=byPerson&&item.empty?'__sin_capturas__':pptBimGroupName(item);
+    const key=byPerson&&item.empty?'__missing_activities__':pptBimGroupName(item);
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push({x:item,index});
   });
   area.innerHTML=pptBimState.items.length?[...groups].map(([name,group])=>{
-    const missing=name==='__sin_capturas__';
-    const heading=missing?'ACTIVIDADES SIN CAPTURAS':name;
+    const missing=byPerson&&name==='__missing_activities__';
     const photoCount=group.filter(({x})=>!x.empty).length;
     const taskCount=new Set(group.map(({x})=>x.taskId)).size;
+    if(missing){
+      // Las tareas sin foto nunca se simulan como imágenes: se exportan como tabla.
+      const rows=group.map(({x,index})=>
+        '<tr><td class="bim-ppt-missing-check"><input type="checkbox" data-bim-ppt-check="'+index+'"'+
+        (x.enabled?' checked':'')+' aria-label="Incluir '+esc(x.taskId)+'"></td>'+
+        '<td class="bim-ppt-missing-code">'+esc(x.taskId)+'</td>'+
+        '<td><textarea rows="2" maxlength="240" id="bim-ppt-caption-'+index+
+        '" data-bim-ppt-caption="'+index+'" aria-label="Descripción de '+esc(x.taskId)+'">'+
+        esc(x.caption)+'</textarea></td>'+
+        '<td>'+esc(x.owner||'Sin responsable')+'</td>'+
+        '<td>'+esc(pptBimSector(x))+'</td>'+
+        '<td>'+esc(x.team||'Sin disciplina')+'</td>'+
+        '<td>'+esc(x.package||'Sin paquete')+'</td>'+
+        '<td>'+esc(x.status||'Sin estado')+'</td></tr>').join('');
+      return '<section class="bim-ppt-group bim-ppt-missing-group"><h3>ACTIVIDADES SIN CAPTURAS'+
+        ' <span>'+taskCount+' actividad'+(taskCount===1?'':'es')+' · tabla para PPTX</span></h3>'+
+        '<div class="bim-ppt-missing-table-wrap"><table class="bim-ppt-missing-table">'+
+        '<thead><tr><th>Incluir</th><th>Código BIM</th><th>Actividad / descripción</th>'+
+        '<th>Responsable</th><th>Sector</th><th>Disciplina</th><th>Paquete</th><th>Estado</th></tr></thead>'+
+        '<tbody>'+rows+'</tbody></table></div></section>';
+    }
     const countLabel=byPerson
       ?taskCount+' actividad'+(taskCount===1?'':'es')+' · '+photoCount+' foto'+(photoCount===1?'':'s')
       :photoCount+' fotografía(s)';
-    return '<section class="bim-ppt-group"><h3>'+esc(heading)+
+    return '<section class="bim-ppt-group"><h3>'+esc(name)+
       ' <span>'+countLabel+'</span></h3><div class="bim-ppt-items">'+
       group.map(({x,index})=>
         '<article class="bim-ppt-item">'+
@@ -732,12 +754,9 @@ function renderBimPptExport(){
         (x.enabled?' checked':'')+'> Incluir</label>'+
         '<label class="bim-ppt-caption-label" for="bim-ppt-caption-'+index+'">Descripción para el PPT</label>'+
         '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+
-        (x.empty?' · '+esc(x.owner||'Sin responsable')+' · Sin captura':
-          ' · Foto '+x.photoIndex+' de '+x.photoCount)+'</span></div>'+
-        (x.empty
-          ?'<div class="bim-ppt-thumb bim-ppt-thumb-empty" role="img" aria-label="Actividad sin captura">SIN CAPTURA</div>'
-          :'<button type="button" class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'"'+
-            ' aria-label="Ver fotografía '+(index+1)+' en pantalla completa" title="Ampliar fotografía">Vista previa</button>')+
+        ' · Foto '+x.photoIndex+' de '+x.photoCount+'</span></div>'+
+        '<button type="button" class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'"'+
+        ' aria-label="Ver fotografía '+(index+1)+' en pantalla completa" title="Ampliar fotografía">Vista previa</button>'+
         '<div class="bim-ppt-fields">'+
         '<textarea id="bim-ppt-caption-'+index+'" data-bim-ppt-caption="'+index+'" maxlength="240" rows="2">'+
         esc(x.caption)+'</textarea></div></article>').join('')+
@@ -860,25 +879,22 @@ function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=fal
   pptBimAddText(slide,'ÁREA BIM · S&P',{x:.45,y:6.87,w:3.4,h:.16,
     fontSize:10,color:'FFFFFF',bold:true,align:'center'});
 }
-/* Ordenar las evidencias por sector, pero completar las 3 columnas
- * consecutivamente, incluso entre sectores. Solo la última diapositiva
- * puede conservar 1 o 2 columnas sin evidencia.
- * AREA_BIM mantiene la secuencia por paquete dentro de cada sector;
- * AREA_BIM2 prioriza los grupos de 3 por responsable antes de los remanentes.
- */
+/* AREA_BIM2: ordenar por persona y sector; completar SIEMPRE tres fotos
+ * por diapositiva mientras queden fotografías. Solo la última puede tener
+ * una o dos. Las tareas sin foto van después, en tablas independientes.
+ * AREA_BIM conserva el empaquetado anterior. */
 function pptBimPackSlides(items,byPerson=false){
   if(byPerson){
-    // Primero todas las fotografías; al final, una caja vacía por actividad sin foto.
-    // No combinar sectores en una misma diapositiva.
+    const photos=items.filter(item=>!item.empty);
+    const sectorRank=name=>['Sector 1','Sector 2','Sector 3','Sin sector'].indexOf(name);
+    photos.sort((a,b)=>
+      pptBimNormalizeOwner(a.owner).localeCompare(pptBimNormalizeOwner(b.owner),'es',{numeric:true})||
+      sectorRank(pptBimSector(a))-sectorRank(pptBimSector(b))||
+      (a.package||'').localeCompare(b.package||'','es',{numeric:true})||
+      a.taskId.localeCompare(b.taskId,'es',{numeric:true})||
+      String(a.id).localeCompare(String(b.id),'es',{numeric:true}));
     const pages=[];
-    for(const withoutPhoto of [false,true]){
-      for(const sector of ['Sector 1','Sector 2','Sector 3','Sin sector']){
-        const group=items.filter(item=>!!item.empty===withoutPhoto&&pptBimSector(item)===sector);
-        if(!group.length)continue;
-        const sorted=pptBimOrderSectorPhotos(group,true);
-        for(let i=0;i<sorted.length;i+=3)pages.push(sorted.slice(i,i+3));
-      }
-    }
+    for(let i=0;i<photos.length;i+=3)pages.push(photos.slice(i,i+3));
     return pages;
   }
   const sectorGroups=new Map();
