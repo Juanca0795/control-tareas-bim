@@ -487,7 +487,7 @@ function ganttResponsibleForOwner(owner){
   if(!normalized)return '';
   // Orden importante: identificar primero a los integrantes del equipo de Cova.
   if((has('juan')&&has('cova'))||(has('arnold')&&has('cova'))||
-     has('naysha')||has('ivan')||has('pedro')||normalized==='cova')
+     has('naysha')||has('ivan')||has('ivana')||has('pedro')||normalized==='cova')
     return 'Juan Carlos Cova';
   if(has('roger')||has('diana'))return 'Roger Cabrera';
   if(has('oriol'))return 'Oriol Huera Diaz';
