@@ -1,4 +1,4 @@
-const VGG_CSS="\n#bim-gantt-overlay{position:fixed;inset:0;background:rgba(4,9,20,.82);z-index:99990;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}\n#bim-gantt-overlay[hidden]{display:none!important}\n#bim-gantt-overlay *{box-sizing:border-box}\n#bim-gantt-modal{display:flex;flex-direction:column;width:min(97vw,1800px);height:min(94dvh,1100px);min-width:0;max-height:100dvh;overflow:hidden;border:1px solid var(--border-strong,#334155);border-radius:12px;background:var(--bg-panel,#10182a);color:var(--ink-primary,#f8fafc);box-shadow:0 20px 80px #0009}\n#bim-gantt-modal.max{width:100vw;height:100dvh;border-radius:0;border:0}\n#bim-gantt-overlay:has(#bim-gantt-modal.max){padding:0}\n.vgg-header{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-base,#344052)}\n.vgg-header h2{font-size:13px;font-weight:800;margin:0 0 4px;letter-spacing:.02em}\n.vgg-header p{font-size:10px;color:var(--ink-secondary,#aab6ca);margin:0;line-height:1.5}\n.vgg-header-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}\n.vgg-header-actions button{background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-base,#334155);border-radius:6px;padding:7px 10px;cursor:pointer;font-size:10px}\n.vgg-controls{padding:9px 15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-base,#334155)}\n.vgg-controls label{font-size:10px;color:var(--ink-secondary,#cbd5e1);display:flex;gap:5px;align-items:center}\n.vgg-controls select,.vgg-controls input[type=search]{max-width:170px;height:30px;border:1px solid var(--border-base,#334155);border-radius:6px;padding:4px 7px;background:var(--bg-subtle,#1e293b);font-size:10px;color:var(--ink-primary,#f8fafc)}\n.vgg-controls input[type=search]{width:165px}\n.vgg-controls input[type=checkbox]{accent-color:#25c7e5}\n.vgg-count{margin-left:auto;font-size:10px;color:var(--ink-secondary,#94a3b8)}\n.vgg-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#f8fafc;scrollbar-width:thin}\n.vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Arial,Inter,sans-serif;font-size:10px;color:#293850;background:#fff}\n.vgg-table th,.vgg-table td{border-bottom:1px solid #c4ccd6;border-right:1px solid #bbc5d2;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:28px}\n.vgg-table thead th{position:sticky;color:#f7fbff;text-align:center;background:#1d2d4d;font-weight:750;z-index:8}\n.vgg-table thead .vgg-week th{top:0;height:25px}\n.vgg-table thead .vgg-date th{top:25px;height:23px}\n.vgg-table thead .vgg-weekday th{top:48px;height:25px}\n.vgg-table thead th.vgg-meta{top:0;z-index:11}\n.vgg-table .vgg-fixed-0{position:sticky;left:0;z-index:5}\n.vgg-table .vgg-fixed-1{position:sticky;left:56px;z-index:5}\n.vgg-table .vgg-fixed-2{position:sticky;left:118px;z-index:5}\n.vgg-table thead .vgg-fixed-0,.vgg-table thead .vgg-fixed-1,.vgg-table thead .vgg-fixed-2{z-index:14}\n.vgg-table tbody tr.vgg-activity td{background:#fff}\n.vgg-table tbody tr.vgg-activity:nth-child(even) td{background:#f4f6f9}\n.vgg-table tbody tr.vgg-activity:hover td:not(.scheduled){background:#e6effd!important}\n.vgg-table tbody tr.vgg-activity{cursor:pointer}\n.vgg-table tr.vgg-owner-row td{background:#29466e;color:#f0f5fd;font-weight:750}\n.vgg-table tr.vgg-group-row td{background:#3a597f;color:#f2f6fc;font-weight:700}\n.vgg-table tr.vgg-owner-row td{letter-spacing:.03em}\n.vgg-table tr.vgg-group-row td{color:#f1f6fc}\n.vgg-table .vgg-id{font-weight:800;color:#324c78;text-align:center}\n.vgg-table .vgg-center{text-align:center}\n.vgg-table .vgg-day{padding:0}\n.vgg-table tbody td.vgg-day.weekend:not(.scheduled){background:#fbe4e7!important}\n.vgg-table thead tr.vgg-week th.excel-week-dark,\n.vgg-table thead tr.vgg-date th.excel-week-dark,\n.vgg-table thead tr.vgg-weekday th.excel-week-dark{background:#1b2a49;color:#fff}\n.vgg-table thead tr.vgg-week th.excel-week-light,\n.vgg-table thead tr.vgg-date th.excel-week-light,\n.vgg-table thead tr.vgg-weekday th.excel-week-light{background:#dce3ee;color:#1b2a49}\n.vgg-table thead tr.vgg-date th.nonwork,\n.vgg-table thead tr.vgg-weekday th.nonwork{color:#f04e64!important;font-weight:900}\n.vgg-table thead tr.vgg-date th.excel-week-light.nonwork,\n.vgg-table thead tr.vgg-weekday th.excel-week-light.nonwork{color:#c52442!important}\n/* Fines de semana: mismo rojo en S45 (7-8) y S47 (21-22). */\n.vgg-table thead tr.vgg-date th.weekend-header,\n.vgg-table thead tr.vgg-weekday th.weekend-header{\n  background:#fbdce2!important;color:#b91c39!important;font-weight:900\n}\n.vgg-table thead tr.vgg-date th.holiday-header,\n.vgg-table thead tr.vgg-weekday th.holiday-header{\n  background:#f7c7d1!important;color:#aa1230!important\n}\n.vgg-table thead tr.vgg-date th.weekend-header,\n.vgg-table thead tr.vgg-weekday th.weekend-header{\n  background:#fbe4e7!important;color:#b91c39!important\n}\n.vgg-table tbody td.vgg-day.weekend.holiday:not(.scheduled){\n  background:#fbe4e7!important\n}\n/* Día actual: remarcar juntos número y letra (6/V, 9/L, etc.). */\n.vgg-table thead tr.vgg-date th.today-header,\n.vgg-table thead tr.vgg-weekday th.today-header{\n  background:#246fac!important;color:#fff!important;\n  box-shadow:inset 2px 0 #50beff,inset -2px 0 #50beff;\n}\n\n/* Feriados nacionales = rojo; días libres de Prada (9-10) = violeta. */\n.vgg-table tbody td.vgg-day.holiday:not(.scheduled){background:#f7c7d1!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.day-off:not(.scheduled),\n.vgg-table tbody tr.vgg-activity:hover td.vgg-day.day-off:not(.scheduled){\n  background:#e7dbff!important;box-shadow:inset 0 0 0 1px #a58bcf\n}\n.vgg-table td.vgg-day.scheduled .vgg-cell-percent{display:flex;align-items:center;justify-content:center;\n  width:100%;height:100%;font:750 7.8px/1 Arial,sans-serif;color:#fff;\n  letter-spacing:-.25px;font-variant-numeric:tabular-nums}\n/* Relleno completo de celda para cada día de programación. */\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled{background:#5682bd!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.done{background:#2d9c89!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.late{background:#d39843!important}\n/* Resúmenes: blanco FUERA del rango; azul más oscuro DENTRO del rango. */\n.vgg-table tbody tr.vgg-group-row td.vgg-day:not(.scheduled),\n.vgg-table tbody tr.vgg-group-row td.vgg-day.weekend:not(.scheduled),\n.vgg-table tbody tr.vgg-group-row td.vgg-day.holiday:not(.scheduled),\n.vgg-table tbody tr.vgg-group-row td.vgg-day.day-off:not(.scheduled){\n  background:#ffffff!important;box-shadow:none!important\n}\n.vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{\n  background:#274563!important;\n  box-shadow:inset 0 0 0 1px #203a57\n}\n.vgg-table tbody tr.vgg-activity:hover td.vgg-day.scheduled{filter:brightness(1.09)}\n.vgg-table tbody td.vgg-day.today{box-shadow:inset 2px 0 #2c8fc9,inset -2px 0 #2c8fc9}\n.vgg-table .vgg-title{overflow:hidden;text-overflow:ellipsis}\n.vgg-table .vgg-oriol{opacity:.73}\n.vgg-detail{border-top:1px solid var(--border-base,#334155);padding:8px 14px;font-size:10px;line-height:1.5;min-height:35px;max-height:85px;overflow:auto;color:var(--ink-secondary,#cbd5e1)}\n.vgg-detail b{color:var(--ink-primary,#fff)}\n.vgg-footer{padding:7px 13px;display:flex;gap:13px;flex-wrap:wrap;align-items:center;background:var(--bg-subtle,#1e293b);font-size:9px;color:var(--ink-secondary,#aebed2)}\n.vgg-chip{display:inline-flex;gap:5px;align-items:center}\n.vgg-chip i{width:14px;height:10px;background:#5682bd}\n.vgg-chip i.done{background:#2d9c89}\n.vgg-chip i.late{background:#d39843}\n.vgg-chip i.group{background:#7698c4}\n.vgg-chip i.weekend{background:#fbdce2;border:1px solid #d74e67}\n.vgg-chip i.day-off{background:#e7dbff;border:1px solid #a58bcf}\n@media(max-width:780px){#bim-gantt-overlay{padding:0}#bim-gantt-modal{width:100vw;height:100dvh;border-radius:0}.vgg-header{padding:9px}.vgg-controls{padding:7px}.vgg-count{margin-left:0}}\n";
+const VGG_CSS="\n#bim-gantt-overlay{position:fixed;inset:0;background:rgba(4,9,20,.82);z-index:99990;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}\n#bim-gantt-overlay[hidden]{display:none!important}\n#bim-gantt-overlay *{box-sizing:border-box}\n#bim-gantt-modal{display:flex;flex-direction:column;width:min(97vw,1800px);height:min(94dvh,1100px);min-width:0;max-height:100dvh;overflow:hidden;border:1px solid var(--border-strong,#334155);border-radius:12px;background:var(--bg-panel,#10182a);color:var(--ink-primary,#f8fafc);box-shadow:0 20px 80px #0009}\n#bim-gantt-modal.max{width:100vw;height:100dvh;border-radius:0;border:0}\n#bim-gantt-overlay:has(#bim-gantt-modal.max){padding:0}\n.vgg-header{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-base,#344052)}\n.vgg-header h2{font-size:13px;font-weight:800;margin:0 0 4px;letter-spacing:.02em}\n.vgg-header p{font-size:10px;color:var(--ink-secondary,#aab6ca);margin:0;line-height:1.5}\n.vgg-header-actions{display:flex;align-items:center;gap:7px;flex-shrink:0}\n.vgg-header-actions button{background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-base,#334155);border-radius:6px;padding:7px 10px;cursor:pointer;font-size:10px}\n.vgg-controls{padding:9px 15px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-base,#334155)}\n.vgg-controls label{font-size:10px;color:var(--ink-secondary,#cbd5e1);display:flex;gap:5px;align-items:center}\n.vgg-controls select,.vgg-controls input[type=search]{max-width:170px;height:30px;border:1px solid var(--border-base,#334155);border-radius:6px;padding:4px 7px;background:var(--bg-subtle,#1e293b);font-size:10px;color:var(--ink-primary,#f8fafc)}\n.vgg-controls input[type=search]{width:165px}\n.vgg-controls input[type=checkbox]{accent-color:#25c7e5}\n.vgg-count{margin-left:auto;font-size:10px;color:var(--ink-secondary,#94a3b8)}\n.vgg-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#f8fafc;scrollbar-width:thin}\n.vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Arial,Inter,sans-serif;font-size:10px;color:#293850;background:#fff}\n.vgg-table th,.vgg-table td{border-bottom:1px solid #c4ccd6;border-right:1px solid #bbc5d2;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:28px}\n.vgg-table thead th{position:sticky;color:#f7fbff;text-align:center;background:#1d2d4d;font-weight:750;z-index:8}\n.vgg-table thead .vgg-week th{top:0;height:25px}\n.vgg-table thead .vgg-date th{top:25px;height:23px}\n.vgg-table thead .vgg-weekday th{top:48px;height:25px}\n.vgg-table thead th.vgg-meta{top:0;z-index:11}\n.vgg-table .vgg-fixed-0{position:sticky;left:0;z-index:5}\n.vgg-table .vgg-fixed-1{position:sticky;left:56px;z-index:5}\n.vgg-table .vgg-fixed-2{\n  position:sticky;left:118px;z-index:6;\n  border-right:2px solid #6785a7!important;\n  box-shadow:5px 0 9px -5px rgba(19,43,76,.55)\n}\n.vgg-table thead .vgg-fixed-0,.vgg-table thead .vgg-fixed-1,.vgg-table thead .vgg-fixed-2{z-index:14}\n.vgg-table tbody tr.vgg-activity td{background:#fff}\n.vgg-table tbody tr.vgg-activity.vgg-row-alt td{background:#f1f5fa}\n.vgg-table tbody tr.vgg-activity:hover td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off),\n.vgg-table tbody tr.vgg-activity.vgg-row-hover td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#e5eefb!important}\n.vgg-table tbody tr.vgg-activity{cursor:pointer}\n.vgg-table tr.vgg-owner-row td{background:#1d3b5e;color:#f0f5fd;font-weight:800;border-top:2px solid #1b2f4a}\n.vgg-table tr.vgg-group-row td{background:#426a95;color:#f2f6fc;font-weight:750;border-top:1px solid #7397bd}\n.vgg-table tr.vgg-owner-row td{letter-spacing:.03em}\n.vgg-table tr.vgg-group-row td{color:#f1f6fc}\n.vgg-table .vgg-id{font-weight:800;color:#324c78;text-align:center}\n.vgg-table .vgg-center{text-align:center}\n.vgg-table .vgg-day{padding:0}\n.vgg-table tbody td.vgg-day.weekend:not(.scheduled){background:#fbe4e7!important}\n.vgg-table thead tr.vgg-week th.excel-week-dark,\n.vgg-table thead tr.vgg-date th.excel-week-dark,\n.vgg-table thead tr.vgg-weekday th.excel-week-dark{background:#1b2a49;color:#fff}\n.vgg-table thead tr.vgg-week th.excel-week-light,\n.vgg-table thead tr.vgg-date th.excel-week-light,\n.vgg-table thead tr.vgg-weekday th.excel-week-light{background:#dce3ee;color:#1b2a49}\n.vgg-table thead tr.vgg-date th.nonwork,\n.vgg-table thead tr.vgg-weekday th.nonwork{color:#f04e64!important;font-weight:900}\n.vgg-table thead tr.vgg-date th.excel-week-light.nonwork,\n.vgg-table thead tr.vgg-weekday th.excel-week-light.nonwork{color:#c52442!important}\n/* Fines de semana: mismo rojo en S45 (7-8) y S47 (21-22). */\n.vgg-table thead tr.vgg-date th.weekend-header,\n.vgg-table thead tr.vgg-weekday th.weekend-header{\n  background:#fbdce2!important;color:#b91c39!important;font-weight:900\n}\n.vgg-table thead tr.vgg-date th.holiday-header,\n.vgg-table thead tr.vgg-weekday th.holiday-header{\n  background:#f7c7d1!important;color:#aa1230!important\n}\n.vgg-table thead tr.vgg-date th.weekend-header,\n.vgg-table thead tr.vgg-weekday th.weekend-header{\n  background:#fbe4e7!important;color:#b91c39!important\n}\n.vgg-table tbody td.vgg-day.weekend.holiday:not(.scheduled){\n  background:#fbe4e7!important\n}\n/* Día actual: remarcar juntos número y letra (6/V, 9/L, etc.). */\n.vgg-table thead tr.vgg-date th.today-header,\n.vgg-table thead tr.vgg-weekday th.today-header{\n  background:#246fac!important;color:#fff!important;\n  box-shadow:inset 2px 0 #50beff,inset -2px 0 #50beff;\n}\n\n/* Feriados nacionales = rojo; días libres de Prada (9-10) = violeta. */\n.vgg-table tbody td.vgg-day.holiday:not(.scheduled){background:#f7c7d1!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.day-off:not(.scheduled),\n.vgg-table tbody tr.vgg-activity:hover td.vgg-day.day-off:not(.scheduled){\n  background:#e7dbff!important;box-shadow:inset 0 0 0 1px #a58bcf\n}\n.vgg-table td.vgg-day.scheduled .vgg-cell-percent{display:flex;align-items:center;justify-content:center;\n  width:100%;height:100%;font:750 7.8px/1 Arial,sans-serif;color:#fff;\n  letter-spacing:-.25px;font-variant-numeric:tabular-nums}\n/* Relleno completo de celda para cada día de programación. */\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled{background:#5682bd!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.done{background:#2d9c89!important}\n.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.late{background:#d39843!important}\n/* Resúmenes: blanco FUERA del rango; azul más oscuro DENTRO del rango. */\n.vgg-table tbody tr.vgg-group-row td.vgg-day:not(.scheduled),\n.vgg-table tbody tr.vgg-group-row td.vgg-day.weekend:not(.scheduled),\n.vgg-table tbody tr.vgg-group-row td.vgg-day.holiday:not(.scheduled),\n.vgg-table tbody tr.vgg-group-row td.vgg-day.day-off:not(.scheduled){\n  background:#ffffff!important;box-shadow:none!important\n}\n.vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{\n  background:#1b4269!important;\n  box-shadow:inset 0 0 0 1px #143450\n}\n.vgg-table tbody tr.vgg-activity:hover td.vgg-day.scheduled{filter:brightness(1.09)}\n.vgg-table tbody td.vgg-day.today{box-shadow:inset 2px 0 #2c8fc9,inset -2px 0 #2c8fc9}\n.vgg-table .vgg-title{overflow:hidden;text-overflow:ellipsis}\n.vgg-table .vgg-oriol{opacity:.73}\n.vgg-detail{border-top:1px solid var(--border-base,#334155);padding:8px 14px;font-size:10px;line-height:1.5;min-height:35px;max-height:85px;overflow:auto;color:var(--ink-secondary,#cbd5e1)}\n.vgg-detail b{color:var(--ink-primary,#fff)}\n.vgg-footer{padding:7px 13px;display:flex;gap:13px;flex-wrap:wrap;align-items:center;background:var(--bg-subtle,#1e293b);font-size:9px;color:var(--ink-secondary,#aebed2)}\n.vgg-chip{display:inline-flex;gap:5px;align-items:center}\n.vgg-chip i{width:14px;height:10px;background:#5682bd}\n.vgg-chip i.done{background:#2d9c89}\n.vgg-chip i.late{background:#d39843}\n.vgg-chip i.group{background:#7698c4}\n.vgg-chip i.weekend{background:#fbdce2;border:1px solid #d74e67}\n.vgg-chip i.day-off{background:#e7dbff;border:1px solid #a58bcf}\n@media(max-width:780px){#bim-gantt-overlay{padding:0}#bim-gantt-modal{width:100vw;height:100dvh;border-radius:0}.vgg-header{padding:9px}.vgg-controls{padding:7px}.vgg-count{margin-left:0}}\n\n/* Visor: fronteras ISO, columna actual y foco/hover; la programación original conserva sus colores. */\n.vgg-table thead .vgg-week th.vgg-week-start,\n.vgg-table thead .vgg-date th.vgg-week-start,\n.vgg-table thead .vgg-weekday th.vgg-week-start,\n.vgg-table tbody td.vgg-day.vgg-week-start{\n  border-left:2px solid #617f9f!important\n}\n.vgg-table tbody tr.vgg-activity td.vgg-day.today:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){\n  background:#e3f1ff!important\n}\n.vgg-table tbody td.vgg-day.today{\n  box-shadow:inset 2px 0 #1685d2,inset -2px 0 #1685d2!important\n}\n.vgg-table tbody tr.vgg-activity:focus-visible{\n  outline:2px solid #208ee1;outline-offset:-2px\n}\n.vgg-table tbody td.vgg-day.vgg-col-hover{\n  outline:1px solid rgba(35,120,202,.65);outline-offset:-1px\n}\n.vgg-table tbody tr.vgg-activity td.vgg-day.vgg-col-hover:not(.scheduled):not(.today):not(.weekend):not(.holiday):not(.day-off){\n  background:#d9eaff!important\n}\n.vgg-table thead tr.vgg-date th.vgg-col-hover:not(.today-header):not(.weekend-header):not(.holiday-header),\n.vgg-table thead tr.vgg-weekday th.vgg-col-hover:not(.today-header):not(.weekend-header):not(.holiday-header){\n  box-shadow:inset 0 -3px #3695d7!important\n}\n.vgg-hover-card{\n  position:fixed;left:0;top:0;z-index:99999;max-width:min(320px,90vw);\n  padding:11px 13px;border:1px solid #6082ab;border-radius:9px;\n  background:#13243c;color:#edf5ff;box-shadow:0 10px 34px rgba(0,0,0,.32);\n  font-size:11px;line-height:1.6;pointer-events:none\n}\n.vgg-hover-card[hidden]{display:none!important}\n.vgg-hover-card strong{display:block;color:#fff;font-size:11px;margin-bottom:5px}\n.vgg-hover-card .vgg-hover-muted{color:#bacde4}\n";
 
 /* Réplica visual de la hoja Gant en Excel. Datos de gantt-visor-data.js. Sólo lectura. */
 (function(){
@@ -97,28 +97,32 @@ function weekHeaders(days){
   last=w;size++;tone=weekTone(d);
  });
  if(size)chunks.push([last,size,tone]);
- return chunks.map(c=>'<th class="'+c[2]+'" colspan="'+c[1]+'">'+c[0]+'</th>').join('');
+ return chunks.map((c,i)=>'<th class="'+c[2]+(i?' vgg-week-start':'')+
+  '" colspan="'+c[1]+'">'+c[0]+'</th>').join('');
 }
 function dayBar(row,d,state){
  const info=dayInfo(d);
  const today=d===(typeof todayString==='function'?todayString():new Date().toISOString().slice(0,10));
  const personalLeave=S.nonWorkingByOwner?.[row.owner||'']?.[d]||'';
+ const boundary=info.dow===1?' vgg-week-start':'';
+ const dateAttr=' data-vgg-date="'+d+'"';
  const cls='vgg-day'+(info.weekend?' weekend':'')+(info.holiday?' holiday':'')+
-  (personalLeave?' day-off':'')+(today?' today':'');
+  (personalLeave?' day-off':'')+(today?' today':'')+boundary;
  const label=personalLeave||info.note||'';
  // Los grupos Resumen conservan su franja continua, como en Excel.
  if(row.kind==='group'){
-  if(d<row.start||d>row.end)return '<td class="'+cls+'"></td>';
-  return '<td class="'+cls+' scheduled group" title="'+
+  if(d<row.start||d>row.end)return '<td class="'+cls+'"'+dateAttr+'></td>';
+  return '<td class="'+cls+' scheduled group"'+dateAttr+' title="'+
     escapeText(row.title+' | '+readable(row.start)+' - '+readable(row.end))+'"></td>';
  }
  // Los porcentajes del calendario provienen de las celdas M:AP del Excel:
  // evitan colorear como trabajo sábados, domingos o días libres sin carga.
  const value=row.percentByDay?.[String(Number(d.slice(8,10)))]||0;
- if(!value)return '<td class="'+cls+'"'+(label?' title="'+escapeText(label)+'"':'')+'></td>';
+ if(!value)return '<td class="'+cls+'"'+dateAttr+
+  (label?' title="'+escapeText(label)+'"':'')+'></td>';
  const status=state.state==='completed'?(state.late?' late':' done'):'';
  const pct=excelPercent(value);
- return '<td class="'+cls+' scheduled'+status+'" title="'+escapeText(row.id+
+ return '<td class="'+cls+' scheduled'+status+'"'+dateAttr+' title="'+escapeText(row.id+
   ' · Carga programada: '+pct+' · '+d+(label?' · '+label:''))+'">'+
   '<span class="vgg-cell-percent">'+pct+'</span></td>';
 }
@@ -144,7 +148,8 @@ function render(){
  const dnames=['D','L','M','X','J','V','S'];
  const dates='<tr class="vgg-date">'+days.map(d=>{
   const info=dayInfo(d);
-  return '<th class="'+weekTone(d)+(info.mark?' nonwork':'')+
+  return '<th data-vgg-date="'+d+'" class="'+weekTone(d)+
+   (info.dow===1?' vgg-week-start':'')+(info.mark?' nonwork':'')+
    (info.weekend?' weekend-header':'')+(info.holiday?' holiday-header':'')+
    (d===(typeof todayString==='function'?todayString():
     new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+
@@ -153,14 +158,15 @@ function render(){
  }).join('')+'</tr>';
  const dows='<tr class="vgg-weekday">'+days.map(d=>{
   const info=dayInfo(d);
-  return '<th class="'+weekTone(d)+(info.mark?' nonwork':'')+
+  return '<th data-vgg-date="'+d+'" class="'+weekTone(d)+
+   (info.dow===1?' vgg-week-start':'')+(info.mark?' nonwork':'')+
    (info.weekend?' weekend-header':'')+(info.holiday?' holiday-header':'')+
    (d===(typeof todayString==='function'?todayString():
     new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0')+'-'+
     String(new Date().getDate()).padStart(2,'0'))?' today-header':'')+
    '" title="'+escapeText(info.note||d)+'">'+dnames[info.dow]+'</th>';
  }).join('')+'</tr>';
- let body='';
+ let body='',activityIndex=0;
  for(const row of rows){
   if(row.kind==='owner'){
    body+='<tr class="vgg-owner-row"><td colspan="11">'+escapeText(row.label)+'</td>'+
@@ -173,18 +179,73 @@ function render(){
     days.map(d=>dayBar(row,d,{state:'group'})).join('')+'</tr>';continue;
   }
   const state=taskState(row);
-  body+='<tr class="vgg-activity'+(isOriol(row.owner)?' vgg-oriol':'')+
+  body+='<tr class="vgg-activity'+((activityIndex++%2)?' vgg-row-alt':'')+
+   (isOriol(row.owner)?' vgg-oriol':'')+
    '" data-gantt-activity="'+escapeText(row.id)+'" tabindex="0">'+rowMeta({
     ...row,type:row.type||'Act.'
    })+days.map(d=>dayBar(row,d,state)).join('')+'</tr>';
  }
  const node=document.getElementById('vgg-table');if(!node)return;
+ clearGanttHover();
  node.innerHTML='<colgroup>'+colgroup+'</colgroup><thead>'+heads+dates+dows+
   '</thead><tbody>'+body+'</tbody>';
  document.getElementById('vgg-count').textContent=values.length+' de 54 actividades';
  if(!body)document.getElementById('vgg-detail').textContent='No se encontraron actividades para los filtros seleccionados.';
  else if(!st.selected)document.getElementById('vgg-detail').textContent=
   'Haz clic en una actividad para revisar su vinculación y avance en ÁREA BIM. Visor de solo lectura.';
+}
+
+let activeGanttRow='',activeGanttDate='';
+function clearGanttHover(){
+ const table=document.getElementById('vgg-table');
+ if(table){
+  table.querySelectorAll('.vgg-col-hover').forEach(el=>el.classList.remove('vgg-col-hover'));
+  table.querySelectorAll('.vgg-row-hover').forEach(el=>el.classList.remove('vgg-row-hover'));
+ }
+ const tip=document.getElementById('vgg-hover-card');if(tip)tip.hidden=true;
+ activeGanttRow='';activeGanttDate='';
+}
+function positionGanttTip(ev){
+ const tip=document.getElementById('vgg-hover-card');if(!tip||tip.hidden)return;
+ const width=tip.offsetWidth||280,height=tip.offsetHeight||140;
+ const vw=window.innerWidth||document.documentElement.clientWidth||1200;
+ const vh=window.innerHeight||document.documentElement.clientHeight||800;
+ tip.style.left=Math.max(8,Math.min(ev.clientX+16,vw-width-8))+'px';
+ tip.style.top=Math.max(8,Math.min(ev.clientY+16,vh-height-8))+'px';
+}
+function ganttHoverInfo(activity,date){
+ const row=S.rows.find(r=>r.kind==='activity'&&r.id===activity);
+ if(!row)return '';
+ const state=taskState(row);
+ const labels={completed:'Completada',pending:'Pendiente',unassigned:'Sin asignar'};
+ const percentage=date?excelPercent(row.percentByDay?.[String(Number(date.slice(-2)))]):'';
+ const dayText=date?'<div>Fecha señalada: '+escapeText(readable(date))+
+  ' · Carga planificada: '+escapeText(percentage||'Sin carga')+'</div>':'';
+ return '<strong>'+escapeText(row.id+' — '+row.title)+'</strong>'+
+  '<div>Responsable: '+escapeText(row.owner)+'</div>'+
+  '<div>Inicio: '+escapeText(readable(row.start))+
+  ' · Fin: '+escapeText(readable(row.end))+'</div>'+
+  dayText+'<div>Estado BIM: '+escapeText(labels[state.state])+
+  (state.late?' · Fuera de plazo':'')+'</div>'+
+  '<div class="vgg-hover-muted">Tarea HTML: '+
+  escapeText(state.taskIds.join(', ')||'Sin vincular')+'</div>';
+}
+function updateGanttHover(ev){
+ const table=document.getElementById('vgg-table');
+ if(!table||!table.contains(ev.target))return;
+ const cell=ev.target.closest('[data-vgg-date]');
+ const activityRow=ev.target.closest('tr[data-gantt-activity]');
+ const date=cell?.dataset.vggDate||'';
+ const id=activityRow?.dataset.ganttActivity||'';
+ if(activeGanttDate!==date||activeGanttRow!==id){
+  clearGanttHover();
+  activeGanttDate=date;activeGanttRow=id;
+  if(date)table.querySelectorAll('[data-vgg-date="'+date+'"]').forEach(el=>el.classList.add('vgg-col-hover'));
+  if(activityRow)activityRow.classList.add('vgg-row-hover');
+  const tip=document.getElementById('vgg-hover-card');
+  if(tip&&id){tip.innerHTML=ganttHoverInfo(id,date);tip.hidden=false;}
+ }
+ positionGanttTip(ev);
 }
 function showDetail(id){
  const row=S.rows.find(r=>r.kind==='activity'&&r.id===id);if(!row)return;
@@ -209,6 +270,7 @@ function redrawGroups(){
 }
 function close(){
  if(!overlay||overlay.hidden)return;
+ clearGanttHover();
  overlay.hidden=true;document.body.style.overflow=bodyOverflow;
  if(lastTrigger&&lastTrigger.isConnected&&typeof lastTrigger.focus==='function')lastTrigger.focus();
  lastTrigger=null;
@@ -246,8 +308,13 @@ function open(){
    '<span class="vgg-chip"><i class="weekend"></i> Fin de semana / feriado</span>'+
    '<span class="vgg-chip"><i class="day-off"></i> Día libre Juan Carlos Prada (9-10)</span>'+
    '<span>Porcentajes = carga diaria programada en Excel · Oriol fuera del PPC · Copia sin sincronización</span>'+
-   '</footer></section>';
+   '</footer></section><div id="vgg-hover-card" class="vgg-hover-card" role="tooltip" hidden></div>';
   document.body.appendChild(overlay);
+  const ganttSheet=document.getElementById('vgg-table');
+  ganttSheet.addEventListener('pointerover',updateGanttHover);
+  ganttSheet.addEventListener('pointermove',positionGanttTip);
+  ganttSheet.addEventListener('pointerleave',clearGanttHover);
+  overlay.querySelector('.vgg-scroll').addEventListener('scroll',clearGanttHover,{passive:true});
   overlay.addEventListener('click',ev=>{
    if(ev.target===overlay){close();return;}
    const button=ev.target.closest('[data-vgg-action]');
