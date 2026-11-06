@@ -622,8 +622,10 @@ document.addEventListener('click',event=>{
 window.addEventListener('resize',()=>{
   if(!$('#bim-ppt-people-menu')?.hidden)positionBimPptPeopleMenu();
 });
-$('#bim-ppt-back')?.querySelector('.bim-ppt-toolbar')?.addEventListener('scroll',()=>{
-  if(!$('#bim-ppt-people-menu')?.hidden)positionBimPptPeopleMenu();
+document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelector('#bim-ppt-back .bim-ppt-toolbar')?.addEventListener('scroll',()=>{
+    if(!$('#bim-ppt-people-menu')?.hidden)positionBimPptPeopleMenu();
+  });
 });
 document.addEventListener('change',event=>{
   const check=event.target.closest('[data-bim-ppt-person]');
