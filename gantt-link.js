@@ -478,11 +478,48 @@ function ganttLinkedTask(activity,excludeId){
     return ganttText(prior.group)===ganttText(activity.group)&&ganttText(prior.name)===ganttText(activity.name);
   })||null;
 }
-function ganttGroups(){
-  const labels=window.BIM_GANTT_ACTIVITIES.map(a=>a.group);
-  for(const row of Object.values(catalogs.ganttLinksByTask||{}))
-    if(row.mode==='manual'&&row.group)labels.push(row.group);
-  return [...new Set(labels)].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+/* Equivalencias explícitas entre colaboradores de ÁREA BIM y responsables del Gantt.
+   La asignación se basa en el nombre normalizado, no en el texto visible del grupo. */
+function ganttResponsibleForOwner(owner){
+  const normalized=ganttText(owner);
+  const words=normalized.split(' ').filter(Boolean);
+  const has=word=>words.includes(word);
+  if(!normalized)return '';
+  // Orden importante: identificar primero a los integrantes del equipo de Cova.
+  if((has('juan')&&has('cova'))||(has('arnold')&&has('cova'))||
+     has('naysha')||has('ivan')||has('pedro')||normalized==='cova')
+    return 'Juan Carlos Cova';
+  if(has('roger')||has('diana'))return 'Roger Cabrera';
+  if(has('oriol'))return 'Oriol Huera Diaz';
+  if(has('claudio'))return 'Claudio Villano';
+  if(has('prada')||(has('juan')&&has('carlos')&&has('torres')))
+    return 'Juan Carlos Prada';
+  return '';
+}
+function ganttGroups(responsible=''){
+  return [...new Set(window.BIM_GANTT_ACTIVITIES
+    .filter(a=>a.owner===responsible).map(a=>a.group))]
+    .sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+}
+function refreshGanttForOwner(keepId){
+  const owner=document.getElementById('f-owner')?.value||'';
+  const responsible=ganttResponsibleForOwner(owner);
+  const groupEl=document.getElementById('f-gantt-group');
+  const groupBefore=groupEl.value;
+  const activityBefore=keepId===undefined?
+    document.getElementById('f-gantt-activity').value:keepId;
+  const groups=ganttGroups(responsible);
+  groupEl.innerHTML='<option value="">'+
+    (owner?'Seleccionar agrupación':'Primero selecciona un responsable')+
+    '</option>'+groups.map(group=>'<option value="'+esc(group)+'">'+esc(group)+'</option>').join('');
+  groupEl.value=groups.includes(groupBefore)?groupBefore:'';
+  groupEl.disabled=!responsible;
+  const note=document.getElementById('gantt-responsible-note');
+  const count=window.BIM_GANTT_ACTIVITIES.filter(a=>a.owner===responsible).length;
+  if(note)note.textContent=!owner?'Selecciona primero un colaborador para consultar sus actividades del Gantt.':
+    responsible?'Actividades de '+responsible+' en el Gantt: '+count+'.':
+    'Este colaborador no tiene equivalencia definida en el Gantt. Puedes utilizar la opción Manual.';
+  refreshGanttActivityOptions(activityBefore);
 }
 function ganttEditorMode(){
   return document.querySelector('input[name="f-gantt-mode"]:checked')?.value||'select';
@@ -499,8 +536,10 @@ function refreshGanttActivityOptions(keepId){
   const select=document.getElementById('f-gantt-activity');
   const showAssigned=document.getElementById('f-gantt-show-assigned').checked;
   const previouslySelected=keepId===undefined?select.value:keepId;
-  const options=window.BIM_GANTT_ACTIVITIES.filter(a=>a.group===group).filter(a=>
-    showAssigned||!ganttLinkedTask({activityId:a.id,group:a.group,name:a.title,mode:'select'},editingId));
+  const responsible=ganttResponsibleForOwner(document.getElementById('f-owner')?.value||'');
+  const options=window.BIM_GANTT_ACTIVITIES.filter(a=>a.owner===responsible&&a.group===group)
+    .filter(a=>showAssigned||!ganttLinkedTask({
+      activityId:a.id,group:a.group,name:a.title,mode:'select'},editingId));
   select.innerHTML='<option value="">Seleccionar actividad disponible</option>'+options.map(a=>{
     const assigned=ganttLinkedTask({activityId:a.id,group:a.group,name:a.title,mode:'select'},editingId);
     return '<option value="'+esc(a.id)+'">'+esc(a.id+' — '+a.title+(assigned?' · Asignada a '+assigned.id:''))+'</option>';
@@ -513,9 +552,9 @@ function refreshGanttActivityOptions(keepId){
 function initializeGanttEditor(task){
   const link=catalogs.ganttLinksByTask?.[task?.id];
   const groupEl=document.getElementById('f-gantt-group');
-  const groups=ganttGroups();
-  groupEl.innerHTML='<option value="">Seleccionar agrupación</option>'+
-    groups.map(g=>'<option value="'+esc(g)+'">'+esc(g)+'</option>').join('');
+  const groups=[...new Set(window.BIM_GANTT_ACTIVITIES.map(a=>a.group)
+    .concat(Object.values(catalogs.ganttLinksByTask||{})
+      .filter(row=>row.mode==='manual').map(row=>row.group).filter(Boolean)))];
   const list=document.getElementById('gantt-group-suggestions');
   list.innerHTML=groups.map(g=>'<option value="'+esc(g)+'"></option>').join('');
   document.getElementById('f-gantt-show-assigned').checked=false;
@@ -525,7 +564,7 @@ function initializeGanttEditor(task){
   groupEl.value=link?.mode==='select'?(activity?.group||link?.group||''):'';
   document.getElementById('f-gantt-manual-group').value=link?.mode==='manual'?(link.group||''):'';
   document.getElementById('f-gantt-manual-activity').value=link?.mode==='manual'?(link.name||''):'';
-  refreshGanttActivityOptions(link?.mode==='select'?link.activityId:'');
+  refreshGanttForOwner(link?.mode==='select'?link.activityId:'');
   updateGanttEditorMode();
 }
 function collectGanttEditorLink(){
@@ -534,7 +573,8 @@ function collectGanttEditorLink(){
     const id=document.getElementById('f-gantt-activity').value;
     if(!id)return null;
     const activity=ganttActivityById(id);
-    if(!activity)return {invalid:true};
+    if(!activity||activity.owner!==ganttResponsibleForOwner(
+      document.getElementById('f-owner')?.value||''))return {invalid:true};
     return {mode:'select',activityId:activity.id,group:activity.group,name:activity.title};
   }
   const typedGroup=document.getElementById('f-gantt-manual-group').value.trim();
