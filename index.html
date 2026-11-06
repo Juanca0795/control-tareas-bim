@@ -4216,7 +4216,7 @@ textarea,
 /* Botón Gantt integrado en la cabecera, antes de Dashboard / Control de tareas. */
 .sidebar #header-gantt-viewer-launch{
   display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  flex:0 0 auto;margin-left:auto;min-height:35px;padding:6px 11px;
+  flex:0 0 auto;margin:0;min-height:35px;padding:6px 11px;
   border:1px solid var(--border-strong);border-radius:8px;
   background:var(--bg-subtle);color:var(--accent-blue);font-size:10.5px;
   font-weight:750;white-space:nowrap;cursor:pointer;
@@ -4225,8 +4225,15 @@ textarea,
 .sidebar #header-gantt-viewer-launch:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
 .sidebar #header-gantt-viewer-launch.hidden{display:none!important}
 .sidebar #header-gantt-viewer-launch svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.8;fill:none}
-@media(max-width:1100px){
-  .sidebar #header-gantt-viewer-launch{order:3;margin-left:0}
+@media(max-width:650px){
+  .sidebar nav:has(#header-gantt-viewer-launch:not(.hidden)){
+    grid-template-columns:repeat(4,minmax(0,1fr));
+  }
+  .sidebar nav #header-gantt-viewer-launch{
+    min-width:0;white-space:normal;overflow-wrap:anywhere;
+    padding:6px 4px;font-size:9px;gap:4px;text-align:center;
+  }
+  .sidebar nav #header-gantt-viewer-launch svg{width:13px;height:13px;flex:none}
 }
 /* Acceso al Gantt original: integrar con controles de Seguimiento. */
 #weekly-view #weekly-gantt-viewer-launch{
@@ -5453,6 +5460,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     <button type="button" id="weekly-tab-seguimiento" class="weekly-subtab active" role="tab" aria-selected="true" aria-controls="weekly-seguimiento" onclick="switchWeeklySubtab('seguimiento')">SEGUIMIENTO</button>
     <button type="button" id="weekly-tab-proyeccion" class="weekly-subtab" role="tab" aria-selected="false" aria-controls="weekly-proyeccion" tabindex="-1" onclick="switchWeeklySubtab('proyeccion')">PROYECCIÓN</button>
   </div>
+  <nav aria-label="Vistas del sistema" role="tablist">
   <button type="button" id="header-gantt-viewer-launch" 
     onclick="openBimGanttViewer()" title="Visualizar el Gantt original del Excel" aria-label="Visualizar Gantt del Excel">
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -5461,7 +5469,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     </svg>
     Visualizar Gantt
   </button>
-  <nav aria-label="Vistas del sistema" role="tablist">
+
     <button type="button" id="weekly-ppt-launch" class="weekly-ppt-launch hidden"
       onclick="openBimPptExport()" title="Exportar las fotografías de la semana a una presentación PowerPoint"
       aria-label="Exportar evidencias BIM a PowerPoint">
