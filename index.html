@@ -9359,7 +9359,8 @@ function renderWeeklyTimeline(){
   const preservedScroll=target.scrollLeft;
   track.innerHTML=weeks.map(week=>{
     const start=dateDisplay(localISO(weekStart(week))).slice(0,5),end=dateDisplay(weekEnd(week)).slice(0,5);
-    const m=weeklyMetrics(week),archived=m.closed,hasData=m.planned>0;
+    // La línea de tiempo debe usar EXACTAMENTE la misma fuente PPC Gantt que las tarjetas.
+    const m=ganttPpcMetric(week,false),archived=false,hasData=m.planned>0;
     const selected=week===selectedWeek,current=week===nowWeek,future=week>nowWeek&&!archived;
     const published=archived||week<nowWeek;
     const visible=hasData&&!future&&(published||current)&&m.ppc!==null;
@@ -9367,12 +9368,11 @@ function renderWeeklyTimeline(){
     const classes=['weekly-time-step',hasData?'has-data':'',archived?'archived':'',
       selected?'selected':'',current?'current':'',future?'future':''].filter(Boolean).join(' ');
     const subtitle=archived?'Archivada':future?(hasData?'Programada':'Sin planificar'):current?'En curso':hasData?'Con compromisos':'Sin registros';
-    const amounts=hasData?(future?m.planned+' planificadas':m.completed+'/'+m.planned+' tareas'):'';
-    const completedAll=m.rows.filter(t=>t.done).length;
-    const completedLater=m.rows.filter(t=>t.done&&t.completedAt&&t.completedAt>weekEnd(week)).length;
-    const details='Comprometidas: '+m.planned+' | Completadas: '+completedAll+
-      ' | Dentro de semana: '+m.completed+' | Después: '+completedLater+
-      ' | PPC: '+(m.ppc===null?'Sin dato':m.ppc.toFixed(1)+'%');
+    const amounts=hasData?(future?m.planned+' programados':m.completed+'/'+m.planned+' compromisos'):'';
+    const details='PPC Gantt | Compromisos: '+m.planned+
+      ' | Metas alcanzadas: '+m.completed+
+      ' | Avance real verificado: '+m.measured+
+      ' | PPC: '+(m.ppc===null?'Sin avance verificado':m.ppc.toFixed(1)+'%');
     const accessibility='Semana '+week+', '+subtitle+(visible?', PPC '+score:'');
     return `<button type="button" class="${classes}" onclick="changeWeeklyWeek('${week}')"
       aria-pressed="${selected}" aria-label="${esc(accessibility)}" title="${esc(details)}">
@@ -10007,15 +10007,12 @@ function renderWeekly(forceMotion=false){
   const weekMetric=weeklyMetrics(selectedWeek);
   const month=monthOfPpcWeek(selectedWeek);
   const monthly=weeklyPpcMonthlyMode;
-  const operativeMetric=monthly?monthlyPpcMetrics(month):weekMetric;
-  const operativePrevious=monthly?monthlyPpcMetrics(offsetPpcMonth(month,-1)):
-    weeklyMetrics(neighborWeek(selectedWeek,-1));
-  const useOperative=weeklyPpcSourceMode==='compare';
-  // Las tarjetas y su detalle reflejan el check de PPC Operativo.
-  // El cálculo operativo, CNC y la proyección conservan su fuente original.
-  const m=useOperative?operativeMetric:ganttPpcMetric(monthly?month:selectedWeek,monthly);
-  const previous=useOperative?operativePrevious:
-    ganttPpcMetric(monthly?offsetPpcMonth(month,-1):neighborWeek(selectedWeek,-1),monthly);
+  // PPC Gantt es la única fuente visible de cumplimiento.
+  // El indicador PPC Operativo permanece oculto y no participa en los KPI.
+  const useOperative=false;
+  const m=ganttPpcMetric(monthly?month:selectedWeek,monthly);
+  const previous=ganttPpcMetric(monthly?offsetPpcMonth(month,-1):
+    neighborWeek(selectedWeek,-1),monthly);
   const compare=$('#weekly-compare').checked;
   const delta=compare&&m.ppc!==null&&previous.ppc!==null?m.ppc-previous.ppc:null;
   const status=$('#weekly-info'),overallWeek=weeklyRaw(selectedWeek);
@@ -10071,8 +10068,9 @@ function renderWeekly(forceMotion=false){
   renderWeeklyPendingDetails(m,monthly);
   if(weeklyInnerTab==='seguimiento'){
     weeklyTrend(weekMetric);
-    if(monthly)monthlyCncPanel(operativeMetric);
-    else weeklyCncPanel(weekMetric);
+    // CNC del seguimiento: los incumplimientos provienen del PPC Gantt,
+    // no de compromisos operativos por fecha límite.
+    ganttPpcCncPanel(m);
   }
   renderWeeklyProjection(weekMetric);
   scheduleBimMetricsAnimation('weekly',forceMotion);
