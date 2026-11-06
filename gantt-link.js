@@ -764,6 +764,7 @@ function ganttPpcMetric(period,monthly=false){
     byActivity.get(link.activityId).push(task);
   }
   let completed=0,unassigned=0,assigned=0,late=0,unknownDate=0;
+  let onTime=0,delayed=0,dueAtCutoff=0;
   const rows=available.map(activity=>{
     const matches=byActivity.get(activity.id)||[];
     const isAssigned=matches.length>0;
@@ -778,15 +779,27 @@ function ganttPpcMetric(period,monthly=false){
         isDone=true;
       }else if(done&&!realDate)unknownDate++;
     }
-    if(isDone){completed++;if(completedOn>activity.plannedEnd)late++;}
+    if(isDone){
+      completed++;
+      if(completedOn>activity.plannedEnd)late++;
+      else onTime++;
+    }else if(activity.plannedEnd<observedUntil){
+      delayed++;
+    }else if(activity.plannedEnd===observedUntil){
+      dueAtCutoff++;
+    }
     return {id:activity.id,title:activity.title,group:activity.group,owner:activity.owner,
       plannedEnd:activity.plannedEnd,linkedTaskIds:matches.map(t=>t.id),
       completedOn,isDone,late:isDone&&completedOn>activity.plannedEnd,
       state:isDone?'Cumplida':isAssigned?'Pendiente':'Sin asignar'};
   });
+  const punctualityBase=onTime+late+delayed+dueAtCutoff;
   return {period,monthly,planned:available.length,completed,remaining:available.length-completed,
-    assigned,unassigned,late,unknownDate,rows,future,observedUntil,
-    ppc:future||!available.length?null:100*completed/available.length};
+    assigned,unassigned,late,lateCompleted:late,unknownDate,rows,future,observedUntil,
+    onTime,delayed,dueAtCutoff,punctualityBase,
+    closed:!future&&observedUntil>=cutoff,unscheduled:0,
+    ppc:future||!available.length?null:100*completed/available.length,
+    punctuality:future||!punctualityBase?null:100*onTime/punctualityBase};
 }
 function ganttPpcDetailsHtml(metric,periodName){
   if(!metric.planned)return '<p class="gantt-ppc-empty">No hay actividades del Excel programadas en '+esc(periodName)+
