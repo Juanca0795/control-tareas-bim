@@ -822,11 +822,13 @@ function ganttPpcWeekMetric(week){
     const recordedActual=Number.isFinite(saved?.actual)?saved.actual:null;
     const latest=ganttPpcLatestActual(activity.id,week);
     const realCumulative=closingByCutoff?100:latest?.actual??null;
-    const hasEvidence=realCumulative!==null;
+    // Una meta SEM46 necesita su propia verificación SEM46: el dato de
+    // SEM45 puede mostrarse como referencia, pero no valida otra semana.
+    const hasEvidence=closingByCutoff||recordedActual!==null;
     const isDone=!future&&hasEvidence&&
       realCumulative+.01>=target.plannedCumulative;
     const state=future?'Programada':
-      !hasEvidence?'Sin avance registrado':
+      !hasEvidence?'Sin avance verificado esta semana':
       isDone?'Cumplida':week===isoWeekKey(new Date())?'En evaluación':'Incumplida';
     rows.push({
       id:activity.id,title:activity.title,group:activity.group,owner:activity.owner,
