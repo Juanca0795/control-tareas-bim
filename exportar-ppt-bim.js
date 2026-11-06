@@ -836,7 +836,7 @@ function pptBimFit(innerW,innerH,iw,ih){
   const ratio=Math.min(innerW/iw,innerH/ih);
   return {w:iw*ratio,h:ih*ratio};
 }
-function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=false){
+function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=false,activityCount=0){
   const slide=pptx.addSlide();
   pptBimMaster(slide,pptx);
   const S=pptx.ShapeType;
@@ -851,7 +851,8 @@ function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=fal
     :'Evidencias vinculadas a entregables registrados en Control de Tareas';
   pptBimAddText(slide,detail,
     {x:.55,y:3.1,w:12,h:.43,fontSize:14,color:'525D6C'});
-  pptBimAddText(slide,(byPerson?'RESPONSABLES: ':'PAQUETES: ')+groups+'     FOTOGRAFÍAS: '+imageCount,
+  pptBimAddText(slide,(byPerson?'RESPONSABLES: ':'PAQUETES: ')+groups+
+    (byPerson?'     ACTIVIDADES: '+activityCount:'')+'     FOTOGRAFÍAS: '+imageCount,
     {x:.55,y:4.11,w:12,h:.55,fontSize:18,color:'172B49',bold:true});
   pptBimAddText(slide,'Descripciones basadas en las tareas registradas y revisadas antes de exportar.',
     {x:.55,y:5.43,w:12.15,h:.44,fontSize:12,color:'626B78'});
@@ -866,6 +867,20 @@ function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=fal
  * AREA_BIM2 prioriza los grupos de 3 por responsable antes de los remanentes.
  */
 function pptBimPackSlides(items,byPerson=false){
+  if(byPerson){
+    // Primero todas las fotografías; al final, una caja vacía por actividad sin foto.
+    // No combinar sectores en una misma diapositiva.
+    const pages=[];
+    for(const withoutPhoto of [false,true]){
+      for(const sector of ['Sector 1','Sector 2','Sector 3','Sin sector']){
+        const group=items.filter(item=>!!item.empty===withoutPhoto&&pptBimSector(item)===sector);
+        if(!group.length)continue;
+        const sorted=pptBimOrderSectorPhotos(group,true);
+        for(let i=0;i<sorted.length;i+=3)pages.push(sorted.slice(i,i+3));
+      }
+    }
+    return pages;
+  }
   const sectorGroups=new Map();
   for(const photo of items){
     const sector=pptBimSector(photo);
@@ -939,16 +954,25 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
     slide.addShape(S.rect,{x,y:top+redH+picH,w,h:captionH,
       fill:{color:'FFFFFF'},line:{color:'000000',width:.8}});
     const frame={x:x+.16,y:top+redH+.13,w:w-.32,h:picH-.26};
-    const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
-    slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
-      y:frame.y+(frame.h-sz.h)/2,w:sz.w,h:sz.h});
+    if(e.empty){
+      slide.addShape(S.rect,{x:frame.x,y:frame.y,w:frame.w,h:frame.h,
+        fill:{color:'FFFFFF'},line:{color:'B9C1CB',width:.8}});
+      pptBimAddText(slide,'SIN CAPTURA',
+        {x:frame.x+.08,y:frame.y+frame.h/2-.12,w:frame.w-.16,h:.24,
+          fontSize:14,bold:true,align:'center',color:'8793A2'});
+    }else{
+      const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
+      slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
+        y:frame.y+(frame.h-sz.h)/2,w:sz.w,h:sz.h});
+    }
     const caption=String(e.caption||e.title||'').replace(/\s+/g,' ').trim();
     pptBimAddText(slide,caption,
       {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
         fontSize:caption.length>180?8:caption.length>95?10:13,
         bold:true,align:'center',valign:'mid',fit:'shrink'});
     pptBimAddText(slide,(byPerson?e.package+' · ':'')+e.taskId+
-      (e.team?' · '+e.team:'')+' · Foto '+e.photoIndex+' de '+e.photoCount,
+      (e.team?' · '+e.team:'')+
+      (e.empty?' · Sin captura':' · Foto '+e.photoIndex+' de '+e.photoCount),
       {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
         color:'5A5A5A',align:'center'});
   }
@@ -978,8 +1002,11 @@ async function exportBimPpt(){
   const selected=pptBimState.profile==='by-person'?pptBimSelectedPeople():null;
   const included=pptBimState.items.filter(x=>x.enabled&&
     (selected===null||selected.has(pptBimNormalizeOwner(x.owner))));
-  if(!included.length){toast('Selecciona al menos una fotografía.');return}
-  if(!window.bimEvidenceCloud?.ready()){toast('No hay conexión con Supabase Storage.');return}
+  if(!included.length){toast('Selecciona al menos una actividad o fotografía.');return}
+  const photoCount=included.filter(x=>!x.empty).length;
+  if(photoCount&&!window.bimEvidenceCloud?.ready()){
+    toast('No hay conexión con Supabase Storage.');return;
+  }
   const runToken=pptBimState.token,btn=$('#bim-ppt-download'),status=$('#bim-ppt-progress');
   pptBimState.busy=true;
   pptBimRefreshModeInfo();
@@ -1000,17 +1027,23 @@ async function exportBimPpt(){
     const byPerson=pptBimState.profile==='by-person';
     const groups=new Set(included.map(item=>
       byPerson?(item.owner||'Sin responsable'):(item.package||'Sin paquete')));
-    pptBimCover(pptx,pptBimState.week,groups.size,included.length,
+    pptBimCover(pptx,pptBimState.week,groups.size,photoCount,
       pptBimState.mode==='reunion'
         ?pptBimMeetingReportPeriod(pptBimState.week,pptBimState.meetingDay,pptBimState.manualMeetingRange):null,
-      byPerson);
+      byPerson,new Set(included.map(item=>item.taskId)).size);
     const decoded=[];
-    for(const photo of included){
+    let processedPhotos=0;
+    for(const item of included){
       if(runToken!==pptBimState.token)throw new Error('La exportación fue interrumpida');
-      const blob=await window.bimEvidenceCloud.download(photo.path);
+      if(item.empty){
+        decoded.push({...item});
+        continue;
+      }
+      const blob=await window.bimEvidenceCloud.download(item.path);
       const loaded=await pptBimDecodeImage(blob);
-      decoded.push({...photo,...loaded});
-      if(status)status.textContent='Preparando imágenes '+decoded.length+' de '+included.length+'…';
+      decoded.push({...item,...loaded});
+      processedPhotos++;
+      if(status)status.textContent='Preparando imágenes '+processedPhotos+' de '+photoCount+'…';
     }
     // Mantener las reglas de cada perfil dentro de cada sector, sin mezclarlos.
     const pages=pptBimPackSlides(decoded,byPerson);
@@ -1021,7 +1054,7 @@ async function exportBimPpt(){
     const blob=generated instanceof Blob?generated:new Blob([generated],
       {type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
     if(status)status.textContent='Validando integridad del archivo PowerPoint…';
-    await pptBimValidateBlob(blob,totalSlides,included.length);
+    await pptBimValidateBlob(blob,totalSlides,photoCount);
     const suffix=byPerson?'_'+(pptBimState.specialty==='civil'?'Civil3D':'Revit'):'';
     pptBimDownloadBlob(blob,'Reporte_BIM'+suffix+'_'+pptBimState.week.replace('-','_')+'.pptx');
     if(status)status.textContent='Presentación generada: '+totalSlides+' diapositivas.';
