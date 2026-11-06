@@ -501,25 +501,9 @@ function ganttGroups(responsible=''){
     .filter(a=>a.owner===responsible).map(a=>a.group))]
     .sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
 }
-function refreshGanttForOwner(keepId,keepGroup){
-  const owner=document.getElementById('f-owner')?.value||'';
-  const responsible=ganttResponsibleForOwner(owner);
-  const groupEl=document.getElementById('f-gantt-group');
-  const groupBefore=keepGroup===undefined?groupEl.value:keepGroup;
-  const activityBefore=keepId===undefined?
-    document.getElementById('f-gantt-activity').value:keepId;
-  const groups=ganttGroups(responsible);
-  groupEl.innerHTML='<option value="">'+
-    (owner?'Seleccionar agrupación':'Primero selecciona un responsable')+
-    '</option>'+groups.map(group=>'<option value="'+esc(group)+'">'+esc(group)+'</option>').join('');
-  groupEl.value=groups.includes(groupBefore)?groupBefore:'';
-  groupEl.disabled=!responsible;
-  const note=document.getElementById('gantt-responsible-note');
-  const count=window.BIM_GANTT_ACTIVITIES.filter(a=>a.owner===responsible).length;
-  if(note)note.textContent=!owner?'Selecciona primero un colaborador para consultar sus actividades del Gantt.':
-    responsible?'Actividades de '+responsible+' en el Gantt: '+count+'.':
-    'Este colaborador no tiene equivalencia definida en el Gantt. Puedes utilizar la opción Manual.';
-  refreshGanttActivityOptions(activityBefore);
+/* Selección directa: primero actividad, el grupo se determina automáticamente. */
+function refreshGanttForOwner(keepId){
+  refreshGanttActivityOptions(keepId);
 }
 function ganttEditorMode(){
   return document.querySelector('input[name="f-gantt-mode"]:checked')?.value||'select';
@@ -527,81 +511,64 @@ function ganttEditorMode(){
 function updateGanttEditorMode(){
   const manual=ganttEditorMode()==='manual';
   document.getElementById('gantt-select-fields').classList.toggle('hidden',manual);
-  document.getElementById('gantt-manual-fields').classList.toggle('hidden',!manual);
+  const title=document.getElementById('f-title');
+  title.readOnly=!manual;
+  title.placeholder=manual?'Ej.: Coordinación de interferencias MEP vs Estructuras':
+    'Selecciona una actividad del Gantt para completar la descripción';
+  const label=document.querySelector('label[for="f-title"]');
+  if(label)label.textContent=manual?'Descripción del entregable / tarea *':
+    'Descripción del entregable (desde Gantt) *';
+  document.getElementById('f-gantt-activity').required=!manual;
   updateGanttEditorInfo();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function refreshGanttActivityOptions(keepId){
-  const group=document.getElementById('f-gantt-group').value;
   const select=document.getElementById('f-gantt-activity');
-  const showAssigned=document.getElementById('f-gantt-show-assigned').checked;
-  const previouslySelected=keepId===undefined?select.value:keepId;
   const responsible=ganttResponsibleForOwner(document.getElementById('f-owner')?.value||'');
-  const options=window.BIM_GANTT_ACTIVITIES.filter(a=>a.owner===responsible&&a.group===group)
-    .filter(a=>showAssigned||!ganttLinkedTask({
-      activityId:a.id,group:a.group,name:a.title,mode:'select'},editingId));
-  select.innerHTML='<option value="">Seleccionar actividad disponible</option>'+options.map(a=>{
-    const assigned=ganttLinkedTask({activityId:a.id,group:a.group,name:a.title,mode:'select'},editingId);
-    return '<option value="'+esc(a.id)+'">'+esc(a.id+' — '+a.title+(assigned?' · Asignada a '+assigned.id:''))+'</option>';
-  }).join('');
-  select.value=options.some(a=>a.id===previouslySelected)?previouslySelected:'';
-  select.disabled=!group||!options.length;
+  const prevId=keepId===undefined?select.value:keepId;
+  const available=window.BIM_GANTT_ACTIVITIES.filter(a=>a.owner===responsible).filter(a=>
+    !ganttLinkedTask({mode:'select',activityId:a.id,group:a.group,name:a.title},editingId));
+  const groups=[...new Set(available.map(a=>a.group))].sort((a,b)=>a.localeCompare(b,'es',{numeric:true}));
+  const sortedActivities=available.slice().sort((a,b)=>a.id.localeCompare(b.id,'es',{numeric:true}));
+  select.innerHTML='<option value="">'+(!responsible?'Selecciona primero un colaborador':
+    available.length?'Seleccionar actividad del Gantt':'Sin actividades disponibles')+'</option>'+
+    groups.map(group=>'<optgroup label="'+esc(group)+'">'+
+      sortedActivities.filter(a=>a.group===group)
+        .map(a=>'<option value="'+esc(a.id)+'">'+esc(a.id+' — '+a.title)+'</option>').join('')+
+      '</optgroup>').join('');
+  select.value=available.some(a=>a.id===prevId)?prevId:'';
+  select.disabled=!responsible||!available.length;
   updateGanttEditorInfo();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function initializeGanttEditor(task){
   const link=catalogs.ganttLinksByTask?.[task?.id];
-  const groupEl=document.getElementById('f-gantt-group');
-  const groups=[...new Set(window.BIM_GANTT_ACTIVITIES.map(a=>a.group)
-    .concat(Object.values(catalogs.ganttLinksByTask||{})
-      .filter(row=>row.mode==='manual').map(row=>row.group).filter(Boolean)))];
-  const list=document.getElementById('gantt-group-suggestions');
-  list.innerHTML=groups.map(g=>'<option value="'+esc(g)+'"></option>').join('');
-  document.getElementById('f-gantt-show-assigned').checked=false;
-  const mode=link?.mode==='manual'?'manual':'select';
+  // Una tarea existente sin enlace debe conservar su descripción y entrar en modo manual.
+  const mode=link?.mode==='select'?'select':task?'manual':'select';
   document.querySelectorAll('input[name="f-gantt-mode"]').forEach(r=>r.checked=r.value===mode);
-  const activity=ganttActivityById(link?.activityId);
-  groupEl.value=link?.mode==='select'?(activity?.group||link?.group||''):'';
-  document.getElementById('f-gantt-manual-group').value=link?.mode==='manual'?(link.group||''):'';
-  document.getElementById('f-gantt-manual-activity').value=link?.mode==='manual'?(link.name||''):'';
-  refreshGanttForOwner(link?.mode==='select'?link.activityId:'',
-    link?.mode==='select'?(activity?.group||link?.group||''):'');
+  refreshGanttForOwner(link?.mode==='select'?link.activityId:'');
   updateGanttEditorMode();
 }
 function collectGanttEditorLink(){
-  const mode=ganttEditorMode();
-  if(mode==='select'){
-    const id=document.getElementById('f-gantt-activity').value;
-    if(!id)return null;
-    const activity=ganttActivityById(id);
-    if(!activity||activity.owner!==ganttResponsibleForOwner(
-      document.getElementById('f-owner')?.value||''))return {invalid:true};
-    return {mode:'select',activityId:activity.id,group:activity.group,name:activity.title};
-  }
-  const typedGroup=document.getElementById('f-gantt-manual-group').value.trim();
-  const typedName=document.getElementById('f-gantt-manual-activity').value.trim();
-  if(!typedGroup&&!typedName)return null;
-  const exactId=window.BIM_GANTT_ACTIVITIES.find(a=>ganttText(a.id)===ganttText(typedName));
-  const official=exactId||window.BIM_GANTT_ACTIVITIES.find(a=>
-    ganttText(a.title)===ganttText(typedName)&&ganttText(a.group)===ganttText(typedGroup));
-  if(official)return {mode:'manual',activityId:official.id,group:official.group,name:official.title};
-  if(!typedGroup||!typedName)return {invalid:true};
-  return {mode:'manual',activityId:'',group:typedGroup.slice(0,120),name:typedName.slice(0,180)};
+  // Manual significa escribir la descripción habitual: no crea un enlace Gantt.
+  if(ganttEditorMode()==='manual')return null;
+  const id=document.getElementById('f-gantt-activity').value;
+  if(!id)return {invalid:true};
+  const activity=ganttActivityById(id);
+  if(!activity||activity.owner!==ganttResponsibleForOwner(
+    document.getElementById('f-owner')?.value||''))return {invalid:true};
+  return {mode:'select',activityId:activity.id,group:activity.group,name:activity.title};
 }
-function updateGanttEditorInfo(){
-  const info=document.getElementById('gantt-link-info');
-  if(!info)return;
-  const link=collectGanttEditorLink();
-  if(link?.invalid){
-    info.textContent='Completa el nombre y grupo de la actividad manual.';
-    return;
-  }
-  if(!link){info.textContent='Vinculación opcional. El PPC operativo conserva sus reglas actuales.';return;}
-  const assigned=ganttLinkedTask(link,editingId);
-  const official=ganttActivityById(link.activityId);
-  info.textContent=(link.activityId?link.activityId+' · ':'')+link.group+
-    ' → '+link.name+(official?.plannedEnd?' · Fin Gantt: '+official.plannedEnd:'')+
-    (assigned?' · Ya vinculada con '+assigned.id:'');
+function updateGanttEditorInfo({fillTitle=false}={}){
+  const activity=ganttActivityById(document.getElementById('f-gantt-activity').value);
+  const group=document.getElementById('f-gantt-group');
+  group.value=activity?.group||'';
+  if(fillTitle&&ganttEditorMode()==='select'&&activity)
+    document.getElementById('f-title').value=activity.title;
+}
+function selectGanttActivity(){
+  updateGanttEditorInfo({fillTitle:true});
+  if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function ganttTaskLabel(id){
   const link=catalogs.ganttLinksByTask?.[id];
@@ -617,8 +584,7 @@ function ganttTaskLabel(id){
     '.gantt-mode-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:11px}',
     '.gantt-mode-row label{font-size:11px;font-weight:650;display:inline-flex;gap:6px;align-items:center;cursor:pointer}',
     '.gantt-link-panel .form-grid{margin:0}',
-    '.gantt-link-toggle{display:flex;align-items:center;gap:7px;margin:10px 0 2px;font-size:11px;color:var(--ink-secondary);cursor:pointer}',
-    '#gantt-link-info{font-size:10.5px;line-height:1.55;color:var(--ink-secondary);margin:10px 0 0;overflow-wrap:anywhere}',
+    '.gantt-readonly-group{color:var(--ink-secondary);background:var(--bg-panel)!important;cursor:default}',
     '.gantt-task-label{display:block;font-size:10px;font-weight:600;opacity:.75;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
     '.task-mobile-title .gantt-task-label{white-space:normal}'
   ].join('\n');
