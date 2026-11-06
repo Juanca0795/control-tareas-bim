@@ -5908,7 +5908,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
           </div>
           <div class="form-field">
             <label for="f-owner">Colaborador responsable *</label>
-            <select id="f-owner" required></select>
+            <select id="f-owner" required onchange="refreshGanttForOwner()"></select>
           </div>
           <div class="form-field">
             <label for="f-priority">Prioridad *</label>
@@ -5942,6 +5942,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
                 </select>
               </div>
             </div>
+            <p id="gantt-responsible-note" class="gantt-responsible-note" role="status" aria-live="polite">Selecciona primero un colaborador.</p>
             <label class="gantt-link-toggle"><input type="checkbox" id="f-gantt-show-assigned" onchange="refreshGanttActivityOptions()"> Mostrar actividades ya asignadas (requiere confirmación)</label>
           </div>
           <div id="gantt-manual-fields" class="hidden">
@@ -8330,11 +8331,11 @@ function openEditor(id=null){
     ...Object.fromEntries(EDITOR_DEFAULT_FIELDS.filter(key=>typeof defaults[key]==='string').map(key=>[key,defaults[key]]))
   };
   populateEditorSelects();
-  initializeGanttEditor(t);
   for(const [name,prop] of [['title','title'],['package','package'],['team','team'],['owner','owner'],['priority','priority'],['lod','lod'],['deadline','deadline'],['status','status'],['support','support']]){
     const value=v[prop]??'';
     $('#f-'+name).value = EDITOR_DEFAULT_FIELDS.includes(name) ? keepValidEditorOption(name,value) : value;
   }
+  initializeGanttEditor(t);
   const manual=catalogs.analytics?.manualEntryDateByTask?.[t?.id]?.date||'';
   const allowed=canSetManualEntryDate();
   $('#bim-entry-date-box').classList.toggle('hidden',!allowed);
