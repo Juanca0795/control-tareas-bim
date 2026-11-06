@@ -800,6 +800,7 @@ function ganttPpcDetailsHtml(metric,periodName){
   return '<div class="gantt-ppc-summary-metrics">'+
     '<span><b>'+current+'</b><small>PPC Gantt</small></span>'+
     '<span><b>'+metric.planned+'</b><small>Programadas</small></span>'+
+    '<span><b>'+metric.assigned+'</b><small>Asignadas</small></span>'+
     '<span><b>'+metric.completed+'</b><small>Cumplidas</small></span>'+
     '<span><b>'+metric.remaining+'</b><small>Pendientes</small></span>'+
     '<span><b>'+metric.unassigned+'</b><small>Sin asignar</small></span>'+
@@ -836,7 +837,7 @@ function ganttTaskLabel(id){
     '.gantt-activity-option.selected{background:var(--bg-selected);font-weight:700}',
     '.gantt-ppc-source-note{font-size:9.5px;color:var(--ink-muted);margin-bottom:9px}',
     '.gantt-ppc-summary{border-top:1px solid var(--border-base);padding-top:11px;margin-top:10px}',
-    '.gantt-ppc-summary-metrics{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:7px;margin-bottom:8px}',
+    '.gantt-ppc-summary-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-bottom:8px}',
     '.gantt-ppc-summary-metrics span{padding:8px 9px;border:1px solid var(--border-base);border-radius:8px;background:var(--bg-subtle);display:flex;flex-direction:column;gap:2px;min-width:0}',
     '.gantt-ppc-summary-metrics b{font-size:16px;color:var(--ink-primary);font-variant-numeric:tabular-nums}',
     '.gantt-ppc-summary-metrics small{font-size:9px;color:var(--ink-secondary)}',
