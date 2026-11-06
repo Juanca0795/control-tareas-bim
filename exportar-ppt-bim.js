@@ -473,9 +473,9 @@ function pptBimRefreshModeInfo(){
     const ingreso=pptBimState.weekFilters.ingreso,culminacion=pptBimState.weekFilters.culminacion;
     description.textContent='SEM'+Number(pptBimState.week.slice(-2))+' · '+
       (ingreso&&culminacion?
-        'Ingreso O Culminación: fotos cargadas o tareas completadas durante esta semana; sin duplicar fotografías.':
-        ingreso?'Solo ingreso: fotos cargadas durante esta semana.':
-        'Solo culminación: fotos de tareas completadas durante esta semana.');
+        'Ingreso O Culminación: fotos de ingreso o tareas completadas esta semana, sin duplicados. Las actividades sin fotos van en la tabla final.':
+        ingreso?'Solo ingreso: fotos cargadas esta semana; actividades sin fotos en tabla final.':
+        'Solo culminación: fotos de tareas completadas esta semana; actividades sin fotos en tabla final.');
   }else{
     description.textContent='Culminación: fotografías de actividades completadas durante esta semana; no implica que la foto se haya tomado ese día.';
   }
@@ -942,6 +942,8 @@ function pptBimOrderSectorPhotos(items,byPerson=false){
 function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   if(!Array.isArray(entries)||entries.length<1||entries.length>3)
     throw new Error('Cada diapositiva requiere entre 1 y 3 fotografías.');
+  if(entries.some(item=>item.empty))
+    throw new Error('Las actividades sin fotografía deben exportarse como tabla, no como imagen.');
   const S=pptx.ShapeType,slide=pptx.addSlide();
   pptBimMaster(slide,pptx);
   pptBimAddText(slide,'EVIDENCIAS BIM · SEMANA '+week.split('-W')[1],
@@ -970,17 +972,9 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
     slide.addShape(S.rect,{x,y:top+redH+picH,w,h:captionH,
       fill:{color:'FFFFFF'},line:{color:'000000',width:.8}});
     const frame={x:x+.16,y:top+redH+.13,w:w-.32,h:picH-.26};
-    if(e.empty){
-      slide.addShape(S.rect,{x:frame.x,y:frame.y,w:frame.w,h:frame.h,
-        fill:{color:'FFFFFF'},line:{color:'B9C1CB',width:.8}});
-      pptBimAddText(slide,'SIN CAPTURA',
-        {x:frame.x+.08,y:frame.y+frame.h/2-.12,w:frame.w-.16,h:.24,
-          fontSize:14,bold:true,align:'center',color:'8793A2'});
-    }else{
-      const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
-      slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
-        y:frame.y+(frame.h-sz.h)/2,w:sz.w,h:sz.h});
-    }
+    const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
+    slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
+      y:frame.y+(frame.h-sz.h)/2,w:sz.w,h:sz.h});
     const caption=String(e.caption||e.title||'').replace(/\s+/g,' ').trim();
     pptBimAddText(slide,caption,
       {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
@@ -988,7 +982,7 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
         bold:true,align:'center',valign:'mid',fit:'shrink'});
     pptBimAddText(slide,(byPerson?e.package+' · ':'')+e.taskId+
       (e.team?' · '+e.team:'')+
-      (e.empty?' · Sin captura':' · Foto '+e.photoIndex+' de '+e.photoCount),
+      ' · Foto '+e.photoIndex+' de '+e.photoCount,
       {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
         color:'5A5A5A',align:'center'});
   }
