@@ -89,6 +89,46 @@ async function pptBimEnsureZip(){
   }
   return pptBimZipPromise;
 }
+/* PptxGenJS 4.0.0 puede dar el mismo p:cNvPr/@id a una tabla y un
+ * cuadro de texto de una diapositiva. PowerPoint interpreta esos IDs
+ * repetidos como contenido no válido y solicita reparar el PPTX.
+ * Renumeramos únicamente los identificadores duplicados antes de descargar. */
+async function pptBimRepairShapeIdentifiers(blob){
+  const JSZip=await pptBimEnsureZip();
+  const zip=await JSZip.loadAsync(blob,{checkCRC32:true});
+  const ns='http://schemas.openxmlformats.org/presentationml/2006/main';
+  const parser=new DOMParser(),serializer=new XMLSerializer();
+  const slidePaths=Object.keys(zip.files).filter(path=>/^ppt\/slides\/slide\d+\.xml$/.test(path));
+  let repaired=0;
+  for(const path of slidePaths){
+    const xml=await zip.file(path).async('string');
+    const doc=parser.parseFromString(xml,'application/xml');
+    if(doc.getElementsByTagName('parsererror').length)
+      throw new Error('La diapositiva contiene XML inválido: '+path);
+    const nodes=Array.from(doc.getElementsByTagNameNS(ns,'cNvPr'));
+    const ids=nodes.map(node=>Number(node.getAttribute('id')));
+    const taken=new Set(ids.filter(id=>Number.isSafeInteger(id)&&id>0));
+    const seen=new Set();
+    let next=ids.reduce((max,id)=>Number.isSafeInteger(id)&&id>max?id:max,1)+1;
+    let changed=false;
+    for(const node of nodes){
+      const id=Number(node.getAttribute('id'));
+      if(!Number.isSafeInteger(id)||id<1||seen.has(id)){
+        while(taken.has(next)||seen.has(next))next++;
+        node.setAttribute('id',String(next));
+        seen.add(next);taken.add(next);next++;changed=true;
+      }else seen.add(id);
+    }
+    if(changed){
+      zip.file(path,serializer.serializeToString(doc));
+      repaired++;
+    }
+  }
+  if(!repaired)return blob;
+  console.info('PPTX: corregidos IDs repetidos de figuras/tablas en '+repaired+' diapositiva(s).');
+  return zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+}
+
 async function pptBimValidateBlob(blob,slideCount,imageCount){
   if(!(blob instanceof Blob)||blob.size<1000)throw new Error('La presentación está vacía');
   const magic=new Uint8Array(await blob.slice(0,4).arrayBuffer());
@@ -115,6 +155,17 @@ async function pptBimValidateBlob(blob,slideCount,imageCount){
     const root=parser.parseFromString(xml,'application/xml');
     if(root.getElementsByTagName('parsererror').length)
       throw new Error('XML inválido dentro de la presentación: '+path);
+    if(/^ppt\/slides\/slide\d+\.xml$/.test(path)){
+      const nodes=root.getElementsByTagNameNS(
+        'http://schemas.openxmlformats.org/presentationml/2006/main','cNvPr');
+      const ids=new Set();
+      for(const node of nodes){
+        const id=Number(node.getAttribute('id'));
+        if(!Number.isSafeInteger(id)||id<1||ids.has(id))
+          throw new Error('PPTX con identificadores duplicados o inválidos: '+path);
+        ids.add(id);
+      }
+    }
   }
   return {slideCount:slides.length,imageCount:media.length};
 }
@@ -1139,8 +1190,10 @@ async function exportBimPpt(){
     if(status)status.textContent='Generando PPTX editable…';
     const totalSlides=1+pages.length+tableSlides;
     const generated=await pptx.write({outputType:'blob',compression:true});
-    const blob=generated instanceof Blob?generated:new Blob([generated],
+    let blob=generated instanceof Blob?generated:new Blob([generated],
       {type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
+    if(status)status.textContent='Verificando estructura de las diapositivas…';
+    blob=await pptBimRepairShapeIdentifiers(blob);
     if(status)status.textContent='Validando integridad del archivo PowerPoint…';
     await pptBimValidateBlob(blob,totalSlides,photoCount);
     const suffix=byPerson?'_'+(pptBimState.specialty==='civil'?'Civil3D':'Revit'):'';
