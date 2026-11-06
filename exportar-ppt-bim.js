@@ -1198,35 +1198,38 @@ function pptBimMissingActivitySlides(pptx,week,items){
       {x:.37,y:.79,w:12.55,h:.30,fontSize:16.6,bold:true});
     pptBimAddText(slide,'Registros sin capturas en el período seleccionado · Ordenados por responsable y sector',
       {x:.38,y:1.18,w:12.4,h:.20,fontSize:10,color:'626B78'});
-    const headerRow=headers.map(name=>({text:name,options:{
-      fill:{color:'C00000'},color:'FFFFFF',bold:true,fontFace:'Arial',
-      fontSize:9.4,align:'center',valign:'mid',margin:.045
-    }}));
-    const rows=[headerRow,...page.map(({item},rowIndex)=>{
-      const bg={color:rowIndex%2?'F1F4F8':'FFFFFF'};
-      const values=[
-        item.taskId,String(item.caption||item.title||'').replace(/\s+/g,' ').trim(),
-        item.owner||'Sin responsable',item.team||'Sin disciplina',
-        pptBimSector(item),item.package||'Sin paquete',item.status||'Sin estado'
-      ];
-      return values.map((value,col)=>({text:String(value),options:{
-        fill:bg,color:'172B49',fontFace:'Arial',
-        fontSize:col===1?10.4:col===2?9.8:9.3,
-        bold:col===0,align:col===1?'left':'center',
-        valign:'mid',margin:.065
-      }}));
-    })];
-    // Tabla real (no cuadros de imagen): editable como tabla en PowerPoint.
-    slide.addTable(rows,{
-      x:.28,y:tableY,w:12.78,
-      // PptxGenJS 4.0.0 usa h=1" si se omite, incluso cuando rowH
-      // totaliza más. Ese contenedor incorrecto provoca aviso de reparación.
-      h:headerH+page.reduce((sum,entry)=>sum+entry.h,0),
-      colW:widths,rowH:[headerH,...page.map(({h})=>h)],
-      autoPage:false,fontFace:'Arial',fontSize:9.5,
-      valign:'mid',margin:.055,
-      border:{type:'solid',color:'BFC5CE',pt:.55}
-    });
+    // Renderizar la tabla como celdas y textos editables. PptxGenJS 4.0.0
+    // produce estructuras OOXML de tabla nativa que provocan reparación en
+    // determinadas instalaciones de PowerPoint, aunque el ZIP/XML sea legible.
+    // Los rectángulos + textos no requieren a:graphicFrame/a:tbl.
+    const rows=[headers,...page.map(({item})=>[
+      item.taskId,String(item.caption||item.title||'').replace(/\s+/g,' ').trim(),
+      item.owner||'Sin responsable',item.team||'Sin disciplina',
+      pptBimSector(item),item.package||'Sin paquete',item.status||'Sin estado'
+    ])];
+    let y=tableY;
+    for(let rowIndex=0;rowIndex<rows.length;rowIndex++){
+      const h=rowIndex===0?headerH:page[rowIndex-1].h;
+      let x=.28;
+      const header=rowIndex===0;
+      const background=header?'C00000':(rowIndex%2===0?'F1F4F8':'FFFFFF');
+      for(let col=0;col<widths.length;col++){
+        const w=widths[col];
+        slide.addShape(pptx.ShapeType.rect,{
+          x,y,w,h,fill:{color:background},
+          line:{color:'BFC5CE',width:.55}
+        });
+        pptBimAddText(slide,String(rows[rowIndex][col]||''),{
+          x:x+.06,y:y+.06,w:w-.12,h:Math.max(.20,h-.12),
+          fontFace:'Arial',fontSize:header?9.2:col===1?10.4:col===2?9.8:9.3,
+          color:header?'FFFFFF':'172B49',
+          bold:header||col===0,align:!header&&col===1?'left':'center',
+          valign:'mid',fit:'shrink'
+        });
+        x+=w;
+      }
+      y+=h;
+    }
     pptBimAddText(slide,'ACTIVIDADES SIN CAPTURAS · '+entries.length+' REGISTROS · '+
       (index+1)+' / '+pages.length,
       {x:.32,y:6.75,w:12.5,h:.19,fontSize:9,color:'5A5A5A'});
