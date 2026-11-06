@@ -36,7 +36,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-02",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 1
+      }
     },
     {
       "kind": "activity",
@@ -52,7 +55,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-02",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 1
+      }
     },
     {
       "kind": "activity",
@@ -68,7 +74,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-03",
       "predecessor": "A01",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "3": 1
+      }
     },
     {
       "kind": "activity",
@@ -84,7 +93,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-03",
       "predecessor": "A01",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "3": 1
+      }
     },
     {
       "kind": "activity",
@@ -100,7 +112,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-04",
       "predecessor": "A03",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "4": 1
+      }
     },
     {
       "kind": "activity",
@@ -116,7 +131,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-04",
       "predecessor": "A03",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "4": 1
+      }
     },
     {
       "kind": "group",
@@ -141,7 +159,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-05",
       "predecessor": "A06",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "5": 1
+      }
     },
     {
       "kind": "activity",
@@ -157,7 +178,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-06",
       "predecessor": "A07",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "6": 1
+      }
     },
     {
       "kind": "group",
@@ -182,7 +206,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-11",
       "predecessor": "A08",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "11": 1
+      }
     },
     {
       "kind": "group",
@@ -207,7 +234,14 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-18",
       "predecessor": "A09",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "12": 0.2,
+        "13": 0.2,
+        "16": 0.2,
+        "17": 0.2,
+        "18": 0.2
+      }
     },
     {
       "kind": "group",
@@ -232,7 +266,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-20",
       "predecessor": "A10",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "19": 0.5,
+        "20": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -248,7 +286,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-24",
       "predecessor": "A11",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "23": 0.5,
+        "24": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -264,7 +306,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-26",
       "predecessor": "A12",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "25": 0.5,
+        "26": 0.5
+      }
     },
     {
       "kind": "group",
@@ -289,7 +335,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-30",
       "predecessor": "A13",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "27": 0.5,
+        "30": 0.5
+      }
     },
     {
       "kind": "owner",
@@ -318,7 +368,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-04",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 0.3333333333333333,
+        "3": 0.3333333333333333,
+        "4": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -334,7 +389,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-09",
       "predecessor": "A15",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "5": 0.3333333333333333,
+        "6": 0.3333333333333333,
+        "9": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -350,7 +410,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-12",
       "predecessor": "A16",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "10": 0.3333333333333333,
+        "11": 0.3333333333333333,
+        "12": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -366,7 +431,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-17",
       "predecessor": "A17",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "13": 0.3333333333333333,
+        "16": 0.3333333333333333,
+        "17": 0.3333333333333333
+      }
     },
     {
       "kind": "group",
@@ -391,7 +461,18 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-30",
       "predecessor": "A18",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "18": 0.1111111111111111,
+        "19": 0.1111111111111111,
+        "20": 0.1111111111111111,
+        "23": 0.1111111111111111,
+        "24": 0.1111111111111111,
+        "25": 0.1111111111111111,
+        "26": 0.1111111111111111,
+        "27": 0.1111111111111111,
+        "30": 0.1111111111111111
+      }
     },
     {
       "kind": "owner",
@@ -420,7 +501,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-03",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 0.5,
+        "3": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -436,7 +521,15 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-19",
       "predecessor": "A20",
       "dependency": "",
-      "lag": "8"
+      "lag": "8",
+      "percentByDay": {
+        "12": 0.16666666666666666,
+        "13": 0.16666666666666666,
+        "16": 0.16666666666666666,
+        "17": 0.16666666666666666,
+        "18": 0.16666666666666666,
+        "19": 0.16666666666666666
+      }
     },
     {
       "kind": "activity",
@@ -452,7 +545,13 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-16",
       "predecessor": "A20",
       "dependency": "",
-      "lag": "7"
+      "lag": "7",
+      "percentByDay": {
+        "11": 0.25,
+        "12": 0.25,
+        "13": 0.25,
+        "16": 0.25
+      }
     },
     {
       "kind": "activity",
@@ -468,7 +567,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-17",
       "predecessor": "A22",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "17": 1
+      }
     },
     {
       "kind": "activity",
@@ -484,7 +586,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-18",
       "predecessor": "A23",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "18": 1
+      }
     },
     {
       "kind": "activity",
@@ -500,7 +605,10 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-23",
       "predecessor": "A24",
       "dependency": "",
-      "lag": "2"
+      "lag": "2",
+      "percentByDay": {
+        "23": 1
+      }
     },
     {
       "kind": "group",
@@ -525,7 +633,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-05",
       "predecessor": "",
       "dependency": "",
-      "lag": "2"
+      "lag": "2",
+      "percentByDay": {
+        "4": 0.5,
+        "5": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -541,7 +653,13 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-10",
       "predecessor": "A26",
       "dependency": "CC",
-      "lag": "1"
+      "lag": "1",
+      "percentByDay": {
+        "5": 0.25,
+        "6": 0.25,
+        "9": 0.25,
+        "10": 0.25
+      }
     },
     {
       "kind": "activity",
@@ -557,7 +675,13 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-16",
       "predecessor": "A27",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "11": 0.25,
+        "12": 0.25,
+        "13": 0.25,
+        "16": 0.25
+      }
     },
     {
       "kind": "activity",
@@ -573,7 +697,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-20",
       "predecessor": "A28",
       "dependency": "",
-      "lag": "1"
+      "lag": "1",
+      "percentByDay": {
+        "18": 0.3333333333333333,
+        "19": 0.3333333333333333,
+        "20": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -589,7 +718,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-24",
       "predecessor": "A29",
       "dependency": "CC",
-      "lag": "2"
+      "lag": "2",
+      "percentByDay": {
+        "20": 0.3333333333333333,
+        "23": 0.3333333333333333,
+        "24": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -605,7 +739,14 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-30",
       "predecessor": "A30",
       "dependency": "CC",
-      "lag": "4"
+      "lag": "4",
+      "percentByDay": {
+        "24": 0.2,
+        "25": 0.2,
+        "26": 0.2,
+        "27": 0.2,
+        "30": 0.2
+      }
     },
     {
       "kind": "group",
@@ -630,7 +771,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-03",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 0.5,
+        "3": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -646,7 +791,14 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-09",
       "predecessor": "A32",
       "dependency": "CC",
-      "lag": "1"
+      "lag": "1",
+      "percentByDay": {
+        "3": 0.2,
+        "4": 0.2,
+        "5": 0.2,
+        "6": 0.2,
+        "9": 0.2
+      }
     },
     {
       "kind": "activity",
@@ -662,7 +814,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-11",
       "predecessor": "A33",
       "dependency": "CC",
-      "lag": "6"
+      "lag": "6",
+      "percentByDay": {
+        "9": 0.3333333333333333,
+        "10": 0.3333333333333333,
+        "11": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -678,7 +835,16 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-27",
       "predecessor": "A34",
       "dependency": "",
-      "lag": "7"
+      "lag": "7",
+      "percentByDay": {
+        "19": 0.14285714285714285,
+        "20": 0.14285714285714285,
+        "23": 0.14285714285714285,
+        "24": 0.14285714285714285,
+        "25": 0.14285714285714285,
+        "26": 0.14285714285714285,
+        "27": 0.14285714285714285
+      }
     },
     {
       "kind": "owner",
@@ -707,7 +873,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-06",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "4": 0.3333333333333333,
+        "5": 0.3333333333333333,
+        "6": 0.3333333333333333
+      }
     },
     {
       "kind": "group",
@@ -732,7 +903,17 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-13",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "4": 0.125,
+        "5": 0.125,
+        "6": 0.125,
+        "9": 0.125,
+        "10": 0.125,
+        "11": 0.125,
+        "12": 0.125,
+        "13": 0.125
+      }
     },
     {
       "kind": "group",
@@ -757,7 +938,27 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-27",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "4": 0.05555555555555555,
+        "5": 0.05555555555555555,
+        "6": 0.05555555555555555,
+        "9": 0.05555555555555555,
+        "10": 0.05555555555555555,
+        "11": 0.05555555555555555,
+        "12": 0.05555555555555555,
+        "13": 0.05555555555555555,
+        "16": 0.05555555555555555,
+        "17": 0.05555555555555555,
+        "18": 0.05555555555555555,
+        "19": 0.05555555555555555,
+        "20": 0.05555555555555555,
+        "23": 0.05555555555555555,
+        "24": 0.05555555555555555,
+        "25": 0.05555555555555555,
+        "26": 0.05555555555555555,
+        "27": 0.05555555555555555
+      }
     },
     {
       "kind": "group",
@@ -782,7 +983,14 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-13",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "9": 0.2,
+        "10": 0.2,
+        "11": 0.2,
+        "12": 0.2,
+        "13": 0.2
+      }
     },
     {
       "kind": "group",
@@ -807,7 +1015,24 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-27",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "9": 0.06666666666666667,
+        "10": 0.06666666666666667,
+        "11": 0.06666666666666667,
+        "12": 0.06666666666666667,
+        "13": 0.06666666666666667,
+        "16": 0.06666666666666667,
+        "17": 0.06666666666666667,
+        "18": 0.06666666666666667,
+        "19": 0.06666666666666667,
+        "20": 0.06666666666666667,
+        "23": 0.06666666666666667,
+        "24": 0.06666666666666667,
+        "25": 0.06666666666666667,
+        "26": 0.06666666666666667,
+        "27": 0.06666666666666667
+      }
     },
     {
       "kind": "group",
@@ -832,7 +1057,19 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-20",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "9": 0.1,
+        "10": 0.1,
+        "11": 0.1,
+        "12": 0.1,
+        "13": 0.1,
+        "16": 0.1,
+        "17": 0.1,
+        "18": 0.1,
+        "19": 0.1,
+        "20": 0.1
+      }
     },
     {
       "kind": "group",
@@ -857,7 +1094,19 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-27",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "16": 0.1,
+        "17": 0.1,
+        "18": 0.1,
+        "19": 0.1,
+        "20": 0.1,
+        "23": 0.1,
+        "24": 0.1,
+        "25": 0.1,
+        "26": 0.1,
+        "27": 0.1
+      }
     },
     {
       "kind": "owner",
@@ -886,7 +1135,15 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-09",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 0.16666666666666666,
+        "3": 0.16666666666666666,
+        "4": 0.16666666666666666,
+        "5": 0.16666666666666666,
+        "6": 0.16666666666666666,
+        "9": 0.16666666666666666
+      }
     },
     {
       "kind": "group",
@@ -911,7 +1168,14 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-06",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 0.2,
+        "3": 0.2,
+        "4": 0.2,
+        "5": 0.2,
+        "6": 0.2
+      }
     },
     {
       "kind": "group",
@@ -936,7 +1200,24 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-20",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 0.06666666666666667,
+        "3": 0.06666666666666667,
+        "4": 0.06666666666666667,
+        "5": 0.06666666666666667,
+        "6": 0.06666666666666667,
+        "9": 0.06666666666666667,
+        "10": 0.06666666666666667,
+        "11": 0.06666666666666667,
+        "12": 0.06666666666666667,
+        "13": 0.06666666666666667,
+        "16": 0.06666666666666667,
+        "17": 0.06666666666666667,
+        "18": 0.06666666666666667,
+        "19": 0.06666666666666667,
+        "20": 0.06666666666666667
+      }
     },
     {
       "kind": "group",
@@ -961,7 +1242,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-04",
       "predecessor": "",
       "dependency": "",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "2": 0.3333333333333333,
+        "3": 0.3333333333333333,
+        "4": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -977,7 +1263,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-06",
       "predecessor": "A46",
       "dependency": "FC",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "5": 0.5,
+        "6": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -993,7 +1283,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-10",
       "predecessor": "A47",
       "dependency": "FC",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "9": 0.5,
+        "10": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -1009,7 +1303,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-12",
       "predecessor": "A48",
       "dependency": "FC",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "11": 0.5,
+        "12": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -1025,7 +1323,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-17",
       "predecessor": "A49",
       "dependency": "FC",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "13": 0.3333333333333333,
+        "16": 0.3333333333333333,
+        "17": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -1041,7 +1344,12 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-20",
       "predecessor": "A50",
       "dependency": "FC",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "18": 0.3333333333333333,
+        "19": 0.3333333333333333,
+        "20": 0.3333333333333333
+      }
     },
     {
       "kind": "activity",
@@ -1057,7 +1365,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-24",
       "predecessor": "A51",
       "dependency": "FC",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "23": 0.5,
+        "24": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -1073,7 +1385,11 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-26",
       "predecessor": "A52",
       "dependency": "FC",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "25": 0.5,
+        "26": 0.5
+      }
     },
     {
       "kind": "activity",
@@ -1089,7 +1405,20 @@ window.BIM_GANTT_VIEW_SOURCE={
       "end": "2026-11-30",
       "predecessor": "A53",
       "dependency": "FC",
-      "lag": ""
+      "lag": "",
+      "percentByDay": {
+        "27": 0.5,
+        "30": 0.5
+      }
     }
-  ]
+  ],
+  "holidays": {
+    "2026-11-01": "Todos los Santos (feriado nacional y domingo)"
+  },
+  "nonWorkingByOwner": {
+    "Juan Carlos Prada": {
+      "2026-11-09": "Día libre solicitado (JP), según Excel",
+      "2026-11-10": "Día libre solicitado (JP), según Excel"
+    }
+  }
 };
