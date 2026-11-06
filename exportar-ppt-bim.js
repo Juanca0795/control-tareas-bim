@@ -310,6 +310,8 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   // de disciplina de Control Semanal; el selector debe poder cambiar a GIS.
   const teamFilter=specialty?.startsWith('team:')?'':($('#weekly-team')?.value||'');
   const ownerFilter=$('#weekly-owner')?.value||'';
+  // Misma numeración visible de Control de Tareas; task.id nunca cambia.
+  const displayCodes=specialty?taskDisplayCodes():null;
   const out=[];
   for(const task of tasks){
     // El perfil original nunca entra en esta condición ni cambia su selección.
@@ -353,6 +355,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
       matchedPhotos++;
       out.push({
         id:photo.id,path:photo.path,taskId:task.id,
+        displayCode:displayCodes?.get(task.id)||task.id,
         package:task.package||'Sin paquete',
         team:task.team||'',owner:task.owner||'',
         title:task.title||task.id,caption:task.title||task.id,
@@ -363,6 +366,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
       // Una única caja vacía por actividad, aun cuando existan fotos de otras semanas.
       out.push({
         id:'sin-captura-'+task.id,path:'',empty:true,taskId:task.id,
+        displayCode:displayCodes?.get(task.id)||task.id,
         package:task.package||'Sin paquete',
         team:task.team||'',owner:task.owner||'',
         status:task.status||'',deadline:task.deadline||'',
@@ -390,6 +394,8 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   return out;
 }
 function pptBimPhotoKey(item){return item.taskId+'|'+item.id}
+// Solo rótulos: conservar siempre taskId para evidencia, filtros y deduplicación.
+function pptBimShownTaskCode(item){return item.displayCode||item.taskId}
 
 /* AREA_BIM2 — selector por persona sobre la especialidad existente.
  * La elección se aplica antes de mostrar fotos y antes de generar el PPTX.
@@ -910,10 +916,10 @@ function renderBimPptExport(){
       // Las tareas sin foto nunca se simulan como imágenes: se exportan como tabla.
       const rows=group.map(({x,index})=>
         '<tr><td class="bim-ppt-missing-check"><input type="checkbox" data-bim-ppt-check="'+index+'"'+
-        (x.enabled?' checked':'')+' aria-label="Incluir '+esc(x.taskId)+'"></td>'+
-        '<td class="bim-ppt-missing-code">'+esc(x.taskId)+'</td>'+
+        (x.enabled?' checked':'')+' aria-label="Incluir '+esc(pptBimShownTaskCode(x))+'"></td>'+
+        '<td class="bim-ppt-missing-code">'+esc(pptBimShownTaskCode(x))+'</td>'+
         '<td><textarea rows="2" maxlength="240" id="bim-ppt-caption-'+index+
-        '" data-bim-ppt-caption="'+index+'" aria-label="Descripción de '+esc(x.taskId)+'">'+
+        '" data-bim-ppt-caption="'+index+'" aria-label="Descripción de '+esc(pptBimShownTaskCode(x))+'">'+
         esc(x.caption)+'</textarea></td>'+
         '<td>'+esc(x.owner||'Sin responsable')+'</td>'+
         '<td>'+esc(pptBimSector(x))+'</td>'+
@@ -937,7 +943,7 @@ function renderBimPptExport(){
         '<div class="bim-ppt-item-title"><label><input type="checkbox" data-bim-ppt-check="'+index+'"'+
         (x.enabled?' checked':'')+'> Incluir</label>'+
         '<label class="bim-ppt-caption-label" for="bim-ppt-caption-'+index+'">Descripción para el PPT</label>'+
-        '<span>'+esc(x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+
+        '<span>'+esc(byPerson?pptBimShownTaskCode(x):x.taskId)+' · '+esc(x.team||'Disciplina sin especificar')+
         ' · Foto '+x.photoIndex+' de '+x.photoCount+'</span></div>'+
         '<button type="button" class="bim-ppt-thumb" data-bim-ppt-thumb="'+index+'"'+
         ' aria-label="Ver fotografía '+(index+1)+' en pantalla completa" title="Ampliar fotografía">Vista previa</button>'+
@@ -1077,7 +1083,7 @@ function pptBimPackSlides(items,byPerson=false){
       pptBimNormalizeOwner(a.owner).localeCompare(pptBimNormalizeOwner(b.owner),'es',{numeric:true})||
       sectorRank(pptBimSector(a))-sectorRank(pptBimSector(b))||
       (a.package||'').localeCompare(b.package||'','es',{numeric:true})||
-      a.taskId.localeCompare(b.taskId,'es',{numeric:true})||
+      pptBimShownTaskCode(a).localeCompare(pptBimShownTaskCode(b),'es',{numeric:true})||
       String(a.id).localeCompare(String(b.id),'es',{numeric:true}));
     const pages=[];
     for(let i=0;i<photos.length;i+=3)pages.push(photos.slice(i,i+3));
@@ -1166,7 +1172,7 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
       {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
         fontSize:caption.length>180?8:caption.length>95?10:13,
         bold:true,align:'center',valign:'mid',fit:'shrink'});
-    pptBimAddText(slide,(byPerson?e.package+' · ':'')+e.taskId+
+    pptBimAddText(slide,(byPerson?e.package+' · ':'')+(byPerson?pptBimShownTaskCode(e):e.taskId)+
       (e.team?' · '+e.team:'')+
       ' · Foto '+e.photoIndex+' de '+e.photoCount,
       {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
@@ -1194,7 +1200,7 @@ function pptBimMissingActivitySlides(pptx,week,items){
     pptBimNormalizeOwner(a.owner).localeCompare(pptBimNormalizeOwner(b.owner),'es',{numeric:true})||
     sectorOrder(pptBimSector(a))-sectorOrder(pptBimSector(b))||
     (a.package||'').localeCompare(b.package||'','es',{numeric:true})||
-    a.taskId.localeCompare(b.taskId,'es',{numeric:true}));
+    pptBimShownTaskCode(a).localeCompare(pptBimShownTaskCode(b),'es',{numeric:true}));
   // El ancho combinado de las siete columnas es 12.78 pulgadas (plantilla 16:9).
   const widths=[1.05,4.29,2.18,1.46,1.09,1.31,1.40];
   const headers=['CÓDIGO BIM','ACTIVIDAD','RESPONSABLE','DISCIPLINA','SECTOR','PAQUETE','ESTADO'];
@@ -1228,7 +1234,7 @@ function pptBimMissingActivitySlides(pptx,week,items){
     // determinadas instalaciones de PowerPoint, aunque el ZIP/XML sea legible.
     // Los rectángulos + textos no requieren a:graphicFrame/a:tbl.
     const rows=[headers,...page.map(({item})=>[
-      item.taskId,String(item.caption||item.title||'').replace(/\s+/g,' ').trim(),
+      pptBimShownTaskCode(item),String(item.caption||item.title||'').replace(/\s+/g,' ').trim(),
       item.owner||'Sin responsable',item.team||'Sin disciplina',
       pptBimSector(item),item.package||'Sin paquete',item.status||'Sin estado'
     ])];
