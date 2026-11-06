@@ -5920,6 +5920,46 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             </select>
           </div>
         </div>
+
+        <div class="form-section-head"><span class="section-index">G</span><div><h3>VINCULACIÓN GANTT</h3><p>Asocia este entregable a una actividad programada (opcional)</p></div></div>
+        <div class="gantt-link-panel" id="gantt-link-panel">
+          <div class="gantt-mode-row" role="group" aria-label="Modo de vinculación con el Gantt">
+            <label><input type="radio" name="f-gantt-mode" value="select" checked onchange="updateGanttEditorMode()"> Por selección</label>
+            <label><input type="radio" name="f-gantt-mode" value="manual" onchange="updateGanttEditorMode()"> Manual</label>
+          </div>
+          <div id="gantt-select-fields">
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="f-gantt-group">Grupo del Gantt</label>
+                <select id="f-gantt-group" onchange="refreshGanttActivityOptions('')">
+                  <option value="">Seleccionar agrupación</option>
+                </select>
+              </div>
+              <div class="form-field">
+                <label for="f-gantt-activity">Actividad disponible</label>
+                <select id="f-gantt-activity" onchange="updateGanttEditorInfo()">
+                  <option value="">Seleccionar actividad disponible</option>
+                </select>
+              </div>
+            </div>
+            <label class="gantt-link-toggle"><input type="checkbox" id="f-gantt-show-assigned" onchange="refreshGanttActivityOptions()"> Mostrar actividades ya asignadas (requiere confirmación)</label>
+          </div>
+          <div id="gantt-manual-fields" class="hidden">
+            <div class="form-grid">
+              <div class="form-field">
+                <label for="f-gantt-manual-group">Grupo / categoría</label>
+                <input class="field-input" id="f-gantt-manual-group" type="text" maxlength="120" list="gantt-group-suggestions" autocomplete="off" placeholder="Ej.: Organización del modelo">
+                <datalist id="gantt-group-suggestions"></datalist>
+              </div>
+              <div class="form-field">
+                <label for="f-gantt-manual-activity">Nombre o código de la actividad</label>
+                <input class="field-input" id="f-gantt-manual-activity" type="text" maxlength="180" autocomplete="off" placeholder="Actividad nueva o código A07">
+              </div>
+            </div>
+          </div>
+          <p id="gantt-link-info" role="status" aria-live="polite">Vinculación opcional. El PPC operativo conserva sus reglas actuales.</p>
+          <div id="editor-gantt-warning" class="editor-quality-warning hidden" role="status" aria-live="polite"></div>
+        </div>
         <div class="form-section-head"><span class="section-index">02</span><div><h3>PARÁMETROS BIM Y ESTADO</h3><p>Nivel de desarrollo y seguimiento operativo</p></div></div>
         <div class="form-grid">
           <div class="form-field">
@@ -6147,6 +6187,7 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script async src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js" onload="if(typeof currentView!=='undefined'){if(currentView==='dashboard')renderDashboard();if(currentView==='weekly')renderWeekly()}"></script>
+<script src="gantt-link.js"></script>
 <script>
 'use strict';
 const SEED = [];
@@ -6284,6 +6325,7 @@ function normalizeCatalogs(input){
   result.cncRecords=normalizeCncRecords(input?.cncRecords);
   result.weeklyForecasts=normalizeWeeklyForecasts(input?.weeklyForecasts);
   result.evidenceByTask=normalizeEvidenceByTask(input?.evidenceByTask);
+  result.ganttLinksByTask=normalizeGanttLinks(input?.ganttLinksByTask);
   // Copias completas en el JSONB de bim_catalogs, sin cambiar el esquema.
   // Nunca copiar backups dentro del payload de otro backup.
   result.deletedBackupIds=mergeCloudBackupDeletedIds(input?.deletedBackupIds,[]);
@@ -7120,7 +7162,9 @@ function filteredTasks(){
   return tasks.filter(t =>
     (!linkedTaskIds || linkedTaskIds.has(t.id)) &&
     (!taskWeekFilterEnabled || taskEntryWeek(t)===taskWeekFilterKey) &&
-    (!q || [t.id, t.title, t.owner, t.package, t.support].join(' ').toLocaleLowerCase('es').includes(q)) &&
+    (!q || [t.id, t.title, t.owner, t.package, t.support,
+      catalogs.ganttLinksByTask?.[t.id]?.group||'',catalogs.ganttLinksByTask?.[t.id]?.name||'',
+      catalogs.ganttLinksByTask?.[t.id]?.activityId||''].join(' ').toLocaleLowerCase('es').includes(q)) &&
     TASK_CROSS_FIELDS.every(([id,field])=>
       !$('#'+id).value||taskCrossValue(t,field)===$('#'+id).value)
   ).sort(recentTaskFirst);
@@ -7159,7 +7203,7 @@ function renderTasks(){
     const sector=taskSector(t.package);
     return `<tr data-task-row="${esc(t.id)}" tabindex="0" title="${esc(taskRegistrationHint(t))}" class="${selectedTaskId===t.id?'task-row-selected ':''}${isDone?'task-row-completed':''}${animateFacet?' task-facet-enter':''}">
       <td><span class="id">${esc(displayCodes.get(t.id)||t.id)}</span></td>
-      <td><div class="task-name">${esc(t.title)}${taskEvidenceBadge(t.id)}</div></td>
+      <td><div class="task-name">${esc(t.title)}${taskEvidenceBadge(t.id)}${ganttTaskLabel(t.id)}</div></td>
       <td>${lodHtml}</td>
       <td>${esc(t.package)}</td>
       <td>${sector?esc(sector):'<span class="cell-empty">—</span>'}</td>
@@ -7180,7 +7224,7 @@ function renderTasks(){
     const sector=taskSector(t.package);
     return `<article class="task-mobile-card${categoryOf(t.status)==='done'?' task-mobile-completed':''}${animateFacet?' task-facet-enter':''}" aria-label="Entregable ${esc(displayCodes.get(t.id)||t.id)}">
       <div class="task-mobile-card-head"><span class="id">${esc(displayCodes.get(t.id)||t.id)}</span>${taskFacetChip('status',t.status,clsStatus(t.status))}</div>
-      <h3 class="task-mobile-title" title="${esc(t.title)}">${esc(t.title)}${taskEvidenceBadge(t.id)}</h3>
+      <h3 class="task-mobile-title" title="${esc(t.title)}">${esc(t.title)}${taskEvidenceBadge(t.id)}${ganttTaskLabel(t.id)}</h3>
       <dl class="task-mobile-facts">
         <div><dt>LOI</dt><dd>${t.lod?`<span class="lod-badge">${esc(t.lod)}</span>`:'<span class="cell-empty">—</span>'}</dd></div>
         <div><dt>PAQUETE</dt><dd title="${esc(t.package)}">${esc(t.package)||'—'}</dd></div>
@@ -8153,14 +8197,26 @@ function editorQualityIssues(){
   const title=$('#f-title')?.value||'',packageName=$('#f-package')?.value||'';
   const deadline=$('#f-deadline')?.value||'',entry=editorExpectedEntryDate();
   const duplicate=findEditorDuplicate(title,packageName,editingId);
-  return {duplicate,dateInconsistent:Boolean(deadline&&entry&&deadline<entry),deadline,entry};
+  const ganttLink=collectGanttEditorLink();
+  const ganttDuplicate=ganttLink&&!ganttLink.invalid?ganttLinkedTask(ganttLink,editingId):null;
+  return {duplicate,dateInconsistent:Boolean(deadline&&entry&&deadline<entry),deadline,entry,ganttLink,ganttDuplicate};
 }
 function updateEditorQualityHints(){
   const sectorNode=$('#editor-sector-preview');
   if(!sectorNode)return;
   const pkg=$('#f-package')?.value||'';
   sectorNode.textContent='Sector detectado: '+(taskSector(pkg)||'Sin sector asignado');
-  const {duplicate,dateInconsistent,deadline,entry}=editorQualityIssues();
+  const {duplicate,dateInconsistent,deadline,entry,ganttLink,ganttDuplicate}=editorQualityIssues();
+  const ganttNode=$('#editor-gantt-warning');
+  if(ganttNode){
+    ganttNode.classList.toggle('hidden',!ganttDuplicate&&!ganttLink?.invalid);
+    ganttNode.textContent=ganttLink?.invalid?
+      'Para vincular manualmente, completa tanto el grupo como la actividad.':
+      ganttDuplicate?'Esta actividad del Gantt ya está vinculada con '+ganttDuplicate.id+
+      '. Puedes reutilizarla si confirmas el aviso al guardar.':'';
+  }
+  updateGanttEditorInfo();
+
   const duplicateNode=$('#editor-duplicate-warning');
   if(duplicateNode){
     duplicateNode.classList.toggle('hidden',!duplicate);
@@ -8274,6 +8330,7 @@ function openEditor(id=null){
     ...Object.fromEntries(EDITOR_DEFAULT_FIELDS.filter(key=>typeof defaults[key]==='string').map(key=>[key,defaults[key]]))
   };
   populateEditorSelects();
+  initializeGanttEditor(t);
   for(const [name,prop] of [['title','title'],['package','package'],['team','team'],['owner','owner'],['priority','priority'],['lod','lod'],['deadline','deadline'],['status','status'],['support','support']]){
     const value=v[prop]??'';
     $('#f-'+name).value = EDITOR_DEFAULT_FIELDS.includes(name) ? keepValidEditorOption(name,value) : value;
@@ -8400,9 +8457,14 @@ async function saveEditor(e){
   }
   // Avisos preventivos sin imponer cambios a registros existentes.
   const quality=editorQualityIssues();
+  if(quality.ganttLink?.invalid){
+    toast('Completa el grupo y el nombre de la actividad Gantt manual.');
+    return;
+  }
   const approvalKey=JSON.stringify([obj.title,obj.package,obj.team,obj.owner,obj.deadline,
-    obj.status,quality.entry,quality.duplicate?.id||'',quality.dateInconsistent]);
-  if((quality.duplicate||quality.dateInconsistent)&&editorQualityAcknowledgement!==approvalKey){
+    obj.status,quality.entry,quality.duplicate?.id||'',quality.dateInconsistent,
+    JSON.stringify(quality.ganttLink),quality.ganttDuplicate?.id||'']);
+  if((quality.duplicate||quality.dateInconsistent||quality.ganttDuplicate)&&editorQualityAcknowledgement!==approvalKey){
     editorQualityAcknowledgement=approvalKey;
     updateEditorQualityHints();
     toast('Se detectó una advertencia. Revisa los avisos y pulsa Guardar otra vez para confirmar.');
@@ -8442,6 +8504,13 @@ async function saveEditor(e){
     // Se guarda en el JSONB sincronizado con Supabase y nunca aparece en el formulario.
     catalogs.analytics.createdAtByTask[obj.id]=currentPeruDate;
   }
+  // La vinculación queda en bim_catalogs.data: no cambia el esquema de bim_tasks.
+  if(quality.ganttLink){
+    catalogs.ganttLinksByTask[obj.id]={...quality.ganttLink,updatedAt:new Date().toISOString()};
+  }else if(catalogs.ganttLinksByTask[obj.id]){
+    // Marca de desvinculación para que otra sesión no restituya el enlace anterior.
+    catalogs.ganttLinksByTask[obj.id]={mode:'none',activityId:'',group:'',name:'',updatedAt:new Date().toISOString()};
+  }
   rememberEditorDefaults(obj);
   closeEditor();
   persist();
@@ -8455,6 +8524,7 @@ function deleteTask(id, onDeleted=null){
     `¿Confirmas eliminar el entregable "${t.title}"? Esta acción no se puede deshacer.`,
     () => {
       tasks = tasks.filter(x=>x.id!==id);
+      if(catalogs.ganttLinksByTask[id])catalogs.ganttLinksByTask[id]={mode:'none',activityId:'',group:'',name:'',updatedAt:new Date().toISOString()};
       if(selectedTaskId===id) selectedTaskId = null;
       if(hoveredTaskId===id) hoveredTaskId = null;
       persist();
@@ -9695,6 +9765,7 @@ async function load(){
         merged.cncRecords=mergeCncRecords(fromCloud.cncRecords,catalogs.cncRecords);
         merged.weeklyForecasts=mergeWeeklyForecasts(fromCloud.weeklyForecasts,catalogs.weeklyForecasts);
         merged.evidenceByTask=mergeEvidenceByTask(fromCloud.evidenceByTask,catalogs.evidenceByTask);
+        merged.ganttLinksByTask=mergeGanttLinks(fromCloud.ganttLinksByTask,catalogs.ganttLinksByTask);
         merged.deletedBackupIds=mergeCloudBackupDeletedIds(fromCloud.deletedBackupIds,catalogs.deletedBackupIds);
         merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups,merged.deletedBackupIds);
         catalogs=normalizeCatalogs(merged);
@@ -9760,6 +9831,9 @@ async function save(){
     catalogs.weeklyForecasts=catalogsToSave.weeklyForecasts;
     catalogsToSave.evidenceByTask=mergeEvidenceByTask(latestCatalogs.data?.[0]?.data?.evidenceByTask,catalogsToSave.evidenceByTask);
     catalogs.evidenceByTask=catalogsToSave.evidenceByTask;
+    catalogsToSave.ganttLinksByTask=mergeGanttLinks(
+      latestCatalogs.data?.[0]?.data?.ganttLinksByTask,catalogsToSave.ganttLinksByTask);
+    catalogs.ganttLinksByTask=catalogsToSave.ganttLinksByTask;
     const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
     if(gone.length){
       const deleted=await d.from('bim_tasks').delete().in('id',gone);
