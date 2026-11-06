@@ -195,7 +195,7 @@ function pptBimSetupWeekSelector(){
     '<option value="'+week+'">SEM'+Number(week.slice(-2))+' · '+week.slice(0,4)+'</option>').join('');
   select.value=pptBimState.week;
 }
-function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,weekFilters=null,sectorFilter='',manualMeetingRange=null){
+function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,weekFilters=null,sectorFilter='',manualMeetingRange=null,includeEmpty=false){
   const meetingPeriod=mode==='reunion'?pptBimMeetingReportPeriod(week,meetingDay,manualMeetingRange):null;
   if(mode==='reunion'&&!meetingPeriod)return [];
   const packageFilter=$('#weekly-package')?.value||'';
@@ -209,8 +209,13 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
     if((packageFilter&&task.package!==packageFilter)||
        (teamFilter&&task.team!==teamFilter)||
        (ownerFilter&&task.owner!==ownerFilter))continue;
-    if(mode==='culminacion'&&pptBimCompletionWeek(task)!==week)continue;
+    // AREA_BIM conserva su exclusión por fecha de culminación.
+    // AREA_BIM2 debe mostrar también tareas que no tienen fotografías para el período.
+    const matchesCompletion=mode!=='culminacion'||pptBimCompletionWeek(task)===week;
+    if(!matchesCompletion&&!includeEmpty)continue;
+    let matchedPhotos=0;
     for(const photo of taskEvidenceRecords(task.id)){
+      if(!matchesCompletion)continue;
       if(mode==='ingreso'&&pptBimIngresoWeek(photo)!==week)continue;
       if(mode==='semana'){
         // OR inclusivo de los criterios; cada fotografía se emite una sola vez.
@@ -222,6 +227,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
         const ingreso=pptBimIngresoDate(photo);
         if(!ingreso||ingreso<meetingPeriod.start||ingreso>meetingPeriod.end)continue;
       }
+      matchedPhotos++;
       out.push({
         id:photo.id,path:photo.path,taskId:task.id,
         package:task.package||'Sin paquete',
@@ -230,16 +236,28 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
         name:photo.name||'Fotografía'
       });
     }
+    if(includeEmpty&&!matchedPhotos){
+      // Una única caja vacía por actividad, aun cuando existan fotos de otras semanas.
+      out.push({
+        id:'sin-captura-'+task.id,path:'',empty:true,taskId:task.id,
+        package:task.package||'Sin paquete',
+        team:task.team||'',owner:task.owner||'',
+        title:task.title||task.id,caption:task.title||task.id,
+        name:'Sin captura',photoIndex:0,photoCount:0
+      });
+    }
   }
   out.sort((a,b)=>
+    Number(!!a.empty)-Number(!!b.empty)||
     (specialty?a.owner.localeCompare(b.owner,'es',{numeric:true}):a.package.localeCompare(b.package,'es',{numeric:true}))||
     (specialty?a.package.localeCompare(b.package,'es',{numeric:true}):0)||
     a.taskId.localeCompare(b.taskId,'es',{numeric:true})||
     a.id.localeCompare(b.id));
   // Numeración de fotografías dentro de cada actividad en la selección actual.
   const totals=new Map(),positions=new Map();
-  for(const item of out)totals.set(item.taskId,(totals.get(item.taskId)||0)+1);
+  for(const item of out)if(!item.empty)totals.set(item.taskId,(totals.get(item.taskId)||0)+1);
   for(const item of out){
+    if(item.empty)continue;
     item.photoIndex=(positions.get(item.taskId)||0)+1;
     item.photoCount=totals.get(item.taskId);
     positions.set(item.taskId,item.photoIndex);
@@ -256,11 +274,12 @@ function pptBimAvailablePeople(){
   for(const item of pptBimState.ownerCandidates||[]){
     const key=pptBimNormalizeOwner(item.owner);
     if(!key||pptBimSpecialtyForOwner(item.owner)!==pptBimState.specialty)continue;
-    if(!people.has(key))people.set(key,{key,name:item.owner,count:0});
-    people.get(key).count++;
+    if(!people.has(key))people.set(key,{key,name:item.owner,taskIds:new Set()});
+    people.get(key).taskIds.add(item.taskId);
   }
-  return [...people.values()].sort((a,b)=>
-    a.name.localeCompare(b.name,'es',{numeric:true,sensitivity:'base'}));
+  return [...people.values()].map(({taskIds,...person})=>({
+    ...person,count:taskIds.size
+  })).sort((a,b)=>a.name.localeCompare(b.name,'es',{numeric:true,sensitivity:'base'}));
 }
 function pptBimSelectedPeople(){
   const chosen=pptBimState.selectedOwners?.[pptBimState.specialty];
@@ -293,9 +312,9 @@ function pptBimRenderPeoplePicker(){
     (selected===null||selected.has(person.key)?' checked':'')+
     (pptBimState.busy?' disabled':'')+'>'+
     '<span class="name">'+esc(person.name)+'</span>'+
-    '<span class="photo-count">'+person.count+' foto'+(person.count!==1?'s':'')+
+    '<span class="photo-count">'+person.count+' actividad'+(person.count!==1?'es':'')+
     '</span></label>').join(''):
-    '<div class="bim-ppt-people-empty">No hay fotografías de esta especialidad con los filtros actuales.</div>';
+    '<div class="bim-ppt-people-empty">No hay actividades de esta especialidad con los filtros actuales.</div>';
   document.querySelectorAll('#bim-ppt-people-menu .bim-ppt-people-actions button').forEach(button=>{
     button.disabled=pptBimState.busy||!people.length;
   });
@@ -394,7 +413,7 @@ function pptBimRefreshModeInfo(){
   pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: fotografías agrupadas por <strong>responsable</strong> y filtradas por Civil 3D o Revit. Usa <strong>Personal</strong> para elegir quiénes incluir en el PPTX. El modo Por semana permite combinar Ingreso y Culminación sin duplicar fotos. Se excluyen los cuatro colaboradores definidos para este perfil. Se conservan los filtros de sector, paquete, disciplina y colaborador.'
+    ?'Perfil AREA_BIM2: todas las actividades según los filtros de responsable y especialidad. Las fotografías disponibles se presentan primero; las actividades sin capturas para el período aparecen al final con un recuadro vacío. El modo Por semana combina Ingreso y Culminación sin duplicar fotos. Se mantienen los filtros de sector, paquete, disciplina y colaborador.'
     :'Diseño basado en la plantilla de reunión semanal: cabeceras rojas, tres columnas y descripciones inferiores. Los títulos se obtienen del <strong>paquete de trabajo</strong>. Puedes corregir la descripción de cada fotografía antes de exportar. Se respetan los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -411,9 +430,13 @@ function pptBimRefreshModeInfo(){
   });
   if(pptBimState.mode!=='reunion'||pptBimState.busy)closeBimPptMeetingMenu();
   const label=$('#bim-ppt-week-label'),items=pptBimState.items;
-  if(label)label.textContent='Semana '+pptBimState.week.replace('-W',' · ')+
-    ' · '+items.length+' fotografía'+(items.length!==1?'s':'')+
-    ' · '+new Set(items.map(pptBimGroupName)).size+(special?' responsable(s)':' paquete(s)');
+  if(label){
+    const photos=items.filter(x=>!x.empty).length;
+    const activities=new Set(items.map(x=>x.taskId)).size;
+    label.textContent='Semana '+pptBimState.week.replace('-W',' · ')+
+      ' · '+(special?activities+' actividades · '+photos+' fotografías':photos+' fotografía'+(photos!==1?'s':''))+
+      ' · '+new Set(items.map(pptBimGroupName)).size+(special?' responsable(s)':' paquete(s)');
+  }
   const description=$('#bim-ppt-mode-note');
   const manualRangeUI=$('#bim-ppt-meeting-range');
   const reunion=pptBimState.mode==='reunion';
@@ -458,7 +481,8 @@ function pptBimRefreshItems(mode=pptBimState.mode){
     pptBimState.drafts.set(pptBimPhotoKey(item),{caption:item.caption,enabled:item.enabled});
   const allItems=pptBimItemsForWeek(pptBimState.week,mode,pptBimState.meetingDay,
     pptBimState.profile==='by-person'?pptBimState.specialty:null,
-    pptBimState.weekFilters,pptBimState.sectorFilter,pptBimState.manualMeetingRange);
+    pptBimState.weekFilters,pptBimState.sectorFilter,pptBimState.manualMeetingRange,
+    pptBimState.profile==='by-person');
   pptBimState.ownerCandidates=pptBimState.profile==='by-person'?allItems:[];
   const selected=pptBimState.profile==='by-person'?pptBimSelectedPeople():null;
   const items=selected===null?allItems:allItems.filter(item=>
@@ -644,16 +668,16 @@ function setBimPptMeetingDay(value){
 }
 function openBimPptExport(){
   if(currentView!=='weekly'){toast('Ingresa a Control Semanal para exportar el informe.');return}
-  if(!window.bimEvidenceCloud||!window.bimEvidenceCloud.ready()){
+  // Las actividades sin imágenes de AREA_BIM2 pueden previsualizarse incluso sin Storage.
+  const profile=typeof bimExportProfile!=='undefined'&&bimExportProfile==='by-person'
+    ?'by-person':'standard';
+  if(profile!=='by-person'&&(!window.bimEvidenceCloud||!window.bimEvidenceCloud.ready())){
     toast('Supabase Storage no está disponible. Comprueba la conexión.');return;
   }
   const meetingDay=pptBimSavedMeetingDay();
-  // AREA_BIM usa el flujo original. AREA_BIM2 activa únicamente el nuevo perfil.
-  const profile=typeof bimExportProfile!=='undefined'&&bimExportProfile==='by-person'
-    ?'by-person':'standard';
   const specialty='revit';
   const items=pptBimItemsForWeek(selectedWeek,'reunion',meetingDay,
-    profile==='by-person'?specialty:null);
+    profile==='by-person'?specialty:null,null,'',null,profile==='by-person');
   pptBimState={items:items.map(x=>({...x,enabled:true})),
     week:selectedWeek,mode:'reunion',meetingDay,profile,specialty,sectorFilter:'',
     manualMeetingRange:null,weekFilters:{ingreso:true,culminacion:true},
