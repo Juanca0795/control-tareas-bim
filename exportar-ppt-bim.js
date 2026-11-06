@@ -296,7 +296,7 @@ function pptBimRenderPeoplePicker(){
     '<span class="photo-count">'+person.count+' foto'+(person.count!==1?'s':'')+
     '</span></label>').join(''):
     '<div class="bim-ppt-people-empty">No hay fotografías de esta especialidad con los filtros actuales.</div>';
-  picker.querySelectorAll('.bim-ppt-people-actions button').forEach(button=>{
+  document.querySelectorAll('#bim-ppt-people-menu .bim-ppt-people-actions button').forEach(button=>{
     button.disabled=pptBimState.busy||!people.length;
   });
 }
@@ -605,7 +605,7 @@ function setBimPptSpecialty(value){
 document.addEventListener('click',event=>{
   if(!event.target.closest('#bim-ppt-day-picker'))closeBimPptMeetingMenu();
   if(!event.target.closest('#bim-ppt-specialty-picker'))closeBimPptSpecialtyMenu();
-  if(!event.target.closest('#bim-ppt-people-picker'))closeBimPptPeopleMenu();
+  if(!event.target.closest('#bim-ppt-people-picker')&&!event.target.closest('#bim-ppt-people-menu'))closeBimPptPeopleMenu();
 });
 document.addEventListener('change',event=>{
   const check=event.target.closest('[data-bim-ppt-person]');
