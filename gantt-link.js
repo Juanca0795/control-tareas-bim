@@ -536,6 +536,82 @@ function refreshGanttForOwner(keepId,keepGroup){
   syncGanttEditorControls();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
+/* Desplegable propio en el flujo del formulario: siempre crece hacia abajo.
+   Conserva el <select> oculto como valor de referencia para el guardado y el PPC. */
+function closeGanttActivityDropdown({restoreFocus=false}={}){
+  const list=document.getElementById('f-gantt-activity-list');
+  const trigger=document.getElementById('f-gantt-activity-trigger');
+  if(!list||!trigger)return;
+  list.hidden=true;
+  trigger.setAttribute('aria-expanded','false');
+  if(restoreFocus)trigger.focus();
+}
+function renderGanttActivityDropdown(){
+  const select=document.getElementById('f-gantt-activity');
+  const trigger=document.getElementById('f-gantt-activity-trigger');
+  const list=document.getElementById('f-gantt-activity-list');
+  if(!select||!trigger||!list)return;
+  const chosen=select.options[select.selectedIndex];
+  trigger.textContent=select.value&&chosen?chosen.textContent:'Seleccionar actividad del Gantt';
+  trigger.classList.toggle('gantt-has-value',Boolean(select.value));
+  const groups=[...select.querySelectorAll('optgroup')];
+  list.innerHTML=groups.map(group=>
+    '<div class="gantt-activity-group" role="group" aria-label="'+esc(group.label)+'">'+
+    '<div class="gantt-activity-group-label">'+esc(group.label)+'</div>'+
+    [...group.querySelectorAll('option')].map(option=>
+      '<button type="button" class="gantt-activity-option'+
+      (option.value===select.value?' selected':'')+'" role="option" aria-selected="'+
+      (option.value===select.value)+'" data-gantt-option="'+esc(option.value)+'">'+
+      esc(option.textContent)+'</button>').join('')+'</div>').join('');
+  closeGanttActivityDropdown();
+}
+function toggleGanttActivityDropdown(){
+  const trigger=document.getElementById('f-gantt-activity-trigger');
+  const list=document.getElementById('f-gantt-activity-list');
+  if(!trigger||!list||trigger.disabled)return;
+  if(!list.hidden){closeGanttActivityDropdown();return;}
+  list.hidden=false;
+  trigger.setAttribute('aria-expanded','true');
+  // El menú ocupa espacio debajo del campo y, si es necesario, desplaza el
+  // scroll del editor para mostrar las opciones sin cambiar su dirección.
+  requestAnimationFrame(()=>{
+    if(list.hidden)return;
+    const editor=document.getElementById('bim-editor-scroll');
+    if(!editor)return;
+    const visible=editor.getBoundingClientRect();
+    const menu=list.getBoundingClientRect();
+    const overflow=menu.bottom-visible.bottom+12;
+    if(overflow>0)editor.scrollBy({top:overflow,behavior:'smooth'});
+  });
+}
+function chooseGanttActivity(id){
+  const select=document.getElementById('f-gantt-activity');
+  if(![...select.options].some(option=>option.value===id))return;
+  select.value=id;
+  selectGanttActivity();
+  renderGanttActivityDropdown();
+  document.getElementById('f-gantt-activity-trigger').focus();
+}
+function handleGanttDropdownKeydown(event){
+  const list=document.getElementById('f-gantt-activity-list');
+  if(event.key==='Escape'&&!list.hidden){
+    event.preventDefault();closeGanttActivityDropdown({restoreFocus:true});return;
+  }
+  if(event.key==='ArrowDown'||event.key==='ArrowUp'){
+    event.preventDefault();
+    const trigger=document.getElementById('f-gantt-activity-trigger');
+    if(list.hidden&&trigger.disabled)return;
+    if(list.hidden)toggleGanttActivityDropdown();
+    const options=[...list.querySelectorAll('[data-gantt-option]')];
+    if(!options.length)return;
+    const current=options.indexOf(document.activeElement);
+    const next=event.key==='ArrowDown'?
+      (current<0?0:(current+1)%options.length):
+      (current<0?options.length-1:(current+options.length-1)%options.length);
+    options[next].focus();
+    options[next].scrollIntoView({block:'nearest'});
+  }
+}
 function refreshGanttActivityOptions(keepId){
   const select=document.getElementById('f-gantt-activity');
   const responsible=ganttResponsibleForOwner(document.getElementById('f-owner')?.value||'');
@@ -549,6 +625,7 @@ function refreshGanttActivityOptions(keepId){
       .map(a=>'<option value="'+esc(a.id)+'">'+esc(a.id+' — '+a.title)+'</option>').join('')+
       '</optgroup>').join('');
   select.value=available.some(a=>a.id===previous)?previous:'';
+  renderGanttActivityDropdown();
 }
 function syncGanttEditorControls(){
   const title=document.getElementById('f-title');
@@ -568,6 +645,8 @@ function syncGanttEditorControls(){
   group.disabled=Boolean(selected)||!ganttResponsibleForOwner(
     document.getElementById('f-owner')?.value||'');
   group.required=false;
+  const trigger=document.getElementById('f-gantt-activity-trigger');
+  if(trigger)trigger.disabled=activity.disabled;
   title.placeholder='Ej.: Coordinación de interferencias MEP vs Estructuras';
   const label=document.querySelector('label[for="f-title"]');
   if(label)label.textContent='Descripción del entregable / tarea *';
@@ -590,6 +669,7 @@ function selectGanttActivity(){
     document.getElementById('f-gantt-group').value='';
   }
   syncGanttEditorControls();
+  renderGanttActivityDropdown();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function handleGanttActivityKeydown(event){
@@ -599,6 +679,7 @@ function handleGanttActivityKeydown(event){
   event.preventDefault();
   input.value='';
   selectGanttActivity();
+  closeGanttActivityDropdown({restoreFocus:true});
 }
 function selectGanttGroup(){
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
@@ -616,6 +697,7 @@ function initializeGanttEditor(task){
     ganttAutoTitle=ganttEditorActivity().title;
   }
   syncGanttEditorControls();
+  closeGanttActivityDropdown();
 }
 function collectGanttEditorLink(){
   const activity=ganttEditorActivity();
@@ -647,6 +729,20 @@ function ganttTaskLabel(id){
   const css=document.createElement('style');
   css.textContent=[
     '.gantt-link-panel{border:1px solid var(--border-base);border-radius:10px;padding:12px;background:var(--bg-subtle);margin:5px 0 13px}',
+
+    '.gantt-activity-picker{width:100%;min-width:0}',
+    '.gantt-activity-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:34px;text-align:left;font:inherit;font-size:11px;padding:6px 10px;color:var(--ink-secondary);background:var(--bg-panel);border:1px solid var(--border-strong);border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+    '.gantt-activity-trigger.gantt-has-value{color:var(--ink-primary)}',
+    '.gantt-activity-trigger::after{content:"";flex:none;width:7px;height:7px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-right:3px;margin-top:-3px}',
+    '.gantt-activity-trigger[aria-expanded="true"]::after{transform:rotate(225deg);margin-top:3px}',
+    '.gantt-activity-trigger:focus-visible,.gantt-activity-option:focus-visible{outline:2px solid var(--accent-blue);outline-offset:1px}',
+    '.gantt-activity-trigger:disabled{opacity:.55;cursor:not-allowed}',
+    '.gantt-activity-options{width:100%;max-height:min(270px,45dvh);overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;margin-top:5px;border:1px solid var(--border-strong);border-radius:8px;background:var(--bg-panel);box-shadow:0 10px 24px rgba(0,0,0,.18)}',
+    '.gantt-activity-options[hidden]{display:none!important}',
+    '.gantt-activity-group-label{position:sticky;top:0;z-index:1;padding:7px 9px;background:var(--bg-panel);font-weight:750;font-size:10px;color:var(--ink-secondary);border-bottom:1px solid var(--border-base)}',
+    '.gantt-activity-option{display:block;width:100%;border:0;border-bottom:1px solid var(--border-base);background:transparent;padding:8px 10px;text-align:left;white-space:normal;overflow-wrap:anywhere;font:inherit;font-size:11px;color:var(--ink-primary);cursor:pointer}',
+    '.gantt-activity-option:hover,.gantt-activity-option:focus-visible{background:var(--bg-selected)}',
+    '.gantt-activity-option.selected{background:var(--bg-selected);font-weight:700}',
     '.gantt-link-panel .form-grid{margin:0}',
     '#f-gantt-group:disabled,#f-title:disabled{opacity:.72;cursor:not-allowed}',
     '.gantt-task-label{display:block;font-size:10px;font-weight:600;opacity:.75;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
