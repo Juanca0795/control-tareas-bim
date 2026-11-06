@@ -7881,8 +7881,9 @@ function switchView(v, authenticated=false){
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
   $('#weekly-ppt-launch').classList.toggle('hidden',v!=='weekly');
-  // AREA_BIM accede directamente a Proyección; solo AREA_BIM2 usa subpestañas.
-  const showWeeklySubtabs=v==='weekly'&&bimExportProfile==='by-person';
+  // Ambos perfiles (AREA_BIM y AREA_BIM2) muestran Seguimiento y Proyección.
+  // El perfil de exportación PPT sigue siendo independiente.
+  const showWeeklySubtabs=v==='weekly';
   $('#weekly-subtabs').classList.toggle('hidden',!showWeeklySubtabs);
   $('.sidebar').classList.toggle('weekly-subtabs-visible',showWeeklySubtabs);
   // La sesión del navegador recuerda la vista, sin almacenar datos de tareas.
