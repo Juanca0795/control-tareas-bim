@@ -945,6 +945,52 @@ function ganttPpcDetailsHtml(metric,periodName){
     (metric.planned-metric.measured)+' sin avance real verificado. '+
     'Meta LPS: 85 %.</p>'+details;
 }
+/* CNC Gantt: mostrar incumplimientos de los compromisos semanales del
+ * Excel. Las causas registradas en BIM se consultan, nunca se inventan. */
+function ganttPpcCncPanel(metric){
+  const container=document.querySelector('#weekly-cnc');
+  const count=document.querySelector('#weekly-cnc-count');
+  if(!container||!count)return;
+  if(!metric.planned){
+    count.textContent='Sin compromisos';
+    container.innerHTML='<div class="weekly-empty"><strong>Sin programación Gantt</strong>'+
+      '<span>No existen metas semanales para este período.</span></div>';
+    return;
+  }
+  const nowWeek=isoWeekKey(new Date());
+  const relevant=metric.rows.filter(a=>a.week<=nowWeek&&!a.isDone);
+  const failed=relevant.filter(a=>a.week<nowWeek);
+  const current=relevant.filter(a=>a.week===nowWeek);
+  count.textContent=failed.length+' incumplidos';
+  if(!relevant.length){
+    container.innerHTML='<div class="weekly-cnc-summary">No hay compromisos Gantt pendientes de evaluación para el período seleccionado.</div>';
+    return;
+  }
+  const items=relevant.slice(0,6).map(a=>{
+    const stored=(catalogs.cncRecords||[]).find(r=>
+      a.linkedTaskIds.includes(r.taskId)&&r.week===a.week);
+    const achieved=Number.isFinite(a.realCumulative)?
+      Number(a.realCumulative.toFixed(2))+' %':'Sin dato';
+    const target=Number(a.plannedCumulative.toFixed(2))+' %';
+    const label=a.week===nowWeek?'En evaluación':'No alcanzó la meta semanal';
+    const cause=stored?
+      'Causa en tarea BIM: '+stored.category:
+      a.week===nowWeek?'Semana abierta: no corresponde asignar causa aún':
+      'Causa semanal no registrada';
+    return '<div class="weekly-cnc-item"><strong>'+esc(a.id+' · '+a.title)+'</strong>'+
+      '<p>'+esc(a.owner)+' · '+esc(weekShort(a.week))+' · '+esc(label)+'</p>'+
+      '<small>Meta acumulada: '+esc(target)+' · Real: '+esc(achieved)+'</small>'+
+      '<small>'+esc(cause)+'</small></div>';
+  }).join('');
+  container.innerHTML='<div class="weekly-cnc-summary"><strong>'+failed.length+
+    ' incumplido(s)</strong> · '+current.length+
+    ' en evaluación · PPC Gantt</div><div class="weekly-cnc-list">'+items+'</div>'+
+    (relevant.length>6?'<p class="weekly-cnc-summary">+'+(relevant.length-6)+
+      ' compromisos adicionales.</p>':'')+
+    '<div class="weekly-cnc-note"><strong>Causas sin inferencias</strong>'+
+    '<div>El Gantt define las metas; el avance real se registra en el detalle del PPC. '+
+    'Las causas mostradas proceden únicamente de registros CNC existentes.</div></div>';
+}
 function ganttTaskLabel(id){
   const link=catalogs.ganttLinksByTask?.[id];
   if(!link||link.mode==='none')return '';
