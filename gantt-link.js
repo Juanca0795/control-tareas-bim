@@ -741,6 +741,9 @@ function ganttPpcMetric(period,monthly=false){
   const activeOwner=document.getElementById('weekly-owner')?.value||'';
   const responsible=activeOwner?ganttResponsibleForOwner(activeOwner):'';
   const available=source.filter(a=>{
+    // Exclusión solicitada: Oriol no participa en el PPC Gantt, aunque
+    // sus actividades permanezcan intactas en el catálogo y en el HTML.
+    if(ganttText(a.owner)===ganttText('Oriol Huera Diaz'))return false;
     if(!a.plannedEnd||!/^20\d{2}-\d\d-\d\d$/.test(a.plannedEnd))return false;
     if(activeOwner&&a.owner!==responsible)return false;
     return monthly?a.plannedEnd.slice(0,7)===period:
