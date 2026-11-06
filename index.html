@@ -5521,6 +5521,58 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   user-select:none
 }
 
+
+/* AREA_BIM2 — registros sin fotos: vista previa en tabla, no cuadros vacíos. */
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table-wrap{
+  width:100%;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;
+  scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table{
+  width:100%;min-width:760px;border-collapse:collapse;table-layout:fixed;
+  font:500 10px Inter,sans-serif;color:var(--ink-primary)
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th{
+  padding:9px 7px;text-align:left;white-space:normal;line-height:1.3;
+  background:#B91C1C;color:#FFFFFF;font-size:9px;font-weight:750;
+  border:1px solid var(--border-strong)
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table td{
+  border:1px solid var(--border-base);padding:7px 6px;
+  vertical-align:middle;overflow-wrap:anywhere;line-height:1.4
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table tbody tr:nth-child(even){
+  background:var(--bg-subtle)
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table tbody tr:hover{
+  background:var(--bg-hover)
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th:first-child,
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table td:first-child{
+  width:45px;text-align:center
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th:nth-child(2){width:70px}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th:nth-child(3){width:200px}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th:nth-child(4){width:130px}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th:nth-child(5){width:65px}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th:nth-child(6){width:90px}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th:nth-child(7){width:95px}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table th:nth-child(8){width:110px}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table input[type=checkbox]{
+  width:14px;height:14px;cursor:pointer;accent-color:var(--accent-blue)
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table .bim-ppt-missing-code{
+  font-weight:750;white-space:nowrap
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table textarea{
+  width:100%;min-width:0;min-height:50px;box-sizing:border-box;resize:vertical;
+  border:1px solid var(--border-strong);border-radius:6px;
+  background:var(--bg-subtle);color:var(--ink-primary);
+  padding:6px 7px;font:500 10px/1.45 Inter,sans-serif
+}
+.bim-ppt-dialog.bim-ppt-person-export .bim-ppt-missing-table textarea:focus-visible{
+  outline:2px solid var(--accent-blue);outline-offset:1px
+}
+
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
