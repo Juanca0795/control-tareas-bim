@@ -4213,15 +4213,21 @@ textarea,
 #weekly-view .weekly-cnc-item .cnc-cause{color:var(--accent-blue);font-weight:650}
 
 
-/* Accesos compactos al visor Gantt, parte superior izquierda del Dashboard y Control de Tareas. */
-.gantt-page-quickbar{display:flex;align-items:center;justify-content:flex-start;margin:0 0 10px;gap:8px}
-.gantt-page-view-button{display:inline-flex;align-items:center;justify-content:center;gap:7px;
-  width:auto;min-height:33px;padding:6px 12px!important;border:1px solid var(--border-strong)!important;
-  background:var(--bg-subtle)!important;color:var(--accent-blue)!important;font-size:11px;
-  font-weight:750;border-radius:7px;white-space:nowrap;cursor:pointer}
-.gantt-page-view-button:hover{border-color:var(--accent-blue)!important;background:var(--bg-hover)!important}
-.gantt-page-view-button:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
-.gantt-page-view-button span{font-size:16px;line-height:1}
+/* Botón Gantt integrado en la cabecera, antes de Dashboard / Control de tareas. */
+.sidebar #header-gantt-viewer-launch{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  flex:0 0 auto;margin-left:auto;min-height:35px;padding:6px 11px;
+  border:1px solid var(--border-strong);border-radius:8px;
+  background:var(--bg-subtle);color:var(--accent-blue);font-size:10.5px;
+  font-weight:750;white-space:nowrap;cursor:pointer;
+}
+.sidebar #header-gantt-viewer-launch:hover{background:var(--bg-hover);border-color:var(--accent-blue)}
+.sidebar #header-gantt-viewer-launch:focus-visible{outline:2px solid var(--accent-blue);outline-offset:2px}
+.sidebar #header-gantt-viewer-launch.hidden{display:none!important}
+.sidebar #header-gantt-viewer-launch svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.8;fill:none}
+@media(max-width:1100px){
+  .sidebar #header-gantt-viewer-launch{order:3;margin-left:0}
+}
 /* Acceso al Gantt original: integrar con controles de Seguimiento. */
 #weekly-view #weekly-gantt-viewer-launch{
   min-height:30px;white-space:nowrap;border:1px solid var(--border-strong);
@@ -5447,6 +5453,14 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
     <button type="button" id="weekly-tab-seguimiento" class="weekly-subtab active" role="tab" aria-selected="true" aria-controls="weekly-seguimiento" onclick="switchWeeklySubtab('seguimiento')">SEGUIMIENTO</button>
     <button type="button" id="weekly-tab-proyeccion" class="weekly-subtab" role="tab" aria-selected="false" aria-controls="weekly-proyeccion" tabindex="-1" onclick="switchWeeklySubtab('proyeccion')">PROYECCIÓN</button>
   </div>
+  <button type="button" id="header-gantt-viewer-launch" 
+    onclick="openBimGanttViewer()" title="Visualizar el Gantt original del Excel" aria-label="Visualizar Gantt del Excel">
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="17" rx="2"></rect>
+      <path d="M3 10h18M9 4v17M15 10v11M3 16h18"></path>
+    </svg>
+    Visualizar Gantt
+  </button>
   <nav aria-label="Vistas del sistema" role="tablist">
     <button type="button" id="weekly-ppt-launch" class="weekly-ppt-launch hidden"
       onclick="openBimPptExport()" title="Exportar las fotografías de la semana a una presentación PowerPoint"
@@ -5494,12 +5508,6 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
   </div>
   <!-- VISTA: CONTROL DE TAREAS (10 columnas, sin columna de acción) -->
   <div id="tasks-view" class="hidden">
-    <div class="gantt-page-quickbar" aria-label="Acceso al cronograma Gantt">
-      <button type="button" class="btn small gantt-page-view-button" id="tasks-gantt-viewer-launch"
-        onclick="openBimGanttViewer()" title="Visualizar el cronograma Gantt del Excel">
-        <span aria-hidden="true">▦</span> Visualizar Gantt
-      </button>
-    </div>
     <section id="task-stats" class="stat-grid" aria-label="Indicadores de tareas"></section>
 
     <section class="card">
@@ -5703,12 +5711,6 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 
   <!-- VISTA: DASHBOARD SALA DE CONTROL -->
   <div id="dashboard-view">
-    <div class="gantt-page-quickbar" aria-label="Acceso al cronograma Gantt">
-      <button type="button" class="btn small gantt-page-view-button" id="dashboard-gantt-viewer-launch"
-        onclick="openBimGanttViewer()" title="Visualizar el cronograma Gantt del Excel">
-        <span aria-hidden="true">▦</span> Visualizar Gantt
-      </button>
-    </div>
     <section class="card dash-filters">
       <span id="dash-scope-heading">SEGMENTAR ALCANCE</span>
       <div class="select-wrap"><select id="dash-package" onchange="renderDashboard()" aria-label="Filtrar paquete dashboard"></select></div>
@@ -7918,6 +7920,9 @@ function switchView(v, authenticated=false){
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
   $('#weekly-ppt-launch').classList.toggle('hidden',v!=='weekly');
+  // El Gantt se consulta desde el encabezado en Dashboard y Control de Tareas.
+  // Seguimiento conserva su botón propio dentro de Evolución PPC.
+  $('#header-gantt-viewer-launch').classList.toggle('hidden',v==='weekly');
   // Ambos perfiles (AREA_BIM y AREA_BIM2) muestran Seguimiento y Proyección.
   // El perfil de exportación PPT sigue siendo independiente.
   const showWeeklySubtabs=v==='weekly';
