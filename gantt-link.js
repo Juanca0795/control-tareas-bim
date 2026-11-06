@@ -804,7 +804,6 @@ function ganttPpcMetric(period,monthly=false){
 function ganttPpcDetailsHtml(metric,periodName){
   if(!metric.planned)return '<p class="gantt-ppc-empty">No hay actividades del Excel programadas en '+esc(periodName)+
     ' para el responsable seleccionado.</p>';
-  const current=metric.ppc===null?'—':metric.ppc.toFixed(1)+'%';
   const rows=metric.rows.map(a=>
     '<tr><td>'+esc(a.id)+'</td><td>'+esc(a.title)+
     '<small>'+esc(a.group)+'</small></td><td>'+esc(a.owner)+'</td>'+
@@ -813,15 +812,8 @@ function ganttPpcDetailsHtml(metric,periodName){
     '<td>'+esc(a.state)+(a.late?' · Fuera de plazo':'')+'</td></tr>').join('');
   const label=metric.future?'Período futuro: PPC todavía no evaluable.':
     'Se cuentan las culminaciones verificadas hasta el corte semanal o mensual; los cierres posteriores no se anticipan.';
-  return '<div class="gantt-ppc-summary-metrics">'+
-    '<span><b>'+current+'</b><small>PPC Gantt</small></span>'+
-    '<span><b>'+metric.planned+'</b><small>Programadas</small></span>'+
-    '<span><b>'+metric.assigned+'</b><small>Asignadas</small></span>'+
-    '<span><b>'+metric.completed+'</b><small>Cumplidas</small></span>'+
-    '<span><b>'+metric.remaining+'</b><small>Pendientes</small></span>'+
-    '<span><b>'+metric.unassigned+'</b><small>Sin asignar</small></span>'+
-    '</div><details class="gantt-ppc-details"><summary>Ver actividades del Gantt · '+esc(periodName)+
-    '</summary><div class="gantt-ppc-table-scroll"><table><thead><tr><th>ID</th><th>Actividad</th>'+
+  return '<details class="gantt-ppc-details"><summary>Ver actividades del Gantt · '+esc(periodName)+
+   '</summary><div class="gantt-ppc-table-scroll"><table><thead><tr><th>ID</th><th>Actividad</th>'+
     '<th>Responsable Gantt</th><th>Fin Excel</th><th>Tarea BIM</th><th>Culminación real</th>'+
     '<th>Evaluación</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
     '<p>'+esc(label)+' Una actividad sin asignar permanece en la programación.</p></details>';
@@ -853,10 +845,6 @@ function ganttTaskLabel(id){
     '.gantt-activity-option.selected{background:var(--bg-selected);font-weight:700}',
     '.gantt-ppc-source-note{font-size:9.5px;color:var(--ink-muted);margin-bottom:9px}',
     '.gantt-ppc-summary{border-top:1px solid var(--border-base);padding-top:11px;margin-top:10px}',
-    '.gantt-ppc-summary-metrics{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:7px;margin-bottom:8px}',
-    '.gantt-ppc-summary-metrics span{padding:8px 9px;border:1px solid var(--border-base);border-radius:8px;background:var(--bg-subtle);display:flex;flex-direction:column;gap:2px;min-width:0}',
-    '.gantt-ppc-summary-metrics b{font-size:16px;color:var(--ink-primary);font-variant-numeric:tabular-nums}',
-    '.gantt-ppc-summary-metrics small{font-size:9px;color:var(--ink-secondary)}',
     '.gantt-ppc-details summary{cursor:pointer;font-size:10.5px;font-weight:700;color:var(--accent-blue);padding:7px 3px}',
     '.gantt-ppc-table-scroll{max-height:320px;overflow:auto;border:1px solid var(--border-base);border-radius:8px}',
     '.gantt-ppc-table-scroll table{width:100%;min-width:720px;border-collapse:collapse;font-size:10px}',
@@ -867,7 +855,7 @@ function ganttTaskLabel(id){
     '.weekly-ppc-source-control{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink-secondary)}',
     '.weekly-ppc-source-control select{height:30px;font-size:10px;max-width:145px;padding:4px 7px}',
     '.weekly-trend-key .gantt-achieved i{display:inline-block;width:14px;height:2px;background:#f3bb67;margin-right:5px}',
-    '@media(max-width:620px){.gantt-ppc-summary-metrics{grid-template-columns:repeat(3,minmax(0,1fr))}.weekly-trend-controls{flex-wrap:wrap}}',
+    '@media(max-width:620px){.weekly-trend-controls{flex-wrap:wrap}}',
     '.gantt-link-panel .form-grid{margin:0}',
     '#f-gantt-group:disabled,#f-title:disabled{opacity:.72;cursor:not-allowed}',
     '.gantt-task-label{display:block;font-size:10px;font-weight:600;opacity:.75;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
