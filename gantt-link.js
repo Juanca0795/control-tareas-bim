@@ -1012,7 +1012,6 @@ function ganttPpcWeekMetric(week){
   }
   const rows=[];
   for(const activity of source){
-    if(ganttText(activity.owner)===ganttText('Oriol Huera Diaz'))continue;
     if(activeOwner&&activity.owner!==responsible)continue;
     const target=ganttPpcTarget(ganttPpcEvents(activity),week);
     if(!target)continue;
