@@ -53,7 +53,7 @@ function visibleActivities(){
   if(st.owner&&row.owner!==st.owner)return false;
   if(st.group&&row.group!==st.group)return false;
   if(st.week&&!allDates.some(d=>week(d)===st.week&&d>=row.start&&d<=row.end))return false;
-  if(st.search&&!([row.id,row.edt,row.title,row.owner,row.group].join(' ')
+  if(st.search&&!([row.excelId||row.id,row.id,row.edt,row.title,row.owner,row.group].join(' ')
     .toLocaleLowerCase('es').includes(st.search.toLocaleLowerCase('es'))))return false;
   if(st.status&&taskState(row).state!==st.status)return false;
   return true;
@@ -129,7 +129,7 @@ function visibleColumns(){
    .filter(col=>!hiddenColumns.has(col.index));
 }
 function rowMeta(row){
- const items=[row.id||'',row.edt||'',row.title||'',row.owner||'',row.type||'',
+ const items=[row.excelId||row.id||'',row.edt||'',row.title||'',row.owner||'',row.type||'',
   row.duration||'',readable(row.start),readable(row.end),row.predecessor||'',
   row.dependency||'',row.lag||''];
  return visibleColumns().map(({index:i})=>{
@@ -223,7 +223,7 @@ function showDetail(id){
  const row=S.rows.find(r=>r.kind==='activity'&&r.id===id);if(!row)return;
  const status=taskState(row);
  const labels={completed:'Completada',pending:'Pendiente',unassigned:'Sin asignar'};
- const note='<b>'+escapeText(row.id+' — '+row.title)+'</b> · '+escapeText(row.owner)+
+ const note='<b>'+escapeText((row.excelId||row.id)+' — '+row.title)+'</b> · '+escapeText(row.owner)+
   ' · '+readable(row.start)+' al '+readable(row.end)+' · Estado: <b>'+
   labels[status.state]+'</b> · Tarea HTML: '+escapeText(status.taskIds.join(', ')||'Sin vincular')+
   (status.completedAt?' · Fin real: '+readable(status.completedAt):'')+
