@@ -580,6 +580,7 @@ function refreshGanttForOwner(keepId,keepGroup){
   }
   ganttEditorGroupOptions(groupBefore);
   syncGanttEditorControls();
+  syncGanttProgressEditor();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 /* Desplegable propio en el flujo del formulario: siempre crece hacia abajo.
@@ -716,6 +717,7 @@ function handleGanttDescriptionInput(){
   // El texto propio inhabilita el selector de actividades, no el grupo.
   ganttAutoTitle='';
   syncGanttEditorControls();
+  syncGanttProgressEditor();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function selectGanttActivity(){
@@ -731,6 +733,7 @@ function selectGanttActivity(){
   }
   syncGanttEditorControls();
   renderGanttActivityDropdown();
+  syncGanttProgressEditor();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function handleGanttActivityKeydown(event){
@@ -743,6 +746,7 @@ function handleGanttActivityKeydown(event){
   closeGanttActivityDropdown({restoreFocus:true});
 }
 function selectGanttGroup(){
+  syncGanttProgressEditor();
   if(typeof updateEditorQualityHints==='function')updateEditorQualityHints();
 }
 function initializeGanttEditor(task){
@@ -774,6 +778,165 @@ function collectGanttEditorLink(){
   if(!title||!group)return null;
   if(!ganttGroups(responsible).includes(group))return {invalid:true};
   return {mode:'manual',activityId:'',group,name:title.slice(0,180)};
+}
+/* Avance real en el mismo modal existente: un renglón compacto y scroll
+ * interior, sin modificar ancho ni altura de la ventana Nueva tarea.
+ * Elegir un hito programado SOLO propone un porcentaje: se registra como
+ * real al guardar con fecha de ejecución explícita. */
+let ganttProgressLinkKey='',ganttProgressDirty=false;
+function ganttProgressCurrentLink(){
+  const activity=ganttEditorActivity();
+  if(activity)return {activity,group:activity.group,key:'activity:'+activity.id};
+  const group=document.getElementById('f-gantt-group')?.value||'';
+  const owner=ganttResponsibleForOwner(document.getElementById('f-owner')?.value||'');
+  return group&&owner?{activity:null,group,key:'group:'+owner+':'+group}:null;
+}
+function ganttProgressMilestones(activity){
+  if(!activity)return [];
+  let cumulative=0;
+  return ganttPpcEvents(activity).map(e=>{
+    cumulative+=e.share*100;
+    return {date:e.date,actual:Number(Math.min(100,cumulative).toFixed(2))};
+  });
+}
+function syncGanttProgressEditor(){
+  const panel=document.getElementById('gantt-progress-editor');
+  if(!panel)return;
+  const link=ganttProgressCurrentLink(),key=link?.key||'';
+  const mode=document.getElementById('f-gantt-progress-mode');
+  const milestones=document.getElementById('f-gantt-progress-milestone');
+  const input=document.getElementById('f-gantt-progress-value');
+  const date=document.getElementById('f-gantt-progress-date');
+  if(key!==ganttProgressLinkKey){
+    ganttProgressLinkKey=key;
+    ganttProgressDirty=false;
+    mode.value=link?.activity?'gantt':'manual';
+    milestones.value='';
+    input.value='';
+    date.value=peruEntryClock().date;
+  }
+  panel.classList.toggle('hidden',!link);
+  if(!link)return;
+  const dates=ganttProgressMilestones(link.activity);
+  const previous=milestones.value;
+  milestones.innerHTML='<option value="">Elegir hito programado</option>'+
+    dates.map(m=>{
+      const value=m.date+'|'+m.actual;
+      const week=isoWeekKey(new Date(m.date+'T12:00:00'));
+      return '<option value="'+esc(value)+'">'+esc(m.date.slice(8)+'/'+m.date.slice(5,7)+
+        ' · '+m.actual+' % · SEM'+week.slice(-2))+'</option>';
+    }).join('');
+  if(dates.some(m=>m.date+'|'+m.actual===previous))milestones.value=previous;
+  else milestones.value='';
+  const planEnabled=!!link.activity&&dates.length>0;
+  mode.querySelector('option[value="gantt"]').disabled=!planEnabled;
+  if(!planEnabled)mode.value='manual';
+  const manual=mode.value==='manual';
+  milestones.classList.toggle('hidden',manual);
+  milestones.disabled=manual;
+  const wrap=document.getElementById('gantt-progress-manual-wrap');
+  wrap.classList.toggle('hidden',!manual);
+  input.disabled=!manual;
+  date.max=peruEntryClock().date;
+  updateGanttProgressPreview();
+}
+function initializeGanttProgressEditor(task){
+  ganttProgressLinkKey='';ganttProgressDirty=false;
+  syncGanttProgressEditor();
+  const link=ganttProgressCurrentLink();
+  const prior=catalogs.ganttTaskProgressByTask?.[task?.id];
+  if(!link||!prior||prior.activityId!==(link.activity?.id||'')||
+    prior.group!==link.group)return;
+  const milestones=document.getElementById('f-gantt-progress-milestone');
+  const mode=document.getElementById('f-gantt-progress-mode');
+  document.getElementById('f-gantt-progress-value').value=String(prior.actual);
+  document.getElementById('f-gantt-progress-date').value=prior.achievedOn;
+  const found=[...milestones.options].find(o=>
+    o.value&&Number(o.value.split('|')[1])===prior.actual);
+  mode.value=prior.method==='gantt'&&found?'gantt':'manual';
+  if(found)milestones.value=found.value;
+  ganttProgressDirty=false;syncGanttProgressEditor();
+}
+function changeGanttProgressMode(value){
+  const mode=document.getElementById('f-gantt-progress-mode');
+  const milestone=document.getElementById('f-gantt-progress-milestone');
+  if(value==='manual'&&milestone.value)
+    document.getElementById('f-gantt-progress-value').value=milestone.value.split('|')[1];
+  mode.value=value;
+  ganttProgressDirty=true;
+  syncGanttProgressEditor();
+}
+function selectGanttProgressMilestone(){
+  ganttProgressDirty=true;updateGanttProgressPreview();
+}
+function changeGanttProgressValue(){
+  ganttProgressDirty=true;updateGanttProgressPreview();
+}
+function changeGanttProgressDate(){
+  ganttProgressDirty=true;updateGanttProgressPreview();
+}
+function ganttProgressDraftActual(){
+  const mode=document.getElementById('f-gantt-progress-mode')?.value;
+  const raw=mode==='gantt'?
+    (document.getElementById('f-gantt-progress-milestone')?.value||'').split('|')[1]:
+    document.getElementById('f-gantt-progress-value')?.value;
+  return raw===undefined||raw===''?null:Number(raw);
+}
+function updateGanttProgressPreview(){
+  const link=ganttProgressCurrentLink();
+  const meta=document.getElementById('gantt-progress-meta');
+  const help=document.getElementById('gantt-progress-help');
+  if(!meta||!help||!link)return;
+  const actual=ganttProgressDraftActual();
+  const date=document.getElementById('f-gantt-progress-date')?.value||'';
+  const week=/^\d{4}-\d{2}-\d{2}$/.test(date)?
+    isoWeekKey(new Date(date+'T12:00:00')):'';
+  if(!link.activity){
+    meta.textContent=actual===null?'Avance manual':'Real: '+actual+' %';
+    help.textContent='Grupo Gantt: este avance se guarda en la tarea; no acredita una actividad Axx para el PPC.';
+    return;
+  }
+  const target=week?ganttPpcTarget(ganttPpcEvents(link.activity),week):null;
+  meta.textContent=target?'SEM'+week.slice(-2)+' · meta '+Number(target.plannedCumulative.toFixed(2))+' %':
+    'Sin meta semanal en esta fecha';
+  help.textContent=actual===null?
+    'Selecciona un hito o ingresa avance real. La tarea no se completa automáticamente.':
+    'Real '+actual+' % · '+(target?
+      (actual+.01>=target.plannedCumulative?'alcanza':'no alcanza')+' la meta acumulada; ':'')+
+    'se validará al guardar sin cambiar el estado.';
+}
+function collectGanttEditorProgress(){
+  const link=ganttProgressCurrentLink();
+  if(!link||!ganttProgressDirty)return null;
+  const actual=ganttProgressDraftActual();
+  if(actual===null)return null;
+  if(!Number.isFinite(actual)||actual<0||actual>100)
+    return {invalid:true,reason:'El avance real debe estar entre 0 y 100 %.'};
+  const achievedOn=document.getElementById('f-gantt-progress-date').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(achievedOn)||
+    !Number.isFinite(Date.parse(achievedOn+'T12:00:00Z'))||
+    achievedOn>peruEntryClock().date)
+    return {invalid:true,reason:'Selecciona una fecha real válida, no futura.'};
+  const category=categoryOf(document.getElementById('f-status').value);
+  if(category==='pending'&&actual>0)
+    return {invalid:true,reason:'Para registrar avance mayor a 0 %, cambia el estado a En progreso.'};
+  if(category==='done'&&actual<100)
+    return {invalid:true,reason:'Una tarea marcada Completada debe registrar 100 % de avance.'};
+  return {actual:Number(actual.toFixed(2)),achievedOn,
+    method:document.getElementById('f-gantt-progress-mode').value,
+    activityId:link.activity?.id||'',group:link.group};
+}
+function applyGanttEditorProgress(taskId,link,entry){
+  if(!entry||!link)return;
+  const updatedAt=new Date().toISOString();
+  const data=catalogs.ganttTaskProgressByTask||
+    (catalogs.ganttTaskProgressByTask={});
+  data[taskId]={...entry,updatedAt};
+  if(link.mode!=='select'||!link.activityId)return;
+  const week=isoWeekKey(new Date(entry.achievedOn+'T12:00:00'));
+  const stored=catalogs.ganttWeeklyProgress||(catalogs.ganttWeeklyProgress={});
+  const rows=stored[week]||(stored[week]={});
+  rows[link.activityId]={actual:entry.actual,updatedAt};
 }
 function updateGanttEditorInfo(){
   // Mantener compatibilidad con actualizaciones del panel de calidad.
@@ -1050,6 +1213,18 @@ function ganttTaskLabel(id){
   css.textContent=[
     '.gantt-link-panel{border:1px solid var(--border-base);border-radius:10px;padding:12px;background:var(--bg-subtle);margin:5px 0 13px}',
 
+    '.gantt-progress-editor{border-top:1px solid var(--border-base);margin-top:8px;padding-top:8px;min-width:0}',
+    '.gantt-progress-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0;font-size:10px;margin-bottom:5px}',
+    '.gantt-progress-heading span{font-size:9px;color:var(--ink-secondary);text-align:right}',
+    '.gantt-progress-fields{display:flex;align-items:center;gap:6px;min-width:0}',
+    '.gantt-progress-fields select,.gantt-progress-fields input{min-width:0;height:30px;font:inherit;font-size:10px;background:var(--bg-panel);color:var(--ink-primary);border:1px solid var(--border-strong);border-radius:7px;padding:5px 7px}',
+    '#f-gantt-progress-mode{flex:0 0 108px}',
+    '#f-gantt-progress-milestone{flex:1 1 160px;width:100%}',
+    '#gantt-progress-manual-wrap{flex:1 1 160px;min-width:0}',
+    '#f-gantt-progress-value{width:100%}',
+    '#f-gantt-progress-date{flex:0 1 136px;max-width:136px}',
+    '#gantt-progress-help{display:block;margin-top:5px;line-height:1.35;font-size:9px;color:var(--ink-muted)}',
+    '@media(max-width:550px){.gantt-progress-fields{flex-wrap:wrap}#f-gantt-progress-mode{flex:0 0 112px}#f-gantt-progress-date{flex:1 1 130px;max-width:none}#f-gantt-progress-milestone,#gantt-progress-manual-wrap{flex:1 1 calc(100% - 120px)}}',
     '.gantt-activity-picker{width:100%;min-width:0}',
     '.gantt-activity-trigger{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;height:34px;text-align:left;font:inherit;font-size:11px;padding:6px 10px;color:var(--ink-secondary);background:var(--bg-panel);border:1px solid var(--border-strong);border-radius:8px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
     '.gantt-activity-trigger.gantt-has-value{color:var(--ink-primary)}',
