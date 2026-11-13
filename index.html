@@ -10082,7 +10082,7 @@ function renderWeekly(forceMotion=false){
     ' pp respecto a '+(monthly?ppcMonthlyLabel(previous.month):weekShort(previous.week));
   const description=!useOperative?
     (m.future?'Compromisos Gantt futuros: resultado no evaluable todavía.':
-      'Metas semanales según el avance diario del Gantt Excel · Oriol excluido.'):
+      'Metas semanales según el avance diario del Gantt Excel · Todos los responsables incluidos, incluido Oriol.'):
     monthly?
       (month>todayString().slice(0,7)?'Mes futuro: programación provisional.':
         month===todayString().slice(0,7)?'Mes en curso: resultados provisionales hasta el corte.':
