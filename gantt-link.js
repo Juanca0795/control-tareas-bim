@@ -1,7 +1,9 @@
-/* Fuente: Actividades Área Bim - Noviembre.xlsx, GANT, OneDrive; fotografía del 05-11-2026. */
+/* Fuente: Actividades Área Bim - Noviembre.xlsx, hoja Gant, OneDrive; actualización 13-11-2026.
+   IDs internos históricos para conservar enlaces y avance real en Supabase; excelId = código actual en Excel. */
 window.BIM_GANTT_ACTIVITIES=[
   {
     "id": "A01",
+    "excelId": "A01",
     "group": "Revisión de documentos listos",
     "title": "Actas técnicas bim (01-014) · en revisión",
     "owner": "Juan Carlos Prada",
@@ -10,6 +12,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A02",
+    "excelId": "A02",
     "group": "Revisión de documentos listos",
     "title": "Sistemas de coordenadas (02-001) · en revisión",
     "owner": "Juan Carlos Prada",
@@ -18,6 +21,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A03",
+    "excelId": "A03",
     "group": "Revisión de documentos listos",
     "title": "Punto base y survey point (02-002) · en revisión",
     "owner": "Juan Carlos Prada",
@@ -26,6 +30,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A04",
+    "excelId": "A04",
     "group": "Revisión de documentos listos",
     "title": "Reglas de vínculos (02-009) · en revisión",
     "owner": "Juan Carlos Prada",
@@ -34,6 +39,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A05",
+    "excelId": "A05",
     "group": "Revisión de documentos listos",
     "title": "Modelo federado (02-010) · en revisión",
     "owner": "Juan Carlos Prada",
@@ -42,6 +48,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A06",
+    "excelId": "A06",
     "group": "Revisión de documentos listos",
     "title": "Reglas de validación (04-006) · en revisión",
     "owner": "Juan Carlos Prada",
@@ -49,23 +56,17 @@ window.BIM_GANTT_ACTIVITIES=[
     "plannedEnd": "2026-11-04"
   },
   {
-    "id": "A07",
-    "group": "Organización del modelo",
-    "title": "Segregación del proyecto (02-004)",
-    "owner": "Juan Carlos Prada",
-    "plannedStart": "2026-11-05",
-    "plannedEnd": "2026-11-05"
-  },
-  {
     "id": "A08",
+    "excelId": "A07",
     "group": "Organización del modelo",
     "title": "Identificación de sistemas (02-007)",
     "owner": "Juan Carlos Prada",
-    "plannedStart": "2026-11-06",
+    "plannedStart": "2026-11-05",
     "plannedEnd": "2026-11-06"
   },
   {
     "id": "A09",
+    "excelId": "A08",
     "group": "Estándares de modelado",
     "title": "Codificación de elementos (03-013)",
     "owner": "Juan Carlos Prada",
@@ -74,6 +75,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A10",
+    "excelId": "A09",
     "group": "Gestión de información",
     "title": "Información cobie (04-007)",
     "owner": "Juan Carlos Prada",
@@ -82,6 +84,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A11",
+    "excelId": "A10",
     "group": "Producción",
     "title": "Vistas (06-001)",
     "owner": "Juan Carlos Prada",
@@ -90,6 +93,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A12",
+    "excelId": "A11",
     "group": "Producción",
     "title": "Plantillas de vista (06-002)",
     "owner": "Juan Carlos Prada",
@@ -98,6 +102,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A13",
+    "excelId": "A12",
     "group": "Producción",
     "title": "Filtros (06-003)",
     "owner": "Juan Carlos Prada",
@@ -106,6 +111,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A14",
+    "excelId": "A13",
     "group": "Entregables",
     "title": "Modelos federados (13-002)",
     "owner": "Juan Carlos Prada",
@@ -114,6 +120,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A15",
+    "excelId": "A14",
     "group": "Bim",
     "title": "Consistencia pq20",
     "owner": "Claudio Villano",
@@ -122,6 +129,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A16",
+    "excelId": "A15",
     "group": "Bim",
     "title": "Consistencia pq21",
     "owner": "Claudio Villano",
@@ -130,6 +138,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A17",
+    "excelId": "A16",
     "group": "Bim",
     "title": "Plano clave pq8",
     "owner": "Claudio Villano",
@@ -138,6 +147,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A18",
+    "excelId": "A17",
     "group": "Bim",
     "title": "Plano clave pq9",
     "owner": "Claudio Villano",
@@ -146,6 +156,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A19",
+    "excelId": "A18",
     "group": "Area de diseño",
     "title": "Mapa integrado del s1, s2 y s3",
     "owner": "Claudio Villano",
@@ -154,6 +165,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A20",
+    "excelId": "A19",
     "group": "Interferencias",
     "title": "Revisión de metrados gasnord",
     "owner": "Roger Cabrera",
@@ -162,6 +174,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A21",
+    "excelId": "A20",
     "group": "Interferencias",
     "title": "Actualización de modelos de redes existentes del sector 02",
     "owner": "Roger Cabrera",
@@ -170,6 +183,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A22",
+    "excelId": "A21",
     "group": "Interferencias",
     "title": "Creación de plantillas de interferencias",
     "owner": "Roger Cabrera",
@@ -178,6 +192,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A23",
+    "excelId": "A22",
     "group": "Interferencias",
     "title": "Listado de documentos para subcontratas",
     "owner": "Roger Cabrera",
@@ -186,6 +201,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A24",
+    "excelId": "A23",
     "group": "Interferencias",
     "title": "Coordinación con sc: gpi - sector 02",
     "owner": "Roger Cabrera",
@@ -194,6 +210,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A25",
+    "excelId": "A24",
     "group": "Interferencias",
     "title": "Coordinación con sc: agua y desagüe sector 02",
     "owner": "Roger Cabrera",
@@ -202,6 +219,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A26",
+    "excelId": "A25",
     "group": "Documentación bim",
     "title": "Criterios de modelado (03-001)",
     "owner": "Roger Cabrera",
@@ -210,6 +228,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A27",
+    "excelId": "A26",
     "group": "Documentación bim",
     "title": "Estándar para la creación y gestión de familias (03-002)",
     "owner": "Roger Cabrera",
@@ -218,6 +237,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A28",
+    "excelId": "A27",
     "group": "Documentación bim",
     "title": "Plantillas revit (03-017)",
     "owner": "Roger Cabrera",
@@ -226,6 +246,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A29",
+    "excelId": "A28",
     "group": "Documentación bim",
     "title": "Reglas loi (04-009)",
     "owner": "Roger Cabrera",
@@ -234,6 +255,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A30",
+    "excelId": "A29",
     "group": "Documentación bim",
     "title": "Matriz de interferencias (05-001)",
     "owner": "Roger Cabrera",
@@ -242,6 +264,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A31",
+    "excelId": "A30",
     "group": "Documentación bim",
     "title": "Ifc checker (03-014)",
     "owner": "Roger Cabrera",
@@ -250,6 +273,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A32",
+    "excelId": "A31",
     "group": "Diseño",
     "title": "Actualización de pqt 30 - modelado y planos",
     "owner": "Roger Cabrera",
@@ -258,6 +282,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A33",
+    "excelId": "A32",
     "group": "Diseño",
     "title": "Actualización de pqt 31 - modelado y planos",
     "owner": "Roger Cabrera",
@@ -266,6 +291,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A34",
+    "excelId": "A33",
     "group": "Diseño",
     "title": "Actualización de pqt 32 - modelado y planos",
     "owner": "Roger Cabrera",
@@ -274,6 +300,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A35",
+    "excelId": "A34",
     "group": "Diseño",
     "title": "Actualización de pqt 33 - modelado y planos",
     "owner": "Roger Cabrera",
@@ -282,6 +309,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A36",
+    "excelId": "A35",
     "group": "Presentación del paquete 31",
     "title": "Presentación del paquete 31",
     "owner": "Oriol Huera Diaz",
@@ -290,6 +318,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A37",
+    "excelId": "A36",
     "group": "Coordinación y carga de información al acc",
     "title": "Coordinación y carga al acc de las 6 áreas del consorcio syp",
     "owner": "Oriol Huera Diaz",
@@ -298,6 +327,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A38",
+    "excelId": "A37",
     "group": "Implementación del área bim",
     "title": "Gestión de implementación del área bim en el 5.º nivel",
     "owner": "Oriol Huera Diaz",
@@ -306,6 +336,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A39",
+    "excelId": "A38",
     "group": "Gestión de postulantes bim",
     "title": "Subsanación de cv de postulantes al área bim",
     "owner": "Oriol Huera Diaz",
@@ -314,6 +345,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A40",
+    "excelId": "A39",
     "group": "Carga de información al ecd de anin",
     "title": "Carga al ecd de anin lima (apoyo a anin piura)",
     "owner": "Oriol Huera Diaz",
@@ -322,6 +354,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A41",
+    "excelId": "A40",
     "group": "Capacitación en carga masiva al acc",
     "title": "Capacitación en carga masiva al acc (2 sesiones)",
     "owner": "Oriol Huera Diaz",
@@ -330,6 +363,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A42",
+    "excelId": "A41",
     "group": "Seguimiento y cierre mensual",
     "title": "Seguimiento, cierre e informe mensual",
     "owner": "Oriol Huera Diaz",
@@ -338,6 +372,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A43",
+    "excelId": "A42",
     "group": "Planos generales – sector 3 (igapro)",
     "title": "Planos de paquetes 30, 31, 32 y 33",
     "owner": "Juan Carlos Cova",
@@ -346,6 +381,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A44",
+    "excelId": "A43",
     "group": "Zonificación geotécnica y capacidad portante",
     "title": "Elaboración de planos geotécnicos",
     "owner": "Juan Carlos Cova",
@@ -354,6 +390,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A45",
+    "excelId": "A44",
     "group": "Pkt de replanteo – paquete 9 (bim y costos)",
     "title": "Desarrollo de pkt e integración bim-costos",
     "owner": "Juan Carlos Cova",
@@ -362,6 +399,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A46",
+    "excelId": "A45",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "1. Canales · canal josé olaya",
     "owner": "Juan Carlos Cova",
@@ -370,6 +408,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A47",
+    "excelId": "A46",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "1. Canales · canales aportantes",
     "owner": "Juan Carlos Cova",
@@ -378,6 +417,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A48",
+    "excelId": "A47",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "1. Canales · canal abierto",
     "owner": "Juan Carlos Cova",
@@ -386,6 +426,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A49",
+    "excelId": "A48",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "1. Canales · canal cerrado",
     "owner": "Juan Carlos Cova",
@@ -394,6 +435,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A50",
+    "excelId": "A49",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "2. Protecciones · encauzamiento mangle",
     "owner": "Juan Carlos Cova",
@@ -402,6 +444,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A51",
+    "excelId": "A50",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "2. Protecciones · dique mangle",
     "owner": "Juan Carlos Cova",
@@ -410,6 +453,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A52",
+    "excelId": "A51",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "2. Protecciones · quebrada yale",
     "owner": "Juan Carlos Cova",
@@ -418,6 +462,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A53",
+    "excelId": "A52",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "3. Obras complementarias · badenes",
     "owner": "Juan Carlos Cova",
@@ -426,6 +471,7 @@ window.BIM_GANTT_ACTIVITIES=[
   },
   {
     "id": "A54",
+    "excelId": "A53",
     "group": "Modelado bim – pq9 (3 etapas consecutivas)",
     "title": "3. Obras complementarias · descargas",
     "owner": "Juan Carlos Cova",
@@ -637,7 +683,7 @@ function refreshGanttActivityOptions(keepId){
   const sorted=available.slice().sort((a,b)=>a.id.localeCompare(b.id,'es',{numeric:true}));
   select.innerHTML='<option value="">Seleccionar actividad del Gantt</option>'+
     groupNames.map(group=>'<optgroup label="'+esc(group)+'">'+sorted.filter(a=>a.group===group)
-      .map(a=>'<option value="'+esc(a.id)+'">'+esc(a.id+' — '+a.title)+'</option>').join('')+
+      .map(a=>'<option value="'+esc(a.id)+'">'+esc((a.excelId||a.id)+' — '+a.title)+'</option>').join('')+
       '</optgroup>').join('');
   select.value=available.some(a=>a.id===previous)?previous:'';
   renderGanttActivityDropdown();
@@ -831,7 +877,7 @@ function ganttPpcWeekMetric(week){
       !hasEvidence?'Sin avance verificado esta semana':
       isDone?'Cumplida':week===isoWeekKey(new Date())?'En evaluación':'Incumplida';
     rows.push({
-      id:activity.id,title:activity.title,group:activity.group,owner:activity.owner,
+      id:activity.id,excelId:activity.excelId||activity.id,title:activity.title,group:activity.group,owner:activity.owner,
       week,plannedEnd:activity.plannedEnd,linkedTaskIds:matches.map(t=>t.id),
       weeklyTarget:target.weeklyTarget,plannedCumulative:target.plannedCumulative,
       recordedActual,realCumulative,realSourceWeek:latest?.week||'',
@@ -921,7 +967,7 @@ function ganttPpcDetailsHtml(metric,periodName){
     const note=a.isClosedByTask?'Cierre BIM verificado':
       a.realSourceWeek&&a.realSourceWeek!==a.week?'Último dato: '+weekShort(a.realSourceWeek):
       a.recordedActual!==null?'Registrado':'';
-    return '<tr><td>'+esc(a.id)+'</td><td>'+esc(a.title)+
+    return '<tr><td>'+esc(a.excelId||a.id)+'</td><td>'+esc(a.title)+
       '<small>'+esc(a.group)+'</small></td><td>'+esc(a.owner)+'</td>'+
       (metric.monthly?'<td>'+esc(weekShort(a.week))+'</td>':'')+
       '<td>'+fmt(a.weeklyTarget)+'</td><td>'+fmt(a.plannedCumulative)+'</td>'+
@@ -977,7 +1023,7 @@ function ganttPpcCncPanel(metric){
       'Causa en tarea BIM: '+stored.category:
       a.week===nowWeek?'Semana abierta: no corresponde asignar causa aún':
       'Causa semanal no registrada';
-    return '<div class="weekly-cnc-item"><strong>'+esc(a.id+' · '+a.title)+'</strong>'+
+    return '<div class="weekly-cnc-item"><strong>'+esc((a.excelId||a.id)+' · '+a.title)+'</strong>'+
       '<p>'+esc(a.owner)+' · '+esc(weekShort(a.week))+' · '+esc(label)+'</p>'+
       '<small>Meta acumulada: '+esc(target)+' · Real: '+esc(achieved)+'</small>'+
       '<small>'+esc(cause)+'</small></div>';
@@ -994,7 +1040,8 @@ function ganttPpcCncPanel(metric){
 function ganttTaskLabel(id){
   const link=catalogs.ganttLinksByTask?.[id];
   if(!link||link.mode==='none')return '';
-  const prefix=link.activityId||'Manual';
+  const resolved=link.activityId?ganttActivityById(link.activityId):null;
+  const prefix=link.activityId?(resolved?.excelId||resolved?.id||link.activityId+' (retirada del Gantt)'):'Manual';
   return '<span class="gantt-task-label" title="'+esc(link.group+' · '+link.name)+'">'+
     'GANTT '+esc(prefix)+' · '+esc(link.group)+'</span>';
 }
