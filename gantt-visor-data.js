@@ -1,6 +1,6 @@
-/* Copia de la hoja Gant del Excel 'Actividades Área Bim - Noviembre.xlsx', OneDrive. 
-   Estructura original: encabezados por responsable, grupos Resumen y 54 actividades. 
-   Fechas del 1 al 30 de noviembre 2026. Archivo de solo lectura; no sincronizado. */
+/* Copia actualizada de la hoja Gant del Excel 'Actividades Área Bim - Noviembre.xlsx', OneDrive.
+   Corte: 2026-11-13 11:20 (Perú). 53 actividades y 22 grupos; lectura no automática.
+   Los IDs internos conservan vínculos históricos; excelId muestra el ID vigente en Excel. */
 window.BIM_GANTT_VIEW_SOURCE={
   "project": "MEJORAMIENTO Y AMPLIACIÓN DE DRENAJE PLUVIAL INTEGRAL DE LA CIUDAD DE TALARA",
   "start": "2026-11-01",
@@ -25,6 +25,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A01",
+      "excelId": "A01",
       "edt": "1.1",
       "title": "Actas técnicas bim (01-014) · en revisión",
       "owner": "Juan Carlos Prada",
@@ -44,6 +45,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A02",
+      "excelId": "A02",
       "edt": "1.2",
       "title": "Sistemas de coordenadas (02-001) · en revisión",
       "owner": "Juan Carlos Prada",
@@ -63,6 +65,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A03",
+      "excelId": "A03",
       "edt": "1.3",
       "title": "Punto base y survey point (02-002) · en revisión",
       "owner": "Juan Carlos Prada",
@@ -82,6 +85,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A04",
+      "excelId": "A04",
       "edt": "1.4",
       "title": "Reglas de vínculos (02-009) · en revisión",
       "owner": "Juan Carlos Prada",
@@ -101,6 +105,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A05",
+      "excelId": "A05",
       "edt": "1.5",
       "title": "Modelo federado (02-010) · en revisión",
       "owner": "Juan Carlos Prada",
@@ -120,6 +125,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A06",
+      "excelId": "A06",
       "edt": "1.6",
       "title": "Reglas de validación (04-006) · en revisión",
       "owner": "Juan Carlos Prada",
@@ -147,40 +153,23 @@ window.BIM_GANTT_VIEW_SOURCE={
     },
     {
       "kind": "activity",
-      "id": "A07",
-      "edt": "2.1",
-      "title": "Segregación del proyecto (02-004)",
-      "owner": "Juan Carlos Prada",
-      "group": "Organización del modelo",
-      "groupNo": "2",
-      "type": "Act.",
-      "duration": 1,
-      "start": "2026-11-05",
-      "end": "2026-11-05",
-      "predecessor": "A06",
-      "dependency": "",
-      "lag": "",
-      "percentByDay": {
-        "5": 1
-      }
-    },
-    {
-      "kind": "activity",
       "id": "A08",
-      "edt": "2.2",
+      "excelId": "A07",
+      "edt": "2.1",
       "title": "Identificación de sistemas (02-007)",
       "owner": "Juan Carlos Prada",
       "group": "Organización del modelo",
       "groupNo": "2",
       "type": "Act.",
-      "duration": 1,
-      "start": "2026-11-06",
+      "duration": 2,
+      "start": "2026-11-05",
       "end": "2026-11-06",
-      "predecessor": "A07",
+      "predecessor": "A06",
       "dependency": "",
       "lag": "",
       "percentByDay": {
-        "6": 1
+        "5": 0.5,
+        "6": 0.5
       }
     },
     {
@@ -195,6 +184,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A09",
+      "excelId": "A08",
       "edt": "3.1",
       "title": "Codificación de elementos (03-013)",
       "owner": "Juan Carlos Prada",
@@ -204,7 +194,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 1,
       "start": "2026-11-11",
       "end": "2026-11-11",
-      "predecessor": "A08",
+      "predecessor": "A07",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -223,6 +213,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A10",
+      "excelId": "A09",
       "edt": "4.1",
       "title": "Información cobie (04-007)",
       "owner": "Juan Carlos Prada",
@@ -232,7 +223,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 5,
       "start": "2026-11-12",
       "end": "2026-11-18",
-      "predecessor": "A09",
+      "predecessor": "A08",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -255,6 +246,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A11",
+      "excelId": "A10",
       "edt": "5.1",
       "title": "Vistas (06-001)",
       "owner": "Juan Carlos Prada",
@@ -264,7 +256,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-19",
       "end": "2026-11-20",
-      "predecessor": "A10",
+      "predecessor": "A09",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -275,6 +267,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A12",
+      "excelId": "A11",
       "edt": "5.2",
       "title": "Plantillas de vista (06-002)",
       "owner": "Juan Carlos Prada",
@@ -284,7 +277,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-23",
       "end": "2026-11-24",
-      "predecessor": "A11",
+      "predecessor": "A10",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -295,6 +288,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A13",
+      "excelId": "A12",
       "edt": "5.3",
       "title": "Filtros (06-003)",
       "owner": "Juan Carlos Prada",
@@ -304,7 +298,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-25",
       "end": "2026-11-26",
-      "predecessor": "A12",
+      "predecessor": "A11",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -324,6 +318,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A14",
+      "excelId": "A13",
       "edt": "6.1",
       "title": "Modelos federados (13-002)",
       "owner": "Juan Carlos Prada",
@@ -333,7 +328,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-27",
       "end": "2026-11-30",
-      "predecessor": "A13",
+      "predecessor": "A12",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -357,6 +352,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A15",
+      "excelId": "A14",
       "edt": "7.1",
       "title": "Consistencia pq20",
       "owner": "Claudio Villano",
@@ -378,6 +374,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A16",
+      "excelId": "A15",
       "edt": "7.2",
       "title": "Consistencia pq21",
       "owner": "Claudio Villano",
@@ -387,7 +384,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 3,
       "start": "2026-11-05",
       "end": "2026-11-09",
-      "predecessor": "A15",
+      "predecessor": "A14",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -399,6 +396,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A17",
+      "excelId": "A16",
       "edt": "7.3",
       "title": "Plano clave pq8",
       "owner": "Claudio Villano",
@@ -408,7 +406,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 3,
       "start": "2026-11-10",
       "end": "2026-11-12",
-      "predecessor": "A16",
+      "predecessor": "A15",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -420,6 +418,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A18",
+      "excelId": "A17",
       "edt": "7.4",
       "title": "Plano clave pq9",
       "owner": "Claudio Villano",
@@ -429,7 +428,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 3,
       "start": "2026-11-13",
       "end": "2026-11-17",
-      "predecessor": "A17",
+      "predecessor": "A16",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -450,6 +449,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A19",
+      "excelId": "A18",
       "edt": "8.1",
       "title": "Mapa integrado del s1, s2 y s3",
       "owner": "Claudio Villano",
@@ -459,7 +459,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 9,
       "start": "2026-11-18",
       "end": "2026-11-30",
-      "predecessor": "A18",
+      "predecessor": "A17",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -490,6 +490,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A20",
+      "excelId": "A19",
       "edt": "9.1",
       "title": "Revisión de metrados gasnord",
       "owner": "Roger Cabrera",
@@ -510,6 +511,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A21",
+      "excelId": "A20",
       "edt": "9.2",
       "title": "Actualización de modelos de redes existentes del sector 02",
       "owner": "Roger Cabrera",
@@ -519,7 +521,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 6,
       "start": "2026-11-12",
       "end": "2026-11-19",
-      "predecessor": "A20",
+      "predecessor": "A19",
       "dependency": "",
       "lag": "8",
       "percentByDay": {
@@ -534,6 +536,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A22",
+      "excelId": "A21",
       "edt": "9.3",
       "title": "Creación de plantillas de interferencias",
       "owner": "Roger Cabrera",
@@ -543,7 +546,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 4,
       "start": "2026-11-11",
       "end": "2026-11-16",
-      "predecessor": "A20",
+      "predecessor": "A19",
       "dependency": "",
       "lag": "7",
       "percentByDay": {
@@ -556,6 +559,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A23",
+      "excelId": "A22",
       "edt": "9.4",
       "title": "Listado de documentos para subcontratas",
       "owner": "Roger Cabrera",
@@ -565,7 +569,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 1,
       "start": "2026-11-17",
       "end": "2026-11-17",
-      "predecessor": "A22",
+      "predecessor": "A21",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -575,6 +579,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A24",
+      "excelId": "A23",
       "edt": "9.5",
       "title": "Coordinación con sc: gpi - sector 02",
       "owner": "Roger Cabrera",
@@ -584,7 +589,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 1,
       "start": "2026-11-18",
       "end": "2026-11-18",
-      "predecessor": "A23",
+      "predecessor": "A22",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -594,6 +599,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A25",
+      "excelId": "A24",
       "edt": "9.6",
       "title": "Coordinación con sc: agua y desagüe sector 02",
       "owner": "Roger Cabrera",
@@ -603,7 +609,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 1,
       "start": "2026-11-23",
       "end": "2026-11-23",
-      "predecessor": "A24",
+      "predecessor": "A23",
       "dependency": "",
       "lag": "2",
       "percentByDay": {
@@ -622,6 +628,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A26",
+      "excelId": "A25",
       "edt": "10.1",
       "title": "Criterios de modelado (03-001)",
       "owner": "Roger Cabrera",
@@ -642,6 +649,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A27",
+      "excelId": "A26",
       "edt": "10.2",
       "title": "Estándar para la creación y gestión de familias (03-002)",
       "owner": "Roger Cabrera",
@@ -651,7 +659,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 4,
       "start": "2026-11-05",
       "end": "2026-11-10",
-      "predecessor": "A26",
+      "predecessor": "A25",
       "dependency": "CC",
       "lag": "1",
       "percentByDay": {
@@ -664,6 +672,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A28",
+      "excelId": "A27",
       "edt": "10.3",
       "title": "Plantillas revit (03-017)",
       "owner": "Roger Cabrera",
@@ -673,7 +682,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 4,
       "start": "2026-11-11",
       "end": "2026-11-16",
-      "predecessor": "A27",
+      "predecessor": "A26",
       "dependency": "",
       "lag": "",
       "percentByDay": {
@@ -686,6 +695,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A29",
+      "excelId": "A28",
       "edt": "10.4",
       "title": "Reglas loi (04-009)",
       "owner": "Roger Cabrera",
@@ -695,7 +705,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 3,
       "start": "2026-11-18",
       "end": "2026-11-20",
-      "predecessor": "A28",
+      "predecessor": "A27",
       "dependency": "",
       "lag": "1",
       "percentByDay": {
@@ -707,6 +717,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A30",
+      "excelId": "A29",
       "edt": "10.5",
       "title": "Matriz de interferencias (05-001)",
       "owner": "Roger Cabrera",
@@ -716,7 +727,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 3,
       "start": "2026-11-20",
       "end": "2026-11-24",
-      "predecessor": "A29",
+      "predecessor": "A28",
       "dependency": "CC",
       "lag": "2",
       "percentByDay": {
@@ -728,6 +739,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A31",
+      "excelId": "A30",
       "edt": "10.6",
       "title": "Ifc checker (03-014)",
       "owner": "Roger Cabrera",
@@ -737,7 +749,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 5,
       "start": "2026-11-24",
       "end": "2026-11-30",
-      "predecessor": "A30",
+      "predecessor": "A29",
       "dependency": "CC",
       "lag": "4",
       "percentByDay": {
@@ -760,6 +772,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A32",
+      "excelId": "A31",
       "edt": "11.1",
       "title": "Actualización de pqt 30 - modelado y planos",
       "owner": "Roger Cabrera",
@@ -780,6 +793,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A33",
+      "excelId": "A32",
       "edt": "11.2",
       "title": "Actualización de pqt 31 - modelado y planos",
       "owner": "Roger Cabrera",
@@ -789,7 +803,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 5,
       "start": "2026-11-03",
       "end": "2026-11-09",
-      "predecessor": "A32",
+      "predecessor": "A31",
       "dependency": "CC",
       "lag": "1",
       "percentByDay": {
@@ -803,6 +817,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A34",
+      "excelId": "A33",
       "edt": "11.3",
       "title": "Actualización de pqt 32 - modelado y planos",
       "owner": "Roger Cabrera",
@@ -812,7 +827,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 3,
       "start": "2026-11-09",
       "end": "2026-11-11",
-      "predecessor": "A33",
+      "predecessor": "A32",
       "dependency": "CC",
       "lag": "6",
       "percentByDay": {
@@ -824,6 +839,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A35",
+      "excelId": "A34",
       "edt": "11.4",
       "title": "Actualización de pqt 33 - modelado y planos",
       "owner": "Roger Cabrera",
@@ -833,7 +849,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 7,
       "start": "2026-11-19",
       "end": "2026-11-27",
-      "predecessor": "A34",
+      "predecessor": "A33",
       "dependency": "",
       "lag": "7",
       "percentByDay": {
@@ -862,6 +878,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A36",
+      "excelId": "A35",
       "edt": "12.1",
       "title": "Presentación del paquete 31",
       "owner": "Oriol Huera Diaz",
@@ -892,6 +909,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A37",
+      "excelId": "A36",
       "edt": "13.1",
       "title": "Coordinación y carga al acc de las 6 áreas del consorcio syp",
       "owner": "Oriol Huera Diaz",
@@ -927,6 +945,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A38",
+      "excelId": "A37",
       "edt": "14.1",
       "title": "Gestión de implementación del área bim en el 5.º nivel",
       "owner": "Oriol Huera Diaz",
@@ -972,6 +991,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A39",
+      "excelId": "A38",
       "edt": "15.1",
       "title": "Subsanación de cv de postulantes al área bim",
       "owner": "Oriol Huera Diaz",
@@ -1004,6 +1024,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A40",
+      "excelId": "A39",
       "edt": "16.1",
       "title": "Carga al ecd de anin lima (apoyo a anin piura)",
       "owner": "Oriol Huera Diaz",
@@ -1046,6 +1067,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A41",
+      "excelId": "A40",
       "edt": "17.1",
       "title": "Capacitación en carga masiva al acc (2 sesiones)",
       "owner": "Oriol Huera Diaz",
@@ -1083,6 +1105,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A42",
+      "excelId": "A41",
       "edt": "18.1",
       "title": "Seguimiento, cierre e informe mensual",
       "owner": "Oriol Huera Diaz",
@@ -1124,6 +1147,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A43",
+      "excelId": "A42",
       "edt": "19.1",
       "title": "Planos de paquetes 30, 31, 32 y 33",
       "owner": "Juan Carlos Cova",
@@ -1157,6 +1181,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A44",
+      "excelId": "A43",
       "edt": "20.1",
       "title": "Elaboración de planos geotécnicos",
       "owner": "Juan Carlos Cova",
@@ -1189,6 +1214,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A45",
+      "excelId": "A44",
       "edt": "21.1",
       "title": "Desarrollo de pkt e integración bim-costos",
       "owner": "Juan Carlos Cova",
@@ -1229,6 +1255,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A46",
+      "excelId": "A45",
       "edt": "22.1",
       "title": "1. Canales · canal josé olaya",
       "owner": "Juan Carlos Cova",
@@ -1250,6 +1277,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A47",
+      "excelId": "A46",
       "edt": "22.2",
       "title": "1. Canales · canales aportantes",
       "owner": "Juan Carlos Cova",
@@ -1259,7 +1287,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-05",
       "end": "2026-11-06",
-      "predecessor": "A46",
+      "predecessor": "A45",
       "dependency": "FC",
       "lag": "",
       "percentByDay": {
@@ -1270,6 +1298,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A48",
+      "excelId": "A47",
       "edt": "22.3",
       "title": "1. Canales · canal abierto",
       "owner": "Juan Carlos Cova",
@@ -1279,7 +1308,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-09",
       "end": "2026-11-10",
-      "predecessor": "A47",
+      "predecessor": "A46",
       "dependency": "FC",
       "lag": "",
       "percentByDay": {
@@ -1290,6 +1319,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A49",
+      "excelId": "A48",
       "edt": "22.4",
       "title": "1. Canales · canal cerrado",
       "owner": "Juan Carlos Cova",
@@ -1299,7 +1329,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-11",
       "end": "2026-11-12",
-      "predecessor": "A48",
+      "predecessor": "A47",
       "dependency": "FC",
       "lag": "",
       "percentByDay": {
@@ -1310,6 +1340,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A50",
+      "excelId": "A49",
       "edt": "22.5",
       "title": "2. Protecciones · encauzamiento mangle",
       "owner": "Juan Carlos Cova",
@@ -1319,7 +1350,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 3,
       "start": "2026-11-13",
       "end": "2026-11-17",
-      "predecessor": "A49",
+      "predecessor": "A48",
       "dependency": "FC",
       "lag": "",
       "percentByDay": {
@@ -1331,6 +1362,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A51",
+      "excelId": "A50",
       "edt": "22.6",
       "title": "2. Protecciones · dique mangle",
       "owner": "Juan Carlos Cova",
@@ -1340,7 +1372,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 3,
       "start": "2026-11-18",
       "end": "2026-11-20",
-      "predecessor": "A50",
+      "predecessor": "A49",
       "dependency": "FC",
       "lag": "",
       "percentByDay": {
@@ -1352,6 +1384,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A52",
+      "excelId": "A51",
       "edt": "22.7",
       "title": "2. Protecciones · quebrada yale",
       "owner": "Juan Carlos Cova",
@@ -1361,7 +1394,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-23",
       "end": "2026-11-24",
-      "predecessor": "A51",
+      "predecessor": "A50",
       "dependency": "FC",
       "lag": "",
       "percentByDay": {
@@ -1372,6 +1405,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A53",
+      "excelId": "A52",
       "edt": "22.8",
       "title": "3. Obras complementarias · badenes",
       "owner": "Juan Carlos Cova",
@@ -1381,7 +1415,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-25",
       "end": "2026-11-26",
-      "predecessor": "A52",
+      "predecessor": "A51",
       "dependency": "FC",
       "lag": "",
       "percentByDay": {
@@ -1392,6 +1426,7 @@ window.BIM_GANTT_VIEW_SOURCE={
     {
       "kind": "activity",
       "id": "A54",
+      "excelId": "A53",
       "edt": "22.9",
       "title": "3. Obras complementarias · descargas",
       "owner": "Juan Carlos Cova",
@@ -1401,7 +1436,7 @@ window.BIM_GANTT_VIEW_SOURCE={
       "duration": 2,
       "start": "2026-11-27",
       "end": "2026-11-30",
-      "predecessor": "A53",
+      "predecessor": "A52",
       "dependency": "FC",
       "lag": "",
       "percentByDay": {
