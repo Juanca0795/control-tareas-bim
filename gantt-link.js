@@ -1022,6 +1022,19 @@ function ganttPpcWeekMetric(week){
       if(categoryOf(task.status)!=='done')continue;
       const realDate=String(task.completedAt||'');
       if(!/^20\d{2}-\d\d-\d\d$/.test(realDate)||realDate>today)continue;
+      // Un avance real explícito menor a 100% registrado el mismo día del
+      // supuesto cierre (o después) prevalece sobre el estado "Completada".
+      // Así no se pinta ni acredita el 100% y la semana siguiente sigue
+      // programada. Un cierre realmente posterior al avance parcial sí vale.
+      const reported=catalogs.ganttTaskProgressByTask?.[task.id];
+      const conflictingPartial=reported?.activityId===activity.id&&
+        Number.isFinite(reported.actual)&&reported.actual<100&&
+        typeof reported.achievedOn==='string'&&reported.achievedOn>=realDate;
+      const completionWeek=isoWeekKey(new Date(realDate+'T12:00:00'));
+      const weekRecord=catalogs.ganttWeeklyProgress?.[completionWeek]?.[activity.id];
+      const conflictingWeekly=Number.isFinite(weekRecord?.actual)&&
+        weekRecord.actual<100&&String(weekRecord.updatedAt||'').slice(0,10)>=realDate;
+      if(conflictingPartial||conflictingWeekly)continue;
       if(!completedOn||realDate<completedOn)completedOn=realDate;
     }
     // Si la actividad se cerró en SEM45, ya no genera compromiso en SEM46.
