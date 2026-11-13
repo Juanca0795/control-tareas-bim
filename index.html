@@ -6177,6 +6177,31 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
             </div>
           </div>
           <div id="editor-gantt-warning" class="editor-quality-warning hidden" role="status" aria-live="polite"></div>
+          <div id="gantt-progress-editor" class="gantt-progress-editor hidden">
+            <div class="gantt-progress-heading">
+              <strong>Avance real acumulado</strong>
+              <span id="gantt-progress-meta" aria-live="polite"></span>
+            </div>
+            <div class="gantt-progress-fields">
+              <select id="f-gantt-progress-mode" aria-label="Modalidad de avance"
+                onchange="changeGanttProgressMode(this.value)">
+                <option value="gantt">Según Gantt</option>
+                <option value="manual">Manual</option>
+              </select>
+              <select id="f-gantt-progress-milestone" aria-label="Hito programado del Gantt"
+                onchange="selectGanttProgressMilestone()">
+                <option value="">Elegir hito programado</option>
+              </select>
+              <div id="gantt-progress-manual-wrap" class="hidden">
+                <input id="f-gantt-progress-value" type="number" min="0" max="100" step="0.01"
+                  inputmode="decimal" placeholder="0–100 %" aria-label="Porcentaje real acumulado"
+                  oninput="changeGanttProgressValue()">
+              </div>
+              <input id="f-gantt-progress-date" type="date" aria-label="Fecha real del avance"
+                onchange="changeGanttProgressDate()">
+            </div>
+            <small id="gantt-progress-help">El avance real no marca la tarea como completada.</small>
+          </div>
         </div>
         <div class="form-section-head"><span class="section-index">02</span><div><h3>PARÁMETROS BIM Y ESTADO</h3><p>Nivel de desarrollo y seguimiento operativo</p></div></div>
         <div class="form-grid">
@@ -6609,6 +6634,32 @@ function mergeGanttViewerColumns(remote,local){
 function notifyGanttViewerColumns(){
   window.dispatchEvent(new Event('bim-gantt-columns-updated'));
 }
+// Avance real asociado a tareas BIM. No altera el esquema SQL ni presume avance
+// por el solo hecho de existir un estado "En progreso".
+function normalizeGanttTaskProgress(input){
+  const out={};
+  if(!input||typeof input!=='object'||Array.isArray(input))return out;
+  for(const [id,row] of Object.entries(input)){
+    if(!id||!row||typeof row!=='object'||Array.isArray(row))continue;
+    const actual=row.actual,achievedOn=String(row.achievedOn||'');
+    const updatedAt=String(row.updatedAt||'');
+    if(!Number.isFinite(actual)||actual<0||actual>100||
+      !/^\d{4}-\d{2}-\d{2}$/.test(achievedOn)||
+      Number.isNaN(Date.parse(achievedOn+'T12:00:00Z'))||
+      !Number.isFinite(Date.parse(updatedAt)))continue;
+    out[id]={actual,achievedOn,
+      method:row.method==='gantt'?'gantt':'manual',
+      activityId:String(row.activityId||'').slice(0,40),
+      group:String(row.group||'').slice(0,120),updatedAt};
+  }
+  return out;
+}
+function mergeGanttTaskProgress(remote,local){
+  const a=normalizeGanttTaskProgress(remote),b=normalizeGanttTaskProgress(local);
+  for(const [id,row] of Object.entries(b))
+    if(!a[id]||row.updatedAt>=a[id].updatedAt)a[id]=row;
+  return a;
+}
 function normalizeCatalogs(input){
   const result = {};
   for(const key of ['packages','owners','teams']){
@@ -6626,6 +6677,7 @@ function normalizeCatalogs(input){
   result.cncRecords=normalizeCncRecords(input?.cncRecords);
   result.weeklyForecasts=normalizeWeeklyForecasts(input?.weeklyForecasts);
   result.ganttWeeklyProgress=normalizeGanttWeeklyProgress(input?.ganttWeeklyProgress);
+  result.ganttTaskProgressByTask=normalizeGanttTaskProgress(input?.ganttTaskProgressByTask);
   result.evidenceByTask=normalizeEvidenceByTask(input?.evidenceByTask);
   result.ganttLinksByTask=normalizeGanttLinks(input?.ganttLinksByTask);
   result.ganttViewerColumns=normalizeGanttViewerColumns(input?.ganttViewerColumns);
@@ -8658,6 +8710,7 @@ function openEditor(id=null){
     $('#f-'+name).value = EDITOR_DEFAULT_FIELDS.includes(name) ? keepValidEditorOption(name,value) : value;
   }
   initializeGanttEditor(t);
+  initializeGanttProgressEditor(t);
   const manual=catalogs.analytics?.manualEntryDateByTask?.[t?.id]?.date||'';
   const allowed=canSetManualEntryDate();
   $('#bim-entry-date-box').classList.toggle('hidden',!allowed);
@@ -8778,6 +8831,12 @@ async function saveEditor(e){
     toast('Completa todos los campos obligatorios.');
     return;
   }
+  // Avance real independiente del estado operativo. Sin registro explícito no se
+  // inventa un porcentaje ni un cumplimiento semanal.
+  const progressEntry=collectGanttEditorProgress();
+  if(progressEntry?.invalid){toast(progressEntry.reason);return;}
+  if(categoryOf(statusVal)==='done')obj.progress=100;
+  else if(progressEntry)obj.progress=progressEntry.actual;
   // Avisos preventivos sin imponer cambios a registros existentes.
   const quality=editorQualityIssues();
   if(quality.ganttLink?.invalid){
@@ -8786,7 +8845,7 @@ async function saveEditor(e){
   }
   const approvalKey=JSON.stringify([obj.title,obj.package,obj.team,obj.owner,obj.deadline,
     obj.status,quality.entry,quality.duplicate?.id||'',quality.dateInconsistent,
-    JSON.stringify(quality.ganttLink),quality.ganttDuplicate?.id||'']);
+    JSON.stringify(quality.ganttLink),quality.ganttDuplicate?.id||'',JSON.stringify(progressEntry)]);
   if((quality.duplicate||quality.dateInconsistent||quality.ganttDuplicate)&&editorQualityAcknowledgement!==approvalKey){
     editorQualityAcknowledgement=approvalKey;
     updateEditorQualityHints();
@@ -8819,7 +8878,8 @@ async function saveEditor(e){
   if(wasEditing){
     tasks = tasks.map(t => t.id===editingId ? {
       ...t, ...obj,
-      progress: t.status === obj.status ? (t.progress ?? progressFromStatus(obj.status)) : progressFromStatus(obj.status)
+      progress: progressEntry||categoryOf(obj.status)==='done' ? obj.progress :
+        t.status === obj.status ? (t.progress ?? progressFromStatus(obj.status)) : progressFromStatus(obj.status)
     } : t);
   } else {
     tasks.push(obj);
@@ -8834,6 +8894,7 @@ async function saveEditor(e){
     // Marca de desvinculación para que otra sesión no restituya el enlace anterior.
     catalogs.ganttLinksByTask[obj.id]={mode:'none',activityId:'',group:'',name:'',updatedAt:new Date().toISOString()};
   }
+  if(progressEntry)applyGanttEditorProgress(obj.id,quality.ganttLink,progressEntry);
   rememberEditorDefaults(obj);
   closeEditor();
   persist();
@@ -10175,6 +10236,7 @@ async function load(){
         merged.cncRecords=mergeCncRecords(fromCloud.cncRecords,catalogs.cncRecords);
         merged.weeklyForecasts=mergeWeeklyForecasts(fromCloud.weeklyForecasts,catalogs.weeklyForecasts);
         merged.ganttWeeklyProgress=mergeGanttWeeklyProgress(fromCloud.ganttWeeklyProgress,catalogs.ganttWeeklyProgress);
+        merged.ganttTaskProgressByTask=mergeGanttTaskProgress(fromCloud.ganttTaskProgressByTask,catalogs.ganttTaskProgressByTask);
         merged.evidenceByTask=mergeEvidenceByTask(fromCloud.evidenceByTask,catalogs.evidenceByTask);
         merged.ganttLinksByTask=mergeGanttLinks(fromCloud.ganttLinksByTask,catalogs.ganttLinksByTask);
         merged.ganttViewerColumns=mergeGanttViewerColumns(fromCloud.ganttViewerColumns,catalogs.ganttViewerColumns);
@@ -10246,6 +10308,9 @@ async function save(){
     catalogsToSave.ganttWeeklyProgress=mergeGanttWeeklyProgress(
       latestCatalogs.data?.[0]?.data?.ganttWeeklyProgress,catalogsToSave.ganttWeeklyProgress);
     catalogs.ganttWeeklyProgress=catalogsToSave.ganttWeeklyProgress;
+    catalogsToSave.ganttTaskProgressByTask=mergeGanttTaskProgress(
+      latestCatalogs.data?.[0]?.data?.ganttTaskProgressByTask,catalogsToSave.ganttTaskProgressByTask);
+    catalogs.ganttTaskProgressByTask=catalogsToSave.ganttTaskProgressByTask;
     catalogsToSave.evidenceByTask=mergeEvidenceByTask(latestCatalogs.data?.[0]?.data?.evidenceByTask,catalogsToSave.evidenceByTask);
     catalogs.evidenceByTask=catalogsToSave.evidenceByTask;
     catalogsToSave.ganttLinksByTask=mergeGanttLinks(
