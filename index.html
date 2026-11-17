@@ -8052,7 +8052,7 @@ document.addEventListener('click', e => {
   if(drill){ setDrill(drill.dataset.drill, drill.dataset.value||''); return; }
 });
 
-function renderAll(){ refreshFilters(); updateWeeklyFilters(); renderTasks(); renderDashboard(); if(currentView==='weekly')renderWeekly(); }
+function renderAll(){ refreshFilters(); updateWeeklyFilters(); renderTasks(); renderDashboard(); if(currentView==='weekly')renderWeekly(); if(typeof pptBimSyncOpenDialog==='function')pptBimSyncOpenDialog(); }
 
 /* Contadores y barras al cambiar de pestaña: presentación, sin modificar datos. */
 let bimMotionToken=0;
