@@ -332,7 +332,13 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
        (ownerFilter&&task.owner!==ownerFilter))continue;
     // AREA_BIM2: una actividad aparece en cada semana prevista desde su ingreso,
     // salvo las posteriores a su fecha real de culminación.
-    if((specialty||includeEmpty)&&!pptBimTaskMatchesReport(
+    // Una evidencia registrada dentro del período también acredita la inclusión
+    // en el informe, aunque el intervalo administrativo de la tarea no coincida.
+    const evidenceInPeriod=mode==='reunion'&&taskEvidenceRecords(task.id).some(photo=>{
+      const date=pptBimIngresoDate(photo);
+      return date&&date>=meetingPeriod.start&&date<=meetingPeriod.end;
+    });
+    if((specialty||includeEmpty)&&!evidenceInPeriod&&!pptBimTaskMatchesReport(
       task,week,mode,weekFilters,meetingPeriod))continue;
     // AREA_BIM conserva su flujo original de evidencia sin cambios.
     const matchesCompletion=mode!=='culminacion'||pptBimCompletionWeek(task)===week;
@@ -863,6 +869,10 @@ function setBimPptMeetingDay(value){
   pptBimRefreshItems();
   closeBimPptMeetingMenu(true);
 }
+function pptBimSyncOpenDialog(){
+  if(!document.querySelector('#bim-ppt-back.open')||pptBimState.busy)return;
+  pptBimRefreshItems();
+}
 function openBimPptExport(){
   if(currentView!=='weekly'){toast('Ingresa a Control Semanal para exportar el informe.');return}
   // Las actividades sin imágenes de AREA_BIM2 pueden previsualizarse incluso sin Storage.
@@ -909,6 +919,10 @@ function renderBimPptExport(){
     if(!groups.has(key))groups.set(key,[]);
     groups.get(key).push({x:item,index});
   });
+  const diagnostic=pptBimState.items.length?'':
+    'No se encontraron coincidencias. Tareas cargadas: '+tasks.length+
+    ' · Período: '+(pptBimMeetingReportPeriod(pptBimState.week,pptBimState.meetingDay,pptBimState.manualMeetingRange)?.start||'?')+
+    ' a '+(pptBimMeetingReportPeriod(pptBimState.week,pptBimState.meetingDay,pptBimState.manualMeetingRange)?.end||'?')+'. ';
   area.innerHTML=pptBimState.items.length?[...groups].map(([name,group])=>{
     const missing=name==='__missing_activities__';
     const photoCount=group.filter(({x})=>!x.empty).length;
@@ -953,7 +967,7 @@ function renderBimPptExport(){
         esc(x.caption)+'</textarea></div></article>').join('')+
       '</div></section>';
   }).join(''):
-    '<p class="bim-ppt-empty">'+
+    '<p class="bim-ppt-empty">'+esc(diagnostic)+
       (byPerson&&pptBimSelectedPeople()?.size===0?
         'No hay colaboradores marcados. Abre Personal y selecciona al menos uno.':
         (byPerson?'No hay actividades con los filtros seleccionados.':
