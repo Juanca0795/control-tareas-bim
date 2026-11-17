@@ -10183,7 +10183,7 @@ window.bimEvidenceCloud={
     return data.signedUrl;
   },
   async download(path){
-    if(!ready||cloudEmptyGuard)throw Error('Supabase Storage no está disponible');
+    // Storage es independiente de la carga de tareas y catálogos.
     const {data,error}=await d.storage.from(EVIDENCE_BUCKET).download(path);
     if(error||!data)throw Error(error?.message||'No se descargó la fotografía');
     return data;
