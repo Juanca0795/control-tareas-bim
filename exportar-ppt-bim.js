@@ -866,9 +866,8 @@ function openBimPptExport(){
   // Las actividades sin imágenes de AREA_BIM2 pueden previsualizarse incluso sin Storage.
   const profile=typeof bimExportProfile!=='undefined'&&bimExportProfile==='by-person'
     ?'by-person':'standard';
-  if(profile!=='by-person'&&(!window.bimEvidenceCloud||!window.bimEvidenceCloud.ready())){
-    toast('Supabase Storage no está disponible. Comprueba la conexión.');return;
-  }
+  // La ventana de exportación puede abrirse sin conexión a Storage.
+  // La disponibilidad real de cada fotografía se comprueba al descargarla.
   const meetingDay=pptBimSavedMeetingDay();
   const specialty='revit';
   const items=pptBimItemsForWeek(selectedWeek,'reunion',meetingDay,
@@ -1287,8 +1286,8 @@ async function exportBimPpt(){
   const included=pptBimIncludedExportItems();
   if(!included.length){toast('Selecciona al menos una actividad o fotografía.');return}
   const photoCount=included.filter(x=>!x.empty).length;
-  if(photoCount&&!window.bimEvidenceCloud?.ready()){
-    toast('No hay conexión con Supabase Storage.');return;
+  if(photoCount&&!window.bimEvidenceCloud?.download){
+    toast('No se inicializó el servicio de fotografías. Recarga la página.');return;
   }
   const runToken=pptBimState.token,btn=$('#bim-ppt-download'),status=$('#bim-ppt-progress');
   pptBimState.busy=true;
