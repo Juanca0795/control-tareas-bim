@@ -265,6 +265,7 @@ function pptBimTaskMatchesReport(task,week,mode,weekFilters,meetingPeriod=null){
     return active.start<=weekEnd(week)&&active.end>=localISO(monday);
   }
   if(mode==='reunion'){
+    // Los registros sin fecha de ingreso verificable no se asignan arbitrariamente.
     return !!active&&!!meetingPeriod&&
       active.start<=meetingPeriod.end&&active.end>=meetingPeriod.start;
   }
@@ -305,11 +306,12 @@ function pptBimSetupWeekSelector(){
 function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,weekFilters=null,sectorFilter='',manualMeetingRange=null,includeEmpty=false){
   const meetingPeriod=mode==='reunion'?pptBimMeetingReportPeriod(week,meetingDay,manualMeetingRange):null;
   if(mode==='reunion'&&!meetingPeriod)return [];
-  const packageFilter=$('#weekly-package')?.value||'';
+  // El exportador posee sus propios filtros; no heredar selecciones ocultas del panel semanal.
+  const packageFilter='';
   // Para una especialidad explícita del selector, ignorar el filtro global
   // de disciplina de Control Semanal; el selector debe poder cambiar a GIS.
-  const teamFilter=specialty?.startsWith('team:')?'':($('#weekly-team')?.value||'');
-  const ownerFilter=$('#weekly-owner')?.value||'';
+  const teamFilter='';
+  const ownerFilter='';
   // Misma numeración visible de Control de Tareas; task.id nunca cambia.
   const displayCodes=specialty?taskDisplayCodes():null;
   const out=[];
@@ -1090,6 +1092,7 @@ function pptBimPackSlides(items,byPerson=false){
   }
   const sectorGroups=new Map();
   for(const photo of items){
+    if(photo.empty)continue; // Las actividades sin fotografía van a tablas, nunca a diapositivas de fotos.
     const sector=pptBimSector(photo);
     if(!sectorGroups.has(sector))sectorGroups.set(sector,[]);
     sectorGroups.get(sector).push(photo);
