@@ -10175,7 +10175,17 @@ async function ensureSupabase(){
       await new Promise((resolve,reject)=>{
         const script=document.createElement('script');
         script.src=url;script.async=true;
-        script.onload=resolve;script.onerror=()=>reject(new Error('No se cargó '+url));
+        let settled=false;
+        const done=error=>{
+          if(settled)return;
+          settled=true;
+          clearTimeout(timeout);
+          script.onload=null;script.onerror=null;
+          if(error){script.remove();reject(error)}else resolve();
+        };
+        const timeout=setTimeout(()=>done(new Error('Tiempo de espera agotado para '+url)),7000);
+        script.onload=()=>done(null);
+        script.onerror=()=>done(new Error('No se cargó '+url));
         document.head.appendChild(script);
       });
       if(window.supabase?.createClient)return true;
@@ -10221,7 +10231,13 @@ if(!await ensureSupabase()){
   await restoreReadOnly();
   return;
 }
-const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}let loading=false,revision=0;
+const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}
+let loading=false,revision=0,cloudFailures=0,nextLoadAfter=0;
+// Evita solicitudes sucesivas durante incidentes 503/504; los datos locales
+// continúan visibles, pero no se sustituyen sin una lectura confirmada.
+function cloudRetryDelay(){
+  return Math.min(120000,15000*Math.pow(2,Math.min(cloudFailures-1,3)));
+}
 
 /* Archivos binarios en Supabase Storage; únicamente referencias en bim_catalogs.data.
    Depósito privado. Las políticas de acceso deben configurarse en Supabase SQL Editor. */
@@ -10258,13 +10274,19 @@ async function load(){
   if(loading||lock||(ready&&pendingSave&&!cloudEmptyGuard))return;
   loading=true;
   const loadedAtRevision=revision;
+  const controller=new AbortController();
+  // Supabase puede quedar esperando la respuesta de PostgREST indefinidamente.
+  // Limitar la lectura a 18 s y mostrar el error, sin reescribir la base.
+  const timeout=setTimeout(()=>controller.abort(),18000);
   try{
     const [a,c,w]=await Promise.all([
-      d.from('bim_tasks').select('*').order('id'),
-      d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1),
-      d.from('bim_weekly_snapshots').select('*').order('week')
+      d.from('bim_tasks').select('*').order('id').abortSignal(controller.signal),
+      d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1).abortSignal(controller.signal),
+      d.from('bim_weekly_snapshots').select('*').order('week').abortSignal(controller.signal)
     ]);
     check(a,'Tareas');check(c,'Catálogos');check(w,'Semanas');
+    cloudFailures=0;
+    nextLoadAfter=Date.now()+60000;
     const cloudTasks=(a.data||[]).map(f);
     // Una lista vacía es válida: se eliminaron intencionalmente tareas de prueba.
     // Los backups son históricos y NO implican que deban existir tareas activas.
@@ -10319,9 +10341,17 @@ async function load(){
     if(captureMonthlyStats())persist();else renderAll();
     if($('#settings-back')?.classList.contains('open')&&!settingsEditing)renderSettingsList();
   }catch(err){
-    cloudDataNotice('No se pudo cargar Supabase. Los datos visibles pueden ser locales: '+err.message,true);
+    cloudFailures++;
+    const delay=cloudRetryDelay();
+    nextLoadAfter=Date.now()+delay;
+    const reason=controller.signal.aborted?'La consulta superó 18 segundos':
+      String(err.message||err);
+    cloudDataNotice('Supabase no respondió correctamente: '+reason+
+      '. Se conservan las tareas locales sin sobrescribirlas. Reintento automático en '+
+      Math.round(delay/1000)+' s, o pulsa Reintentar conexión.',true);
     throw err;
   }finally{
+    clearTimeout(timeout);
     loading=false;
     if(pendingSave&&ready&&!cloudEmptyGuard)save();
   }
@@ -10604,14 +10634,20 @@ window.bimCloudBackups={
 
 const oldPersist=persist;
 persist=()=>{revision++;oldPersist();pendingSave=true;save();};
-window.bimCloudRetry=()=>load().catch(err=>{
-  console.error(err);toast('Error Supabase: '+err.message);
-});
+window.bimCloudRetry=()=>{
+  if(lock||loading)return;
+  nextLoadAfter=0;
+  cloudDataNotice('Conectando con Supabase y verificando tareas...');
+  return load().catch(err=>console.warn('Conexión Supabase:',err));
+};
 cloudDataNotice('Conectando con Supabase y verificando tareas...');
 window.bimCloudRetry();
+// Refresco normal cada 60 s; ante 503/504 usar espera progresiva
+// para no saturar las tres APIs con solicitudes cada 10 segundos.
 setInterval(()=>{
   if(lock||loading)return;
   if(pendingSave&&ready&&!cloudEmptyGuard){save();return;}
-  window.bimCloudRetry();
+  if(Date.now()<nextLoadAfter)return;
+  load().catch(err=>console.warn('Reintento Supabase:',err));
 },10000);
 })();</script>
