@@ -27,8 +27,7 @@ const PPT_BIM_CIVIL_OWNERS=new Set([
 const PPT_BIM_EXCLUDED_OWNERS=new Set([
   'claudio villano meza',
   'jenri tantanta tejeda',
-  'maria pia moyano de la cruz',
-  'oriol huerta diaz'
+  'maria pia moyano de la cruz'
 ]);
 function pptBimNormalizeOwner(name){
   return String(name||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
