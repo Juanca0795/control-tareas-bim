@@ -1000,7 +1000,19 @@ document.addEventListener('input',event=>{
   const input=event.target.closest('[data-bim-ppt-caption]');
   if(!input)return;
   const idx=Number(input.dataset.bimPptCaption);
-  if(pptBimState.items[idx])pptBimState.items[idx].caption=input.value;
+  const current=pptBimState.items[idx];
+  if(!current)return;
+  if(pptBimState.profile==='by-person'&&!current.empty){
+    // Una sola descripción por actividad, aunque tenga varias fotografías.
+    pptBimState.items.forEach((item,i)=>{
+      if(item.empty||item.taskId!==current.taskId)return;
+      item.caption=input.value;
+      if(i!==idx){
+        const other=document.querySelector('[data-bim-ppt-caption="'+i+'"]');
+        if(other)other.value=input.value;
+      }
+    });
+  }else current.caption=input.value;
 });
 document.addEventListener('change',event=>{
   const input=event.target.closest('[data-bim-ppt-check]');
@@ -1085,10 +1097,10 @@ function pptBimCover(pptx,week,groups,imageCount,meetingPeriod=null,byPerson=fal
   pptBimAddText(slide,'ÁREA BIM · S&P',{x:.45,y:6.87,w:3.4,h:.16,
     fontSize:10,color:'FFFFFF',bold:true,align:'center'});
 }
-/* AREA_BIM2: ordenar por persona y sector; completar SIEMPRE tres fotos
- * por diapositiva mientras queden fotografías. Solo la última puede tener
- * una o dos. Las tareas sin foto van después, en tablas independientes.
- * AREA_BIM conserva el empaquetado anterior. */
+/* AREA_BIM2: una columna corresponde a UNA actividad, con todas sus fotos
+ * dentro del mismo cuadro, título y descripción únicos. Tres actividades
+ * por diapositiva como máximo. Las tareas sin fotos van a tablas.
+ * AREA_BIM conserva el empaquetado fotográfico anterior. */
 function pptBimPackSlides(items,byPerson=false){
   if(byPerson){
     const photos=items.filter(item=>!item.empty);
@@ -1098,9 +1110,20 @@ function pptBimPackSlides(items,byPerson=false){
       sectorRank(pptBimSector(a))-sectorRank(pptBimSector(b))||
       (a.package||'').localeCompare(b.package||'','es',{numeric:true})||
       pptBimShownTaskCode(a).localeCompare(pptBimShownTaskCode(b),'es',{numeric:true})||
+      Number(a.photoIndex||0)-Number(b.photoIndex||0)||
       String(a.id).localeCompare(String(b.id),'es',{numeric:true}));
+    // La selección sigue siendo por foto; solo las marcadas se agrupan.
+    // El ID de la actividad evita mezclar fotos de actividades diferentes.
+    const grouped=new Map();
+    for(const photo of photos){
+      if(!grouped.has(photo.taskId))
+        grouped.set(photo.taskId,{...photo,photos:[]});
+      grouped.get(photo.taskId).photos.push(photo);
+    }
+    const activities=[...grouped.values()];
     const pages=[];
-    for(let i=0;i<photos.length;i+=3)pages.push(photos.slice(i,i+3));
+    for(let i=0;i<activities.length;i+=3)
+      pages.push(activities.slice(i,i+3));
     return pages;
   }
   const sectorGroups=new Map();
@@ -1146,9 +1169,50 @@ function pptBimOrderSectorPhotos(items,byPerson=false){
     full.push(...pairs.shift(),singles.shift());
   return [...full,...pairs.flat(),...singles];
 }
+/* Distribuir N imágenes dentro de un único cuadro sin recortes.
+ * Cada imagen permanece como objeto editable independiente en PowerPoint. */
+function pptBimActivityImageFrames(frame,photos){
+  const count=photos.length,gap=.07;
+  if(count===1)return [{...frame}];
+  if(count===2){
+    // Para capturas horizontales, apilar ofrece imágenes más legibles.
+    const stacked=photos.every(photo=>photo.width>=photo.height);
+    if(stacked){
+      const h=(frame.h-gap)/2;
+      return [0,1].map(i=>({x:frame.x,y:frame.y+i*(h+gap),w:frame.w,h}));
+    }
+    const w=(frame.w-gap)/2;
+    return [0,1].map(i=>({x:frame.x+i*(w+gap),y:frame.y,w,h:frame.h}));
+  }
+  if(count===3){
+    // Una fotografía grande arriba y dos debajo, sin dividir la actividad.
+    const h=(frame.h-gap)/2,w=(frame.w-gap)/2;
+    return [
+      {x:frame.x,y:frame.y,w:frame.w,h},
+      {x:frame.x,y:frame.y+h+gap,w,h},
+      {x:frame.x+w+gap,y:frame.y+h+gap,w,h}
+    ];
+  }
+  const columns=count<=6?2:count<=12?3:
+    Math.ceil(Math.sqrt(count*frame.w/frame.h));
+  const rows=Math.ceil(count/columns);
+  const cellW=(frame.w-gap*(columns-1))/columns;
+  const cellH=(frame.h-gap*(rows-1))/rows;
+  if(cellW<=0||cellH<=0)
+    throw new Error('Demasiadas fotografías para un único cuadro de actividad.');
+  return photos.map((_,i)=>{
+    const row=Math.floor(i/columns),col=i%columns;
+    const visible=Math.min(columns,count-row*columns);
+    const rowW=visible*cellW+(visible-1)*gap;
+    return {
+      x:frame.x+(frame.w-rowW)/2+col*(cellW+gap),
+      y:frame.y+row*(cellH+gap),w:cellW,h:cellH
+    };
+  });
+}
 function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   if(!Array.isArray(entries)||entries.length<1||entries.length>3)
-    throw new Error('Cada diapositiva requiere entre 1 y 3 fotografías.');
+    throw new Error('Cada diapositiva requiere entre 1 y 3 actividades o fotografías.');
   if(entries.some(item=>item.empty))
     throw new Error('Las actividades sin fotografía deben exportarse como tabla, no como imagen.');
   const S=pptx.ShapeType,slide=pptx.addSlide();
@@ -1179,17 +1243,24 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
     slide.addShape(S.rect,{x,y:top+redH+picH,w,h:captionH,
       fill:{color:'FFFFFF'},line:{color:'000000',width:.8}});
     const frame={x:x+.16,y:top+redH+.13,w:w-.32,h:picH-.26};
-    const sz=pptBimFit(frame.w,frame.h,e.width,e.height);
-    slide.addImage({data:e.data,x:frame.x+(frame.w-sz.w)/2,
-      y:frame.y+(frame.h-sz.h)/2,w:sz.w,h:sz.h});
+    const pictures=byPerson&&Array.isArray(e.photos)?e.photos:[e];
+    const tiles=byPerson?pptBimActivityImageFrames(frame,pictures):[frame];
+    for(let i=0;i<pictures.length;i++){
+      const picture=pictures[i],tile=tiles[i];
+      const sz=pptBimFit(tile.w,tile.h,picture.width,picture.height);
+      slide.addImage({data:picture.data,x:tile.x+(tile.w-sz.w)/2,
+        y:tile.y+(tile.h-sz.h)/2,w:sz.w,h:sz.h});
+    }
     const caption=String(e.caption||e.title||'').replace(/\s+/g,' ').trim();
     pptBimAddText(slide,caption,
       {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
         fontSize:caption.length>180?8:caption.length>95?10:13,
         bold:true,align:'center',valign:'mid',fit:'shrink'});
+    const photoLabel=byPerson
+      ?' · '+pictures.length+' foto'+(pictures.length===1?'':'s')
+      :' · Foto '+e.photoIndex+' de '+e.photoCount;
     pptBimAddText(slide,(byPerson?e.package+' · ':'')+(byPerson?pptBimShownTaskCode(e):e.taskId)+
-      (e.team?' · '+e.team:'')+
-      ' · Foto '+e.photoIndex+' de '+e.photoCount,
+      (e.team?' · '+e.team:'')+photoLabel,
       {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
         color:'5A5A5A',align:'center'});
   }
