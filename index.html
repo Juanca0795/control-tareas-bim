@@ -7444,7 +7444,20 @@ function syncGanttRuntimeFromCatalogs(){
   let nextRows=[],nextStart=base.start,nextEnd=base.end,nextCalDays=base.calendarDays,nextWorkingDays=base.workingDays;
   let nextActs=[];
   if(!sched||!sched.initialized){
-    nextRows=JSON.parse(JSON.stringify(base.rows));
+    let curOwnerName='';
+    const knownOwners=[...new Set(base.rows.filter(x=>x.kind==='activity'&&x.owner).map(x=>x.owner))];
+    nextRows=JSON.parse(JSON.stringify(base.rows)).map(r=>{
+      if(r.kind==='owner'){
+        const txt=String(r.label||'').toLowerCase();
+        curOwnerName=knownOwners.find(o=>txt.includes(o.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')))||
+          String(r.label||'').replace(/^actividades\s+/i,'').trim();
+        return r;
+      }
+      if(r.kind==='group'){
+        return {...r,_gid:'G'+String(r.id),_ownerName:curOwnerName};
+      }
+      return r;
+    });
     nextActs=nextRows.filter(r=>r.kind==='activity').map(r=>({
       id:r.id,excelId:r.excelId||r.id,group:r.group,title:r.title,owner:r.owner,
       plannedStart:r.start,plannedEnd:r.end
@@ -7562,6 +7575,73 @@ function syncGanttRuntimeFromCatalogs(){
     try{renderWeekly(false);}catch(e){}
   }
 }
+function orderedOwnersOfSchedule(sched){
+  const base=window.BIM_GANTT_BASE_SOURCE||window.BIM_GANTT_VIEW_SOURCE||{rows:[]};
+  const allGroups=Object.values(sched.groups||{});
+  const allActs=Object.values(sched.activities||{});
+  const baseOwnerOrder=[];
+  base.rows.filter(r=>r.kind==='activity'&&r.owner).forEach(r=>{
+    if(!baseOwnerOrder.includes(r.owner))baseOwnerOrder.push(r.owner);
+  });
+  const extraOwners=[];
+  [...allGroups,...allActs].forEach(x=>{
+    if(x.owner&&!baseOwnerOrder.includes(x.owner)&&!extraOwners.includes(x.owner))extraOwners.push(x.owner);
+  });
+  return [...baseOwnerOrder,...extraOwners];
+}
+function orderedGroupsForOwner(sched,ownerName){
+  const allGroups=Object.values(sched.groups||{}).filter(g=>g.owner===ownerName)
+    .sort((a,b)=>(a.order-b.order)||a.title.localeCompare(b.title,'es'));
+  const known=new Set(allGroups.map(g=>g.title.toLocaleLowerCase('es')));
+  const extra=[];
+  Object.values(sched.activities||{}).filter(a=>a.owner===ownerName).forEach(a=>{
+    const key=(a.group||'General').toLocaleLowerCase('es');
+    if(!known.has(key)){
+      known.add(key);
+      extra.push({id:'VG_'+key,title:a.group||'General',owner:ownerName,order:99999});
+    }
+  });
+  return [...allGroups,...extra];
+}
+function orderedActivitiesInGroup(sched,ownerName,groupTitle){
+  const key=String(groupTitle||'').toLocaleLowerCase('es');
+  return Object.values(sched.activities||{})
+    .filter(a=>a.owner===ownerName&&a.group.toLocaleLowerCase('es')===key)
+    .sort((a,b)=>(a.order-b.order)||a.start.localeCompare(b.start)||a.id.localeCompare(b.id));
+}
+function renumberGanttExcelIds(sched,now,excludeNewId=''){
+  const oldCodeToActId=new Map();
+  Object.values(sched.activities||{}).forEach(a=>{
+    if(excludeNewId&&a.id===excludeNewId)return;
+    const code=String(a.excelId||a.id||'').trim().toUpperCase();
+    if(code&&!oldCodeToActId.has(code))oldCodeToActId.set(code,a.id);
+  });
+  const ordered=[];
+  for(const ownerName of orderedOwnersOfSchedule(sched)){
+    for(const grp of orderedGroupsForOwner(sched,ownerName)){
+      ordered.push(...orderedActivitiesInGroup(sched,ownerName,grp.title));
+    }
+  }
+  ordered.forEach((act,idx)=>{
+    const newCode='A'+String(idx+1).padStart(2,'0');
+    if(act.excelId!==newCode){
+      act.excelId=newCode;
+      act.updatedAt=now;
+    }
+  });
+  Object.values(sched.activities||{}).forEach(act=>{
+    if(!act.predecessor)return;
+    const nextPred=act.predecessor.replace(/\bA\d+/gi,tok=>{
+      const targetId=oldCodeToActId.get(tok.toUpperCase());
+      if(targetId&&sched.activities[targetId])return sched.activities[targetId].excelId||tok;
+      return tok;
+    });
+    if(nextPred!==act.predecessor){
+      act.predecessor=nextPred;
+      act.updatedAt=now;
+    }
+  });
+}
 window.bimGanttScheduleStore={
   ensureInitialized(){
     if(!catalogs.ganttSchedule||!catalogs.ganttSchedule.initialized){
@@ -7608,8 +7688,14 @@ window.bimGanttScheduleStore={
       groupEntry={id:gid,title:groupTitle,owner,order:maxGOrder+10,updatedAt:now};
       sched.groups[gid]=groupEntry;
     }
-    let id=payload.id&&sched.activities[payload.id]?payload.id:'';
-    let order;
+    const isExisting=Boolean(payload.id&&sched.activities[payload.id]);
+    let id=isExisting?payload.id:'';
+    const prevAct=isExisting?sched.activities[id]:null;
+    const prevSameGroup=Boolean(prevAct&&prevAct.owner===owner&&prevAct.group.toLocaleLowerCase('es')===groupEntry.title.toLocaleLowerCase('es'));
+    const fullGroupList=orderedActivitiesInGroup(sched,owner,groupEntry.title);
+    const prevIndex=prevSameGroup?fullGroupList.findIndex(a=>a.id===id):-1;
+    const listWithout=fullGroupList.filter(a=>a.id!==id);
+
     if(!id){
       id='A'+String(sched.nextSeq).padStart(2,'0');
       while(sched.activities[id]||sched.deletedActivityIds[id]){
@@ -7617,19 +7703,14 @@ window.bimGanttScheduleStore={
         id='A'+String(sched.nextSeq).padStart(2,'0');
       }
       sched.nextSeq++;
-      const sameGrp=Object.values(sched.activities).filter(a=>a.owner===owner&&a.group.toLocaleLowerCase('es')===groupTitle.toLocaleLowerCase('es'));
-      const maxOrder=sameGrp.length?Math.max(...sameGrp.map(a=>a.order||0)):Math.max(0,...Object.values(sched.activities).map(a=>a.order||0));
-      order=maxOrder+10;
-    }else{
-      order=sched.activities[id].order;
     }
     const percentByDay=payload.manualPercent&&payload.percentByDay&&Object.keys(payload.percentByDay).length
       ?normalizeGanttPercentByDay(payload.percentByDay)
       :computeAutoPercentByDay(owner,start,safeEnd);
     const saved={
       id,
-      excelId:String(payload.excelId||sched.activities[id]?.excelId||this.nextSuggestedExcelId()).trim(),
-      edt:sched.activities[id]?.edt||'',
+      excelId:String(payload.excelId||prevAct?.excelId||this.nextSuggestedExcelId()).trim(),
+      edt:prevAct?.edt||'',
       title,
       owner,
       group:groupEntry.title,
@@ -7642,17 +7723,66 @@ window.bimGanttScheduleStore={
       dependency:String(payload.dependency||'').trim(),
       lag:payload.lag===undefined||payload.lag===null?'':String(payload.lag).trim(),
       percentByDay,
-      order,
+      order:prevAct?prevAct.order:0,
       updatedAt:now
     };
+
+    const pos=String(payload.position||(isExisting?'keep':'end'));
+    let insertIdx=listWithout.length;
+    if(pos==='keep'&&prevSameGroup&&prevIndex>=0){
+      insertIdx=Math.min(prevIndex,listWithout.length);
+    }else if(pos==='start'){
+      insertIdx=0;
+    }else if(pos.startsWith('before:')){
+      const refId=pos.slice(7);
+      const refIdx=listWithout.findIndex(a=>a.id===refId);
+      insertIdx=refIdx>=0?refIdx:listWithout.length;
+    }else if(pos.startsWith('after:')){
+      const refId=pos.slice(6);
+      const refIdx=listWithout.findIndex(a=>a.id===refId);
+      insertIdx=refIdx>=0?refIdx+1:listWithout.length;
+    }
+    listWithout.splice(insertIdx,0,saved);
+    listWithout.forEach((act,i)=>{
+      const newOrder=(i+1)*10;
+      if(act.order!==newOrder){
+        act.order=newOrder;
+        act.updatedAt=now;
+      }
+    });
+
     sched.activities[id]=saved;
     sched.updatedAt=now;
     delete sched.deletedActivityIds[id];
+    if(payload.autoRenumber!==false){
+      renumberGanttExcelIds(sched,now,!isExisting?id:'');
+    }
     syncGanttRuntimeFromCatalogs();
     persist();
     return saved;
   },
-  deleteActivity(activityId){
+  moveActivity(activityId,delta,autoRenumber=true){
+    const sched=this.ensureInitialized();
+    const act=sched.activities[activityId];
+    if(!act)return false;
+    const list=orderedActivitiesInGroup(sched,act.owner,act.group);
+    const idx=list.findIndex(a=>a.id===activityId);
+    const targetIdx=idx+Number(delta);
+    if(idx<0||targetIdx<0||targetIdx>=list.length)return false;
+    const [item]=list.splice(idx,1);
+    list.splice(targetIdx,0,item);
+    const now=new Date().toISOString();
+    list.forEach((a,i)=>{
+      a.order=(i+1)*10;
+      a.updatedAt=now;
+    });
+    sched.updatedAt=now;
+    if(autoRenumber)renumberGanttExcelIds(sched,now);
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return true;
+  },
+  deleteActivity(activityId,autoRenumber=true){
     const sched=this.ensureInitialized();
     if(!sched.activities[activityId])return false;
     const now=new Date().toISOString();
@@ -7669,17 +7799,25 @@ window.bimGanttScheduleStore={
         if(prog?.activityId===activityId)delete catalogs.ganttTaskProgressByTask[tid];
       }
     }
+    if(autoRenumber)renumberGanttExcelIds(sched,now);
     syncGanttRuntimeFromCatalogs();
     persist();
     return true;
   },
-  upsertGroup({id,owner,title}){
+  upsertGroup({id,owner,title,position}){
     const sched=this.ensureInitialized();
     const now=new Date().toISOString();
     const cleanOwner=String(owner||'').trim();
     const cleanTitle=String(title||'').trim();
     if(!cleanOwner||!cleanTitle)throw Error('Indica responsable y nombre de grupo.');
     const existing=id&&sched.groups[id]?sched.groups[id]:null;
+    const prevSameOwner=Boolean(existing&&existing.owner===cleanOwner);
+    const listAll=Object.values(sched.groups).filter(g=>g.owner===cleanOwner)
+      .sort((a,b)=>(a.order-b.order)||a.title.localeCompare(b.title,'es'));
+    const prevIdx=prevSameOwner?listAll.findIndex(g=>g.id===existing.id):-1;
+    const listWithout=listAll.filter(g=>!existing||g.id!==existing.id);
+
+    let targetGrp;
     if(existing){
       const oldOwner=existing.owner,oldTitle=existing.title;
       existing.owner=cleanOwner;
@@ -7692,19 +7830,63 @@ window.bimGanttScheduleStore={
           a.updatedAt=now;
         }
       });
-      sched.updatedAt=now;
-      syncGanttRuntimeFromCatalogs();
-      persist();
-      return existing;
+      targetGrp=existing;
+    }else{
+      const gid='G_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,5);
+      targetGrp={id:gid,owner:cleanOwner,title:cleanTitle,order:0,updatedAt:now};
+      sched.groups[gid]=targetGrp;
     }
-    const maxOrder=Math.max(0,...Object.values(sched.groups).map(g=>g.order||0));
-    const gid='G_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,5);
-    const created={id:gid,owner:cleanOwner,title:cleanTitle,order:maxOrder+10,updatedAt:now};
-    sched.groups[gid]=created;
+
+    const pos=String(position||(existing?'keep':'end'));
+    let insertIdx=listWithout.length;
+    if(pos==='keep'&&prevSameOwner&&prevIdx>=0){
+      insertIdx=Math.min(prevIdx,listWithout.length);
+    }else if(pos==='start'){
+      insertIdx=0;
+    }else if(pos.startsWith('before:')){
+      const refId=pos.slice(7);
+      const refIdx=listWithout.findIndex(g=>g.id===refId);
+      insertIdx=refIdx>=0?refIdx:listWithout.length;
+    }else if(pos.startsWith('after:')){
+      const refId=pos.slice(6);
+      const refIdx=listWithout.findIndex(g=>g.id===refId);
+      insertIdx=refIdx>=0?refIdx+1:listWithout.length;
+    }
+    listWithout.splice(insertIdx,0,targetGrp);
+    listWithout.forEach((g,i)=>{
+      const newOrder=(i+1)*10;
+      if(g.order!==newOrder){
+        g.order=newOrder;
+        g.updatedAt=now;
+      }
+    });
     sched.updatedAt=now;
+    renumberGanttExcelIds(sched,now);
     syncGanttRuntimeFromCatalogs();
     persist();
-    return created;
+    return targetGrp;
+  },
+  moveGroup(gid,delta){
+    const sched=this.ensureInitialized();
+    const grp=sched.groups[gid];
+    if(!grp)return false;
+    const list=Object.values(sched.groups).filter(g=>g.owner===grp.owner)
+      .sort((a,b)=>(a.order-b.order)||a.title.localeCompare(b.title,'es'));
+    const idx=list.findIndex(g=>g.id===gid);
+    const targetIdx=idx+Number(delta);
+    if(idx<0||targetIdx<0||targetIdx>=list.length)return false;
+    const [item]=list.splice(idx,1);
+    list.splice(targetIdx,0,item);
+    const now=new Date().toISOString();
+    list.forEach((g,i)=>{
+      g.order=(i+1)*10;
+      g.updatedAt=now;
+    });
+    sched.updatedAt=now;
+    renumberGanttExcelIds(sched,now);
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return true;
   },
   deleteGroup(gid){
     const sched=this.ensureInitialized();

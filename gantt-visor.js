@@ -888,6 +888,10 @@ function showDetail(id){
     (status.late ? ' · Fuera de plazo' : '') + predHtml + succHtml + '</div>';
 
   let actions = '<div class="vgg-detail-actions">';
+  actions += '<button type="button" class="vgg-action-btn create" data-vgg-insert-before="'+escapeText(row.id)+'" title="Insertar una nueva actividad justo arriba de esta">+ Arriba</button>';
+  actions += '<button type="button" class="vgg-action-btn create" data-vgg-insert-after="'+escapeText(row.id)+'" title="Insertar una nueva actividad justo debajo de esta">+ Debajo</button>';
+  actions += '<button type="button" class="vgg-action-btn" data-vgg-move-act="-1" title="Subir una fila dentro de este grupo">↑</button>';
+  actions += '<button type="button" class="vgg-action-btn" data-vgg-move-act="1" title="Bajar una fila dentro de este grupo">↓</button>';
   actions += '<button type="button" class="vgg-action-btn edit" data-vgg-edit-activity="'+escapeText(row.id)+'">✎ Editar</button>';
   actions += '<button type="button" class="vgg-action-btn danger" data-vgg-delete-activity="'+escapeText(row.id)+'">🗑 Eliminar</button>';
   if(status.taskIds.length){
@@ -978,16 +982,18 @@ function groupsForOwner(ownerName){
   return [...out];
 }
 
-function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {}){
+function openActivityModal({ activityId='', presetOwner='', presetGroup='', presetPosition='' } = {}){
   const store = window.bimGanttScheduleStore;
   if(!store) return;
   const S = getSource();
   const existing = activityId ? S.rows.find(r => r.kind==='activity' && r.id===activityId) : null;
   const isEdit = Boolean(existing);
+  const selectedAct = !isEdit && st.selected ? S.rows.find(r => r.kind==='activity' && r.id===st.selected) : null;
 
   const ownerList = allOwnerOptions();
-  const initialOwner = existing?.owner || presetOwner || st.owner || ownerList[0] || '';
-  const initialGroup = existing?.group || presetGroup || st.group || groupsForOwner(initialOwner)[0] || '';
+  const initialOwner = existing?.owner || presetOwner || selectedAct?.owner || st.owner || ownerList[0] || '';
+  const initialGroup = existing?.group || presetGroup || selectedAct?.group || st.group || groupsForOwner(initialOwner)[0] || '';
+  const initialPosition = presetPosition || (isEdit ? 'keep' : (selectedAct && normalizeKey(selectedAct.owner)===normalizeKey(initialOwner) && normalizeKey(selectedAct.group)===normalizeKey(initialGroup) ? 'after:' + selectedAct.id : 'end'));
   const suggestedCode = existing?.excelId || existing?.id || store.nextSuggestedExcelId();
   const predOptions = S.rows.filter(r => r.kind==='activity' && r.id!==activityId)
     .map(r => '<option value="'+escapeText(r.excelId||r.id)+'">'+escapeText((r.excelId||r.id)+' — '+r.title)+'</option>').join('');
@@ -1004,11 +1010,13 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {
     '<div class="vgg-form-field wide"><label for="vgg-f-title">Actividad / hito *</label><input id="vgg-f-title" value="'+escapeText(existing?.title||'')+'" maxlength="200" required placeholder="Ej.: Modelado BIM · Sector 2"></div>'+
     '<div class="vgg-form-field"><label for="vgg-f-owner">Responsable *</label><select id="vgg-f-owner"></select><input id="vgg-f-owner-custom" placeholder="Nombre del responsable" hidden></div>'+
     '<div class="vgg-form-field"><label for="vgg-f-group">Grupo *</label><select id="vgg-f-group"></select><input id="vgg-f-group-custom" placeholder="Nombre del nuevo grupo" hidden></div>'+
-    '<div class="vgg-form-field"><label for="vgg-f-start">Fecha inicio *</label><input id="vgg-f-start" type="date" value="'+escapeText(existing?.start||S.start)+'" required></div>'+
-    '<div class="vgg-form-field"><label for="vgg-f-end">Fecha fin *</label><input id="vgg-f-end" type="date" value="'+escapeText(existing?.end||existing?.start||S.start)+'" required></div>'+
+    '<div class="vgg-form-field wide"><label for="vgg-f-position">Ubicación dentro del grupo</label><select id="vgg-f-position"></select></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-start">Fecha inicio *</label><input id="vgg-f-start" type="date" value="'+escapeText(existing?.start||selectedAct?.start||S.start)+'" required></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-end">Fecha fin *</label><input id="vgg-f-end" type="date" value="'+escapeText(existing?.end||existing?.start||selectedAct?.end||S.start)+'" required></div>'+
     '<div class="vgg-form-field"><label for="vgg-f-pred">Predecesor (ID)</label><input id="vgg-f-pred" list="vgg-pred-datalist" value="'+escapeText(existing?.predecessor||'')+'" placeholder="Ej.: A01"><datalist id="vgg-pred-datalist">'+predOptions+'</datalist></div>'+
     '<div class="vgg-form-field"><label for="vgg-f-dep">Dependencia / Desfase</label><div style="display:flex;gap:6px"><select id="vgg-f-dep" style="flex:1"><option value="">Sin dep.</option><option value="FC">FC</option><option value="CC">CC</option><option value="FF">FF</option><option value="CF">CF</option></select><input id="vgg-f-lag" style="width:72px" value="'+escapeText(existing?.lag||'')+'" placeholder="Desf."></div></div>'+
     '</div>'+
+    '<label style="display:flex;align-items:center;gap:7px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="vgg-f-renumber" checked> Renumerar IDs correlativos (A01, A02…) como en Excel y ajustar predecesoras</label>'+
     '<label style="display:flex;align-items:center;gap:7px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="vgg-f-manual-pct"'+(isEdit?' checked':'')+'> Ajustar porcentajes diarios manualmente (si se desmarca, se reparte automático entre días laborables)</label>'+
     '<div id="vgg-daily-wrap" class="vgg-daily-grid"'+(isEdit?'':' hidden')+'></div>'+
     '</div>'+
@@ -1020,6 +1028,9 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {
   const ownerCustom = document.getElementById('vgg-f-owner-custom');
   const groupSel = document.getElementById('vgg-f-group');
   const groupCustom = document.getElementById('vgg-f-group-custom');
+  const posSel = document.getElementById('vgg-f-position');
+  const codeEl = document.getElementById('vgg-f-code');
+  const renumChk = document.getElementById('vgg-f-renumber');
   const depSel = document.getElementById('vgg-f-dep');
   const manualChk = document.getElementById('vgg-f-manual-pct');
   const dailyWrap = document.getElementById('vgg-daily-wrap');
@@ -1034,7 +1045,37 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {
   function getChosenOwner(){
     return ownerSel.value === '__custom__' ? ownerCustom.value.trim() : ownerSel.value;
   }
-  function refreshGroupSelect(preferred){
+  function getChosenGroup(){
+    return groupSel.value === '__custom__' ? groupCustom.value.trim() : groupSel.value;
+  }
+  function refreshPositionSelect(preferredPos){
+    const oName = getChosenOwner();
+    const gTitle = getChosenGroup();
+    const siblings = S.rows.filter(r =>
+      r.kind==='activity' && r.id!==activityId &&
+      normalizeKey(r.owner)===normalizeKey(oName) &&
+      normalizeKey(r.group)===normalizeKey(gTitle)
+    );
+    const sameGroupEdit = isEdit && normalizeKey(existing.owner)===normalizeKey(oName) && normalizeKey(existing.group)===normalizeKey(gTitle);
+    const opts = [];
+    if(sameGroupEdit) opts.push('<option value="keep">Mantener ubicación actual</option>');
+    opts.push('<option value="start">Al inicio del grupo</option>');
+    if(preferredPos && preferredPos.startsWith('before:')){
+      const targetBefore = siblings.find(s => ('before:' + s.id) === preferredPos);
+      if(targetBefore){
+        opts.push('<option value="'+escapeText(preferredPos)+'">Antes de '+escapeText((targetBefore.excelId||targetBefore.id)+' — '+targetBefore.title.slice(0,48))+'</option>');
+      }
+    }
+    siblings.forEach(s => {
+      opts.push('<option value="after:'+escapeText(s.id)+'">Después de '+escapeText((s.excelId||s.id)+' — '+s.title.slice(0,48))+'</option>');
+    });
+    opts.push('<option value="end">Al final del grupo</option>');
+    posSel.innerHTML = opts.join('');
+    const targetVal = preferredPos || (sameGroupEdit ? 'keep' : 'end');
+    if([...posSel.options].some(o => o.value === targetVal)) posSel.value = targetVal;
+    else posSel.value = sameGroupEdit ? 'keep' : 'end';
+  }
+  function refreshGroupSelect(preferred, preferredPos){
     const list = groupsForOwner(getChosenOwner());
     groupSel.innerHTML = list.map(g => '<option value="'+escapeText(g)+'">'+escapeText(g)+'</option>').join('') +
       '<option value="__custom__">+ Nuevo grupo…</option>';
@@ -1049,9 +1090,19 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {
       groupCustom.hidden = false;
       if(preferred && preferred !== '__custom__') groupCustom.value = preferred;
     }
+    refreshPositionSelect(preferredPos);
   }
-  refreshGroupSelect(initialGroup);
+  refreshGroupSelect(initialGroup, initialPosition);
   if(existing?.dependency) depSel.value = existing.dependency;
+
+  function syncCodeReadonlyState(){
+    if(!codeEl || !renumChk) return;
+    codeEl.readOnly = renumChk.checked;
+    codeEl.style.opacity = renumChk.checked ? '0.72' : '1';
+    codeEl.title = renumChk.checked ? 'Se asignará automáticamente según la posición en el cronograma' : 'Código manual';
+  }
+  syncCodeReadonlyState();
+  renumChk.addEventListener('change', syncCodeReadonlyState);
 
   function renderDailyGrid(){
     if(!manualChk.checked){ dailyWrap.hidden = true; return; }
@@ -1072,13 +1123,16 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {
 
   ownerSel.addEventListener('change', () => {
     ownerCustom.hidden = ownerSel.value !== '__custom__';
-    refreshGroupSelect('');
+    refreshGroupSelect('', 'end');
     renderDailyGrid();
   });
+  ownerCustom.addEventListener('input', () => refreshPositionSelect('end'));
   groupSel.addEventListener('change', () => {
     groupCustom.hidden = groupSel.value !== '__custom__';
     if(!groupCustom.hidden) groupCustom.value = '';
+    refreshPositionSelect('end');
   });
+  groupCustom.addEventListener('input', () => refreshPositionSelect('end'));
   startEl.addEventListener('change', () => { if(endEl.value < startEl.value) endEl.value = startEl.value; renderDailyGrid(); });
   endEl.addEventListener('change', renderDailyGrid);
   manualChk.addEventListener('change', renderDailyGrid);
@@ -1087,7 +1141,7 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {
     ev.preventDefault();
     const errBox = document.getElementById('vgg-act-err');
     const chosenOwner = getChosenOwner();
-    const chosenGroup = groupSel.value === '__custom__' ? groupCustom.value.trim() : groupSel.value;
+    const chosenGroup = getChosenGroup();
     const sVal = startEl.value, eVal = endEl.value;
     if(!chosenOwner || !chosenGroup){
       errBox.textContent = 'Completa el responsable y el grupo de la actividad.';
@@ -1111,11 +1165,13 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {
     try {
       const saved = store.upsertActivity({
         id: existing?.id || '',
-        excelId: document.getElementById('vgg-f-code').value.trim(),
+        excelId: codeEl.value.trim(),
         type: document.getElementById('vgg-f-type').value,
         title: document.getElementById('vgg-f-title').value.trim(),
         owner: chosenOwner,
         group: chosenGroup,
+        position: posSel.value,
+        autoRenumber: renumChk.checked,
         start: sVal,
         end: eVal,
         predecessor: document.getElementById('vgg-f-pred').value.trim(),
@@ -1128,7 +1184,7 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {
       st.selected = saved.id;
       rebuildFilterSelects();
       render();
-      if(typeof toast === 'function') toast((isEdit ? 'Actividad actualizada: ' : 'Actividad creada: ') + (saved.excelId || saved.id));
+      if(typeof toast === 'function') toast((isEdit ? 'Actividad actualizada: ' : 'Actividad insertada: ') + (saved.excelId || saved.id));
     } catch (err) {
       errBox.textContent = err?.message || 'No se pudo guardar la actividad.';
       errBox.hidden = false;
@@ -1154,21 +1210,56 @@ function openGroupModal(gid=''){
     '<div id="vgg-grp-err" class="vgg-sub-error" hidden></div>'+
     '<div class="vgg-form-field"><label for="vgg-g-owner">Responsable *</label><select id="vgg-g-owner"></select><input id="vgg-g-owner-custom" placeholder="Nombre del responsable" hidden></div>'+
     '<div class="vgg-form-field"><label for="vgg-g-title">Nombre del grupo *</label><input id="vgg-g-title" value="'+escapeText(existing?.title||'')+'" maxlength="160" required placeholder="Ej.: Modelado BIM · Sector 3"></div>'+
-    (existing && hasActs ? '<p style="margin:0;opacity:.8;font-size:11px">Renombrar este grupo actualizará automáticamente todas sus actividades.</p>' : '')+
+    '<div class="vgg-form-field"><label for="vgg-g-position">Ubicación entre grupos</label><select id="vgg-g-position"></select></div>'+
+    (existing && hasActs ? '<p style="margin:0;opacity:.8;font-size:11px">Renombrar o reubicar este grupo actualizará sus actividades y renumerará IDs correlativos.</p>' : '')+
     '</div>'+
     '<div class="vgg-submodal-ft">'+
-    (existing && !hasActs ? '<button type="button" id="vgg-g-delete" class="vgg-sub-btn danger" style="margin-right:auto">Eliminar grupo</button>' : '')+
+    (existing ? '<button type="button" id="vgg-g-up" class="vgg-sub-btn" title="Subir grupo">↑</button><button type="button" id="vgg-g-down" class="vgg-sub-btn" title="Bajar grupo">↓</button>' : '')+
+    (existing && !hasActs ? '<button type="button" id="vgg-g-delete" class="vgg-sub-btn danger" style="margin-right:auto">Eliminar grupo</button>' : '<span style="margin-right:auto"></span>')+
     '<button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button><button type="submit" class="vgg-sub-btn primary">'+(existing?'Guardar grupo':'Crear grupo')+'</button></div>'+
     '</form></div>';
   back.hidden = false;
 
   const ownerSel = document.getElementById('vgg-g-owner');
   const ownerCustom = document.getElementById('vgg-g-owner-custom');
+  const posSel = document.getElementById('vgg-g-position');
   ownerSel.innerHTML = ownerList.map(o => '<option value="'+escapeText(o)+'">'+escapeText(o)+'</option>').join('') +
     '<option value="__custom__">+ Otro responsable…</option>';
   if(ownerList.includes(initialOwner)) ownerSel.value = initialOwner;
   else if(initialOwner){ ownerSel.value = '__custom__'; ownerCustom.hidden = false; ownerCustom.value = initialOwner; }
-  ownerSel.addEventListener('change', () => { ownerCustom.hidden = ownerSel.value !== '__custom__'; });
+
+  function getGroupOwner(){ return ownerSel.value === '__custom__' ? ownerCustom.value.trim() : ownerSel.value; }
+  function refreshGroupPos(){
+    const oName = getGroupOwner();
+    const list = Object.values(sched.groups).filter(g => g.owner===oName && (!existing || g.id!==existing.id))
+      .sort((a,b)=>(a.order-b.order)||a.title.localeCompare(b.title,'es'));
+    const sameOwner = existing && existing.owner===oName;
+    const opts = [];
+    if(sameOwner) opts.push('<option value="keep">Mantener ubicación actual</option>');
+    opts.push('<option value="start">Al inicio del responsable</option>');
+    list.forEach(g => opts.push('<option value="after:'+escapeText(g.id)+'">Después de '+escapeText(g.title)+'</option>'));
+    opts.push('<option value="end">Al final del responsable</option>');
+    posSel.innerHTML = opts.join('');
+    posSel.value = sameOwner ? 'keep' : 'end';
+  }
+  refreshGroupPos();
+  ownerSel.addEventListener('change', () => {
+    ownerCustom.hidden = ownerSel.value !== '__custom__';
+    refreshGroupPos();
+  });
+
+  document.getElementById('vgg-g-up')?.addEventListener('click', () => {
+    if(store.moveGroup(existing.id, -1)){
+      closeSubmodal(); rebuildFilterSelects(); render();
+      if(typeof toast === 'function') toast('Grupo movido arriba.');
+    }
+  });
+  document.getElementById('vgg-g-down')?.addEventListener('click', () => {
+    if(store.moveGroup(existing.id, 1)){
+      closeSubmodal(); rebuildFilterSelects(); render();
+      if(typeof toast === 'function') toast('Grupo movido abajo.');
+    }
+  });
 
   document.getElementById('vgg-g-delete')?.addEventListener('click', () => {
     try {
@@ -1187,7 +1278,7 @@ function openGroupModal(gid=''){
   document.getElementById('vgg-group-form').addEventListener('submit', ev => {
     ev.preventDefault();
     const errBox = document.getElementById('vgg-grp-err');
-    const chosenOwner = ownerSel.value === '__custom__' ? ownerCustom.value.trim() : ownerSel.value;
+    const chosenOwner = getGroupOwner();
     const title = document.getElementById('vgg-g-title').value.trim();
     if(!chosenOwner || !title){
       errBox.textContent = 'Completa responsable y nombre del grupo.';
@@ -1195,7 +1286,7 @@ function openGroupModal(gid=''){
       return;
     }
     try {
-      store.upsertGroup({ id: existing?.id || '', owner: chosenOwner, title });
+      store.upsertGroup({ id: existing?.id || '', owner: chosenOwner, title, position: posSel.value });
       closeSubmodal();
       rebuildFilterSelects();
       render();
@@ -1663,6 +1754,33 @@ function open(){
       if(editGroupBtn){
         ev.stopPropagation();
         openGroupModal(editGroupBtn.dataset.vggEditGroup);
+        return;
+      }
+
+      const insertBeforeBtn = ev.target.closest('[data-vgg-insert-before]');
+      if(insertBeforeBtn){
+        const ref = getSource().rows.find(r => r.kind==='activity' && r.id===insertBeforeBtn.dataset.vggInsertBefore);
+        if(ref) openActivityModal({ presetOwner: ref.owner, presetGroup: ref.group, presetPosition: 'before:' + ref.id });
+        return;
+      }
+
+      const insertAfterBtn = ev.target.closest('[data-vgg-insert-after]');
+      if(insertAfterBtn){
+        const ref = getSource().rows.find(r => r.kind==='activity' && r.id===insertAfterBtn.dataset.vggInsertAfter);
+        if(ref) openActivityModal({ presetOwner: ref.owner, presetGroup: ref.group, presetPosition: 'after:' + ref.id });
+        return;
+      }
+
+      const moveActBtn = ev.target.closest('[data-vgg-move-act]');
+      if(moveActBtn && st.selected){
+        const delta = Number(moveActBtn.dataset.vggMoveAct);
+        if(window.bimGanttScheduleStore?.moveActivity?.(st.selected, delta)){
+          rebuildFilterSelects();
+          render();
+          if(typeof toast === 'function') toast(delta < 0 ? 'Actividad movida arriba.' : 'Actividad movida abajo.');
+        } else if(typeof toast === 'function'){
+          toast(delta < 0 ? 'Ya es la primera actividad de este grupo.' : 'Ya es la última actividad de este grupo.');
+        }
         return;
       }
 
