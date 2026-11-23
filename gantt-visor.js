@@ -23,6 +23,8 @@ html[data-theme="light"] .vgg-source-badge.live{background:#ecfdf5;color:#047857
 .vgg-header-actions button[data-vgg-action="open-excel-sync"]:hover{background:rgba(16,185,129,.22)}
 html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-sync"]{color:#047857;background:#ecfdf5;border-color:#6ee7b7}
 .vgg-header-actions button[data-vgg-action="today"]{border-color:rgba(93,167,255,.45);color:var(--accent-blue,#60a5fa)}
+.vgg-header-actions button#vgg-header-clear-filters{opacity:.68}
+.vgg-header-actions button#vgg-header-clear-filters.is-active{opacity:1;border-color:rgba(93,167,255,.55);color:var(--accent-blue,#60a5fa);background:rgba(59,130,246,.14)}
 .vgg-header-actions button[hidden]{display:none!important}
 
 .vgg-controls{padding:9px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-base,#253048);position:relative;z-index:40;overflow:visible}
@@ -173,9 +175,6 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-
 #bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-selected td:not(.weekend):not(.holiday):not(.day-off){background:#1b3256!important}
 #bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-predecessor td:not(.weekend):not(.holiday):not(.day-off){background:rgba(245,158,11,.18)!important}
 #bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-successor td:not(.weekend):not(.holiday):not(.day-off){background:rgba(6,182,212,.16)!important}
-#bim-gantt-modal.vgg-dark-table .vgg-empty-state{background:#0b1120;color:#cbd5e1}
-#bim-gantt-modal.vgg-dark-table .vgg-empty-state strong{color:#f8fafc}
-#bim-gantt-modal.vgg-dark-table .vgg-empty-state p{color:#94a3b8}
 
 .vgg-table thead .vgg-week th.vgg-week-start,
 .vgg-table thead .vgg-date th.vgg-week-start,
@@ -208,12 +207,6 @@ html[data-theme="light"] .vgg-action-btn.danger{background:#fef2f2;color:#b91c1c
 .vgg-dep-pill.succ{background:rgba(6,182,212,.18);color:#22d3ee;border-color:rgba(6,182,212,.42)}
 html[data-theme="light"] .vgg-dep-pill.pred{background:#fef3c7;color:#b45309;border-color:#fcd34d}
 html[data-theme="light"] .vgg-dep-pill.succ{background:#cffafe;color:#0e7490;border-color:#67e8f9}
-
-.vgg-empty-state{padding:48px 20px;text-align:center;color:#334155;background:#f8fafc;display:flex;flex-direction:column;align-items:center;gap:10px}
-.vgg-empty-state strong{font-size:14px;color:#0f172a}
-.vgg-empty-state p{margin:0;font-size:12px;color:#475569;max-width:440px}
-.vgg-empty-state button{margin-top:4px;height:34px;padding:0 14px;border-radius:8px;border:1px solid #2563eb;background:#2563eb;color:#fff;font-size:12px;font-weight:600;cursor:pointer}
-.vgg-empty-state button:hover{background:#1d4ed8}
 
 .vgg-footer{padding:9px 18px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;background:var(--bg-subtle,#1e293b);font-size:10.5px;color:var(--ink-secondary,#aebed2);border-top:1px solid var(--border-base,#253048)}
 .vgg-chip{display:inline-flex;gap:5px;align-items:center}
@@ -646,12 +639,12 @@ function renderHeaderMeta(){
   }
   if(syncBtn){
     const verified = window.bimArea2Auth?.isVerified?.();
-    syncBtn.innerHTML = verified ? '↓ Actualizar Excel (AREA_BIM2)' : '🔒 Actualizar Excel';
+    syncBtn.innerHTML = verified ? '↓ Actualizar Excel' : '🔒 Actualizar Excel';
   }
   if(footerSource){
     footerSource.textContent = isCustom
-      ? 'Cronograma compartido en Supabase · Actualización a Excel exclusiva AREA_BIM2'
-      : 'Base Excel 13/11/2026 · Editable por cualquier usuario en Supabase';
+      ? 'Cronograma compartido en Supabase'
+      : 'Base Excel 13/11/2026 · Editable en Supabase';
   }
 }
 
@@ -737,21 +730,22 @@ function render(){
   if(!node) return;
   const totalActivities = S.rows.filter(r => r.kind === 'activity').length;
   const activeFilters = ['owner','group','week','status','search'].filter(k => Boolean(st[k])).length;
-  const resetBtn = document.getElementById('vgg-reset-filters');
-  if(resetBtn) resetBtn.hidden = activeFilters === 0;
+  const clearHdrBtn = document.getElementById('vgg-header-clear-filters');
+  if(clearHdrBtn){
+    clearHdrBtn.classList.toggle('is-active', activeFilters > 0);
+    clearHdrBtn.textContent = activeFilters > 0 ? 'Quitar filtros (' + activeFilters + ')' : 'Quitar filtros';
+  }
   ['owner','group','week','status','search'].forEach(k => {
     const el = document.getElementById('vgg-'+k);
     if(el) el.classList.toggle('vgg-filter-active', Boolean(st[k]));
   });
   updateCollapseAllButton();
 
-  const emptyBox = document.getElementById('vgg-empty-state');
   if(!body){
-    node.innerHTML = '';
-    if(emptyBox) emptyBox.hidden = false;
+    const emptyRow = '<tr><td colspan="'+(displayed.length + days.length)+'" style="padding:18px;text-align:center;color:#64748b">Sin actividades para los filtros seleccionados.</td></tr>';
+    node.innerHTML = '<colgroup>'+colgroup+'</colgroup><thead>'+heads+datesRow+dowsRow+'</thead><tbody>'+emptyRow+'</tbody>';
     clearDependencyLinksSvg();
   } else {
-    if(emptyBox) emptyBox.hidden = true;
     node.innerHTML = '<colgroup>'+colgroup+'</colgroup><thead>'+heads+datesRow+dowsRow+'</thead><tbody>'+body+'</tbody>';
     requestAnimationFrame(drawDependencyLinksSvg);
   }
@@ -1487,13 +1481,13 @@ function openArea2AuthThenExcelSync(){
     return;
   }
   const back = document.getElementById('vgg-submodal-back');
-  back.innerHTML = '<div class="vgg-submodal narrow" role="dialog" aria-modal="true" aria-label="Autenticación AREA_BIM2">'+
-    '<div class="vgg-submodal-hd"><h3>Acceso exclusivo AREA_BIM2</h3>'+
+  back.innerHTML = '<div class="vgg-submodal narrow" role="dialog" aria-modal="true" aria-label="Acceso restringido">'+
+    '<div class="vgg-submodal-hd"><h3>Acceso restringido</h3>'+
     '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
     '<form id="vgg-auth-form"><div class="vgg-submodal-body">'+
-    '<p style="margin:0;line-height:1.45">Solo el usuario <b>AREA_BIM2</b> está autorizado para transferir los cambios del cronograma al Excel original.</p>'+
+    '<p style="margin:0;line-height:1.45">Ingresa las credenciales autorizadas para transferir los cambios del cronograma al Excel.</p>'+
     '<div id="vgg-auth-err" class="vgg-sub-error" hidden></div>'+
-    '<div class="vgg-form-field"><label for="vgg-a-user">Usuario</label><input id="vgg-a-user" autocomplete="username" required placeholder="AREA_BIM2"></div>'+
+    '<div class="vgg-form-field"><label for="vgg-a-user">Usuario</label><input id="vgg-a-user" autocomplete="username" required placeholder="Usuario"></div>'+
     '<div class="vgg-form-field"><label for="vgg-a-pass">Contraseña</label><input id="vgg-a-pass" type="password" autocomplete="current-password" required></div>'+
     '</div>'+
     '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button>'+
@@ -1506,9 +1500,7 @@ function openArea2AuthThenExcelSync(){
     const p = document.getElementById('vgg-a-pass').value;
     const errBox = document.getElementById('vgg-auth-err');
     if(!window.bimArea2Auth?.verify?.(u, p)){
-      errBox.textContent = u && u !== 'AREA_BIM2'
-        ? 'Solo el usuario AREA_BIM2 está autorizado para actualizar el Excel.'
-        : 'Usuario o contraseña incorrectos.';
+      errBox.textContent = 'Usuario o contraseña no autorizados.';
       errBox.hidden = false;
       document.getElementById('vgg-a-pass').value = '';
       document.getElementById('vgg-a-pass').focus();
@@ -1669,9 +1661,10 @@ function open(){
       '<h2>CRONOGRAMA DEL PROYECTO — DIAGRAMA DE GANTT <span id="vgg-source-badge" class="vgg-source-badge"></span></h2>'+
       '<p id="vgg-header-sub"></p></div>'+
       '<div class="vgg-header-actions">'+
+      '<button type="button" id="vgg-header-clear-filters" data-vgg-action="reset-filters">Quitar filtros</button>'+
       '<button type="button" data-vgg-action="new-activity" title="Agregar nueva actividad al cronograma">+ Nueva actividad</button>'+
       '<button type="button" data-vgg-action="new-group" title="Crear nuevo grupo de actividades">+ Grupo</button>'+
-      '<button type="button" id="vgg-excel-sync-btn" data-vgg-action="open-excel-sync" title="Solo AREA_BIM2: transferir datos del Gantt a Excel">🔒 Actualizar Excel</button>'+
+      '<button type="button" id="vgg-excel-sync-btn" data-vgg-action="open-excel-sync">🔒 Actualizar Excel</button>'+
       '<button type="button" data-vgg-action="today" title="Desplazar el cronograma hasta la columna de hoy">Ir a Hoy</button>'+
       '<button type="button" data-vgg-action="expand">Pantalla completa</button>'+
       '<button type="button" data-vgg-action="close">✕ Cerrar</button></div></header>'+
@@ -1690,7 +1683,6 @@ function open(){
       '<label class="vgg-theme-toggle" title="Activar modo oscuro en las celdas de la tabla">'+
       '<input type="checkbox" id="vgg-dark-table"> Tabla oscura</label>'+
       '<button type="button" id="vgg-collapse-all" class="vgg-tool-btn" data-vgg-action="toggle-collapse-all">Contraer todo</button>'+
-      '<button type="button" id="vgg-reset-filters" class="vgg-reset-btn" data-vgg-action="reset-filters" hidden>Limpiar filtros</button>'+
       '<details id="vgg-colchooser" class="vgg-colchooser"><summary>Columnas compartidas</summary>'+
       '<div class="vgg-colchooser-popover" aria-label="Columnas visibles para todos">'+
       '<p style="margin:0 0 7px;color:var(--ink-secondary,#abc1db);font-size:10px">La selección se comparte con todos mediante Supabase.</p>'+
@@ -1699,10 +1691,7 @@ function open(){
       '<button type="button" data-vgg-action="all-columns">Mostrar todas</button></div></details>'+
       '<span class="vgg-count" id="vgg-count"></span></div>'+
       '<div class="vgg-scroll"><table class="vgg-table" id="vgg-table" aria-label="Cronograma Gantt editable"></table>'+
-      '<svg id="vgg-links-svg" class="vgg-links-svg" aria-hidden="true"></svg>'+
-      '<div id="vgg-empty-state" class="vgg-empty-state" hidden><strong>Sin actividades coincidentes</strong>'+
-      '<p>Ninguna actividad del cronograma coincide con los filtros o búsqueda aplicados.</p>'+
-      '<button type="button" data-vgg-action="reset-filters">Restablecer filtros</button></div></div>'+
+      '<svg id="vgg-links-svg" class="vgg-links-svg" aria-hidden="true"></svg></div>'+
       '<div class="vgg-detail" id="vgg-detail"></div>'+
       '<footer class="vgg-footer"><span class="vgg-chip"><i></i> Programado</span>'+
       '<span class="vgg-chip"><i class="done"></i> Avance real</span>'+
