@@ -117,14 +117,14 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-
 .vgg-day.bar-end .vgg-bar-seg{border-top-right-radius:6px;border-bottom-right-radius:6px;margin-right:2px;width:calc(100% - 2px)}
 .vgg-day.bar-start.bar-end .vgg-bar-seg{margin-left:2px;margin-right:2px;width:calc(100% - 4px)}
 .vgg-bar-seg.done{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%)}
-.vgg-bar-seg.partial{background:linear-gradient(90deg,#10b981 0%,#10b981 var(--vgg-real-fill),#4679c2 var(--vgg-real-fill),#4679c2 100%)}
+.vgg-bar-seg.partial{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%) left/var(--vgg-real-fill) 100% no-repeat,linear-gradient(180deg,#4f83cc 0%,#3b6db5 100%)}
 .vgg-bar-seg.late{background:linear-gradient(180deg,#e5a13e 0%,#c98324 100%)}
 .vgg-bar-seg.culminated{box-shadow:none}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start){border-left-color:transparent!important}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start) .vgg-bar-seg{margin-left:-1px;width:calc(100% + 2px)}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled.bar-end:not(.bar-start) .vgg-bar-seg{width:calc(100% - 1px)}
 .vgg-table tbody tr.vgg-activity:hover .vgg-bar-seg{filter:brightness(1.07)}
-.vgg-cell-percent{font:700 8.5px/1 'JetBrains Mono',Inter,sans-serif;color:#ffffff;letter-spacing:-.2px;font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap}
+.vgg-bar-center-pct{position:absolute;top:50%;transform:translate(-50%,-50%);z-index:4;font:700 9px/1 'JetBrains Mono',Inter,sans-serif;color:#ffffff;letter-spacing:-.2px;font-variant-numeric:tabular-nums;text-shadow:0 1px 3px rgba(0,0,0,.5);pointer-events:none;white-space:nowrap}
 
 /* Barra Resumen ultra fina (2px) */
 .vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{overflow:visible}
@@ -531,48 +531,38 @@ function dayBar(row, d, state, days, idx){
     const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
     return '<td class="'+cls+' scheduled group'+segCls+'"'+dateAttr+'><span class="vgg-group-bar"></span></td>';
   }
-  const isCulminated = Number.isFinite(state.actual) && state.actual >= 99.999;
-  if(isCulminated){
-    if(!row.start || !row.end || d < row.start || d > row.end) return '<td class="'+cls+'"'+dateAttr+'></td>';
-    const isStart = idx === 0 || days[idx-1] < row.start;
-    const isEnd = idx === days.length - 1 || days[idx+1] > row.end;
-    const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '') + ' scheduled-culminated';
-    const status = state.late ? ' late culminated' : ' done culminated';
-    const tip = (row.excelId||row.id)+' · '+row.title+' · Culminada (100 %)'+
-      (state.completedAt ? ' · Fin real: '+readable(state.completedAt) : '')+
-      (state.late ? ' · Fuera de plazo' : '');
-    return '<td class="'+cls+' scheduled'+segCls+'"'+dateAttr+' title="'+escapeText(tip)+'">'+
-      '<div class="vgg-bar-seg'+status+'"></div></td>';
+  if(!row.start || !row.end || d < row.start || d > row.end) return '<td class="'+cls+'"'+dateAttr+'></td>';
+  const isStart = idx === 0 || days[idx-1] < row.start;
+  const isEnd = idx === days.length - 1 || days[idx+1] > row.end;
+  const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
+  const actual = Number.isFinite(state.actual) ? Math.min(100, Math.max(0, state.actual)) : 0;
+  let status = '', style = '';
+  if(actual >= 99.999){
+    status = state.late ? ' late culminated' : ' done culminated';
+  } else if(actual > 0.001){
+    const totalSpan = dates(row.start, row.end);
+    const n = Math.max(1, totalSpan.length);
+    const k = totalSpan.indexOf(d);
+    if(k >= 0){
+      const sliceStart = (k * 100) / n;
+      const sliceEnd = ((k + 1) * 100) / n;
+      const cellFill = actual <= sliceStart ? 0 : actual >= sliceEnd ? 100 : ((actual - sliceStart) / (sliceEnd - sliceStart)) * 100;
+      status = cellFill >= 99.999 ? ' done' : cellFill > 0.001 ? ' partial' : '';
+      if(status === ' partial') style = ' style="--vgg-real-fill:' + Number(cellFill.toFixed(3)) + '%"';
+    }
   }
-  const value = row.percentByDay?.[String(Number(d.slice(8,10)))] || 0;
-  if(!value) return '<td class="'+cls+'"'+dateAttr+'></td>';
-  const prevHas = idx > 0 && Boolean(row.percentByDay?.[String(Number(days[idx-1].slice(8,10)))]);
-  const nextHas = idx < days.length - 1 && Boolean(row.percentByDay?.[String(Number(days[idx+1].slice(8,10)))]);
-  const segCls = (!prevHas ? ' bar-start' : '') + (!nextHas ? ' bar-end' : '');
-  const fill = realFillOfGanttDay(row, d, state.actual);
-  const status = fill >= 99.999 ? (state.late && state.actual>=100 ? ' late' : ' done')
-    : fill > .001 ? ' partial' : '';
-  const style = status===' partial' ? ' style="--vgg-real-fill:'+Number(fill.toFixed(4))+'%"' : '';
-  const planned = Number((value*100).toFixed(2));
-  const realPart = Number((planned*fill/100).toFixed(2));
-  const tip = (row.excelId||row.id)+' · '+readable(d)+' · Programado: '+planned+' % · Ejecutado: '+realPart+' % ('+Number(fill.toFixed(1))+' % del día)';
-  const isAdvancing = Number.isFinite(state.actual) && state.actual > 0.001 && state.actual < 99.999;
   let pctLabel = '';
-  if(isAdvancing){
-    let frontierDate = '';
-    for(const dayItem of days){
-      const vDay = row.percentByDay?.[String(Number(dayItem.slice(8,10)))] || 0;
-      if(vDay > 0 && realFillOfGanttDay(row, dayItem, state.actual) > 0.001){
-        frontierDate = dayItem;
-      }
-    }
-    if(d === frontierDate){
-      const actualTxt = state.actual < 10 ? Number(state.actual.toFixed(1)) : Math.round(state.actual);
-      pctLabel = '<span class="vgg-cell-percent">' + actualTxt + '%</span>';
-    }
+  if(isStart && actual > 0.001 && actual < 99.999){
+    const visSpanCols = days.filter(x => x >= row.start && x <= row.end).length;
+    const actualTxt = actual < 10 ? Number(actual.toFixed(1)) : Math.round(actual);
+    pctLabel = '<span class="vgg-bar-center-pct" style="left:calc(' + visSpanCols + ' * 50%)">' + actualTxt + '%</span>';
   }
+  const tip = (row.excelId||row.id)+' · '+row.title+' · '+readable(row.start)+' al '+readable(row.end)+
+    (actual >= 99.999 ? ' · Culminada (100 %)'+(state.late?' · Fuera de plazo':'')
+      : actual > 0.001 ? ' · Avance real acumulado: '+Number(actual.toFixed(1))+' %'
+      : ' · Programada (0 % ejecutado)');
   return '<td class="'+cls+' scheduled'+segCls+'"'+dateAttr+' title="'+escapeText(tip)+'">'+
-    '<div class="vgg-bar-seg'+status+'"'+style+'>'+pctLabel+'</div></td>';
+    '<div class="vgg-bar-seg'+status+'"'+style+'></div>'+pctLabel+'</td>';
 }
 
 function visibleColumns(){
