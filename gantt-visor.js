@@ -113,34 +113,34 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table tbody tr.vgg-activity.vgg-successor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#cffafe!important}
 .vgg-table tbody tr.vgg-activity.vgg-successor td:first-child{box-shadow:inset 4px 0 0 #06b6d4}
 
-/* Mejora #5: Modo Oscuro AEC Obsidian nativo para la grilla Gantt (cuando no está activado Excel claro) */
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-scroll{background:#0b1120}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table{background:#0f172a;color:#e2e8f0}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table th,
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table td{border-bottom-color:#1e293b;border-right-color:#243249}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-activity td{background:#0f172a}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-activity.vgg-row-alt td{background:#131d31}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-activity:hover td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#1c2a44!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table .vgg-id{color:#93c5fd}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table thead tr.vgg-week th.excel-week-light,
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table thead tr.vgg-date th.excel-week-light,
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table thead tr.vgg-weekday th.excel-week-light{background:#23324d;color:#e2e8f0}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table thead tr.vgg-date th.weekend-header,
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table thead tr.vgg-weekday th.weekend-header{background:#3b1824!important;color:#fda4af!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table thead tr.vgg-date th.holiday-header,
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table thead tr.vgg-weekday th.holiday-header{background:#4c1d2e!important;color:#fecdd3!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody td.vgg-day.weekend:not(.scheduled),
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody td.vgg-day.holiday:not(.scheduled){background:#271622!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-activity td.vgg-day.day-off:not(.scheduled){background:#261d3f!important;box-shadow:inset 0 0 0 1px #6d52a8}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-group-row td.vgg-day:not(.scheduled){background:#132136!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{background:#295787!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-activity.vgg-selected td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#1b3256!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-activity.vgg-predecessor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(245,158,11,.18)!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-activity.vgg-successor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(6,182,212,.16)!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-table tbody tr.vgg-activity td.vgg-day.today:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(37,99,235,.22)!important}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-empty-state{background:#0b1120;color:#cbd5e1}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-empty-state strong{color:#f8fafc}
-html[data-theme="dark"] #bim-gantt-modal:not(.vgg-excel-light) .vgg-empty-state p{color:#94a3b8}
+/* Mejora #5: Modo Oscuro opcional para la grilla Gantt (celdas blancas clásicas por defecto) */
+#bim-gantt-modal.vgg-dark-table .vgg-scroll{background:#0b1120}
+#bim-gantt-modal.vgg-dark-table .vgg-table{background:#0f172a;color:#e2e8f0}
+#bim-gantt-modal.vgg-dark-table .vgg-table th,
+#bim-gantt-modal.vgg-dark-table .vgg-table td{border-bottom-color:#1e293b;border-right-color:#243249}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity td{background:#0f172a}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-row-alt td{background:#131d31}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity:hover td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#1c2a44!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table .vgg-id{color:#93c5fd}
+#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-week th.excel-week-light,
+#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-date th.excel-week-light,
+#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-weekday th.excel-week-light{background:#23324d;color:#e2e8f0}
+#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-date th.weekend-header,
+#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-weekday th.weekend-header{background:#3b1824!important;color:#fda4af!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-date th.holiday-header,
+#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-weekday th.holiday-header{background:#4c1d2e!important;color:#fecdd3!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.weekend:not(.scheduled),
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.holiday:not(.scheduled){background:#271622!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity td.vgg-day.day-off:not(.scheduled){background:#261d3f!important;box-shadow:inset 0 0 0 1px #6d52a8}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-group-row td.vgg-day:not(.scheduled){background:#132136!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{background:#295787!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-selected td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#1b3256!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-predecessor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(245,158,11,.18)!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-successor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(6,182,212,.16)!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity td.vgg-day.today:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(37,99,235,.22)!important}
+#bim-gantt-modal.vgg-dark-table .vgg-empty-state{background:#0b1120;color:#cbd5e1}
+#bim-gantt-modal.vgg-dark-table .vgg-empty-state strong{color:#f8fafc}
+#bim-gantt-modal.vgg-dark-table .vgg-empty-state p{color:#94a3b8}
 
 /* Fronteras semanales y columna Hoy */
 .vgg-table thead .vgg-week th.vgg-week-start,
@@ -208,12 +208,12 @@ if(!BASE_SOURCE) return;
 
 const STORAGE_EXCEL_KEY = 'bim-gantt-excel-override-v1';
 const STORAGE_ZOOM_KEY = 'bim-gantt-zoom-v1';
-const STORAGE_LIGHT_KEY = 'bim-gantt-excel-light-v1';
+const STORAGE_DARK_TABLE_KEY = 'bim-gantt-dark-table-v1';
 const ZOOM_WIDTHS = { compact: 22, normal: 30, wide: 42 };
 
 let S = loadActiveSource();
 const st = { owner:'', group:'', week:'', status:'', search:'', selected:'', zoom: readPref(STORAGE_ZOOM_KEY, 'normal') };
-let excelLightMode = readPref(STORAGE_LIGHT_KEY, '0') === '1';
+let darkTableMode = readPref(STORAGE_DARK_TABLE_KEY, '0') === '1';
 let overlay = null, bodyOverflow = '', lastTrigger = null;
 const hiddenColumns = new Set();
 const collapsedOwners = new Set();
@@ -569,7 +569,7 @@ function render(){
   if(!overlay || overlay.hidden) return;
   renderHeaderMeta();
   const modal = document.getElementById('bim-gantt-modal');
-  if(modal) modal.classList.toggle('vgg-excel-light', excelLightMode);
+  if(modal) modal.classList.toggle('vgg-dark-table', darkTableMode);
 
   const values = visibleActivities();
   const rows = keptRows(values);
@@ -1061,8 +1061,8 @@ function open(){
       '<label>Zoom <select id="vgg-zoom" aria-label="Zoom del calendario">'+
       '<option value="compact">Compacto</option><option value="normal">Normal</option><option value="wide">Amplio</option>'+
       '</select></label>'+
-      '<label class="vgg-theme-toggle" title="Alternar entre modo oscuro integrado y fondo blanco clásico de Excel">'+
-      '<input type="checkbox" id="vgg-excel-light"> Excel claro</label>'+
+      '<label class="vgg-theme-toggle" title="Activar modo oscuro en las celdas de la tabla">'+
+      '<input type="checkbox" id="vgg-dark-table"> Tabla oscura</label>'+
       '<button type="button" id="vgg-collapse-all" class="vgg-tool-btn" data-vgg-action="toggle-collapse-all">Contraer todo</button>'+
       '<button type="button" id="vgg-reset-filters" class="vgg-reset-btn" data-vgg-action="reset-filters" hidden>Limpiar filtros</button>'+
       '<details id="vgg-colchooser" class="vgg-colchooser"><summary>Columnas compartidas</summary>'+
@@ -1099,13 +1099,13 @@ function open(){
         render();
       });
     }
-    const lightEl = document.getElementById('vgg-excel-light');
-    if(lightEl){
-      lightEl.checked = excelLightMode;
-      lightEl.addEventListener('change', ev => {
-        excelLightMode = ev.target.checked;
-        savePref(STORAGE_LIGHT_KEY, excelLightMode ? '1' : '0');
-        document.getElementById('bim-gantt-modal')?.classList.toggle('vgg-excel-light', excelLightMode);
+    const darkEl = document.getElementById('vgg-dark-table');
+    if(darkEl){
+      darkEl.checked = darkTableMode;
+      darkEl.addEventListener('change', ev => {
+        darkTableMode = ev.target.checked;
+        savePref(STORAGE_DARK_TABLE_KEY, darkTableMode ? '1' : '0');
+        document.getElementById('bim-gantt-modal')?.classList.toggle('vgg-dark-table', darkTableMode);
       });
     }
     const fileInput = document.getElementById('vgg-excel-input');
