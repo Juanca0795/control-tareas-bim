@@ -119,18 +119,18 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table tbody tr.vgg-activity:hover .vgg-bar-seg{filter:brightness(1.07)}
 .vgg-cell-percent{font:700 8.5px/1 'JetBrains Mono',Inter,sans-serif;color:#ffffff;letter-spacing:-.2px;font-variant-numeric:tabular-nums;text-shadow:0 1px 1px rgba(0,0,0,.22)}
 
-/* Barra Resumen de Grupo fina y continua (estilo MS Project / Primavera) */
+/* Barra Resumen de Grupo ultra fina y continua (2px, estilo cronograma técnico) */
 .vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{overflow:visible}
 .vgg-group-bar{
-  display:block;height:4px;width:calc(100% + 1px);margin-right:-1px;
+  display:block;height:2px;width:calc(100% + 1px);margin-right:-1px;
   background:#1e3a5f;
   position:relative
 }
-.vgg-day.bar-start .vgg-group-bar{border-top-left-radius:2px;margin-left:3px;width:calc(100% - 2px)}
-.vgg-day.bar-end .vgg-group-bar{border-top-right-radius:2px;margin-right:3px;width:calc(100% - 3px)}
+.vgg-day.bar-start .vgg-group-bar{border-top-left-radius:1px;margin-left:3px;width:calc(100% - 2px)}
+.vgg-day.bar-end .vgg-group-bar{border-top-right-radius:1px;margin-right:3px;width:calc(100% - 3px)}
 .vgg-day.bar-start.bar-end .vgg-group-bar{margin-left:3px;margin-right:3px;width:calc(100% - 6px)}
-.vgg-day.bar-start .vgg-group-bar::before{content:"";position:absolute;left:0;top:4px;width:0;height:0;border-left:4px solid #1e3a5f;border-bottom:4px solid transparent}
-.vgg-day.bar-end .vgg-group-bar::after{content:"";position:absolute;right:0;top:4px;width:0;height:0;border-right:4px solid #1e3a5f;border-bottom:4px solid transparent}
+.vgg-day.bar-start .vgg-group-bar::before{content:"";position:absolute;left:0;top:2px;width:0;height:0;border-left:3px solid #1e3a5f;border-bottom:3px solid transparent}
+.vgg-day.bar-end .vgg-group-bar::after{content:"";position:absolute;right:0;top:2px;width:0;height:0;border-right:3px solid #1e3a5f;border-bottom:3px solid transparent}
 
 .vgg-table .vgg-title{overflow:hidden;text-overflow:ellipsis}
 
@@ -176,14 +176,14 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 #bim-gantt-modal.vgg-dark-table .vgg-empty-state strong{color:#f8fafc}
 #bim-gantt-modal.vgg-dark-table .vgg-empty-state p{color:#94a3b8}
 
-/* Fronteras semanales limpias y línea vertical continua para Hoy */
+/* Fronteras semanales limpias y sombreado sutil para Hoy (sin línea vertical gruesa) */
 .vgg-table thead .vgg-week th.vgg-week-start,
 .vgg-table thead .vgg-date th.vgg-week-start,
 .vgg-table thead .vgg-weekday th.vgg-week-start,
-.vgg-table tbody td.vgg-day.vgg-week-start{border-left:1.5px solid #94a3b8!important}
+.vgg-table tbody td.vgg-day.vgg-week-start{border-left:1px solid #cbd5e1!important}
 #bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.vgg-week-start{border-left-color:#334155!important}
-.vgg-table tbody td.vgg-day.today{background:rgba(37,99,235,.06)!important;box-shadow:inset 2px 0 0 #2563eb!important}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.today{background:rgba(59,130,246,.12)!important;box-shadow:inset 2px 0 0 #60a5fa!important}
+.vgg-table tbody td.vgg-day.today{background:rgba(37,99,235,.06)!important;box-shadow:none!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.today{background:rgba(59,130,246,.10)!important;box-shadow:none!important}
 .vgg-table tbody tr.vgg-activity:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
 
 /* Panel inferior accionable (#4 y #6) */
