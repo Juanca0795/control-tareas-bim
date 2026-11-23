@@ -37,119 +37,153 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-theme-toggle{height:31px;padding:0 9px;border-radius:8px;border:1px solid var(--border-base,#334155);background:var(--bg-subtle,#1e293b);cursor:pointer;user-select:none}
 .vgg-count{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--ink-secondary,#94a3b8)}
 
-/* Scroll y tabla: modo claro Excel por defecto cuando .vgg-excel-light o tema claro */
+/* Scroll y tabla: grilla Gantt limpia estilo ejecutivo (celdas blancas por defecto) */
 .vgg-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#f8fafc;scrollbar-width:thin;position:relative}
-.vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Inter,Arial,sans-serif;font-size:10.5px;color:#293850;background:#fff}
-.vgg-table th,.vgg-table td{border-bottom:1px solid #c4ccd6;border-right:1px solid #bbc5d2;padding:5px 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:28px}
+.vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Inter,Arial,sans-serif;font-size:11px;color:#1e293b;background:#fff}
+.vgg-table th,.vgg-table td{border-bottom:1px solid #e2e8f0;border-right:1px solid #edf2f7;padding:4px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:30px}
 
 /* Mejora #1: Sticky real de cabeceras (3 filas) y columnas congeladas a la izquierda */
-.vgg-table thead th{position:sticky;color:#f7fbff;text-align:center;background:#1d2d4d;font-weight:750;z-index:10}
-.vgg-table thead .vgg-week th{top:0;height:25px}
-.vgg-table thead .vgg-date th{top:25px;height:23px}
-.vgg-table thead .vgg-weekday th{top:48px;height:25px}
+.vgg-table thead th{position:sticky;color:#f8fafc;text-align:center;background:#16243d;font-weight:700;z-index:10;border-right-color:rgba(255,255,255,.10);border-bottom-color:rgba(255,255,255,.10)}
+.vgg-table thead .vgg-week th{top:0;height:26px;font-size:11px;letter-spacing:.04em}
+.vgg-table thead .vgg-date th{top:26px;height:22px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
+.vgg-table thead .vgg-weekday th{top:48px;height:22px;font-size:10px;opacity:.92}
 .vgg-table thead th.vgg-meta{top:0;z-index:16}
 .vgg-table .vgg-sticky-col{position:sticky;z-index:6}
 .vgg-table thead .vgg-sticky-col{z-index:18}
-.vgg-table .vgg-sticky-last{border-right:2px solid #5a7ca2!important;box-shadow:5px 0 10px -5px rgba(15,23,42,.45)}
+.vgg-table .vgg-sticky-last{border-right:2px solid #94a3b8!important;box-shadow:6px 0 12px -6px rgba(15,23,42,.22)}
 
-.vgg-table tbody tr.vgg-activity td{background:#fff}
-.vgg-table tbody tr.vgg-activity.vgg-row-alt td{background:#f1f5fa}
-.vgg-table tbody tr.vgg-activity:hover td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#e5eefb!important}
+.vgg-table tbody tr.vgg-activity td{background:#ffffff}
+.vgg-table tbody tr.vgg-activity.vgg-row-alt td{background:#f8fafc}
+.vgg-table tbody tr.vgg-activity:hover td:not(.weekend):not(.holiday):not(.day-off){background:#eff6ff!important}
 .vgg-table tbody tr.vgg-activity{cursor:pointer}
 
 /* Mejora #3: Filas colapsables de Responsable y Grupo */
 .vgg-table tr.vgg-owner-row{cursor:pointer}
-.vgg-table tr.vgg-owner-row td{background:#1d3b5e;color:#f0f5fd;font-weight:800;border-top:2px solid #1b2f4a;letter-spacing:.03em}
-.vgg-table tr.vgg-owner-row:hover td{background:#23466f}
+.vgg-table tr.vgg-owner-row td{background:#172b4d;color:#f8fafc;font-weight:800;border-top:2px solid #0f1f3a;border-bottom:1px solid #0f1f3a;letter-spacing:.03em;height:32px}
+.vgg-table tr.vgg-owner-row:hover td{background:#1e3a5f}
 .vgg-table tr.vgg-group-row{cursor:pointer}
-.vgg-table tr.vgg-group-row td{background:#426a95;color:#f1f6fc;font-weight:750;border-top:1px solid #7397bd}
-.vgg-table tr.vgg-group-row:hover td:not(.scheduled){background:#4c77a6}
-.vgg-chevron{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;margin-right:5px;font-size:10px;border-radius:4px;background:rgba(255,255,255,.14);transition:transform .15s ease}
-.vgg-row-badge{margin-left:8px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:999px;background:rgba(255,255,255,.16);color:#e2e8f0}
+.vgg-table tr.vgg-group-row td{background:#f1f5f9;color:#1e3a5f;font-weight:700;border-top:1px solid #cbd5e1;border-bottom:1px solid #cbd5e1}
+.vgg-table tr.vgg-group-row:hover td{background:#e2e8f0}
+.vgg-chevron{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;margin-right:6px;font-size:10px;border-radius:4px;background:rgba(148,163,184,.22);transition:transform .15s ease}
+.vgg-table tr.vgg-owner-row .vgg-chevron{background:rgba(255,255,255,.16);color:#fff}
+.vgg-row-badge{margin-left:8px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:rgba(30,58,95,.12);color:#334155}
+.vgg-table tr.vgg-owner-row .vgg-row-badge{background:rgba(255,255,255,.16);color:#e2e8f0}
 
-.vgg-table .vgg-id{font-weight:800;color:#324c78;text-align:center;font-family:'JetBrains Mono',monospace}
+.vgg-table .vgg-id{font-weight:800;color:#2563eb;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px}
 .vgg-table .vgg-center{text-align:center}
-.vgg-table .vgg-day{padding:0}
-.vgg-table tbody td.vgg-day.weekend:not(.scheduled){background:#fbe4e7!important}
+.vgg-table .vgg-day{padding:0;position:relative;vertical-align:middle}
+
+/* Cabeceras de semanas alternas limpias */
 .vgg-table thead tr.vgg-week th.excel-week-dark,
 .vgg-table thead tr.vgg-date th.excel-week-dark,
-.vgg-table thead tr.vgg-weekday th.excel-week-dark{background:#1b2a49;color:#fff}
+.vgg-table thead tr.vgg-weekday th.excel-week-dark{background:#17253f;color:#f8fafc}
 .vgg-table thead tr.vgg-week th.excel-week-light,
 .vgg-table thead tr.vgg-date th.excel-week-light,
-.vgg-table thead tr.vgg-weekday th.excel-week-light{background:#dce3ee;color:#1b2a49}
+.vgg-table thead tr.vgg-weekday th.excel-week-light{background:#e2e8f0;color:#1e293b;border-right-color:#cbd5e1;border-bottom-color:#cbd5e1}
 .vgg-table thead tr.vgg-date th.nonwork,
-.vgg-table thead tr.vgg-weekday th.nonwork{color:#f04e64!important;font-weight:900}
-.vgg-table thead tr.vgg-date th.excel-week-light.nonwork,
-.vgg-table thead tr.vgg-weekday th.excel-week-light.nonwork{color:#c52442!important}
+.vgg-table thead tr.vgg-weekday th.nonwork{color:#e11d48!important;font-weight:800}
 .vgg-table thead tr.vgg-date th.weekend-header,
-.vgg-table thead tr.vgg-weekday th.weekend-header{background:#fbe4e7!important;color:#b91c39!important;font-weight:900}
+.vgg-table thead tr.vgg-weekday th.weekend-header{background:#fff1f2!important;color:#be123c!important;font-weight:800}
 .vgg-table thead tr.vgg-date th.holiday-header,
-.vgg-table thead tr.vgg-weekday th.holiday-header{background:#f7c7d1!important;color:#aa1230!important}
-.vgg-table tbody td.vgg-day.weekend.holiday:not(.scheduled){background:#fbe4e7!important}
+.vgg-table thead tr.vgg-weekday th.holiday-header{background:#ffe4e6!important;color:#9f1239!important}
 .vgg-table thead tr.vgg-date th.today-header,
-.vgg-table thead tr.vgg-weekday th.today-header{background:#246fac!important;color:#fff!important;box-shadow:inset 2px 0 #50beff,inset -2px 0 #50beff}
-.vgg-table tbody td.vgg-day.holiday:not(.scheduled){background:#f7c7d1!important}
-.vgg-table tbody tr.vgg-activity td.vgg-day.day-off:not(.scheduled),
-.vgg-table tbody tr.vgg-activity:hover td.vgg-day.day-off:not(.scheduled){background:#e7dbff!important;box-shadow:inset 0 0 0 1px #a58bcf}
+.vgg-table thead tr.vgg-weekday th.today-header{background:#2563eb!important;color:#ffffff!important;box-shadow:inset 0 -2px 0 #93c5fd}
 
-.vgg-table td.vgg-day.scheduled .vgg-cell-percent{display:flex;align-items:center;justify-content:center;width:100%;height:100%;font:750 7.8px/1 'JetBrains Mono',Arial,sans-serif;color:#fff;letter-spacing:-.25px;font-variant-numeric:tabular-nums}
-.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled{background:#5682bd!important}
-.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.done{background:#2d9c89!important}
-.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.partial{background:linear-gradient(90deg,#2d9c89 0%,#2d9c89 var(--vgg-real-fill),#5682bd var(--vgg-real-fill),#5682bd 100%)!important}
-.vgg-table tbody tr.vgg-activity td.vgg-day.scheduled.late{background:#d39843!important}
-.vgg-table tbody tr.vgg-group-row td.vgg-day:not(.scheduled),
-.vgg-table tbody tr.vgg-group-row td.vgg-day.weekend:not(.scheduled),
-.vgg-table tbody tr.vgg-group-row td.vgg-day.holiday:not(.scheduled),
-.vgg-table tbody tr.vgg-group-row td.vgg-day.day-off:not(.scheduled){background:#ffffff!important;box-shadow:none!important}
-.vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{background:#1b4269!important;box-shadow:inset 0 0 0 1px #143450}
-.vgg-table tbody tr.vgg-activity:hover td.vgg-day.scheduled{filter:brightness(1.1)}
+/* Días no laborables sutiles (no compiten con las barras) */
+.vgg-table tbody td.vgg-day.weekend{background:#fff5f6!important}
+.vgg-table tbody td.vgg-day.holiday{background:#ffe4e6!important}
+.vgg-table tbody tr.vgg-activity td.vgg-day.day-off,
+.vgg-table tbody tr.vgg-activity:hover td.vgg-day.day-off{background:#f3ecff!important}
+.vgg-table tbody tr.vgg-group-row td.vgg-day.weekend,
+.vgg-table tbody tr.vgg-group-row td.vgg-day.holiday,
+.vgg-table tbody tr.vgg-group-row td.vgg-day.day-off{background:#f1f5f9!important}
+
+/* Barras Gantt modernas y continuas (sin cortes cuadriculados) */
+.vgg-table tbody td.vgg-day.scheduled{border-right-color:transparent}
+.vgg-table tbody td.vgg-day.scheduled.bar-end{border-right-color:#edf2f7}
+.vgg-bar-seg{
+  display:flex;align-items:center;justify-content:center;
+  height:20px;margin:0;width:100%;
+  background:linear-gradient(180deg,#4f83cc 0%,#3b6db5 100%);
+  box-shadow:0 1px 2px rgba(15,23,42,.18);
+  border-right:1px solid rgba(255,255,255,.22);
+  transition:filter .15s ease,transform .15s ease
+}
+.vgg-day.bar-start .vgg-bar-seg{border-top-left-radius:6px;border-bottom-left-radius:6px;margin-left:2px;width:calc(100% - 2px)}
+.vgg-day.bar-end .vgg-bar-seg{border-top-right-radius:6px;border-bottom-right-radius:6px;border-right:0;margin-right:2px;width:calc(100% - 2px)}
+.vgg-day.bar-start.bar-end .vgg-bar-seg{margin-left:2px;margin-right:2px;width:calc(100% - 4px)}
+
+.vgg-bar-seg.done{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%)}
+.vgg-bar-seg.partial{background:linear-gradient(90deg,#10b981 0%,#10b981 var(--vgg-real-fill),#4679c2 var(--vgg-real-fill),#4679c2 100%)}
+.vgg-bar-seg.late{background:linear-gradient(180deg,#e5a13e 0%,#c98324 100%)}
+.vgg-table tbody tr.vgg-activity:hover .vgg-bar-seg{filter:brightness(1.07)}
+.vgg-cell-percent{font:700 8.5px/1 'JetBrains Mono',Inter,sans-serif;color:#ffffff;letter-spacing:-.2px;font-variant-numeric:tabular-nums;text-shadow:0 1px 1px rgba(0,0,0,.22)}
+
+/* Barra Resumen de Grupo estilizada (delgada con remates estilo MS Project) */
+.vgg-group-bar{
+  display:block;height:8px;width:100%;
+  background:linear-gradient(180deg,#1e3a5f 0%,#132945 100%);
+  position:relative
+}
+.vgg-day.bar-start .vgg-group-bar{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:2px;width:calc(100% - 2px)}
+.vgg-day.bar-end .vgg-group-bar{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:2px;width:calc(100% - 2px)}
+.vgg-day.bar-start.bar-end .vgg-group-bar{margin-left:2px;margin-right:2px;width:calc(100% - 4px)}
+.vgg-day.bar-start .vgg-group-bar::before{content:"";position:absolute;left:0;bottom:-4px;width:0;height:0;border-left:5px solid #132945;border-bottom:4px solid transparent}
+.vgg-day.bar-end .vgg-group-bar::after{content:"";position:absolute;right:0;bottom:-4px;width:0;height:0;border-right:5px solid #132945;border-bottom:4px solid transparent}
+
 .vgg-table .vgg-title{overflow:hidden;text-overflow:ellipsis}
 
 /* Mejora #6: Fila seleccionada, Predecesora y Sucesora */
-.vgg-table tbody tr.vgg-activity.vgg-selected td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#dcebff!important}
+.vgg-table tbody tr.vgg-activity.vgg-selected td:not(.weekend):not(.holiday):not(.day-off){background:#dbeafe!important}
 .vgg-table tbody tr.vgg-activity.vgg-selected td:first-child{box-shadow:inset 4px 0 0 #2563eb}
-.vgg-table tbody tr.vgg-activity.vgg-predecessor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#fef3c7!important}
+.vgg-table tbody tr.vgg-activity.vgg-predecessor td:not(.weekend):not(.holiday):not(.day-off){background:#fef3c7!important}
 .vgg-table tbody tr.vgg-activity.vgg-predecessor td:first-child{box-shadow:inset 4px 0 0 #f59e0b}
-.vgg-table tbody tr.vgg-activity.vgg-successor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#cffafe!important}
+.vgg-table tbody tr.vgg-activity.vgg-successor td:not(.weekend):not(.holiday):not(.day-off){background:#cffafe!important}
 .vgg-table tbody tr.vgg-activity.vgg-successor td:first-child{box-shadow:inset 4px 0 0 #06b6d4}
 
 /* Mejora #5: Modo Oscuro opcional para la grilla Gantt (celdas blancas clásicas por defecto) */
 #bim-gantt-modal.vgg-dark-table .vgg-scroll{background:#0b1120}
 #bim-gantt-modal.vgg-dark-table .vgg-table{background:#0f172a;color:#e2e8f0}
 #bim-gantt-modal.vgg-dark-table .vgg-table th,
-#bim-gantt-modal.vgg-dark-table .vgg-table td{border-bottom-color:#1e293b;border-right-color:#243249}
+#bim-gantt-modal.vgg-dark-table .vgg-table td{border-bottom-color:#1e293b;border-right-color:#1e293b}
 #bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity td{background:#0f172a}
 #bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-row-alt td{background:#131d31}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity:hover td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#1c2a44!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity:hover td:not(.weekend):not(.holiday):not(.day-off){background:#1c2a44!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tr.vgg-group-row td{background:#17253f;color:#e2e8f0;border-color:#263959}
+#bim-gantt-modal.vgg-dark-table .vgg-table tr.vgg-group-row .vgg-row-badge{background:rgba(255,255,255,.14);color:#cbd5e1}
+#bim-gantt-modal.vgg-dark-table .vgg-group-bar{background:linear-gradient(180deg,#60a5fa 0%,#3b82f6 100%)}
+#bim-gantt-modal.vgg-dark-table .vgg-day.bar-start .vgg-group-bar::before{border-left-color:#3b82f6}
+#bim-gantt-modal.vgg-dark-table .vgg-day.bar-end .vgg-group-bar::after{border-right-color:#3b82f6}
 #bim-gantt-modal.vgg-dark-table .vgg-table .vgg-id{color:#93c5fd}
 #bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-week th.excel-week-light,
 #bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-date th.excel-week-light,
-#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-weekday th.excel-week-light{background:#23324d;color:#e2e8f0}
+#bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-weekday th.excel-week-light{background:#23324d;color:#e2e8f0;border-color:#2c3e5e}
 #bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-date th.weekend-header,
 #bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-weekday th.weekend-header{background:#3b1824!important;color:#fda4af!important}
 #bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-date th.holiday-header,
 #bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-weekday th.holiday-header{background:#4c1d2e!important;color:#fecdd3!important}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.weekend:not(.scheduled),
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.holiday:not(.scheduled){background:#271622!important}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity td.vgg-day.day-off:not(.scheduled){background:#261d3f!important;box-shadow:inset 0 0 0 1px #6d52a8}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-group-row td.vgg-day:not(.scheduled){background:#132136!important}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{background:#295787!important}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-selected td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#1b3256!important}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-predecessor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(245,158,11,.18)!important}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-successor td:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(6,182,212,.16)!important}
-#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity td.vgg-day.today:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:rgba(37,99,235,.22)!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.weekend,
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.holiday{background:#21141e!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity td.vgg-day.day-off{background:#221a38!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-group-row td.vgg-day.weekend,
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-group-row td.vgg-day.holiday,
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-group-row td.vgg-day.day-off{background:#17253f!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-selected td:not(.weekend):not(.holiday):not(.day-off){background:#1b3256!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-predecessor td:not(.weekend):not(.holiday):not(.day-off){background:rgba(245,158,11,.18)!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity.vgg-successor td:not(.weekend):not(.holiday):not(.day-off){background:rgba(6,182,212,.16)!important}
 #bim-gantt-modal.vgg-dark-table .vgg-empty-state{background:#0b1120;color:#cbd5e1}
 #bim-gantt-modal.vgg-dark-table .vgg-empty-state strong{color:#f8fafc}
 #bim-gantt-modal.vgg-dark-table .vgg-empty-state p{color:#94a3b8}
 
-/* Fronteras semanales y columna Hoy */
+/* Fronteras semanales limpias y línea vertical continua para Hoy */
 .vgg-table thead .vgg-week th.vgg-week-start,
 .vgg-table thead .vgg-date th.vgg-week-start,
 .vgg-table thead .vgg-weekday th.vgg-week-start,
-.vgg-table tbody td.vgg-day.vgg-week-start{border-left:2px solid #617f9f!important}
-.vgg-table tbody tr.vgg-activity td.vgg-day.today:not(.scheduled):not(.weekend):not(.holiday):not(.day-off){background:#e3f1ff!important}
-.vgg-table tbody td.vgg-day.today{box-shadow:inset 2px 0 #1685d2,inset -2px 0 #1685d2!important}
-.vgg-table tbody tr.vgg-activity:focus-visible{outline:2px solid #208ee1;outline-offset:-2px}
+.vgg-table tbody td.vgg-day.vgg-week-start{border-left:1.5px solid #94a3b8!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.vgg-week-start{border-left-color:#334155!important}
+.vgg-table tbody td.vgg-day.today{background:rgba(37,99,235,.06)!important;box-shadow:inset 2px 0 0 #2563eb!important}
+#bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.today{background:rgba(59,130,246,.12)!important;box-shadow:inset 2px 0 0 #60a5fa!important}
+.vgg-table tbody tr.vgg-activity:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
 
 /* Panel inferior accionable (#4 y #6) */
 .vgg-detail{border-top:1px solid var(--border-base,#334155);padding:10px 18px;font-size:11.5px;line-height:1.5;min-height:48px;max-height:110px;overflow:auto;color:var(--ink-secondary,#cbd5e1);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
@@ -459,7 +493,7 @@ function weekHeaders(days){
   return chunks.map((c,i) => '<th class="'+c[2]+(i?' vgg-week-start':'')+'" colspan="'+c[1]+'">'+c[0]+'</th>').join('');
 }
 
-function dayBar(row, d, state){
+function dayBar(row, d, state, days, idx){
   const info = dayInfo(d);
   const today = d === (typeof todayString==='function' ? todayString() : new Date().toISOString().slice(0,10));
   const personalLeave = (S.nonWorkingByOwner || BASE_SOURCE.nonWorkingByOwner)?.[row.owner||'']?.[d] || '';
@@ -469,19 +503,25 @@ function dayBar(row, d, state){
     (personalLeave?' day-off':'')+(today?' today':'')+boundary;
   if(row.kind === 'group'){
     if(d < row.start || d > row.end) return '<td class="'+cls+'"'+dateAttr+'></td>';
-    return '<td class="'+cls+' scheduled group"'+dateAttr+'></td>';
+    const isStart = idx === 0 || days[idx-1] < row.start;
+    const isEnd = idx === days.length - 1 || days[idx+1] > row.end;
+    const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
+    return '<td class="'+cls+' scheduled group'+segCls+'"'+dateAttr+'><span class="vgg-group-bar"></span></td>';
   }
   const value = row.percentByDay?.[String(Number(d.slice(8,10)))] || 0;
   if(!value) return '<td class="'+cls+'"'+dateAttr+'></td>';
+  const prevHas = idx > 0 && Boolean(row.percentByDay?.[String(Number(days[idx-1].slice(8,10)))]);
+  const nextHas = idx < days.length - 1 && Boolean(row.percentByDay?.[String(Number(days[idx+1].slice(8,10)))]);
+  const segCls = (!prevHas ? ' bar-start' : '') + (!nextHas ? ' bar-end' : '');
   const fill = realFillOfGanttDay(row, d, state.actual);
   const status = fill >= 99.999 ? (state.late && state.actual>=100 ? ' late' : ' done')
     : fill > .001 ? ' partial' : '';
   const style = status===' partial' ? ' style="--vgg-real-fill:'+Number(fill.toFixed(4))+'%"' : '';
   const planned = Number((value*100).toFixed(2));
   const realPart = Number((planned*fill/100).toFixed(2));
-  const tip = 'Programado: '+planned+' % · Ejecutado: '+realPart+' % del total · '+Number(fill.toFixed(1))+' % de esta celda';
-  return '<td class="'+cls+' scheduled'+status+'"'+dateAttr+style+' title="'+escapeText(tip)+'">'+
-    '<span class="vgg-cell-percent">'+excelPercent(value)+'</span></td>';
+  const tip = (row.excelId||row.id)+' · '+readable(d)+' · Programado: '+planned+' % · Ejecutado: '+realPart+' % ('+Number(fill.toFixed(1))+' % del día)';
+  return '<td class="'+cls+' scheduled'+segCls+'"'+dateAttr+' title="'+escapeText(tip)+'">'+
+    '<div class="vgg-bar-seg'+status+'"'+style+'><span class="vgg-cell-percent">'+excelPercent(value)+'</span></div></td>';
 }
 
 /* Mejora #1: Cálculo dinámico de columnas visibles y offsets sticky */
@@ -631,7 +671,7 @@ function render(){
         start:row.start, end:row.end, predecessor:'', dependency:'', lag:'' };
       body += '<tr class="vgg-group-row" data-vgg-toggle-group="'+escapeText(row._groupKey)+'" title="Clic para contraer o expandir">'+
         rowMeta(copy, displayed, { collapsed:isCol, count:row._count }) +
-        days.map(d => dayBar(row, d, { state:'group' })).join('') + '</tr>';
+        days.map((d, idx) => dayBar(row, d, { state:'group' }, days, idx)).join('') + '</tr>';
       continue;
     }
     const state = taskState(row);
@@ -639,7 +679,7 @@ function render(){
     body += '<tr class="vgg-activity'+((activityIndex++%2)?' vgg-row-alt':'')+depCls+
       '" data-gantt-activity="'+escapeText(row.id)+'" tabindex="0">'+
       rowMeta({ ...row, type:row.type||'Act.' }, displayed) +
-      days.map(d => dayBar(row, d, state)).join('') + '</tr>';
+      days.map((d, idx) => dayBar(row, d, state, days, idx)).join('') + '</tr>';
   }
 
   const node = document.getElementById('vgg-table');
