@@ -119,17 +119,18 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table tbody tr.vgg-activity:hover .vgg-bar-seg{filter:brightness(1.07)}
 .vgg-cell-percent{font:700 8.5px/1 'JetBrains Mono',Inter,sans-serif;color:#ffffff;letter-spacing:-.2px;font-variant-numeric:tabular-nums;text-shadow:0 1px 1px rgba(0,0,0,.22)}
 
-/* Barra Resumen de Grupo estilizada (delgada con remates estilo MS Project) */
+/* Barra Resumen de Grupo fina y continua (estilo MS Project / Primavera) */
+.vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{overflow:visible}
 .vgg-group-bar{
-  display:block;height:8px;width:100%;
-  background:linear-gradient(180deg,#1e3a5f 0%,#132945 100%);
+  display:block;height:4px;width:calc(100% + 1px);margin-right:-1px;
+  background:#1e3a5f;
   position:relative
 }
-.vgg-day.bar-start .vgg-group-bar{border-top-left-radius:4px;border-bottom-left-radius:4px;margin-left:2px;width:calc(100% - 2px)}
-.vgg-day.bar-end .vgg-group-bar{border-top-right-radius:4px;border-bottom-right-radius:4px;margin-right:2px;width:calc(100% - 2px)}
-.vgg-day.bar-start.bar-end .vgg-group-bar{margin-left:2px;margin-right:2px;width:calc(100% - 4px)}
-.vgg-day.bar-start .vgg-group-bar::before{content:"";position:absolute;left:0;bottom:-4px;width:0;height:0;border-left:5px solid #132945;border-bottom:4px solid transparent}
-.vgg-day.bar-end .vgg-group-bar::after{content:"";position:absolute;right:0;bottom:-4px;width:0;height:0;border-right:5px solid #132945;border-bottom:4px solid transparent}
+.vgg-day.bar-start .vgg-group-bar{border-top-left-radius:2px;margin-left:3px;width:calc(100% - 2px)}
+.vgg-day.bar-end .vgg-group-bar{border-top-right-radius:2px;margin-right:3px;width:calc(100% - 3px)}
+.vgg-day.bar-start.bar-end .vgg-group-bar{margin-left:3px;margin-right:3px;width:calc(100% - 6px)}
+.vgg-day.bar-start .vgg-group-bar::before{content:"";position:absolute;left:0;top:4px;width:0;height:0;border-left:4px solid #1e3a5f;border-bottom:4px solid transparent}
+.vgg-day.bar-end .vgg-group-bar::after{content:"";position:absolute;right:0;top:4px;width:0;height:0;border-right:4px solid #1e3a5f;border-bottom:4px solid transparent}
 
 .vgg-table .vgg-title{overflow:hidden;text-overflow:ellipsis}
 
