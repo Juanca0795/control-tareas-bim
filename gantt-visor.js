@@ -124,6 +124,7 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start) .vgg-bar-seg{margin-left:-1px;width:calc(100% + 2px)}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled.bar-end:not(.bar-start) .vgg-bar-seg{width:calc(100% - 1px)}
 .vgg-table tbody tr.vgg-activity:hover .vgg-bar-seg{filter:brightness(1.07)}
+.vgg-cell-percent{font:700 8.5px/1 'JetBrains Mono',Inter,sans-serif;color:#ffffff;letter-spacing:-.2px;font-variant-numeric:tabular-nums;text-shadow:0 1px 2px rgba(0,0,0,.35);pointer-events:none;white-space:nowrap}
 
 /* Barra Resumen ultra fina (2px) */
 .vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{overflow:visible}
@@ -555,8 +556,23 @@ function dayBar(row, d, state, days, idx){
   const planned = Number((value*100).toFixed(2));
   const realPart = Number((planned*fill/100).toFixed(2));
   const tip = (row.excelId||row.id)+' · '+readable(d)+' · Programado: '+planned+' % · Ejecutado: '+realPart+' % ('+Number(fill.toFixed(1))+' % del día)';
+  const isAdvancing = Number.isFinite(state.actual) && state.actual > 0.001 && state.actual < 99.999;
+  let pctLabel = '';
+  if(isAdvancing){
+    let frontierDate = '';
+    for(const dayItem of days){
+      const vDay = row.percentByDay?.[String(Number(dayItem.slice(8,10)))] || 0;
+      if(vDay > 0 && realFillOfGanttDay(row, dayItem, state.actual) > 0.001){
+        frontierDate = dayItem;
+      }
+    }
+    if(d === frontierDate){
+      const actualTxt = state.actual < 10 ? Number(state.actual.toFixed(1)) : Math.round(state.actual);
+      pctLabel = '<span class="vgg-cell-percent">' + actualTxt + '%</span>';
+    }
+  }
   return '<td class="'+cls+' scheduled'+segCls+'"'+dateAttr+' title="'+escapeText(tip)+'">'+
-    '<div class="vgg-bar-seg'+status+'"'+style+'></div></td>';
+    '<div class="vgg-bar-seg'+status+'"'+style+'>'+pctLabel+'</div></td>';
 }
 
 function visibleColumns(){
