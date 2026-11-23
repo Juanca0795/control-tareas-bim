@@ -23,7 +23,7 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-header-actions button[data-vgg-action="restore-excel"]{border-color:rgba(245,158,11,.42);color:#fbbf24}
 .vgg-header-actions button[hidden]{display:none!important}
 
-.vgg-controls{padding:9px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-base,#253048);position:relative;z-index:3;overflow:visible}
+.vgg-controls{padding:9px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-base,#253048);position:relative;z-index:40;overflow:visible}
 .vgg-controls label{font-size:11px;font-weight:500;color:var(--ink-secondary,#cbd5e1);display:inline-flex;gap:5px;align-items:center}
 .vgg-controls select,.vgg-controls input[type=search]{max-width:168px;height:31px;border:1px solid var(--border-base,#334155);border-radius:8px;padding:4px 8px;background:var(--bg-subtle,#1e293b);font-size:11px;color:var(--ink-primary,#f8fafc);transition:border-color .15s,box-shadow .15s}
 .vgg-controls input[type=search]{width:165px}
@@ -38,7 +38,7 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-count{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--ink-secondary,#94a3b8)}
 
 /* Scroll y tabla: grilla Gantt limpia estilo ejecutivo (celdas blancas por defecto) */
-.vgg-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#f8fafc;scrollbar-width:thin;position:relative}
+.vgg-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#f8fafc;scrollbar-width:thin;position:relative;z-index:1}
 .vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Inter,Arial,sans-serif;font-size:11px;color:#1e293b;background:#fff}
 .vgg-table th,.vgg-table td{border-bottom:1px solid #e2e8f0;border-right:1px solid #edf2f7;padding:4px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:30px}
 
