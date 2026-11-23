@@ -5609,22 +5609,89 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 }
 
 /* ============================================================================
-   INTERFAZ OPCIÓN 1 — COMMAND RAIL (Estilo Figma / Linear) · AEC OBSIDIAN
+   INTERFAZ OPCIÓN 2 — BENTO EJECUTIVO (Glass) · AEC OBSIDIAN ORIGINAL
    Conserva 100% de colores originales, vidrio translúcido y lógica Supabase.
    ============================================================================ */
 
-/* 1. Superficies vidrio translúcido en colores AEC Obsidian originales */
+/* 1. Barra superior flotante tipo cápsula de cristal */
+@media (min-width: 900px) {
+  .sidebar {
+    top: 10px !important;
+    width: calc(100% - clamp(28px, 4.4vw, 72px)) !important;
+    max-width: 1620px;
+    margin: 12px auto 0 !important;
+    height: 64px !important;
+    min-height: 64px !important;
+    padding: 0 20px !important;
+    border: 1px solid var(--border-base) !important;
+    border-radius: 16px !important;
+    background: rgba(13, 19, 32, 0.78) !important;
+    backdrop-filter: blur(20px) saturate(140%) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(140%) !important;
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(148, 197, 255, 0.10) !important;
+  }
+
+  html[data-theme="light"] .sidebar {
+    background: rgba(255, 255, 255, 0.84) !important;
+    box-shadow: 0 8px 26px rgba(22, 34, 53, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  }
+
+  .sidebar nav[role="tablist"] {
+    border-radius: 999px !important;
+    padding: 4px !important;
+    background: rgba(24, 34, 53, 0.72) !important;
+    border: 1px solid var(--border-base) !important;
+  }
+
+  html[data-theme="light"] .sidebar nav[role="tablist"] {
+    background: rgba(236, 241, 246, 0.85) !important;
+  }
+
+  .sidebar nav .nav-link,
+  .sidebar nav .nav-link.active,
+  .sidebar nav .bim-nav-indicator {
+    border-radius: 999px !important;
+  }
+
+  .sidebar nav.bim-nav-motion-ready .nav-link.active::after {
+    left: 16px;
+    right: 16px;
+    bottom: 3px;
+  }
+
+  .sidebar .top-actions .btn.primary {
+    border-radius: 999px !important;
+    padding: 0 16px !important;
+  }
+
+  .sidebar .top-actions .icon-btn {
+    border-radius: 999px !important;
+  }
+
+  .main {
+    padding-top: 20px !important;
+  }
+}
+
+/* 2. Tarjetas Bento de vidrio translúcido (colores AEC Obsidian originales) */
 .card,
 .chart-card,
 .weekly-chart-card,
 .dash-filters,
 .drill-card {
-  background: rgba(17, 23, 38, 0.74);
-  backdrop-filter: blur(14px) saturate(130%);
-  -webkit-backdrop-filter: blur(14px) saturate(130%);
+  background: rgba(17, 23, 38, 0.72);
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
   border: 1px solid var(--border-base);
-  border-radius: 12px;
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(148, 197, 255, 0.08);
+  border-radius: 16px !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(148, 197, 255, 0.09) !important;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover,
+.chart-card:hover,
+.weekly-chart-card:hover {
+  border-color: var(--border-strong);
 }
 
 html[data-theme="light"] .card,
@@ -5633,308 +5700,104 @@ html[data-theme="light"] .weekly-chart-card,
 html[data-theme="light"] .dash-filters,
 html[data-theme="light"] .drill-card {
   background: rgba(255, 255, 255, 0.84);
-  box-shadow: 0 4px 18px rgba(22, 34, 53, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 22px rgba(22, 34, 53, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
 }
 
-/* Popover de Desglose por Área: mantiene colores y suma desenfoque real */
+/* 3. KPIs Bento de cristal translúcido */
+#dashboard-view .stat-grid,
+#tasks-view .stat-grid {
+  gap: 14px !important;
+  margin-bottom: 18px !important;
+}
+
+#dashboard-view .stat.kpi-reference,
+#tasks-view .stat.kpi-reference,
+.weekly-kpi {
+  background: rgba(17, 23, 38, 0.74) !important;
+  backdrop-filter: blur(16px) saturate(135%);
+  -webkit-backdrop-filter: blur(16px) saturate(135%);
+  border: 1px solid var(--border-base) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(148, 197, 255, 0.09) !important;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+html[data-theme="light"] #dashboard-view .stat.kpi-reference,
+html[data-theme="light"] #tasks-view .stat.kpi-reference,
+html[data-theme="light"] .weekly-kpi {
+  background: rgba(255, 255, 255, 0.86) !important;
+  box-shadow: 0 4px 16px rgba(22, 34, 53, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+}
+
+#dashboard-view .stat.kpi-reference.stat-action:hover,
+#tasks-view .stat.kpi-reference.stat-action:hover {
+  transform: translateY(-2px) !important;
+  border-color: var(--kpi-color) !important;
+  box-shadow: 0 14px 32px rgba(0, 0, 0, 0.30), inset 0 1px 0 rgba(255, 255, 255, 0.14) !important;
+}
+
+/* Destaque sutil en la tarjeta Bento de Apoyo en otras áreas */
+#dashboard-view .stat.kpi-support,
+#tasks-view .stat.kpi-support {
+  border-color: rgba(43, 213, 198, 0.30) !important;
+  background:
+    radial-gradient(ellipse 95% 85% at 85% 0%, rgba(43, 213, 198, 0.10), transparent 70%),
+    rgba(17, 23, 38, 0.76) !important;
+}
+
+html[data-theme="light"] #dashboard-view .stat.kpi-support,
+html[data-theme="light"] #tasks-view .stat.kpi-support {
+  background:
+    radial-gradient(ellipse 95% 85% at 85% 0%, rgba(20, 125, 116, 0.08), transparent 70%),
+    rgba(255, 255, 255, 0.88) !important;
+}
+
+/* Popover de Desglose por Área: cristal translúcido con desenfoque real */
 :is(#dashboard-view, #tasks-view) .support-area-popover {
-  backdrop-filter: blur(18px) saturate(140%) !important;
-  -webkit-backdrop-filter: blur(18px) saturate(140%) !important;
+  border-radius: 14px !important;
+  backdrop-filter: blur(18px) saturate(145%) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(145%) !important;
 }
 
-/* 2. Layout Command Rail Izquierdo en escritorio (>= 1025px) */
-@media (min-width: 1025px) {
-  body {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: stretch !important;
-    min-height: 100vh;
-  }
-
-  .sidebar {
-    position: sticky !important;
-    top: 0 !important;
-    height: 100vh !important;
-    min-height: 100vh !important;
-    width: 224px !important;
-    flex: 0 0 224px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    justify-content: flex-start !important;
-    gap: 12px !important;
-    padding: 18px 14px 16px !important;
-    background: rgba(9, 13, 22, 0.88) !important;
-    backdrop-filter: blur(18px) saturate(135%) !important;
-    -webkit-backdrop-filter: blur(18px) saturate(135%) !important;
-    border-bottom: 0 !important;
-    border-right: 1px solid var(--border-base) !important;
-    box-shadow: 6px 0 28px rgba(0, 0, 0, 0.25) !important;
-    overflow-y: auto;
-    overflow-x: hidden;
-  }
-
-  html[data-theme="light"] .sidebar {
-    background: rgba(255, 255, 255, 0.90) !important;
-    box-shadow: 4px 0 20px rgba(22, 34, 53, 0.06) !important;
-  }
-
-  .sidebar .brand {
-    padding: 0 4px 14px !important;
-    border-bottom: 1px solid var(--border-base) !important;
-    gap: 10px !important;
-  }
-
-  .sidebar .brand-mark {
-    width: 54px !important;
-    height: 28px !important;
-    flex: 0 0 auto;
-  }
-
-  .sidebar .nav-name {
-    display: block !important;
-    font-size: 9.5px;
-    font-weight: 700;
-    letter-spacing: 0.14em;
-    color: var(--ink-muted);
-    padding: 2px 6px 0;
-    margin: 0;
-  }
-
-  /* Subtabs de Control Semanal integrados en el riel */
-  .sidebar #weekly-subtabs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 4px;
-    padding: 3px;
-    border-radius: 9px;
-    background: var(--bg-subtle);
-    border: 1px solid var(--border-base);
-    margin: 0;
-  }
-  .sidebar #weekly-subtabs.hidden {
-    display: none !important;
-  }
-  .sidebar #weekly-subtabs .weekly-subtab {
-    justify-content: center;
-    padding: 6px 6px;
-    font-size: 10px;
-    border-radius: 6px;
-  }
-
-  /* Navegación vertical limpia estilo Figma / Linear */
-  .sidebar nav[role="tablist"] {
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    gap: 5px !important;
-    background: transparent !important;
-    border: 0 !important;
-    padding: 0 !important;
-    border-radius: 0 !important;
-    width: 100% !important;
-  }
-
-  .sidebar nav .bim-nav-indicator {
-    display: none !important;
-  }
-
-  .sidebar nav .nav-link,
-  .sidebar nav .nav-link.active {
-    width: 100% !important;
-    justify-content: flex-start !important;
-    gap: 10px !important;
-    padding: 9px 11px !important;
-    min-height: 36px !important;
-    border-radius: 9px !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    border: 1px solid transparent !important;
-    background: transparent !important;
-    color: var(--ink-secondary) !important;
-    position: relative;
-  }
-
-  .sidebar nav .nav-link:hover {
-    background: rgba(28, 42, 64, 0.55) !important;
-    color: var(--ink-primary) !important;
-    border-color: rgba(93, 167, 255, 0.16) !important;
-  }
-
-  html[data-theme="light"] .sidebar nav .nav-link:hover {
-    background: var(--bg-hover) !important;
-  }
-
-  .sidebar nav .nav-link.active,
-  .sidebar nav.bim-nav-motion-ready .nav-link.active,
-  .sidebar nav.bim-nav-motion-ready .nav-link.active:hover {
-    background: rgba(93, 167, 255, 0.13) !important;
-    border-color: rgba(93, 167, 255, 0.36) !important;
-    color: var(--ink-primary) !important;
-    box-shadow: inset 0 1px 0 rgba(148, 197, 255, 0.14) !important;
-  }
-
-  html[data-theme="light"] .sidebar nav .nav-link.active,
-  html[data-theme="light"] .sidebar nav.bim-nav-motion-ready .nav-link.active {
-    background: rgba(46, 115, 220, 0.10) !important;
-    border-color: rgba(46, 115, 220, 0.32) !important;
-  }
-
-  .sidebar nav .nav-link.active::before {
-    content: "" !important;
-    display: block !important;
-    position: absolute;
-    left: -1px;
-    top: 8px;
-    bottom: 8px;
-    width: 3px !important;
-    height: auto !important;
-    border-radius: 0 3px 3px 0 !important;
-    background: var(--accent-blue) !important;
-    box-shadow: 0 0 10px rgba(93, 167, 255, 0.65) !important;
-  }
-
-  .sidebar nav.bim-nav-motion-ready .nav-link.active::after {
-    display: none !important;
-  }
-
-  /* Botones utilitarios dentro del riel (Gantt, Exportar PPT, Backup) */
-  .sidebar #header-gantt-viewer-launch,
-  .sidebar #weekly-ppt-launch,
-  .sidebar #weekly-backup-launch {
-    width: 100% !important;
-    justify-content: flex-start !important;
-    order: 10;
-    margin: 2px 0 0 !important;
-    padding: 8px 11px !important;
-    min-height: 34px !important;
-    border-radius: 9px !important;
-    font-size: 11.5px !important;
-  }
-
-  .sidebar #header-gantt-viewer-launch {
-    margin-top: 10px !important;
-    border-top-style: solid;
-  }
-
-  /* Bloque inferior de acciones en el riel */
-  .sidebar .top-actions {
-    margin-top: auto !important;
-    padding-top: 14px !important;
-    border-top: 1px solid var(--border-base);
+/* 4. Grilla Bento Asimétrica de 12 columnas en Dashboard (>= 1100px) */
+@media (min-width: 1100px) {
+  #dashboard-view .executive-grid {
     display: grid !important;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px !important;
-    width: 100%;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+    align-items: stretch;
   }
 
-  .sidebar .top-actions .btn.primary {
-    grid-column: 1 / -1;
-    width: 100%;
-    justify-content: center;
-    order: -1;
-    height: 36px;
+  #dashboard-view .executive-grid .radar-card {
+    grid-column: span 5 !important;
+    background:
+      radial-gradient(ellipse 90% 70% at 100% 0%, rgba(93, 167, 255, 0.08), transparent 65%),
+      rgba(17, 23, 38, 0.76) !important;
   }
 
-  .sidebar .top-actions .icon-btn {
-    width: 100% !important;
-    height: 34px !important;
-    justify-content: center;
+  html[data-theme="light"] #dashboard-view .executive-grid .radar-card {
+    background:
+      radial-gradient(ellipse 90% 70% at 100% 0%, rgba(46, 115, 220, 0.06), transparent 65%),
+      rgba(255, 255, 255, 0.88) !important;
   }
 
-  .sidebar .side-bottom {
-    flex: 0 0 auto !important;
-    text-align: left !important;
-    padding: 10px 6px 0 !important;
-    border-top: 1px solid var(--border-base) !important;
+  #dashboard-view .executive-grid .attention-card {
+    grid-column: span 7 !important;
   }
 
-  .sidebar .side-bottom strong {
-    justify-content: flex-start !important;
+  #dashboard-view .executive-grid .owner-card {
+    grid-column: span 5 !important;
   }
 
-  /* Área principal aprovechando todo el ancho y alto ganado */
-  .main {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    max-width: none !important;
-    padding: 20px clamp(18px, 2.2vw, 32px) 38px !important;
-  }
-
-  .topbar {
-    padding: 0 0 16px !important;
-    margin-bottom: 16px !important;
+  #dashboard-view .executive-grid .pulse-card {
+    grid-column: span 7 !important;
   }
 }
 
-/* 3. Banda continua de 6 KPIs tipo Cockpit (Opción 1) en escritorio ancho */
-@media (min-width: 1360px) {
-  #dashboard-view .stat-grid,
-  #tasks-view .stat-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
-    gap: 0 !important;
-    border: 1px solid var(--border-base);
-    border-radius: 13px;
-    background: rgba(17, 23, 38, 0.72);
-    backdrop-filter: blur(14px) saturate(130%);
-    -webkit-backdrop-filter: blur(14px) saturate(130%);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(148, 197, 255, 0.08);
-    overflow: visible !important;
-    margin-bottom: 18px !important;
-  }
-
-  html[data-theme="light"] #dashboard-view .stat-grid,
-  html[data-theme="light"] #tasks-view .stat-grid {
-    background: rgba(255, 255, 255, 0.86);
-    box-shadow: 0 4px 18px rgba(22, 34, 53, 0.06);
-  }
-
-  #dashboard-view .stat.kpi-reference,
-  #tasks-view .stat.kpi-reference {
-    border: 0 !important;
-    border-right: 1px solid var(--border-base) !important;
-    border-radius: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    min-height: 128px !important;
-    padding: 14px 15px 12px !important;
-    transition: background-color 0.16s ease, box-shadow 0.16s ease;
-  }
-
-  #dashboard-view .stat.kpi-reference:first-child,
-  #tasks-view .stat.kpi-reference:first-child {
-    border-top-left-radius: 12px !important;
-    border-bottom-left-radius: 12px !important;
-  }
-
-  #dashboard-view .stat.kpi-reference:last-child,
-  #tasks-view .stat.kpi-reference:last-child {
-    border-right: 0 !important;
-    border-top-right-radius: 12px !important;
-    border-bottom-right-radius: 12px !important;
-  }
-
-  #dashboard-view .stat.kpi-reference::after,
-  #tasks-view .stat.kpi-reference::after {
-    border-radius: inherit;
-  }
-
-  #dashboard-view .stat.kpi-reference.stat-action:hover,
-  #tasks-view .stat.kpi-reference.stat-action:hover {
-    background: rgba(28, 42, 64, 0.55) !important;
-    box-shadow: inset 0 2px 0 var(--kpi-color) !important;
-  }
-
-  html[data-theme="light"] #dashboard-view .stat.kpi-reference.stat-action:hover,
-  html[data-theme="light"] #tasks-view .stat.kpi-reference.stat-action:hover {
-    background: rgba(231, 239, 250, 0.72) !important;
-  }
-
-  #dashboard-view .stat.kpi-reference.stat-action.selected,
-  #tasks-view .stat.kpi-reference.stat-action.selected {
-    background: var(--bg-selected) !important;
-    box-shadow: inset 0 2px 0 var(--kpi-color) !important;
-  }
+/* 5. Filtros Bento limpios y compactos */
+.dash-filters {
+  padding: 12px 16px !important;
+  margin-bottom: 14px !important;
 }
 </style>
 <script src="evidencias.js"></script>
