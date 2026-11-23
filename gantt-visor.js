@@ -39,6 +39,12 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 
 /* Scroll y tabla: grilla Gantt limpia estilo ejecutivo (celdas blancas por defecto) */
 .vgg-scroll{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;background:#f8fafc;scrollbar-width:thin;position:relative;z-index:1}
+.vgg-links-svg{position:absolute;top:0;left:0;pointer-events:none;z-index:4;overflow:visible}
+.vgg-link-path{fill:none;stroke:#64748b;stroke-width:1.25;stroke-linecap:round;stroke-linejoin:round;opacity:.52;transition:opacity .15s ease,stroke .15s ease,stroke-width .15s ease}
+#bim-gantt-modal.vgg-dark-table .vgg-link-path{stroke:#94a3b8;opacity:.48}
+.vgg-links-svg.has-selection .vgg-link-path{opacity:.14}
+.vgg-links-svg.has-selection .vgg-link-path.is-pred{stroke:#f59e0b;stroke-width:1.9;opacity:1}
+.vgg-links-svg.has-selection .vgg-link-path.is-succ{stroke:#06b6d4;stroke-width:1.9;opacity:1}
 .vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Inter,Arial,sans-serif;font-size:11px;color:#1e293b;background:#fff}
 .vgg-table th,.vgg-table td{border-bottom:1px solid #e2e8f0;border-right:1px solid #edf2f7;padding:4px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:30px}
 
@@ -244,11 +250,13 @@ if(!BASE_SOURCE) return;
 const STORAGE_EXCEL_KEY = 'bim-gantt-excel-override-v1';
 const STORAGE_ZOOM_KEY = 'bim-gantt-zoom-v1';
 const STORAGE_DARK_TABLE_KEY = 'bim-gantt-dark-table-v1';
+const STORAGE_LINKS_KEY = 'bim-gantt-show-links-v1';
 const ZOOM_WIDTHS = { compact: 22, normal: 30, wide: 42 };
 
 let S = loadActiveSource();
 const st = { owner:'', group:'', week:'', status:'', search:'', selected:'', zoom: readPref(STORAGE_ZOOM_KEY, 'normal') };
 let darkTableMode = readPref(STORAGE_DARK_TABLE_KEY, '0') === '1';
+let showLinksP6 = readPref(STORAGE_LINKS_KEY, '1') !== '0';
 let overlay = null, bodyOverflow = '', lastTrigger = null;
 const hiddenColumns = new Set();
 const collapsedOwners = new Set();
@@ -699,9 +707,11 @@ function render(){
   if(!body){
     node.innerHTML = '';
     if(emptyBox) emptyBox.hidden = false;
+    clearDependencyLinksSvg();
   } else {
     if(emptyBox) emptyBox.hidden = true;
     node.innerHTML = '<colgroup>'+colgroup+'</colgroup><thead>'+heads+datesRow+dowsRow+'</thead><tbody>'+body+'</tbody>';
+    requestAnimationFrame(drawDependencyLinksSvg);
   }
 
   document.getElementById('vgg-count').textContent = values.length + ' de ' + totalActivities + ' actividades';
@@ -710,6 +720,117 @@ function render(){
   } else if(!st.selected){
     document.getElementById('vgg-detail').innerHTML = '<div class="vgg-detail-text">Haz clic en una actividad para ver sus dependencias, entregable vinculado y abrirlo o crearlo directamente.</div>';
   }
+}
+
+/* Enlaces visuales ortogonales estilo Primavera P6 (SVG superpuesto sobre barras) */
+function clearDependencyLinksSvg(){
+  const svg = document.getElementById('vgg-links-svg');
+  if(svg) svg.innerHTML = '';
+}
+function updateDependencyLinkHighlight(){
+  const svg = document.getElementById('vgg-links-svg');
+  if(!svg) return;
+  const sel = st.selected || '';
+  svg.classList.toggle('has-selection', Boolean(sel));
+  svg.querySelectorAll('path[data-from]').forEach(p => {
+    const isPred = Boolean(sel) && p.dataset.to === sel;
+    const isSucc = Boolean(sel) && p.dataset.from === sel;
+    p.classList.toggle('is-pred', isPred);
+    p.classList.toggle('is-succ', isSucc);
+    p.setAttribute('marker-end', isPred ? 'url(#vgg-arrow-pred)' : isSucc ? 'url(#vgg-arrow-succ)' : 'url(#vgg-arrow-base)');
+  });
+}
+function drawDependencyLinksSvg(){
+  const svg = document.getElementById('vgg-links-svg');
+  const scroll = overlay?.querySelector('.vgg-scroll');
+  const table = document.getElementById('vgg-table');
+  if(!svg || !scroll || !table) return;
+  if(!showLinksP6 || !table.tBodies[0]?.rows.length){
+    svg.innerHTML = '';
+    return;
+  }
+
+  const scrollRect = scroll.getBoundingClientRect();
+  const sLeft = scroll.scrollLeft;
+  const sTop = scroll.scrollTop;
+  const fullW = Math.max(table.scrollWidth, scroll.clientWidth);
+  const fullH = Math.max(table.scrollHeight, scroll.clientHeight);
+  svg.setAttribute('width', String(fullW));
+  svg.setAttribute('height', String(fullH));
+  svg.setAttribute('viewBox', '0 0 ' + fullW + ' ' + fullH);
+
+  // Mapear coordenadas reales de inicio/fin de barra para cada actividad visible
+  const boxes = new Map();
+  const rowByCode = new Map();
+  const visibleActs = [];
+  table.querySelectorAll('tr[data-gantt-activity]').forEach(tr => {
+    const id = tr.dataset.ganttActivity;
+    const row = S.rows.find(r => r.kind === 'activity' && r.id === id);
+    if(!row) return;
+    const bars = tr.querySelectorAll('.vgg-bar-seg');
+    if(!bars.length) return;
+    const first = bars[0].getBoundingClientRect();
+    const last = bars[bars.length - 1].getBoundingClientRect();
+    const startX = (first.left - scrollRect.left) + sLeft;
+    const endX = (last.right - scrollRect.left) + sLeft;
+    const midY = (first.top + first.height / 2 - scrollRect.top) + sTop;
+    const box = { id, row, startX, endX, midY };
+    boxes.set(id, box);
+    visibleActs.push(box);
+    if(row.id) rowByCode.set(String(row.id).toUpperCase(), id);
+    if(row.excelId) rowByCode.set(String(row.excelId).toUpperCase(), id);
+    if(row.edt) rowByCode.set(String(row.edt).toUpperCase(), id);
+  });
+
+  const defs = '<defs>'+
+    '<marker id="vgg-arrow-base" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M1 1.2 L7 4 L1 6.8 Z" fill="#64748b"/></marker>'+
+    '<marker id="vgg-arrow-pred" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1.2 L7 4 L1 6.8 Z" fill="#f59e0b"/></marker>'+
+    '<marker id="vgg-arrow-succ" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto"><path d="M1 1.2 L7 4 L1 6.8 Z" fill="#06b6d4"/></marker>'+
+    '</defs>';
+
+  let paths = '';
+  const stub = 7;
+  for(const succ of visibleActs){
+    const predCodes = parsePredecessorCodes(succ.row.predecessor);
+    if(!predCodes.length) continue;
+    const depType = String(succ.row.dependency || '').toUpperCase();
+    const isSS = /^(SS|CC|II)/.test(depType);
+    const seenPreds = new Set();
+    for(const code of predCodes){
+      const predId = rowByCode.get(code);
+      if(!predId || predId === succ.id || seenPreds.has(predId)) continue;
+      seenPreds.add(predId);
+      const pred = boxes.get(predId);
+      if(!pred) continue;
+
+      let d = '';
+      const x1 = isSS ? pred.startX : pred.endX;
+      const y1 = pred.midY;
+      const x2 = succ.startX - 1;
+      const y2 = succ.midY;
+
+      if(isSS){
+        const leftX = Math.min(x1, x2) - 8;
+        d = `M ${x1} ${y1} H ${leftX} V ${y2} H ${x2}`;
+      } else if(x2 >= x1 + stub + 4){
+        // Fin-a-Comienzo directo (estilo Primavera P6)
+        const turnX = Math.min(x1 + stub, x2 - 4);
+        d = `M ${x1} ${y1} H ${turnX} V ${y2} H ${x2}`;
+      } else {
+        // Fin-a-Comienzo con retorno en escalón limpio cuando la sucesora empieza antes o el mismo día
+        const outX = x1 + stub;
+        const backX = x2 - stub;
+        const dir = y2 >= y1 ? 1 : -1;
+        const midRowY = Math.abs(y2 - y1) > 18 ? (y2 - dir * 14) : (y1 + dir * 13);
+        d = `M ${x1} ${y1} H ${outX} V ${midRowY} H ${backX} V ${y2} H ${x2}`;
+      }
+
+      paths += '<path class="vgg-link-path" data-from="'+escapeText(pred.id)+'" data-to="'+escapeText(succ.id)+'" d="'+d+'" marker-end="url(#vgg-arrow-base)"/>';
+    }
+  }
+
+  svg.innerHTML = defs + paths;
+  updateDependencyLinkHighlight();
 }
 
 /* Mejora #4 y #6: Panel de detalle interactivo con dependencias y acciones directas */
@@ -760,6 +881,7 @@ function showDetail(id){
     tr.classList.toggle('vgg-predecessor', predIds.has(rid));
     tr.classList.toggle('vgg-successor', succIds.has(rid));
   });
+  updateDependencyLinkHighlight();
 }
 
 function openLinkedTask(taskId){
@@ -1102,6 +1224,8 @@ function open(){
       '<label>Zoom <select id="vgg-zoom" aria-label="Zoom del calendario">'+
       '<option value="compact">Compacto</option><option value="normal">Normal</option><option value="wide">Amplio</option>'+
       '</select></label>'+
+      '<label class="vgg-theme-toggle" title="Mostrar u ocultar líneas de relación predecesor-sucesor estilo Primavera P6">'+
+      '<input type="checkbox" id="vgg-show-links"> Enlaces P6</label>'+
       '<label class="vgg-theme-toggle" title="Activar modo oscuro en las celdas de la tabla">'+
       '<input type="checkbox" id="vgg-dark-table"> Tabla oscura</label>'+
       '<button type="button" id="vgg-collapse-all" class="vgg-tool-btn" data-vgg-action="toggle-collapse-all">Contraer todo</button>'+
@@ -1114,6 +1238,7 @@ function open(){
       '<button type="button" data-vgg-action="all-columns">Mostrar todas</button></div></details>'+
       '<span class="vgg-count" id="vgg-count"></span></div>'+
       '<div class="vgg-scroll"><table class="vgg-table" id="vgg-table" aria-label="Cronograma Gantt basado en Excel"></table>'+
+      '<svg id="vgg-links-svg" class="vgg-links-svg" aria-hidden="true"></svg>'+
       '<div id="vgg-empty-state" class="vgg-empty-state" hidden><strong>Sin actividades coincidentes</strong>'+
       '<p>Ninguna actividad del cronograma coincide con los filtros o búsqueda aplicados.</p>'+
       '<button type="button" data-vgg-action="reset-filters">Restablecer filtros</button></div></div>'+
@@ -1138,6 +1263,15 @@ function open(){
         st.zoom = ev.target.value;
         savePref(STORAGE_ZOOM_KEY, st.zoom);
         render();
+      });
+    }
+    const linksEl = document.getElementById('vgg-show-links');
+    if(linksEl){
+      linksEl.checked = showLinksP6;
+      linksEl.addEventListener('change', ev => {
+        showLinksP6 = ev.target.checked;
+        savePref(STORAGE_LINKS_KEY, showLinksP6 ? '1' : '0');
+        drawDependencyLinksSvg();
       });
     }
     const darkEl = document.getElementById('vgg-dark-table');
@@ -1242,6 +1376,7 @@ function open(){
           const panel = document.getElementById('bim-gantt-modal');
           panel.classList.toggle('max');
           button.textContent = panel.classList.contains('max') ? 'Restaurar' : 'Pantalla completa';
+          requestAnimationFrame(drawDependencyLinksSvg);
           return;
         }
       }
@@ -1301,6 +1436,9 @@ function open(){
 
 document.addEventListener('keydown', ev => {
   if(ev.key==='Escape' && overlay && !overlay.hidden) close();
+});
+window.addEventListener('resize', () => {
+  if(overlay && !overlay.hidden) requestAnimationFrame(drawDependencyLinksSvg);
 });
 
 const style = document.createElement('style');
