@@ -5800,6 +5800,277 @@ html[data-theme="light"] #tasks-view .stat.kpi-support {
   padding: 12px 16px !important;
   margin-bottom: 14px !important;
 }
+
+/* ============================================================================
+   MEJORAS UI/UX — 10 HEURÍSTICAS DE USABILIDAD DE JAKOB NIELSEN
+   H1 Visibilidad estado · H2 Mundo real · H3 Control/Libertad · H4 Consistencia
+   H5 Prevención errores · H6 Reconocimiento · H7 Eficiencia · H8 Minimalismo
+   H9 Recuperación errores · H10 Ayuda y documentación
+   ============================================================================ */
+
+/* H4: Consistencia de foco accesible global */
+:where(button, a, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-blue, #5da7ff) !important;
+  outline-offset: 2px !important;
+}
+
+/* H1: Píldora de visibilidad del estado de conexión / sincronización en barra superior */
+.bim-sync-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(52, 211, 153, 0.28);
+  background: rgba(16, 185, 129, 0.10);
+  color: #34d399;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+.bim-sync-pill .sync-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.55);
+  animation: bimSyncPulse 2.6s ease-out infinite;
+}
+@keyframes bimSyncPulse {
+  0% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.50); }
+  70% { box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+}
+.bim-sync-pill[data-state="offline"] {
+  border-color: rgba(248, 113, 113, 0.38);
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+.bim-sync-pill[data-state="offline"] .sync-dot {
+  animation: none;
+}
+.bim-sync-pill[data-state="syncing"] {
+  border-color: rgba(96, 165, 250, 0.38);
+  background: rgba(59, 130, 246, 0.14);
+  color: #60a5fa;
+}
+html[data-theme="light"] .bim-sync-pill {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #047857;
+}
+html[data-theme="light"] .bim-sync-pill[data-state="offline"] {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+html[data-theme="light"] .bim-sync-pill[data-state="syncing"] {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+@media (max-width: 1180px) {
+  .bim-sync-pill .sync-text { display: none; }
+  .bim-sync-pill { padding: 0 8px; }
+}
+
+/* H3 & H6: Buscador con botón limpiar (×) y resaltado de filtros activos */
+.ux-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+.ux-search-wrap > input {
+  width: 100%;
+  padding-right: 30px !important;
+}
+.ux-search-clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 0;
+  background: rgba(148, 163, 184, 0.18);
+  color: var(--ink-secondary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.ux-search-clear:hover {
+  background: rgba(148, 163, 184, 0.32);
+  color: var(--ink-primary);
+}
+.ux-search-clear[hidden] { display: none !important; }
+
+/* H6: Reconocimiento visual inmediato de filtros aplicados */
+select.ux-filter-active,
+input.ux-filter-active {
+  border-color: var(--accent-blue, #5da7ff) !important;
+  box-shadow: 0 0 0 1px rgba(93, 167, 255, 0.28) !important;
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+html[data-theme="light"] select.ux-filter-active,
+html[data-theme="light"] input.ux-filter-active {
+  background-color: #eff6ff !important;
+}
+.ux-clear-filters-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border-color: rgba(93, 167, 255, 0.35) !important;
+  color: var(--accent-blue, #60a5fa) !important;
+}
+.ux-clear-filters-btn[hidden] { display: none !important; }
+.ux-filter-count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--accent-blue, #2563eb);
+  color: #fff;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* H5: Prevención de errores en formulario (obligatorios, cambios sin guardar, campo inválido) */
+.bim-dirty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  margin-right: auto;
+}
+.bim-dirty-badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+html[data-theme="light"] .bim-dirty-badge {
+  color: #b45309;
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+.bim-dirty-badge.hidden { display: none !important; }
+
+.ux-field-invalid {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.20) !important;
+}
+
+/* H9: Toast semántico con icono y contraste claro */
+.toast {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
+  border-left: 3px solid var(--accent-blue, #5da7ff);
+}
+.toast.toast-success { border-left-color: #10b981; }
+.toast.toast-error { border-left-color: #ef4444; }
+.toast.toast-warn { border-left-color: #f59e0b; }
+.toast::before {
+  content: "ℹ";
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--accent-blue, #5da7ff);
+}
+.toast.toast-success::before { content: "✓"; color: #34d399; }
+.toast.toast-error::before { content: "!"; color: #f87171; }
+.toast.toast-warn::before { content: "⚠"; color: #fbbf24; }
+
+/* H10: Modal de Ayuda Rápida y Atajos de Teclado */
+.ux-help-modal {
+  width: min(720px, 94vw) !important;
+  max-height: min(86vh, 760px);
+}
+.ux-help-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+.ux-help-section {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-base);
+  border-radius: 12px;
+  padding: 14px;
+}
+.ux-help-section h3 {
+  margin: 0 0 10px;
+  font-family: 'Space Grotesk', var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-primary);
+}
+.ux-shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ux-shortcut-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-secondary);
+}
+.ux-shortcut-list kbd {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  color: var(--ink-primary);
+  box-shadow: 0 1px 0 var(--border-strong);
+  white-space: nowrap;
+}
+.ux-guide-list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+}
+.ux-guide-list strong { color: var(--ink-primary); }
+
+@media (prefers-reduced-motion: reduce) {
+  .bim-sync-pill .sync-dot { animation: none !important; }
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -5877,13 +6148,20 @@ html[data-theme="light"] #tasks-view .stat.kpi-support {
     <span class="bim-nav-indicator" aria-hidden="true"></span>
   </nav>
   <div class="top-actions" aria-label="Acciones generales">
-    <button class="icon-btn theme-toggle" type="button" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema">
+    <span id="bim-sync-pill" class="bim-sync-pill" data-state="online" role="status" aria-live="polite" title="Estado de sincronización con Supabase">
+      <i class="sync-dot" aria-hidden="true"></i>
+      <span class="sync-text">En línea</span>
+    </span>
+    <button class="icon-btn" id="ux-help-trigger" type="button" onclick="openUxHelp()" title="Ayuda rápida y atajos de teclado (?)" aria-label="Abrir ayuda rápida y atajos de teclado">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.6 2.6 0 0 1 5 .9c0 1.7-2.5 2.1-2.5 3.6"/><circle cx="12" cy="17.2" r=".7" fill="currentColor"/></svg>
+    </button>
+    <button class="icon-btn theme-toggle" type="button" onclick="toggleTheme()" aria-label="Cambiar tema" title="Cambiar tema claro/oscuro">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path></svg>
     </button>
     <button class="icon-btn" type="button" onclick="openSettings()" title="Configuración protegida" aria-label="Configurar catálogos">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.4"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05-1.86 1.86-.05-.05A1.7 1.7 0 0 0 16 18.4a1.7 1.7 0 0 0-1 1.55V20H9v-.05A1.7 1.7 0 0 0 8 18.4a1.7 1.7 0 0 0-1.88.34l-.05.05-1.86-1.86.05-.05A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.55-1H3v-4h.05A1.7 1.7 0 0 0 4.6 9a1.7 1.7 0 0 0-.34-1.88l-.05-.05 1.86-1.86.05.05A1.7 1.7 0 0 0 8 5.6a1.7 1.7 0 0 0 1 1.55V4h6v.05A1.7 1.7 0 0 0 16 5.6a1.7 1.7 0 0 0 1.88-.34l.05-.05 1.86 1.86-.05.05A1.7 1.7 0 0 0 19.4 9a1.7 1.7 0 0 0 1.55 1H21v4h-.05A1.7 1.7 0 0 0 19.4 15Z"/></svg>
     </button>
-    <button class="btn primary" type="button" onclick="openEditor()">+ Nueva tarea</button>
+    <button class="btn primary" type="button" onclick="openEditor()" title="Crear nueva tarea BIM (Atajo: N)">+ Nueva tarea</button>
   </div>
   <div class="side-bottom" title="Tablero BIM compartido mediante Supabase">
     <strong><span class="dot"></span>NUBE SUPABASE</strong>
@@ -5928,7 +6206,10 @@ html[data-theme="light"] #tasks-view .stat.kpi-support {
         </div>
       </div>
       <div class="controls">
-        <input id="search" class="field-input" oninput="onTaskFiltersChanged()" placeholder="Buscar código BIM o entregable…" aria-label="Filtrar tareas por código BIM, entregable, colaborador o área de apoyo" title="Buscar código BIM, entregable, colaborador o área de apoyo">
+        <div class="ux-search-wrap">
+          <input id="search" class="field-input" oninput="onTaskFiltersChanged()" placeholder="Buscar código BIM o entregable… (Atajo: /)" aria-label="Filtrar tareas por código BIM, entregable, colaborador o área de apoyo" title="Buscar código BIM, entregable, colaborador o área de apoyo (Atajo: /)">
+          <button type="button" id="search-clear-btn" class="ux-search-clear" hidden aria-label="Limpiar búsqueda" title="Limpiar búsqueda">×</button>
+        </div>
         <div class="select-wrap"><select id="filter-package" onchange="onTaskFiltersChanged()" aria-label="Filtrar paquete"></select></div>
         <div class="select-wrap"><select id="filter-owner" onchange="onTaskFiltersChanged()" aria-label="Filtrar responsable"></select></div>
         <div class="select-wrap"><select id="filter-status" onchange="onTaskFiltersChanged()" aria-label="Filtrar estado"></select></div>
@@ -5936,6 +6217,9 @@ html[data-theme="light"] #tasks-view .stat.kpi-support {
         <div class="select-wrap"><select id="filter-sector" onchange="onTaskFiltersChanged()" aria-label="Filtrar sector"></select></div>
         <div class="select-wrap"><select id="filter-priority" onchange="onTaskFiltersChanged()" aria-label="Filtrar prioridad"></select></div>
         <div class="select-wrap"><select id="filter-due" onchange="onTaskFiltersChanged()" aria-label="Filtrar vencimiento"></select></div>
+        <button type="button" id="tasks-clear-filters-btn" class="btn small ux-clear-filters-btn" hidden title="Restablecer todos los filtros de tareas">
+          Limpiar <span id="tasks-filter-count" class="ux-filter-count-badge">0</span>
+        </button>
       </div>
       <div id="task-filter-chips" class="active-filters" aria-live="polite"></div>
       <div id="task-linked-banner" class="dashboard-selected hidden">
@@ -6454,6 +6738,7 @@ html[data-theme="light"] #tasks-view .stat.kpi-support {
       </div>
       <div class="modal-ft">
         <button type="button" id="delete-in-editor" class="btn danger hidden" onclick="deleteEditing()">Eliminar registro</button>
+        <span id="bim-dirty-badge" class="bim-dirty-badge hidden" role="status" aria-live="polite">Cambios sin guardar</span>
         <div>
           <button type="button" class="btn" onclick="closeEditor()">Cancelar</button>
           <button type="submit" class="btn primary" id="save-button">Guardar tarea</button>
@@ -6645,6 +6930,50 @@ html[data-theme="light"] #tasks-view .stat.kpi-support {
         <button type="button" class="btn" onclick="closeConfirm()">Cancelar</button>
         <button type="button" class="btn danger" id="confirm-accept-btn">Confirmar</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: AYUDA RÁPIDA Y ATAJOS (H10 NIELSEN) -->
+<div class="modal-back" id="ux-help-back" onclick="if(event.target===this)closeUxHelp()">
+  <div class="modal ux-help-modal" role="dialog" aria-modal="true" aria-labelledby="ux-help-title">
+    <div class="modal-hd">
+      <div>
+        <div class="eyebrow">Guía operativa</div>
+        <h2 id="ux-help-title">Ayuda rápida y atajos de teclado</h2>
+      </div>
+      <button class="close" type="button" onclick="closeUxHelp()" aria-label="Cerrar ayuda">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="ux-help-grid">
+        <section class="ux-help-section">
+          <h3>Atajos de teclado</h3>
+          <ul class="ux-shortcut-list">
+            <li><span>Ir a Dashboard</span><kbd>1</kbd></li>
+            <li><span>Ir a Control de tareas</span><kbd>2</kbd></li>
+            <li><span>Ir a Control semanal</span><kbd>3</kbd></li>
+            <li><span>Abrir Visor GANT</span><kbd>G</kbd></li>
+            <li><span>Crear nueva tarea</span><kbd>N</kbd></li>
+            <li><span>Enfocar búsqueda</span><kbd>/</kbd></li>
+            <li><span>Editar fila seleccionada</span><kbd>Enter</kbd></li>
+            <li><span>Eliminar fila seleccionada</span><kbd>Supr</kbd></li>
+            <li><span>Cerrar modal / limpiar foco</span><kbd>Esc</kbd></li>
+            <li><span>Abrir esta guía</span><kbd>?</kbd></li>
+          </ul>
+        </section>
+        <section class="ux-help-section">
+          <h3>Guía rápida de uso</h3>
+          <ul class="ux-guide-list">
+            <li><strong>Desglose interactivo:</strong> haz clic en cualquier tarjeta KPI, segmento de Salud BIM o colaborador para inspeccionar sus entregables.</li>
+            <li><strong>Evidencias rápidas:</strong> dentro de una tarea, pestaña <em>Fotografías</em>, puedes pegar capturas directamente con <strong>Ctrl+V</strong>.</li>
+            <li><strong>Control Semanal (PPC):</strong> compara el cumplimiento semanal frente a la <strong>meta LPS del 85%</strong> y registra causas CNC en tareas vencidas.</li>
+            <li><strong>Visor GANT:</strong> réplica de solo lectura del cronograma Excel con avance real acumulado, filtros rápidos y salto directo al día de <strong>Hoy</strong>.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+    <div class="modal-ft">
+      <div><button type="button" class="btn primary" onclick="closeUxHelp()">Entendido</button></div>
     </div>
   </div>
 </div>
@@ -8919,8 +9248,20 @@ function openEditor(id=null){
   updateEditorQualityHints();
   ($('#f-title').disabled?$('#f-gantt-activity'):$('#f-title')).focus();
 }
-function closeEditor(){
+function closeEditor(force=false){
   if(bimEvidenceEditor.busy||bimTaskEditorSubmitting){toast('Espera a que termine el guardado.');return;}
+  if(!force && window.__bimEditorDirty && typeof openConfirm==='function'){
+    openConfirm(
+      'Descartar cambios sin guardar',
+      'Tienes modificaciones pendientes en esta tarea. ¿Deseas cerrar y descartar los cambios?',
+      () => closeEditor(true)
+    );
+    return;
+  }
+  window.__bimEditorDirty = false;
+  const dirtyBadge = document.getElementById('bim-dirty-badge');
+  if(dirtyBadge) dirtyBadge.classList.add('hidden');
+  $('#task-form')?.querySelectorAll('.ux-field-invalid').forEach(el=>el.classList.remove('ux-field-invalid'));
   // Esc y Cancelar descartan las fotografías pendientes, sin enviarlas al servidor.
   cleanupEvidenceEditor();
   $('#modal-back').classList.remove('open');
@@ -9115,10 +9456,23 @@ function deleteEditing(){
 }
 let toastTimer;
 function toast(message){
-  $('#toast').textContent = message;
-  $('#toast').classList.add('show');
+  const el = $('#toast');
+  const txt = String(message||'');
+  el.textContent = txt;
+  el.classList.remove('toast-success','toast-error','toast-warn');
+  let duration = 2800;
+  if(/(error|fall[óo]|incorrect|no se pudo|sin conexi|inv[áa]lid)/i.test(txt)){
+    el.classList.add('toast-error');
+    duration = 3800;
+  } else if(/(espera|archivada|finaliza|revisar|debe estar|pendiente|descartar|atenci[óo]n)/i.test(txt)){
+    el.classList.add('toast-warn');
+    duration = 3400;
+  } else if(/(guardad|actualizad|cread|eliminad|restaurad|exportad|copiad|listo|completad|restablecid)/i.test(txt)){
+    el.classList.add('toast-success');
+  }
+  el.classList.add('show');
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>$('#toast').classList.remove('show'), 2800);
+  toastTimer = setTimeout(()=>el.classList.remove('show'), duration);
 }
 
 const taskTableBody = document.getElementById('tasks-tbody');
@@ -9160,6 +9514,9 @@ document.getElementById('tasks-mobile-cards').addEventListener('click', e => {
 document.addEventListener('keydown', e => {
   if(e.key==='Escape'){
     // Esc cancela el diálogo superior sin enviar formularios ni ejecutar confirmaciones.
+    if($('#ux-help-back')?.classList.contains('open')){
+      e.preventDefault();closeUxHelp();return;
+    }
     if($('#settings-auth-back').classList.contains('open')){
       e.preventDefault();closeSettingsAuth();return;
     }
@@ -9192,6 +9549,208 @@ document.addEventListener('keydown', e => {
   if(e.key==='Delete' || e.key==='Del'){ e.preventDefault(); deleteTask(id); }
   else if(e.key==='Enter'){ e.preventDefault(); openEditor(id); }
 });
+
+/* ============================================================================
+   MÓDULO UX — 10 HEURÍSTICAS DE NIELSEN (Estado, Filtros, Atajos, Prevención, Ayuda)
+   ============================================================================ */
+function openUxHelp(){
+  const back = document.getElementById('ux-help-back');
+  if(!back) return;
+  back.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  back.querySelector('.close')?.focus();
+}
+function closeUxHelp(){
+  const back = document.getElementById('ux-help-back');
+  if(!back) return;
+  back.classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('ux-help-trigger')?.focus();
+}
+(function initNielsenUxHeuristics(){
+  // H1: Visibilidad del estado de conexión y sincronización
+  const syncPill = document.getElementById('bim-sync-pill');
+  const syncText = syncPill?.querySelector('.sync-text');
+  function updateSyncPill(state, label){
+    if(!syncPill || !syncText) return;
+    syncPill.dataset.state = state;
+    syncText.textContent = label;
+    syncPill.title = 'Estado de conexión: ' + label;
+  }
+  function refreshNetworkState(){
+    if(navigator.onLine === false){
+      updateSyncPill('offline', 'Sin conexión');
+    } else {
+      const notice = document.getElementById('cloud-data-notice');
+      const noticeVisible = notice && !notice.classList.contains('hidden');
+      const noticeMsg = document.getElementById('cloud-data-message')?.textContent || '';
+      if(noticeVisible && /conectando|verificando|guardando/i.test(noticeMsg)){
+        updateSyncPill('syncing', 'Sincronizando…');
+      } else if(noticeVisible && /error|sin conexi|no se pudo/i.test(noticeMsg)){
+        updateSyncPill('offline', 'Sin conexión');
+      } else {
+        updateSyncPill('online', 'En línea');
+      }
+    }
+  }
+  window.addEventListener('online', () => { refreshNetworkState(); toast('Conexión restablecida.'); });
+  window.addEventListener('offline', () => { refreshNetworkState(); toast('Sin conexión a internet. Los cambios se sincronizarán al volver.'); });
+  const cloudNoticeNode = document.getElementById('cloud-data-notice');
+  if(cloudNoticeNode && typeof MutationObserver !== 'undefined'){
+    new MutationObserver(refreshNetworkState).observe(cloudNoticeNode, { attributes: true, childList: true, subtree: true, characterData: true });
+  }
+  refreshNetworkState();
+
+  // H3 & H6: Resaltado de filtros activos y botón limpiar rápido
+  const taskFilterIds = ['search','filter-package','filter-owner','filter-status','filter-team','filter-sector','filter-priority','filter-due'];
+  const dashFilterIds = ['dash-package','dash-team','dash-owner','dash-state','dash-priority'];
+  const weeklyFilterIds = ['weekly-package','weekly-team','weekly-owner'];
+  const searchInput = document.getElementById('search');
+  const searchClearBtn = document.getElementById('search-clear-btn');
+  const clearTasksBtn = document.getElementById('tasks-clear-filters-btn');
+  const tasksFilterCount = document.getElementById('tasks-filter-count');
+
+  function syncFilterVisualStates(){
+    let activeTaskCount = 0;
+    taskFilterIds.forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      const hasVal = String(el.value || '').trim() !== '';
+      el.classList.toggle('ux-filter-active', hasVal);
+      if(hasVal) activeTaskCount++;
+    });
+    const weekCheck = document.getElementById('task-week-filter');
+    if(weekCheck?.checked) activeTaskCount++;
+    if(searchClearBtn && searchInput){
+      searchClearBtn.hidden = String(searchInput.value || '').trim() === '';
+    }
+    if(clearTasksBtn && tasksFilterCount){
+      clearTasksBtn.hidden = activeTaskCount === 0;
+      tasksFilterCount.textContent = String(activeTaskCount);
+    }
+    [...dashFilterIds, ...weeklyFilterIds].forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.classList.toggle('ux-filter-active', String(el.value || '').trim() !== '');
+    });
+  }
+
+  document.addEventListener('change', e => {
+    if(e.target?.matches('select, #task-week-filter')) syncFilterVisualStates();
+  });
+  document.addEventListener('input', e => {
+    if(e.target?.id === 'search') syncFilterVisualStates();
+  });
+  searchClearBtn?.addEventListener('click', () => {
+    if(!searchInput) return;
+    searchInput.value = '';
+    if(typeof onTaskFiltersChanged === 'function') onTaskFiltersChanged();
+    syncFilterVisualStates();
+    searchInput.focus();
+  });
+  clearTasksBtn?.addEventListener('click', () => {
+    taskFilterIds.forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+    const weekCheck = document.getElementById('task-week-filter');
+    if(weekCheck && weekCheck.checked){
+      weekCheck.checked = false;
+      if(typeof setTaskWeeklyFilter === 'function') setTaskWeeklyFilter(false);
+    }
+    if(typeof onTaskFiltersChanged === 'function') onTaskFiltersChanged();
+    syncFilterVisualStates();
+    toast('Filtros de tareas restablecidos.');
+  });
+  // Sincronizar cuando se usan botones externos de limpiar
+  document.addEventListener('click', e => {
+    if(e.target?.closest('[onclick*="clearDashFilters"], [onclick*="resetWeeklyFilters"], .filter-chip')) {
+      setTimeout(syncFilterVisualStates, 30);
+    }
+  });
+  setTimeout(syncFilterVisualStates, 250);
+
+  // H5: Prevención de errores en formulario (dirty tracking y validación visual)
+  const taskForm = document.getElementById('task-form');
+  const dirtyBadge = document.getElementById('bim-dirty-badge');
+  const modalBack = document.getElementById('modal-back');
+  function markEditorDirty(isDirty){
+    window.__bimEditorDirty = !!isDirty;
+    if(dirtyBadge) dirtyBadge.classList.toggle('hidden', !window.__bimEditorDirty);
+  }
+  if(taskForm){
+    taskForm.addEventListener('input', e => {
+      if(!modalBack?.classList.contains('open')) return;
+      markEditorDirty(true);
+      e.target?.classList?.remove('ux-field-invalid');
+    });
+    taskForm.addEventListener('change', e => {
+      if(!modalBack?.classList.contains('open')) return;
+      markEditorDirty(true);
+      e.target?.classList?.remove('ux-field-invalid');
+    });
+    taskForm.addEventListener('invalid', e => {
+      e.target?.classList?.add('ux-field-invalid');
+    }, true);
+    taskForm.addEventListener('submit', () => {
+      markEditorDirty(false);
+    });
+  }
+  // Resetear dirty al abrir el modal
+  if(modalBack && typeof MutationObserver !== 'undefined'){
+    new MutationObserver(() => {
+      if(modalBack.classList.contains('open')){
+        markEditorDirty(false);
+      }
+    }).observe(modalBack, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // H7: Atajos de teclado globales (eficiencia para usuarios avanzados)
+  function hasAnyModalOpen(){
+    const gantt = document.getElementById('bim-gantt-overlay');
+    if(gantt && !gantt.hidden) return true;
+    const lightbox = document.getElementById('bim-photo-lightbox');
+    if(lightbox && !lightbox.hidden) return true;
+    return !!document.querySelector('.modal-back.open');
+  }
+  document.addEventListener('keydown', e => {
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = (e.target?.tagName || '').toLowerCase();
+    if(['input','textarea','select'].includes(tag) || e.target?.isContentEditable) return;
+    const ganttOpen = !document.getElementById('bim-gantt-overlay')?.hidden;
+    if(e.key === '/' && ganttOpen){
+      e.preventDefault();
+      document.getElementById('vgg-search')?.focus();
+      return;
+    }
+    if(hasAnyModalOpen()) return;
+    if(e.key === '?'){
+      e.preventDefault();
+      openUxHelp();
+    } else if(e.key === '1'){
+      e.preventDefault();
+      if(typeof switchView === 'function') switchView('dashboard');
+    } else if(e.key === '2'){
+      e.preventDefault();
+      if(typeof switchView === 'function') switchView('tasks');
+    } else if(e.key === '3'){
+      e.preventDefault();
+      if(typeof switchView === 'function') switchView('weekly');
+    } else if(e.key === 'g' || e.key === 'G'){
+      e.preventDefault();
+      if(typeof openBimGanttViewer === 'function') openBimGanttViewer();
+    } else if(e.key === 'n' || e.key === 'N'){
+      e.preventDefault();
+      if(typeof openEditor === 'function') openEditor();
+    } else if(e.key === '/'){
+      e.preventDefault();
+      if(typeof currentView !== 'undefined' && currentView !== 'tasks' && typeof switchView === 'function'){
+        switchView('tasks');
+      }
+      setTimeout(() => document.getElementById('search')?.focus(), 40);
+    }
+  });
+})();
 
 /* Interactive controls and executive chart integration - existing data model preserved */
 const CHART_INSTANCES = Object.create(null);
