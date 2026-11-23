@@ -7156,6 +7156,186 @@ function mergeGanttViewerColumns(remote,local){
 function notifyGanttViewerColumns(){
   window.dispatchEvent(new Event('bim-gantt-columns-updated'));
 }
+if(typeof window!=='undefined'&&window.BIM_GANTT_VIEW_SOURCE&&!window.BIM_GANTT_BASE_SOURCE){
+  try{window.BIM_GANTT_BASE_SOURCE=JSON.parse(JSON.stringify(window.BIM_GANTT_VIEW_SOURCE));}catch(e){}
+}
+function ganttGroupKey(owner,title){
+  return String(owner||'').trim().toLocaleLowerCase('es')+'|'+String(title||'').trim().toLocaleLowerCase('es');
+}
+function normalizeGanttPercentByDay(input){
+  const out={};
+  if(!input||typeof input!=='object'||Array.isArray(input))return out;
+  for(const [k,v] of Object.entries(input)){
+    const day=Number(k),val=Number(v);
+    if(Number.isInteger(day)&&day>=1&&day<=31&&Number.isFinite(val)&&val>0){
+      out[String(day)]=Number(Math.min(1,val).toFixed(6));
+    }
+  }
+  return out;
+}
+function normalizeGanttSchedule(input){
+  const out={
+    initialized:Boolean(input?.initialized),
+    updatedAt:typeof input?.updatedAt==='string'&&Number.isFinite(Date.parse(input.updatedAt))?input.updatedAt:'',
+    nextSeq:Number.isInteger(Number(input?.nextSeq))&&Number(input.nextSeq)>=55?Number(input.nextSeq):55,
+    activities:{},
+    groups:{},
+    deletedActivityIds:{},
+    deletedGroupIds:{}
+  };
+  if(input?.deletedActivityIds&&typeof input.deletedActivityIds==='object'){
+    for(const [id,ts] of Object.entries(input.deletedActivityIds)){
+      if(id&&typeof ts==='string'&&Number.isFinite(Date.parse(ts)))out.deletedActivityIds[String(id).slice(0,40)]=ts;
+    }
+  }
+  if(input?.deletedGroupIds&&typeof input.deletedGroupIds==='object'){
+    for(const [id,ts] of Object.entries(input.deletedGroupIds)){
+      if(id&&typeof ts==='string'&&Number.isFinite(Date.parse(ts)))out.deletedGroupIds[String(id).slice(0,120)]=ts;
+    }
+  }
+  if(input?.groups&&typeof input.groups==='object'){
+    for(const [gid,g] of Object.entries(input.groups)){
+      if(!gid||!g||typeof g!=='object')continue;
+      const title=String(g.title||'').trim().slice(0,180);
+      const owner=String(g.owner||'').trim().slice(0,120);
+      if(!title||!owner)continue;
+      const updatedAt=typeof g.updatedAt==='string'&&Number.isFinite(Date.parse(g.updatedAt))?g.updatedAt:'';
+      const delTs=out.deletedGroupIds[gid];
+      if(delTs&&(!updatedAt||delTs>=updatedAt))continue;
+      out.groups[String(gid).slice(0,120)]={
+        id:String(gid).slice(0,120),
+        title,
+        owner,
+        order:Number.isFinite(Number(g.order))?Number(g.order):0,
+        updatedAt
+      };
+    }
+  }
+  if(input?.activities&&typeof input.activities==='object'){
+    for(const [id,a] of Object.entries(input.activities)){
+      if(!id||!a||typeof a!=='object')continue;
+      const title=String(a.title||'').trim().slice(0,220);
+      const owner=String(a.owner||'').trim().slice(0,120);
+      const start=String(a.start||'').slice(0,10);
+      const end=String(a.end||'').slice(0,10);
+      if(!title||!owner||!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end))continue;
+      const updatedAt=typeof a.updatedAt==='string'&&Number.isFinite(Date.parse(a.updatedAt))?a.updatedAt:'';
+      const delTs=out.deletedActivityIds[id];
+      if(delTs&&(!updatedAt||delTs>=updatedAt))continue;
+      const numMatch=String(id).match(/^A(\d+)$/i);
+      if(numMatch)out.nextSeq=Math.max(out.nextSeq,Number(numMatch[1])+1);
+      out.activities[String(id).slice(0,40)]={
+        id:String(id).slice(0,40),
+        excelId:String(a.excelId||id).trim().slice(0,24),
+        edt:String(a.edt||'').trim().slice(0,24),
+        title,
+        owner,
+        group:String(a.group||'General').trim().slice(0,180),
+        groupNo:String(a.groupNo||'').trim().slice(0,20),
+        type:String(a.type||'Act.').trim().slice(0,24),
+        duration:Number.isFinite(Number(a.duration))&&Number(a.duration)>=0?Number(a.duration):1,
+        start,
+        end:end<start?start:end,
+        predecessor:String(a.predecessor||'').trim().slice(0,80),
+        dependency:String(a.dependency||'').trim().slice(0,20),
+        lag:a.lag===undefined||a.lag===null?'':String(a.lag).trim().slice(0,16),
+        percentByDay:normalizeGanttPercentByDay(a.percentByDay),
+        order:Number.isFinite(Number(a.order))?Number(a.order):0,
+        updatedAt
+      };
+    }
+  }
+  return out;
+}
+function seedGanttScheduleFromBase(){
+  const base=window.BIM_GANTT_BASE_SOURCE||window.BIM_GANTT_VIEW_SOURCE;
+  const now='2026-11-13T11:20:00.000Z';
+  const schedule={initialized:true,updatedAt:now,nextSeq:55,activities:{},groups:{},deletedActivityIds:{},deletedGroupIds:{}};
+  if(!base||!Array.isArray(base.rows))return schedule;
+  const owners=[...new Set(base.rows.filter(r=>r.kind==='activity'&&r.owner).map(r=>r.owner))];
+  let currentOwner='',gOrder=0,aOrder=0;
+  for(const row of base.rows){
+    if(row.kind==='owner'){
+      const txt=String(row.label||'').toLowerCase();
+      currentOwner=owners.find(o=>txt.includes(o.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')))||
+        String(row.label||'').replace(/^actividades\s+/i,'').trim();
+    }else if(row.kind==='group'){
+      gOrder+=10;
+      const gid='G'+String(row.id||gOrder);
+      schedule.groups[gid]={
+        id:gid,
+        title:String(row.title||'').trim(),
+        owner:currentOwner,
+        order:gOrder,
+        updatedAt:now
+      };
+    }else if(row.kind==='activity'){
+      aOrder+=10;
+      const numMatch=String(row.id||'').match(/^A(\d+)$/i);
+      if(numMatch)schedule.nextSeq=Math.max(schedule.nextSeq,Number(numMatch[1])+1);
+      schedule.activities[row.id]={
+        id:row.id,
+        excelId:row.excelId||row.id,
+        edt:String(row.edt||''),
+        title:row.title,
+        owner:row.owner,
+        group:row.group,
+        groupNo:String(row.groupNo||''),
+        type:row.type||'Act.',
+        duration:Number(row.duration)||1,
+        start:row.start,
+        end:row.end,
+        predecessor:String(row.predecessor||''),
+        dependency:String(row.dependency||''),
+        lag:row.lag===undefined||row.lag===null?'':String(row.lag),
+        percentByDay:normalizeGanttPercentByDay(row.percentByDay),
+        order:aOrder,
+        updatedAt:now
+      };
+    }
+  }
+  return normalizeGanttSchedule(schedule);
+}
+function mergeGanttSchedule(remote,local){
+  const a=normalizeGanttSchedule(remote),b=normalizeGanttSchedule(local);
+  if(!a.initialized&&!b.initialized)return normalizeGanttSchedule(null);
+  if(!a.initialized)return b;
+  if(!b.initialized)return a;
+  const deletedActivityIds={...a.deletedActivityIds};
+  for(const [id,ts] of Object.entries(b.deletedActivityIds)){
+    if(!deletedActivityIds[id]||ts>deletedActivityIds[id])deletedActivityIds[id]=ts;
+  }
+  const deletedGroupIds={...a.deletedGroupIds};
+  for(const [id,ts] of Object.entries(b.deletedGroupIds)){
+    if(!deletedGroupIds[id]||ts>deletedGroupIds[id])deletedGroupIds[id]=ts;
+  }
+  const groups={};
+  for(const src of [a.groups,b.groups]){
+    for(const [gid,g] of Object.entries(src)){
+      const delTs=deletedGroupIds[gid];
+      if(delTs&&(!g.updatedAt||delTs>=g.updatedAt))continue;
+      if(!groups[gid]||g.updatedAt>=groups[gid].updatedAt)groups[gid]={...g};
+    }
+  }
+  const activities={};
+  for(const src of [a.activities,b.activities]){
+    for(const [id,act] of Object.entries(src)){
+      const delTs=deletedActivityIds[id];
+      if(delTs&&(!act.updatedAt||delTs>=act.updatedAt))continue;
+      if(!activities[id]||act.updatedAt>=activities[id].updatedAt)activities[id]={...act,percentByDay:{...act.percentByDay}};
+    }
+  }
+  const updatedAt=[a.updatedAt,b.updatedAt].filter(Boolean).sort().pop()||'';
+  return normalizeGanttSchedule({
+    initialized:true,
+    updatedAt,
+    nextSeq:Math.max(a.nextSeq||55,b.nextSeq||55),
+    activities,
+    groups,
+    deletedActivityIds,
+    deletedGroupIds
+  });
+}
 // Avance real asociado a tareas BIM. No altera el esquema SQL ni presume avance
 // por el solo hecho de existir un estado "En progreso".
 function normalizeGanttTaskProgress(input){
@@ -7203,6 +7383,7 @@ function normalizeCatalogs(input){
   result.evidenceByTask=normalizeEvidenceByTask(input?.evidenceByTask);
   result.ganttLinksByTask=normalizeGanttLinks(input?.ganttLinksByTask);
   result.ganttViewerColumns=normalizeGanttViewerColumns(input?.ganttViewerColumns);
+  result.ganttSchedule=normalizeGanttSchedule(input?.ganttSchedule);
   // Copias completas en el JSONB de bim_catalogs, sin cambiar el esquema.
   // Nunca copiar backups dentro del payload de otro backup.
   result.deletedBackupIds=mergeCloudBackupDeletedIds(input?.deletedBackupIds,[]);
@@ -7228,6 +7409,319 @@ window.bimGanttColumnPreferences={
     return next;
   }
 };
+function calcGanttDaysInclusive(start,end){
+  if(!start||!end)return 0;
+  const s=Date.parse(start+'T00:00:00Z'),e=Date.parse(end+'T00:00:00Z');
+  if(!Number.isFinite(s)||!Number.isFinite(e)||e<s)return 0;
+  return Math.round((e-s)/86400000)+1;
+}
+function computeAutoPercentByDay(owner,start,end){
+  const base=window.BIM_GANTT_BASE_SOURCE||window.BIM_GANTT_VIEW_SOURCE||{};
+  const holidays=base.holidays||{};
+  const leave=(base.nonWorkingByOwner||{})[owner]||{};
+  const s=new Date(start+'T00:00:00Z'),e=new Date(end+'T00:00:00Z');
+  if(!Number.isFinite(s.getTime())||!Number.isFinite(e.getTime())||e<s)return {};
+  const workingDays=[],allDays=[];
+  for(let guard=0;s<=e&&guard<120;s.setUTCDate(s.getUTCDate()+1),guard++){
+    const iso=s.toISOString().slice(0,10);
+    const dayNum=String(Number(iso.slice(8,10)));
+    allDays.push(dayNum);
+    const dow=s.getUTCDay();
+    if(dow!==0&&dow!==6&&!holidays[iso]&&!leave[iso])workingDays.push(dayNum);
+  }
+  const target=workingDays.length?workingDays:allDays;
+  const out={};
+  if(!target.length)return out;
+  const share=Number((1/target.length).toFixed(6));
+  target.forEach(d=>{out[d]=share;});
+  return out;
+}
+function syncGanttRuntimeFromCatalogs(){
+  const base=window.BIM_GANTT_BASE_SOURCE;
+  const target=window.BIM_GANTT_VIEW_SOURCE;
+  if(!base||!target)return;
+  const sched=catalogs?.ganttSchedule;
+  let nextRows=[],nextStart=base.start,nextEnd=base.end,nextCalDays=base.calendarDays,nextWorkingDays=base.workingDays;
+  let nextActs=[];
+  if(!sched||!sched.initialized){
+    nextRows=JSON.parse(JSON.stringify(base.rows));
+    nextActs=nextRows.filter(r=>r.kind==='activity').map(r=>({
+      id:r.id,excelId:r.excelId||r.id,group:r.group,title:r.title,owner:r.owner,
+      plannedStart:r.start,plannedEnd:r.end
+    }));
+  }else{
+    const allGroups=Object.values(sched.groups||{});
+    const allActs=Object.values(sched.activities||{});
+    const baseOwnerOrder=[];
+    base.rows.filter(r=>r.kind==='activity'&&r.owner).forEach(r=>{
+      if(!baseOwnerOrder.includes(r.owner))baseOwnerOrder.push(r.owner);
+    });
+    const extraOwners=[];
+    [...allGroups,...allActs].forEach(x=>{
+      if(x.owner&&!baseOwnerOrder.includes(x.owner)&&!extraOwners.includes(x.owner))extraOwners.push(x.owner);
+    });
+    const orderedOwners=[...baseOwnerOrder,...extraOwners];
+    let groupSeq=0,minDate=base.start,maxDate=base.end;
+    for(const ownerName of orderedOwners){
+      const ownerGroups=allGroups.filter(g=>g.owner===ownerName).sort((a,b)=>(a.order-b.order)||a.title.localeCompare(b.title,'es'));
+      const ownerActs=allActs.filter(a=>a.owner===ownerName);
+      if(!ownerGroups.length&&!ownerActs.length)continue;
+      nextRows.push({kind:'owner',label:'ACTIVIDADES '+ownerName.toUpperCase()});
+      const virtualGroups=[...ownerGroups];
+      const knownTitles=new Set(virtualGroups.map(g=>g.title.toLocaleLowerCase('es')));
+      ownerActs.forEach(a=>{
+        const key=(a.group||'General').toLocaleLowerCase('es');
+        if(!knownTitles.has(key)){
+          knownTitles.add(key);
+          virtualGroups.push({id:'VG_'+key,title:a.group||'General',owner:ownerName,order:99999});
+        }
+      });
+      for(const grp of virtualGroups){
+        groupSeq++;
+        const grpNo=String(groupSeq);
+        const grpActs=ownerActs.filter(a=>a.group.toLocaleLowerCase('es')===grp.title.toLocaleLowerCase('es'))
+          .sort((a,b)=>(a.order-b.order)||a.start.localeCompare(b.start)||a.id.localeCompare(b.id));
+        const gStart=grpActs.length?grpActs.reduce((m,a)=>a.start<m?a.start:m,grpActs[0].start):'';
+        const gEnd=grpActs.length?grpActs.reduce((m,a)=>a.end>m?a.end:m,grpActs[0].end):'';
+        const gDur=gStart&&gEnd?calcGanttDaysInclusive(gStart,gEnd):'';
+        nextRows.push({
+          kind:'group',
+          id:grpNo,
+          _gid:grp.id,
+          title:grp.title,
+          duration:gDur,
+          start:gStart,
+          end:gEnd,
+          owner:'ACTIVIDADES '+ownerName.toUpperCase(),
+          _ownerName:ownerName
+        });
+        grpActs.forEach((act,idx)=>{
+          if(act.start&&act.start<minDate)minDate=act.start;
+          if(act.end&&act.end>maxDate)maxDate=act.end;
+          const edt=grpNo+'.'+(idx+1);
+          const item={
+            kind:'activity',
+            id:act.id,
+            excelId:act.excelId||act.id,
+            edt,
+            title:act.title,
+            owner:act.owner,
+            group:grp.title,
+            groupNo:grpNo,
+            type:act.type||'Act.',
+            duration:calcGanttDaysInclusive(act.start,act.end)||act.duration||1,
+            start:act.start,
+            end:act.end,
+            predecessor:act.predecessor||'',
+            dependency:act.dependency||'',
+            lag:act.lag||'',
+            percentByDay:{...act.percentByDay},
+            order:act.order
+          };
+          nextRows.push(item);
+          nextActs.push({
+            id:item.id,
+            excelId:item.excelId,
+            group:item.group,
+            title:item.title,
+            owner:item.owner,
+            plannedStart:item.start,
+            plannedEnd:item.end
+          });
+        });
+      }
+    }
+    const startMonth=minDate.slice(0,7)+'-01';
+    const endDateObj=new Date(Number(maxDate.slice(0,4)),Number(maxDate.slice(5,7)),0);
+    const endMonth=endDateObj.getFullYear()+'-'+String(endDateObj.getMonth()+1).padStart(2,'0')+'-'+String(endDateObj.getDate()).padStart(2,'0');
+    nextStart=startMonth;
+    nextEnd=endMonth;
+    nextCalDays=calcGanttDaysInclusive(nextStart,nextEnd)||30;
+    const holidays=base.holidays||{};
+    let workCount=0;
+    const wd=new Date(nextStart+'T00:00:00Z'),we=new Date(nextEnd+'T00:00:00Z');
+    for(let guard=0;wd<=we&&guard<120;wd.setUTCDate(wd.getUTCDate()+1),guard++){
+      const dow=wd.getUTCDay(),iso=wd.toISOString().slice(0,10);
+      if(dow!==0&&dow!==6&&!holidays[iso])workCount++;
+    }
+    nextWorkingDays=workCount;
+  }
+  target.start=nextStart;
+  target.end=nextEnd;
+  target.calendarDays=nextCalDays;
+  target.workingDays=nextWorkingDays;
+  target.rows=nextRows;
+  target.updatedAt=sched?.updatedAt||'';
+  if(Array.isArray(window.BIM_GANTT_ACTIVITIES)){
+    window.BIM_GANTT_ACTIVITIES.splice(0,window.BIM_GANTT_ACTIVITIES.length,...nextActs);
+  }else{
+    window.BIM_GANTT_ACTIVITIES=nextActs;
+  }
+  window.dispatchEvent(new Event('bim-gantt-schedule-updated'));
+  if(typeof currentView!=='undefined'&&currentView==='weekly'&&typeof renderWeekly==='function'){
+    try{renderWeekly(false);}catch(e){}
+  }
+}
+window.bimGanttScheduleStore={
+  ensureInitialized(){
+    if(!catalogs.ganttSchedule||!catalogs.ganttSchedule.initialized){
+      catalogs.ganttSchedule=seedGanttScheduleFromBase();
+    }
+    return catalogs.ganttSchedule;
+  },
+  isCustomized(){
+    return Boolean(catalogs.ganttSchedule?.initialized);
+  },
+  getSchedule(){
+    return this.ensureInitialized();
+  },
+  computeAutoPercentByDay,
+  linkedTasksForActivity(activityId){
+    return (typeof tasks!=='undefined'&&Array.isArray(tasks)?tasks:[]).filter(t=>
+      catalogs.ganttLinksByTask?.[t.id]?.mode==='select'&&
+      catalogs.ganttLinksByTask?.[t.id]?.activityId===activityId
+    );
+  },
+  nextSuggestedExcelId(){
+    const sched=this.ensureInitialized();
+    const used=new Set(Object.values(sched.activities).map(a=>String(a.excelId||a.id).toUpperCase()));
+    let n=1;
+    while(used.has('A'+String(n).padStart(2,'0')))n++;
+    return 'A'+String(n).padStart(2,'0');
+  },
+  upsertActivity(payload){
+    const sched=this.ensureInitialized();
+    const now=new Date().toISOString();
+    const owner=String(payload.owner||'').trim();
+    const groupTitle=String(payload.group||'General').trim();
+    const title=String(payload.title||'').trim();
+    const start=String(payload.start||'').slice(0,10);
+    const end=String(payload.end||start).slice(0,10);
+    if(!owner||!title||!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end)){
+      throw Error('Completa título, responsable, inicio y fin válidos.');
+    }
+    const safeEnd=end<start?start:end;
+    let groupEntry=Object.values(sched.groups).find(g=>g.owner===owner&&g.title.toLocaleLowerCase('es')===groupTitle.toLocaleLowerCase('es'));
+    if(!groupEntry){
+      const maxGOrder=Math.max(0,...Object.values(sched.groups).map(g=>g.order||0));
+      const gid='G_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,5);
+      groupEntry={id:gid,title:groupTitle,owner,order:maxGOrder+10,updatedAt:now};
+      sched.groups[gid]=groupEntry;
+    }
+    let id=payload.id&&sched.activities[payload.id]?payload.id:'';
+    let order;
+    if(!id){
+      id='A'+String(sched.nextSeq).padStart(2,'0');
+      while(sched.activities[id]||sched.deletedActivityIds[id]){
+        sched.nextSeq++;
+        id='A'+String(sched.nextSeq).padStart(2,'0');
+      }
+      sched.nextSeq++;
+      const sameGrp=Object.values(sched.activities).filter(a=>a.owner===owner&&a.group.toLocaleLowerCase('es')===groupTitle.toLocaleLowerCase('es'));
+      const maxOrder=sameGrp.length?Math.max(...sameGrp.map(a=>a.order||0)):Math.max(0,...Object.values(sched.activities).map(a=>a.order||0));
+      order=maxOrder+10;
+    }else{
+      order=sched.activities[id].order;
+    }
+    const percentByDay=payload.manualPercent&&payload.percentByDay&&Object.keys(payload.percentByDay).length
+      ?normalizeGanttPercentByDay(payload.percentByDay)
+      :computeAutoPercentByDay(owner,start,safeEnd);
+    const saved={
+      id,
+      excelId:String(payload.excelId||sched.activities[id]?.excelId||this.nextSuggestedExcelId()).trim(),
+      edt:sched.activities[id]?.edt||'',
+      title,
+      owner,
+      group:groupEntry.title,
+      groupNo:'',
+      type:payload.type==='Hito'?'Hito':'Act.',
+      duration:calcGanttDaysInclusive(start,safeEnd)||1,
+      start,
+      end:safeEnd,
+      predecessor:String(payload.predecessor||'').trim(),
+      dependency:String(payload.dependency||'').trim(),
+      lag:payload.lag===undefined||payload.lag===null?'':String(payload.lag).trim(),
+      percentByDay,
+      order,
+      updatedAt:now
+    };
+    sched.activities[id]=saved;
+    sched.updatedAt=now;
+    delete sched.deletedActivityIds[id];
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return saved;
+  },
+  deleteActivity(activityId){
+    const sched=this.ensureInitialized();
+    if(!sched.activities[activityId])return false;
+    const now=new Date().toISOString();
+    delete sched.activities[activityId];
+    sched.deletedActivityIds[activityId]=now;
+    sched.updatedAt=now;
+    if(catalogs.ganttLinksByTask){
+      for(const [tid,link] of Object.entries(catalogs.ganttLinksByTask)){
+        if(link?.activityId===activityId)delete catalogs.ganttLinksByTask[tid];
+      }
+    }
+    if(catalogs.ganttTaskProgressByTask){
+      for(const [tid,prog] of Object.entries(catalogs.ganttTaskProgressByTask)){
+        if(prog?.activityId===activityId)delete catalogs.ganttTaskProgressByTask[tid];
+      }
+    }
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return true;
+  },
+  upsertGroup({id,owner,title}){
+    const sched=this.ensureInitialized();
+    const now=new Date().toISOString();
+    const cleanOwner=String(owner||'').trim();
+    const cleanTitle=String(title||'').trim();
+    if(!cleanOwner||!cleanTitle)throw Error('Indica responsable y nombre de grupo.');
+    const existing=id&&sched.groups[id]?sched.groups[id]:null;
+    if(existing){
+      const oldOwner=existing.owner,oldTitle=existing.title;
+      existing.owner=cleanOwner;
+      existing.title=cleanTitle;
+      existing.updatedAt=now;
+      Object.values(sched.activities).forEach(a=>{
+        if(a.owner===oldOwner&&a.group.toLocaleLowerCase('es')===oldTitle.toLocaleLowerCase('es')){
+          a.owner=cleanOwner;
+          a.group=cleanTitle;
+          a.updatedAt=now;
+        }
+      });
+      sched.updatedAt=now;
+      syncGanttRuntimeFromCatalogs();
+      persist();
+      return existing;
+    }
+    const maxOrder=Math.max(0,...Object.values(sched.groups).map(g=>g.order||0));
+    const gid='G_'+Date.now().toString(36)+'_'+Math.random().toString(36).slice(2,5);
+    const created={id:gid,owner:cleanOwner,title:cleanTitle,order:maxOrder+10,updatedAt:now};
+    sched.groups[gid]=created;
+    sched.updatedAt=now;
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return created;
+  },
+  deleteGroup(gid){
+    const sched=this.ensureInitialized();
+    const grp=sched.groups[gid];
+    if(!grp)return false;
+    const hasActs=Object.values(sched.activities).some(a=>a.owner===grp.owner&&a.group.toLocaleLowerCase('es')===grp.title.toLocaleLowerCase('es'));
+    if(hasActs)throw Error('Elimina o mueve primero las actividades de este grupo.');
+    const now=new Date().toISOString();
+    delete sched.groups[gid];
+    sched.deletedGroupIds[gid]=now;
+    sched.updatedAt=now;
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return true;
+  }
+};
+if(catalogs?.ganttSchedule?.initialized)syncGanttRuntimeFromCatalogs();
 let settingsTab = 'packages';
 let settingsEditing = null;
 
@@ -8909,6 +9403,10 @@ function validateSettingsAuth(event){
   }
   const target=authTarget;
   bimExportProfile=user==='AREA_BIM2'?'by-person':'standard';
+  try{
+    if(user==='AREA_BIM2')sessionStorage.setItem('area-bim-area2-verified','1');
+    else sessionStorage.removeItem('area-bim-area2-verified');
+  }catch(e){}
   // Si se cambia el perfil mientras Control Semanal está abierto, actualizar su vista.
   if(currentView==='weekly'&&typeof syncWeeklySubtab==='function')syncWeeklySubtab();
   try{
@@ -8920,6 +9418,22 @@ function validateSettingsAuth(event){
   else if(target==='weekly') confirmWeeklyClose();
   else showSettings();
 }
+window.bimArea2Auth={
+  isVerified(){
+    try{
+      return bimExportProfile==='by-person'||sessionStorage.getItem('area-bim-area2-verified')==='1';
+    }catch(e){
+      return bimExportProfile==='by-person';
+    }
+  },
+  verify(user,password){
+    const u=String(user||'').trim().toUpperCase();
+    if(u!=='AREA_BIM2'||password!=='AREABIM')return false;
+    bimExportProfile='by-person';
+    try{sessionStorage.setItem('area-bim-area2-verified','1');}catch(e){}
+    return true;
+  }
+};
 
 function showSettings(){
   settingsEditing = null;
@@ -11071,10 +11585,12 @@ async function load(){
         merged.evidenceByTask=mergeEvidenceByTask(fromCloud.evidenceByTask,catalogs.evidenceByTask);
         merged.ganttLinksByTask=mergeGanttLinks(fromCloud.ganttLinksByTask,catalogs.ganttLinksByTask);
         merged.ganttViewerColumns=mergeGanttViewerColumns(fromCloud.ganttViewerColumns,catalogs.ganttViewerColumns);
+        merged.ganttSchedule=mergeGanttSchedule(fromCloud.ganttSchedule,catalogs.ganttSchedule);
         merged.deletedBackupIds=mergeCloudBackupDeletedIds(fromCloud.deletedBackupIds,catalogs.deletedBackupIds);
         merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups,merged.deletedBackupIds);
         catalogs=normalizeCatalogs(merged);
         notifyGanttViewerColumns();
+        syncGanttRuntimeFromCatalogs();
         ids=cloudIds;
         weeklySnapshots=cloudWeeks;
         syncCatalogsWithTasks();
@@ -11087,6 +11603,7 @@ async function load(){
     tasks=cloudTasks;ids=cloudIds;
     if(c.data?.[0]?.data)catalogs=normalizeCatalogs(c.data[0].data);
     notifyGanttViewerColumns();
+    syncGanttRuntimeFromCatalogs();
     weeklySnapshots=cloudWeeks;
     syncCatalogsWithTasks();ready=1;
     if(captureMonthlyStats())persist();else renderAll();
@@ -11162,6 +11679,10 @@ async function save(){
     catalogs.ganttViewerColumns=catalogsToSave.ganttViewerColumns;
     if(currentGanttColumns!==JSON.stringify(catalogs.ganttViewerColumns.hidden))
       notifyGanttViewerColumns();
+    catalogsToSave.ganttSchedule=mergeGanttSchedule(
+      latestCatalogs.data?.[0]?.data?.ganttSchedule,catalogsToSave.ganttSchedule);
+    catalogs.ganttSchedule=catalogsToSave.ganttSchedule;
+    syncGanttRuntimeFromCatalogs();
     const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
     if(gone.length){
       const deleted=await d.from('bim_tasks').delete().in('id',gone);

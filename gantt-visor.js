@@ -2,25 +2,27 @@ const VGG_CSS = `
 #bim-gantt-overlay{position:fixed;inset:0;background:rgba(4,9,20,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:99990;display:flex;align-items:center;justify-content:center;padding:12px;box-sizing:border-box}
 #bim-gantt-overlay[hidden]{display:none!important}
 #bim-gantt-overlay *{box-sizing:border-box}
-#bim-gantt-modal{display:flex;flex-direction:column;width:min(97vw,1820px);height:min(94dvh,1120px);min-width:0;max-height:100dvh;overflow:hidden;border:1px solid var(--border-strong,#334155);border-radius:16px;background:var(--bg-panel,#10182a);color:var(--ink-primary,#f8fafc);box-shadow:0 24px 80px rgba(0,0,0,.55)}
+#bim-gantt-modal{display:flex;flex-direction:column;width:min(97vw,1820px);height:min(94dvh,1120px);min-width:0;max-height:100dvh;overflow:hidden;border:1px solid var(--border-strong,#334155);border-radius:16px;background:var(--bg-panel,#10182a);color:var(--ink-primary,#f8fafc);box-shadow:0 24px 80px rgba(0,0,0,.55);position:relative}
 #bim-gantt-modal.max{width:100vw;height:100dvh;border-radius:0;border:0}
 #bim-gantt-overlay:has(#bim-gantt-modal.max){padding:0}
 
-.vgg-header{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-base,#253048);background:rgba(13,19,32,.88)}
+.vgg-header{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid var(--border-base,#253048);background:rgba(13,19,32,.88);flex-wrap:wrap}
 html[data-theme="light"] .vgg-header{background:rgba(248,250,252,.96)}
 .vgg-header h2{font-family:'Space Grotesk',Inter,sans-serif;font-size:14px;font-weight:800;margin:0 0 3px;letter-spacing:.015em;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .vgg-source-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.35)}
-.vgg-source-badge.imported{background:rgba(16,185,129,.15);color:#34d399;border-color:rgba(16,185,129,.35)}
+.vgg-source-badge.live{background:rgba(16,185,129,.15);color:#34d399;border-color:rgba(16,185,129,.35)}
 html[data-theme="light"] .vgg-source-badge{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
-html[data-theme="light"] .vgg-source-badge.imported{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
+html[data-theme="light"] .vgg-source-badge.live{background:#ecfdf5;color:#047857;border-color:#a7f3d0}
 .vgg-header p{font-size:11px;color:var(--ink-secondary,#aab6ca);margin:0;line-height:1.45}
 .vgg-header-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;flex-shrink:0}
 .vgg-header-actions button{height:32px;padding:0 11px;background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-base,#334155);border-radius:8px;cursor:pointer;font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:5px;transition:background-color .15s,border-color .15s,color .15s}
 .vgg-header-actions button:hover{border-color:var(--accent-blue,#5da7ff);background:var(--bg-hover,#1a2333)}
+.vgg-header-actions button[data-vgg-action="new-activity"]{background:#d71920;border-color:#d71920;color:#fff}
+.vgg-header-actions button[data-vgg-action="new-activity"]:hover{background:#b51218;border-color:#b51218}
+.vgg-header-actions button[data-vgg-action="open-excel-sync"]{border-color:rgba(16,185,129,.45);color:#34d399;background:rgba(16,185,129,.12)}
+.vgg-header-actions button[data-vgg-action="open-excel-sync"]:hover{background:rgba(16,185,129,.22)}
+html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-sync"]{color:#047857;background:#ecfdf5;border-color:#6ee7b7}
 .vgg-header-actions button[data-vgg-action="today"]{border-color:rgba(93,167,255,.45);color:var(--accent-blue,#60a5fa)}
-.vgg-header-actions button[data-vgg-action="import-excel"]{border-color:rgba(52,211,153,.42);color:#34d399}
-html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-excel"]{color:#047857;border-color:#6ee7b7}
-.vgg-header-actions button[data-vgg-action="restore-excel"]{border-color:rgba(245,158,11,.42);color:#fbbf24}
 .vgg-header-actions button[hidden]{display:none!important}
 
 .vgg-controls{padding:9px 18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--border-base,#253048);position:relative;z-index:40;overflow:visible}
@@ -48,7 +50,7 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table{border-collapse:separate;border-spacing:0;table-layout:fixed;width:max-content;font-family:Inter,Arial,sans-serif;font-size:11px;color:#1e293b;background:#fff}
 .vgg-table th,.vgg-table td{border-bottom:1px solid #e2e8f0;border-right:1px solid #edf2f7;padding:4px 7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:30px}
 
-/* Mejora #1: Sticky real de cabeceras (3 filas) y columnas congeladas a la izquierda */
+/* Sticky real de cabeceras y columnas congeladas */
 .vgg-table thead th{position:sticky;color:#f8fafc;text-align:center;background:#16243d;font-weight:700;z-index:10;border-right-color:rgba(255,255,255,.10);border-bottom-color:rgba(255,255,255,.10)}
 .vgg-table thead .vgg-week th{top:0;height:26px;font-size:11px;letter-spacing:.04em}
 .vgg-table thead .vgg-date th{top:26px;height:22px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
@@ -63,7 +65,7 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table tbody tr.vgg-activity:hover td:not(.weekend):not(.holiday):not(.day-off){background:#eff6ff!important}
 .vgg-table tbody tr.vgg-activity{cursor:pointer}
 
-/* Mejora #3: Filas colapsables de Responsable y Grupo */
+/* Filas colapsables de Responsable y Grupo + botones inline */
 .vgg-table tr.vgg-owner-row{cursor:pointer}
 .vgg-table tr.vgg-owner-row td{background:#172b4d;color:#f8fafc;font-weight:800;border-top:2px solid #0f1f3a;border-bottom:1px solid #0f1f3a;letter-spacing:.03em;height:32px}
 .vgg-table tr.vgg-owner-row:hover td{background:#1e3a5f}
@@ -74,12 +76,14 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table tr.vgg-owner-row .vgg-chevron{background:rgba(255,255,255,.16);color:#fff}
 .vgg-row-badge{margin-left:8px;font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;padding:1px 7px;border-radius:999px;background:rgba(30,58,95,.12);color:#334155}
 .vgg-table tr.vgg-owner-row .vgg-row-badge{background:rgba(255,255,255,.16);color:#e2e8f0}
+.vgg-inline-act{margin-left:5px;width:20px;height:20px;border-radius:5px;border:1px solid rgba(30,58,95,.25);background:rgba(255,255,255,.75);color:#1e3a5f;font-size:11px;font-weight:800;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;vertical-align:middle}
+.vgg-inline-act:hover{background:#2563eb;color:#fff;border-color:#2563eb}
+#bim-gantt-modal.vgg-dark-table .vgg-inline-act{background:rgba(255,255,255,.12);color:#e2e8f0;border-color:rgba(255,255,255,.22)}
 
 .vgg-table .vgg-id{font-weight:800;color:#2563eb;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px}
 .vgg-table .vgg-center{text-align:center}
 .vgg-table .vgg-day{padding:0;position:relative;vertical-align:middle}
 
-/* Cabeceras de semanas alternas limpias */
 .vgg-table thead tr.vgg-week th.excel-week-dark,
 .vgg-table thead tr.vgg-date th.excel-week-dark,
 .vgg-table thead tr.vgg-weekday th.excel-week-dark{background:#17253f;color:#f8fafc}
@@ -95,7 +99,6 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table thead tr.vgg-date th.today-header,
 .vgg-table thead tr.vgg-weekday th.today-header{background:#2563eb!important;color:#ffffff!important;box-shadow:inset 0 -2px 0 #93c5fd}
 
-/* Días no laborables sutiles (no compiten con las barras) */
 .vgg-table tbody td.vgg-day.weekend{background:#fff5f6!important}
 .vgg-table tbody td.vgg-day.holiday{background:#ffe4e6!important}
 .vgg-table tbody tr.vgg-activity td.vgg-day.day-off,
@@ -104,34 +107,22 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table tbody tr.vgg-group-row td.vgg-day.holiday,
 .vgg-table tbody tr.vgg-group-row td.vgg-day.day-off{background:#f1f5f9!important}
 
-/* Barras Gantt modernas y continuas (sin cortes cuadriculados) */
+/* Barras continuas */
 .vgg-table tbody td.vgg-day.scheduled{border-right-color:transparent}
 .vgg-table tbody td.vgg-day.scheduled.bar-end{border-right-color:#edf2f7}
-.vgg-bar-seg{
-  display:flex;align-items:center;justify-content:center;
-  height:20px;margin:0;width:100%;
-  background:linear-gradient(180deg,#4f83cc 0%,#3b6db5 100%);
-  box-shadow:0 1px 2px rgba(15,23,42,.18);
-  border-right:1px solid rgba(255,255,255,.22);
-  transition:filter .15s ease,transform .15s ease
-}
+.vgg-bar-seg{display:flex;align-items:center;justify-content:center;height:20px;margin:0;width:100%;background:linear-gradient(180deg,#4f83cc 0%,#3b6db5 100%);box-shadow:0 1px 2px rgba(15,23,42,.18);border-right:1px solid rgba(255,255,255,.22);transition:filter .15s ease}
 .vgg-day.bar-start .vgg-bar-seg{border-top-left-radius:6px;border-bottom-left-radius:6px;margin-left:2px;width:calc(100% - 2px)}
 .vgg-day.bar-end .vgg-bar-seg{border-top-right-radius:6px;border-bottom-right-radius:6px;border-right:0;margin-right:2px;width:calc(100% - 2px)}
 .vgg-day.bar-start.bar-end .vgg-bar-seg{margin-left:2px;margin-right:2px;width:calc(100% - 4px)}
-
 .vgg-bar-seg.done{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%)}
 .vgg-bar-seg.partial{background:linear-gradient(90deg,#10b981 0%,#10b981 var(--vgg-real-fill),#4679c2 var(--vgg-real-fill),#4679c2 100%)}
 .vgg-bar-seg.late{background:linear-gradient(180deg,#e5a13e 0%,#c98324 100%)}
 .vgg-table tbody tr.vgg-activity:hover .vgg-bar-seg{filter:brightness(1.07)}
 .vgg-cell-percent{font:700 8.5px/1 'JetBrains Mono',Inter,sans-serif;color:#ffffff;letter-spacing:-.2px;font-variant-numeric:tabular-nums;text-shadow:0 1px 1px rgba(0,0,0,.22)}
 
-/* Barra Resumen de Grupo ultra fina y continua (2px, estilo cronograma técnico) */
+/* Barra Resumen ultra fina (2px) */
 .vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{overflow:visible}
-.vgg-group-bar{
-  display:block;height:2px;width:calc(100% + 1px);margin-right:-1px;
-  background:#1e3a5f;
-  position:relative
-}
+.vgg-group-bar{display:block;height:2px;width:calc(100% + 1px);margin-right:-1px;background:#1e3a5f;position:relative}
 .vgg-day.bar-start .vgg-group-bar{border-top-left-radius:1px;margin-left:3px;width:calc(100% - 2px)}
 .vgg-day.bar-end .vgg-group-bar{border-top-right-radius:1px;margin-right:3px;width:calc(100% - 3px)}
 .vgg-day.bar-start.bar-end .vgg-group-bar{margin-left:3px;margin-right:3px;width:calc(100% - 6px)}
@@ -140,7 +131,7 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 
 .vgg-table .vgg-title{overflow:hidden;text-overflow:ellipsis}
 
-/* Mejora #6: Fila seleccionada, Predecesora y Sucesora */
+/* Selección y dependencias */
 .vgg-table tbody tr.vgg-activity.vgg-selected td:not(.weekend):not(.holiday):not(.day-off){background:#dbeafe!important}
 .vgg-table tbody tr.vgg-activity.vgg-selected td:first-child{box-shadow:inset 4px 0 0 #2563eb}
 .vgg-table tbody tr.vgg-activity.vgg-predecessor td:not(.weekend):not(.holiday):not(.day-off){background:#fef3c7!important}
@@ -148,7 +139,7 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-table tbody tr.vgg-activity.vgg-successor td:not(.weekend):not(.holiday):not(.day-off){background:#cffafe!important}
 .vgg-table tbody tr.vgg-activity.vgg-successor td:first-child{box-shadow:inset 4px 0 0 #06b6d4}
 
-/* Mejora #5: Modo Oscuro opcional para la grilla Gantt (celdas blancas clásicas por defecto) */
+/* Tabla oscura opcional */
 #bim-gantt-modal.vgg-dark-table .vgg-scroll{background:#0b1120}
 #bim-gantt-modal.vgg-dark-table .vgg-table{background:#0f172a;color:#e2e8f0}
 #bim-gantt-modal.vgg-dark-table .vgg-table th,
@@ -158,9 +149,9 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 #bim-gantt-modal.vgg-dark-table .vgg-table tbody tr.vgg-activity:hover td:not(.weekend):not(.holiday):not(.day-off){background:#1c2a44!important}
 #bim-gantt-modal.vgg-dark-table .vgg-table tr.vgg-group-row td{background:#17253f;color:#e2e8f0;border-color:#263959}
 #bim-gantt-modal.vgg-dark-table .vgg-table tr.vgg-group-row .vgg-row-badge{background:rgba(255,255,255,.14);color:#cbd5e1}
-#bim-gantt-modal.vgg-dark-table .vgg-group-bar{background:linear-gradient(180deg,#60a5fa 0%,#3b82f6 100%)}
-#bim-gantt-modal.vgg-dark-table .vgg-day.bar-start .vgg-group-bar::before{border-left-color:#3b82f6}
-#bim-gantt-modal.vgg-dark-table .vgg-day.bar-end .vgg-group-bar::after{border-right-color:#3b82f6}
+#bim-gantt-modal.vgg-dark-table .vgg-group-bar{background:#60a5fa}
+#bim-gantt-modal.vgg-dark-table .vgg-day.bar-start .vgg-group-bar::before{border-left-color:#60a5fa}
+#bim-gantt-modal.vgg-dark-table .vgg-day.bar-end .vgg-group-bar::after{border-right-color:#60a5fa}
 #bim-gantt-modal.vgg-dark-table .vgg-table .vgg-id{color:#93c5fd}
 #bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-week th.excel-week-light,
 #bim-gantt-modal.vgg-dark-table .vgg-table thead tr.vgg-date th.excel-week-light,
@@ -182,7 +173,6 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 #bim-gantt-modal.vgg-dark-table .vgg-empty-state strong{color:#f8fafc}
 #bim-gantt-modal.vgg-dark-table .vgg-empty-state p{color:#94a3b8}
 
-/* Fronteras semanales limpias y sombreado sutil para Hoy (sin línea vertical gruesa) */
 .vgg-table thead .vgg-week th.vgg-week-start,
 .vgg-table thead .vgg-date th.vgg-week-start,
 .vgg-table thead .vgg-weekday th.vgg-week-start,
@@ -192,8 +182,8 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 #bim-gantt-modal.vgg-dark-table .vgg-table tbody td.vgg-day.today{background:rgba(59,130,246,.10)!important;box-shadow:none!important}
 .vgg-table tbody tr.vgg-activity:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
 
-/* Panel inferior accionable (#4 y #6) */
-.vgg-detail{border-top:1px solid var(--border-base,#334155);padding:10px 18px;font-size:11.5px;line-height:1.5;min-height:48px;max-height:110px;overflow:auto;color:var(--ink-secondary,#cbd5e1);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+/* Panel inferior accionable */
+.vgg-detail{border-top:1px solid var(--border-base,#334155);padding:10px 18px;font-size:11.5px;line-height:1.5;min-height:48px;max-height:115px;overflow:auto;color:var(--ink-secondary,#cbd5e1);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .vgg-detail-text{flex:1 1 360px}
 .vgg-detail b{color:var(--ink-primary,#fff)}
 .vgg-detail-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
@@ -201,8 +191,14 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="import-exce
 .vgg-action-btn:hover{background:rgba(59,130,246,.28)}
 .vgg-action-btn.create{border-color:rgba(52,211,153,.45);background:rgba(16,185,129,.16);color:#34d399}
 .vgg-action-btn.create:hover{background:rgba(16,185,129,.28)}
+.vgg-action-btn.edit{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.15);color:#fbbf24}
+.vgg-action-btn.edit:hover{background:rgba(245,158,11,.25)}
+.vgg-action-btn.danger{border-color:rgba(239,68,68,.45);background:rgba(239,68,68,.15);color:#f87171}
+.vgg-action-btn.danger:hover{background:rgba(239,68,68,.26)}
 html[data-theme="light"] .vgg-action-btn{background:#eff6ff;color:#1d4ed8;border-color:#93c5fd}
 html[data-theme="light"] .vgg-action-btn.create{background:#ecfdf5;color:#047857;border-color:#6ee7b7}
+html[data-theme="light"] .vgg-action-btn.edit{background:#fffbeb;color:#b45309;border-color:#fcd34d}
+html[data-theme="light"] .vgg-action-btn.danger{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
 .vgg-dep-pill{display:inline-flex;align-items:center;padding:1px 7px;margin:0 2px;border-radius:999px;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;cursor:pointer;border:1px solid transparent}
 .vgg-dep-pill.pred{background:rgba(245,158,11,.18);color:#fbbf24;border-color:rgba(245,158,11,.42)}
 .vgg-dep-pill.succ{background:rgba(6,182,212,.18);color:#22d3ee;border-color:rgba(6,182,212,.42)}
@@ -236,24 +232,57 @@ html[data-theme="light"] .vgg-dep-pill.succ{background:#cffafe;color:#0e7490;bor
 .vgg-colchooser-popover input{accent-color:#42a5ee}
 .vgg-colchooser-popover button{display:block;width:100%;margin-top:8px;padding:8px;border:1px solid var(--border-base,#334155);border-radius:6px;cursor:pointer;background:var(--bg-subtle,#1e293b);color:var(--accent-blue,#60a5fa);font-size:11px;font-weight:700}
 
-@media(max-width:780px){#bim-gantt-overlay{padding:0}#bim-gantt-modal{width:100vw;height:100dvh;border-radius:0}.vgg-header{padding:9px}.vgg-controls{padding:7px}.vgg-count{margin-left:0}}
+/* Submodales internos del visor Gantt */
+.vgg-submodal-back{position:absolute;inset:0;z-index:90;background:rgba(4,9,20,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:16px}
+.vgg-submodal-back[hidden]{display:none!important}
+.vgg-submodal{width:min(620px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--bg-panel,#111827);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-strong,#334155);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.55);overflow:hidden}
+.vgg-submodal.narrow{width:min(460px,95vw)}
+.vgg-submodal-hd{padding:14px 18px;border-bottom:1px solid var(--border-base,#253048);display:flex;align-items:center;justify-content:space-between;gap:12px}
+.vgg-submodal-hd h3{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:14px;font-weight:700}
+.vgg-submodal-close{width:28px;height:28px;border-radius:7px;border:1px solid var(--border-base,#334155);background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);font-size:16px;cursor:pointer;display:grid;place-items:center}
+.vgg-submodal-body{padding:16px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;font-size:12px}
+.vgg-submodal-ft{padding:12px 18px;border-top:1px solid var(--border-base,#253048);display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}
+.vgg-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.vgg-form-field{display:flex;flex-direction:column;gap:4px}
+.vgg-form-field.wide{grid-column:1 / -1}
+.vgg-form-field label{font-size:11px;font-weight:600;color:var(--ink-secondary,#cbd5e1)}
+.vgg-form-field input,.vgg-form-field select{height:34px;padding:6px 10px;border-radius:8px;border:1px solid var(--border-strong,#334155);background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);font-size:12px}
+.vgg-form-field input[hidden],.vgg-form-field select[hidden]{display:none!important}
+.vgg-sub-btn{height:34px;padding:0 14px;border-radius:8px;border:1px solid var(--border-strong,#334155);background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);font-size:12px;font-weight:600;cursor:pointer}
+.vgg-sub-btn.primary{background:#2563eb;border-color:#2563eb;color:#fff}
+.vgg-sub-btn.primary:hover{background:#1d4ed8}
+.vgg-sub-btn.success{background:#059669;border-color:#059669;color:#fff}
+.vgg-sub-btn.success:hover{background:#047857}
+.vgg-sub-btn.danger{background:#dc2626;border-color:#dc2626;color:#fff}
+.vgg-sub-btn.danger:hover{background:#b91c1c}
+.vgg-sub-error{padding:8px 10px;border-radius:8px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.38);color:#fca5a5;font-size:11.5px}
+html[data-theme="light"] .vgg-sub-error{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+.vgg-sub-error[hidden]{display:none!important}
+.vgg-sub-warn{padding:9px 11px;border-radius:8px;background:rgba(245,158,11,.14);border:1px solid rgba(245,158,11,.38);color:#fde68a;font-size:11.5px;line-height:1.45}
+html[data-theme="light"] .vgg-sub-warn{background:#fffbeb;color:#92400e;border-color:#fde68a}
+.vgg-daily-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;padding:10px;border:1px solid var(--border-base,#334155);border-radius:10px;background:rgba(15,23,42,.35)}
+html[data-theme="light"] .vgg-daily-grid{background:#f8fafc}
+.vgg-daily-cell{display:flex;flex-direction:column;gap:2px;font-size:10px}
+.vgg-daily-cell input{height:28px;padding:2px 6px;font-family:'JetBrains Mono',monospace;font-size:11px;text-align:center}
+.vgg-excel-card{padding:12px 14px;border:1px solid var(--border-base,#334155);border-radius:10px;background:var(--bg-subtle,#1e293b);display:flex;flex-direction:column;gap:8px}
+.vgg-excel-card h4{margin:0;font-size:12.5px;font-weight:700}
+.vgg-excel-card p{margin:0;font-size:11.5px;color:var(--ink-secondary,#cbd5e1);line-height:1.45}
+
+@media(max-width:780px){#bim-gantt-overlay{padding:0}#bim-gantt-modal{width:100vw;height:100dvh;border-radius:0}.vgg-header{padding:9px}.vgg-controls{padding:7px}.vgg-count{margin-left:0}.vgg-form-grid{grid-template-columns:1fr}}
 `;
 
-/* Visor interactivo del cronograma Gantt (Excel -> HTML).
-   Incluye: Sticky real (#1), Colapsar/Expandir (#3), Conexión directa con tareas (#4),
-   Zoom + Modo Oscuro nativo (#5), Resaltado de dependencias (#6) e Importación Excel .xlsx (#7). */
+/* Visor Gantt colaborativo en Supabase + Actualización de Excel exclusiva para AREA_BIM2. */
 (function(){
 'use strict';
-const BASE_SOURCE = window.BIM_GANTT_VIEW_SOURCE;
-if(!BASE_SOURCE) return;
+if(!window.BIM_GANTT_VIEW_SOURCE) return;
 
-const STORAGE_EXCEL_KEY = 'bim-gantt-excel-override-v1';
+try { localStorage.removeItem('bim-gantt-excel-override-v1'); } catch {}
+
 const STORAGE_ZOOM_KEY = 'bim-gantt-zoom-v1';
 const STORAGE_DARK_TABLE_KEY = 'bim-gantt-dark-table-v1';
 const STORAGE_LINKS_KEY = 'bim-gantt-show-links-v1';
 const ZOOM_WIDTHS = { compact: 22, normal: 30, wide: 42 };
 
-let S = loadActiveSource();
 const st = { owner:'', group:'', week:'', status:'', search:'', selected:'', zoom: readPref(STORAGE_ZOOM_KEY, 'normal') };
 let darkTableMode = readPref(STORAGE_DARK_TABLE_KEY, '0') === '1';
 let showLinksP6 = readPref(STORAGE_LINKS_KEY, '1') !== '0';
@@ -267,30 +296,15 @@ const columns = [
   ['Tipo',56],['Dur. (dc)',67],['Inicio',86],['Fin',86],
   ['Predecesor',84],['Dependencia',84],['Desfase (dc)',86]
 ];
-const STICKY_INDICES = new Set([0, 1, 2]); // ID, EDT, Actividad / hito
+const STICKY_INDICES = new Set([0, 1, 2]);
 
+function getSource(){ return window.BIM_GANTT_VIEW_SOURCE; }
 function readPref(key, fallback){
   try { return localStorage.getItem(key) || fallback; } catch { return fallback; }
 }
 function savePref(key, value){
   try { localStorage.setItem(key, String(value)); } catch {}
 }
-function loadActiveSource(){
-  try {
-    const raw = localStorage.getItem(STORAGE_EXCEL_KEY);
-    if(raw){
-      const parsed = JSON.parse(raw);
-      if(parsed && Array.isArray(parsed.rows) && parsed.start && parsed.end){
-        return parsed;
-      }
-    }
-  } catch {}
-  return BASE_SOURCE;
-}
-function isImportedSource(){
-  return S !== BASE_SOURCE && Boolean(S.importedAt);
-}
-
 function escapeText(x){
   return String(x==null?'':x).replace(/&/g,'&amp;').replace(/</g,'&lt;')
     .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -308,7 +322,7 @@ function dates(from, to){
   }
   return out;
 }
-function getAllDates(){ return dates(S.start, S.end); }
+function getAllDates(){ const S = getSource(); return dates(S.start, S.end); }
 function week(date){
   const d = new Date(date + 'T12:00:00Z');
   d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -319,14 +333,13 @@ function week(date){
 }
 function getWeeks(){ return [...new Set(getAllDates().map(week))]; }
 function readable(d){ return d ? d.slice(8,10)+'/'+d.slice(5,7)+'/'+d.slice(2,4) : ''; }
-function owners(){ return [...new Set(S.rows.filter(r=>r.kind==='activity' && r.owner).map(r=>r.owner))]; }
+function owners(){ return [...new Set(getSource().rows.filter(r=>r.kind==='activity' && r.owner).map(r=>r.owner))]; }
 function ownerOfSection(row){
   if(row.kind !== 'owner') return '';
   const text = normalizeKey(row.label);
-  return owners().find(o => text.includes(normalizeKey(o))) || row.label;
+  return owners().find(o => text.includes(normalizeKey(o))) || row.label.replace(/^actividades\s+/i, '');
 }
 
-/* Avance real registrado en Supabase (sin cambios en lógica de negocio) */
 function recordedActivityActual(row, matched, completedAt){
   const store = typeof catalogs==='undefined' ? null : catalogs;
   const now = typeof todayString==='function' ? todayString() : new Date().toISOString().slice(0,10);
@@ -400,7 +413,6 @@ function taskState(row){
   };
 }
 
-/* Mejora #6: Resolución de dependencias (predecesoras y sucesoras) */
 function parsePredecessorCodes(predecessorStr){
   if(!predecessorStr) return [];
   const matches = String(predecessorStr).toUpperCase().match(/[A-Z]+\d+|\b\d+(?:\.\d+)?\b/g);
@@ -408,7 +420,7 @@ function parsePredecessorCodes(predecessorStr){
 }
 function findDependencies(activityRow){
   if(!activityRow) return { predecessors: [], successors: [] };
-  const acts = S.rows.filter(r => r.kind === 'activity');
+  const acts = getSource().rows.filter(r => r.kind === 'activity');
   const predCodes = new Set(parsePredecessorCodes(activityRow.predecessor));
   const predecessors = acts.filter(a => {
     const codeA = String(a.excelId || a.id || '').toUpperCase();
@@ -430,7 +442,7 @@ function findDependencies(activityRow){
 
 function visibleActivities(){
   const allDates = getAllDates();
-  return S.rows.filter(row => {
+  return getSource().rows.filter(row => {
     if(row.kind !== 'activity') return false;
     if(st.owner && row.owner !== st.owner) return false;
     if(st.group && row.group !== st.group) return false;
@@ -443,6 +455,7 @@ function visibleActivities(){
 }
 
 function keptRows(activities){
+  const S = getSource();
   const ids = new Set(activities.map(a=>a.id));
   const groups = new Set(activities.map(a=>a.owner+'|'+a.group));
   const presentOwners = new Set(activities.map(a=>a.owner));
@@ -454,17 +467,20 @@ function keptRows(activities){
     countByGroup.set(gk, (countByGroup.get(gk)||0) + 1);
   });
   const ignoreCollapse = Boolean(st.search);
+  const showEmptyGroups = !st.status && !st.search && !st.week;
   const result = [];
   let currentOwner = '';
   for(const row of S.rows){
     if(row.kind === 'owner'){
       currentOwner = ownerOfSection(row);
-      if(presentOwners.has(currentOwner)){
+      const hasOwnerGroups = showEmptyGroups && S.rows.some(r => r.kind==='group' && (r._ownerName===currentOwner || ownerOfSection({kind:'owner',label:r.owner})===currentOwner) && (!st.owner || currentOwner===st.owner));
+      if(presentOwners.has(currentOwner) || hasOwnerGroups){
         result.push({ ...row, _ownerKey: currentOwner, _count: countByOwner.get(currentOwner)||0 });
       }
     } else if(row.kind === 'group'){
       const gKey = currentOwner + '|' + row.title;
-      if(!groups.has(gKey)) continue;
+      const groupMatchesFilter = showEmptyGroups && (!st.owner || currentOwner===st.owner) && (!st.group || row.title===st.group);
+      if(!groups.has(gKey) && !groupMatchesFilter) continue;
       if(!ignoreCollapse && collapsedOwners.has(currentOwner)) continue;
       result.push({ ...row, _ownerKey: currentOwner, _groupKey: gKey, _count: countByGroup.get(gKey)||0 });
     } else if(ids.has(row.id)){
@@ -477,7 +493,7 @@ function keptRows(activities){
 }
 
 function weekTone(d){ return Number(week(d).slice(1))%2===0 ? 'excel-week-dark' : 'excel-week-light'; }
-function nonWorkingDate(d){ return S.holidays?.[d] || BASE_SOURCE.holidays?.[d] || ''; }
+function nonWorkingDate(d){ const S = getSource(); return S.holidays?.[d] || window.BIM_GANTT_BASE_SOURCE?.holidays?.[d] || ''; }
 function dayInfo(d){
   const dow = new Date(d+'T12:00:00Z').getUTCDay();
   const weekend = dow===0 || dow===6;
@@ -503,15 +519,16 @@ function weekHeaders(days){
 }
 
 function dayBar(row, d, state, days, idx){
+  const S = getSource();
   const info = dayInfo(d);
   const today = d === (typeof todayString==='function' ? todayString() : new Date().toISOString().slice(0,10));
-  const personalLeave = (S.nonWorkingByOwner || BASE_SOURCE.nonWorkingByOwner)?.[row.owner||'']?.[d] || '';
+  const personalLeave = (S.nonWorkingByOwner || window.BIM_GANTT_BASE_SOURCE?.nonWorkingByOwner)?.[row.owner||'']?.[d] || '';
   const boundary = info.dow===1 ? ' vgg-week-start' : '';
   const dateAttr = ' data-vgg-date="'+d+'"';
   const cls = 'vgg-day'+(info.weekend?' weekend':'')+(info.holiday?' holiday':'')+
     (personalLeave?' day-off':'')+(today?' today':'')+boundary;
   if(row.kind === 'group'){
-    if(d < row.start || d > row.end) return '<td class="'+cls+'"'+dateAttr+'></td>';
+    if(!row.start || !row.end || d < row.start || d > row.end) return '<td class="'+cls+'"'+dateAttr+'></td>';
     const isStart = idx === 0 || days[idx-1] < row.start;
     const isEnd = idx === days.length - 1 || days[idx+1] > row.end;
     const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
@@ -533,12 +550,10 @@ function dayBar(row, d, state, days, idx){
     '<div class="vgg-bar-seg'+status+'"'+style+'><span class="vgg-cell-percent">'+excelPercent(value)+'</span></div></td>';
 }
 
-/* Mejora #1: Cálculo dinámico de columnas visibles y offsets sticky */
 function visibleColumns(){
   const list = columns.map((col,i) => ({ label:col[0], width:col[1], index:i }))
     .filter(col => !hiddenColumns.has(col.index));
-  let offset = 0;
-  let lastStickyPos = -1;
+  let offset = 0, lastStickyPos = -1;
   list.forEach((col, pos) => {
     if(STICKY_INDICES.has(col.index)){
       col.sticky = true;
@@ -574,8 +589,12 @@ function rowMeta(row, displayed, groupExtra){
     let content = escapeText(items[i]);
     if(groupExtra && i === 2){
       const icon = groupExtra.collapsed ? '▸' : '▾';
+      const addBtn = '<button type="button" class="vgg-inline-act" data-vgg-add-in-group="'+escapeText(groupExtra.owner)+'|'+escapeText(row.title)+'" title="Agregar actividad en este grupo">+</button>';
+      const editBtn = groupExtra.gid
+        ? '<button type="button" class="vgg-inline-act" data-vgg-edit-group="'+escapeText(groupExtra.gid)+'" title="Editar o eliminar grupo">✎</button>'
+        : '';
       content = '<span class="vgg-chevron" aria-hidden="true">'+icon+'</span>' + content +
-        '<span class="vgg-row-badge">'+groupExtra.count+'</span>';
+        '<span class="vgg-row-badge">'+groupExtra.count+'</span>' + addBtn + editBtn;
     }
     return '<td class="'+baseCls.trim()+'"'+stA.style+'>'+content+'</td>';
   }).join('');
@@ -589,33 +608,39 @@ function updateCollapseAllButton(){
 }
 
 function renderHeaderMeta(){
+  const S = getSource();
   const sub = document.getElementById('vgg-header-sub');
   const badge = document.getElementById('vgg-source-badge');
-  const restoreBtn = document.getElementById('vgg-restore-excel');
+  const syncBtn = document.getElementById('vgg-excel-sync-btn');
   const footerSource = document.getElementById('vgg-footer-source');
+  const isCustom = window.bimGanttScheduleStore?.isCustomized?.();
   if(sub){
     sub.textContent = S.project + ' · Inicio ' + readable(S.start) + ' · Fin ' + readable(S.end) +
       ' · ' + S.calendarDays + ' días calendario' + (S.workingDays ? ' · ' + S.workingDays + ' días laborables' : '');
   }
   if(badge){
-    if(isImportedSource()){
-      badge.textContent = 'Excel importado: ' + (S.source || 'archivo.xlsx');
-      badge.classList.add('imported');
+    if(isCustom){
+      badge.textContent = 'Supabase colaborativo · editable';
+      badge.classList.add('live');
     } else {
-      badge.textContent = 'Corte base: 13/11/2026';
-      badge.classList.remove('imported');
+      badge.textContent = 'Base Excel (editable en Supabase)';
+      badge.classList.remove('live');
     }
   }
-  if(restoreBtn) restoreBtn.hidden = !isImportedSource();
+  if(syncBtn){
+    const verified = window.bimArea2Auth?.isVerified?.();
+    syncBtn.innerHTML = verified ? '↓ Actualizar Excel (AREA_BIM2)' : '🔒 Actualizar Excel';
+  }
   if(footerSource){
-    footerSource.textContent = isImportedSource()
-      ? 'Porcentajes = Excel importado (' + (S.importedAt || '') + ')'
-      : 'Porcentajes = carga diaria programada en Excel · Corte: 13/11/2026';
+    footerSource.textContent = isCustom
+      ? 'Cronograma compartido en Supabase · Actualización a Excel exclusiva AREA_BIM2'
+      : 'Base Excel 13/11/2026 · Editable por cualquier usuario en Supabase';
   }
 }
 
 function render(){
   if(!overlay || overlay.hidden) return;
+  const S = getSource();
   renderHeaderMeta();
   const modal = document.getElementById('bim-gantt-modal');
   if(modal) modal.classList.toggle('vgg-dark-table', darkTableMode);
@@ -679,14 +704,14 @@ function render(){
       const copy = { id:'', edt:row.id, title:row.title, owner:'', type:'Resumen', duration:row.duration,
         start:row.start, end:row.end, predecessor:'', dependency:'', lag:'' };
       body += '<tr class="vgg-group-row" data-vgg-toggle-group="'+escapeText(row._groupKey)+'" title="Clic para contraer o expandir">'+
-        rowMeta(copy, displayed, { collapsed:isCol, count:row._count }) +
+        rowMeta(copy, displayed, { collapsed:isCol, count:row._count, owner:row._ownerKey, gid:row._gid||'' }) +
         days.map((d, idx) => dayBar(row, d, { state:'group' }, days, idx)).join('') + '</tr>';
       continue;
     }
     const state = taskState(row);
     const depCls = st.selected===row.id ? ' vgg-selected' : predIds.has(row.id) ? ' vgg-predecessor' : succIds.has(row.id) ? ' vgg-successor' : '';
     body += '<tr class="vgg-activity'+((activityIndex++%2)?' vgg-row-alt':'')+depCls+
-      '" data-gantt-activity="'+escapeText(row.id)+'" tabindex="0">'+
+      '" data-gantt-activity="'+escapeText(row.id)+'" tabindex="0" title="Clic para ver detalle · Doble clic para editar">'+
       rowMeta({ ...row, type:row.type||'Act.' }, displayed) +
       days.map((d, idx) => dayBar(row, d, state, days, idx)).join('') + '</tr>';
   }
@@ -717,12 +742,15 @@ function render(){
   document.getElementById('vgg-count').textContent = values.length + ' de ' + totalActivities + ' actividades';
   if(!body){
     document.getElementById('vgg-detail').innerHTML = '<div class="vgg-detail-text">No se encontraron actividades para los filtros seleccionados.</div>';
-  } else if(!st.selected){
-    document.getElementById('vgg-detail').innerHTML = '<div class="vgg-detail-text">Haz clic en una actividad para ver sus dependencias, entregable vinculado y abrirlo o crearlo directamente.</div>';
+  } else if(selectedRow){
+    showDetail(selectedRow.id);
+  } else {
+    st.selected = '';
+    document.getElementById('vgg-detail').innerHTML = '<div class="vgg-detail-text">Haz clic en una actividad para revisar dependencias y acciones, o <b>doble clic</b> para editarla directamente.</div>';
   }
 }
 
-/* Enlaces visuales ortogonales estilo Primavera P6 (SVG superpuesto sobre barras) */
+/* Enlaces visuales ortogonales estilo Primavera P6 */
 function clearDependencyLinksSvg(){
   const svg = document.getElementById('vgg-links-svg');
   if(svg) svg.innerHTML = '';
@@ -741,6 +769,7 @@ function updateDependencyLinkHighlight(){
   });
 }
 function drawDependencyLinksSvg(){
+  const S = getSource();
   const svg = document.getElementById('vgg-links-svg');
   const scroll = overlay?.querySelector('.vgg-scroll');
   const table = document.getElementById('vgg-table');
@@ -759,7 +788,6 @@ function drawDependencyLinksSvg(){
   svg.setAttribute('height', String(fullH));
   svg.setAttribute('viewBox', '0 0 ' + fullW + ' ' + fullH);
 
-  // Mapear coordenadas reales de inicio/fin de barra para cada actividad visible
   const boxes = new Map();
   const rowByCode = new Map();
   const visibleActs = [];
@@ -813,11 +841,9 @@ function drawDependencyLinksSvg(){
         const leftX = Math.min(x1, x2) - 8;
         d = `M ${x1} ${y1} H ${leftX} V ${y2} H ${x2}`;
       } else if(x2 >= x1 + stub + 4){
-        // Fin-a-Comienzo directo (estilo Primavera P6)
         const turnX = Math.min(x1 + stub, x2 - 4);
         d = `M ${x1} ${y1} H ${turnX} V ${y2} H ${x2}`;
       } else {
-        // Fin-a-Comienzo con retorno en escalón limpio cuando la sucesora empieza antes o el mismo día
         const outX = x1 + stub;
         const backX = x2 - stub;
         const dir = y2 >= y1 ? 1 : -1;
@@ -833,8 +859,8 @@ function drawDependencyLinksSvg(){
   updateDependencyLinkHighlight();
 }
 
-/* Mejora #4 y #6: Panel de detalle interactivo con dependencias y acciones directas */
 function showDetail(id){
+  const S = getSource();
   const row = S.rows.find(r => r.kind==='activity' && r.id===id);
   if(!row) return;
   st.selected = id;
@@ -862,8 +888,10 @@ function showDetail(id){
     (status.late ? ' · Fuera de plazo' : '') + predHtml + succHtml + '</div>';
 
   let actions = '<div class="vgg-detail-actions">';
+  actions += '<button type="button" class="vgg-action-btn edit" data-vgg-edit-activity="'+escapeText(row.id)+'">✎ Editar</button>';
+  actions += '<button type="button" class="vgg-action-btn danger" data-vgg-delete-activity="'+escapeText(row.id)+'">🗑 Eliminar</button>';
   if(status.taskIds.length){
-    actions += status.taskIds.slice(0,3).map(tid =>
+    actions += status.taskIds.slice(0,2).map(tid =>
       '<button type="button" class="vgg-action-btn" data-vgg-open-task="'+escapeText(tid)+'">Abrir '+escapeText(tid)+'</button>'
     ).join('');
   } else {
@@ -891,7 +919,7 @@ function openLinkedTask(taskId){
 }
 
 function createTaskFromGanttActivity(activityId){
-  const row = S.rows.find(r => r.kind==='activity' && r.id===activityId);
+  const row = getSource().rows.find(r => r.kind==='activity' && r.id===activityId);
   if(!row || typeof openEditor !== 'function') return;
   close();
   setTimeout(() => {
@@ -917,220 +945,532 @@ function createTaskFromGanttActivity(activityId){
   }, 40);
 }
 
-/* Mejora #7: Importación directa de archivo Excel (.xlsx) */
+/* ============================================================================
+   SUBMODALES DE EDICIÓN ABIERTA (CUALQUIER USUARIO -> SUPABASE)
+   ============================================================================ */
+function closeSubmodal(){
+  const back = document.getElementById('vgg-submodal-back');
+  if(back){
+    back.hidden = true;
+    back.innerHTML = '';
+  }
+}
+
+function allOwnerOptions(){
+  const set = new Set(owners());
+  if(typeof catalogs !== 'undefined' && Array.isArray(catalogs.owners)){
+    catalogs.owners.forEach(o => { if(o && !/^X\s+/i.test(o)) set.add(o); });
+  }
+  return [...set];
+}
+
+function groupsForOwner(ownerName){
+  const rows = getSource().rows;
+  const out = new Set();
+  rows.forEach(r => {
+    if(r.kind==='group'){
+      const o = r._ownerName || ownerOfSection({kind:'owner',label:r.owner});
+      if(!ownerName || normalizeKey(o)===normalizeKey(ownerName)) out.add(r.title);
+    } else if(r.kind==='activity'){
+      if(!ownerName || normalizeKey(r.owner)===normalizeKey(ownerName)) out.add(r.group);
+    }
+  });
+  return [...out];
+}
+
+function openActivityModal({ activityId='', presetOwner='', presetGroup='' } = {}){
+  const store = window.bimGanttScheduleStore;
+  if(!store) return;
+  const S = getSource();
+  const existing = activityId ? S.rows.find(r => r.kind==='activity' && r.id===activityId) : null;
+  const isEdit = Boolean(existing);
+
+  const ownerList = allOwnerOptions();
+  const initialOwner = existing?.owner || presetOwner || st.owner || ownerList[0] || '';
+  const initialGroup = existing?.group || presetGroup || st.group || groupsForOwner(initialOwner)[0] || '';
+  const suggestedCode = existing?.excelId || existing?.id || store.nextSuggestedExcelId();
+  const predOptions = S.rows.filter(r => r.kind==='activity' && r.id!==activityId)
+    .map(r => '<option value="'+escapeText(r.excelId||r.id)+'">'+escapeText((r.excelId||r.id)+' — '+r.title)+'</option>').join('');
+
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal" role="dialog" aria-modal="true" aria-label="'+(isEdit?'Editar actividad':'Nueva actividad Gantt')+'">'+
+    '<div class="vgg-submodal-hd"><h3>'+(isEdit ? 'Editar actividad ' + escapeText(existing.excelId||existing.id) : 'Nueva actividad en Gantt')+'</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<form id="vgg-activity-form"><div class="vgg-submodal-body">'+
+    '<div id="vgg-act-err" class="vgg-sub-error" hidden></div>'+
+    '<div class="vgg-form-grid">'+
+    '<div class="vgg-form-field"><label for="vgg-f-code">Código visible (ID)</label><input id="vgg-f-code" value="'+escapeText(suggestedCode)+'" maxlength="20" required></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-type">Tipo</label><select id="vgg-f-type"><option value="Act."'+(existing?.type!=='Hito'?' selected':'')+'>Actividad</option><option value="Hito"'+(existing?.type==='Hito'?' selected':'')+'>Hito</option></select></div>'+
+    '<div class="vgg-form-field wide"><label for="vgg-f-title">Actividad / hito *</label><input id="vgg-f-title" value="'+escapeText(existing?.title||'')+'" maxlength="200" required placeholder="Ej.: Modelado BIM · Sector 2"></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-owner">Responsable *</label><select id="vgg-f-owner"></select><input id="vgg-f-owner-custom" placeholder="Nombre del responsable" hidden></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-group">Grupo *</label><select id="vgg-f-group"></select><input id="vgg-f-group-custom" placeholder="Nombre del nuevo grupo" hidden></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-start">Fecha inicio *</label><input id="vgg-f-start" type="date" value="'+escapeText(existing?.start||S.start)+'" required></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-end">Fecha fin *</label><input id="vgg-f-end" type="date" value="'+escapeText(existing?.end||existing?.start||S.start)+'" required></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-pred">Predecesor (ID)</label><input id="vgg-f-pred" list="vgg-pred-datalist" value="'+escapeText(existing?.predecessor||'')+'" placeholder="Ej.: A01"><datalist id="vgg-pred-datalist">'+predOptions+'</datalist></div>'+
+    '<div class="vgg-form-field"><label for="vgg-f-dep">Dependencia / Desfase</label><div style="display:flex;gap:6px"><select id="vgg-f-dep" style="flex:1"><option value="">Sin dep.</option><option value="FC">FC</option><option value="CC">CC</option><option value="FF">FF</option><option value="CF">CF</option></select><input id="vgg-f-lag" style="width:72px" value="'+escapeText(existing?.lag||'')+'" placeholder="Desf."></div></div>'+
+    '</div>'+
+    '<label style="display:flex;align-items:center;gap:7px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="vgg-f-manual-pct"'+(isEdit?' checked':'')+'> Ajustar porcentajes diarios manualmente (si se desmarca, se reparte automático entre días laborables)</label>'+
+    '<div id="vgg-daily-wrap" class="vgg-daily-grid"'+(isEdit?'':' hidden')+'></div>'+
+    '</div>'+
+    '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button><button type="submit" class="vgg-sub-btn primary">'+(isEdit?'Guardar cambios':'Crear actividad')+'</button></div>'+
+    '</form></div>';
+  back.hidden = false;
+
+  const ownerSel = document.getElementById('vgg-f-owner');
+  const ownerCustom = document.getElementById('vgg-f-owner-custom');
+  const groupSel = document.getElementById('vgg-f-group');
+  const groupCustom = document.getElementById('vgg-f-group-custom');
+  const depSel = document.getElementById('vgg-f-dep');
+  const manualChk = document.getElementById('vgg-f-manual-pct');
+  const dailyWrap = document.getElementById('vgg-daily-wrap');
+  const startEl = document.getElementById('vgg-f-start');
+  const endEl = document.getElementById('vgg-f-end');
+
+  ownerSel.innerHTML = ownerList.map(o => '<option value="'+escapeText(o)+'">'+escapeText(o)+'</option>').join('') +
+    '<option value="__custom__">+ Otro responsable…</option>';
+  if(ownerList.includes(initialOwner)) ownerSel.value = initialOwner;
+  else if(initialOwner){ ownerSel.value = '__custom__'; ownerCustom.hidden = false; ownerCustom.value = initialOwner; }
+
+  function getChosenOwner(){
+    return ownerSel.value === '__custom__' ? ownerCustom.value.trim() : ownerSel.value;
+  }
+  function refreshGroupSelect(preferred){
+    const list = groupsForOwner(getChosenOwner());
+    groupSel.innerHTML = list.map(g => '<option value="'+escapeText(g)+'">'+escapeText(g)+'</option>').join('') +
+      '<option value="__custom__">+ Nuevo grupo…</option>';
+    if(preferred && list.includes(preferred)){
+      groupSel.value = preferred;
+      groupCustom.hidden = true;
+    } else if(list.length && preferred !== '__custom__'){
+      groupSel.value = list[0];
+      groupCustom.hidden = true;
+    } else {
+      groupSel.value = '__custom__';
+      groupCustom.hidden = false;
+      if(preferred && preferred !== '__custom__') groupCustom.value = preferred;
+    }
+  }
+  refreshGroupSelect(initialGroup);
+  if(existing?.dependency) depSel.value = existing.dependency;
+
+  function renderDailyGrid(){
+    if(!manualChk.checked){ dailyWrap.hidden = true; return; }
+    dailyWrap.hidden = false;
+    const sVal = startEl.value, eVal = endEl.value;
+    if(!sVal || !eVal || eVal < sVal){ dailyWrap.innerHTML = '<span style="grid-column:1/-1;opacity:.75">Rango de fechas inválido.</span>'; return; }
+    const rangeDates = dates(sVal, eVal);
+    const autoMap = store.computeAutoPercentByDay(getChosenOwner(), sVal, eVal);
+    const currentMap = isEdit && sVal === existing.start && eVal === existing.end ? (existing.percentByDay || {}) : autoMap;
+    dailyWrap.innerHTML = rangeDates.map(d => {
+      const dayKey = String(Number(d.slice(8,10)));
+      const raw = currentMap[dayKey] ?? autoMap[dayKey] ?? 0;
+      const pct = raw ? Number((raw * 100).toFixed(1)) : 0;
+      return '<label class="vgg-daily-cell"><span>'+readable(d)+'</span><input type="number" min="0" max="100" step="0.1" data-vgg-day="'+dayKey+'" value="'+pct+'"></label>';
+    }).join('');
+  }
+  renderDailyGrid();
+
+  ownerSel.addEventListener('change', () => {
+    ownerCustom.hidden = ownerSel.value !== '__custom__';
+    refreshGroupSelect('');
+    renderDailyGrid();
+  });
+  groupSel.addEventListener('change', () => {
+    groupCustom.hidden = groupSel.value !== '__custom__';
+    if(!groupCustom.hidden) groupCustom.value = '';
+  });
+  startEl.addEventListener('change', () => { if(endEl.value < startEl.value) endEl.value = startEl.value; renderDailyGrid(); });
+  endEl.addEventListener('change', renderDailyGrid);
+  manualChk.addEventListener('change', renderDailyGrid);
+
+  document.getElementById('vgg-activity-form').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const errBox = document.getElementById('vgg-act-err');
+    const chosenOwner = getChosenOwner();
+    const chosenGroup = groupSel.value === '__custom__' ? groupCustom.value.trim() : groupSel.value;
+    const sVal = startEl.value, eVal = endEl.value;
+    if(!chosenOwner || !chosenGroup){
+      errBox.textContent = 'Completa el responsable y el grupo de la actividad.';
+      errBox.hidden = false;
+      return;
+    }
+    if(eVal < sVal){
+      errBox.textContent = 'La fecha fin no puede ser menor a la fecha inicio.';
+      errBox.hidden = false;
+      return;
+    }
+    let percentByDay = {};
+    if(manualChk.checked){
+      dailyWrap.querySelectorAll('input[data-vgg-day]').forEach(inp => {
+        const val = Number(inp.value);
+        if(Number.isFinite(val) && val > 0){
+          percentByDay[inp.dataset.vggDay] = Number((val / 100).toFixed(6));
+        }
+      });
+    }
+    try {
+      const saved = store.upsertActivity({
+        id: existing?.id || '',
+        excelId: document.getElementById('vgg-f-code').value.trim(),
+        type: document.getElementById('vgg-f-type').value,
+        title: document.getElementById('vgg-f-title').value.trim(),
+        owner: chosenOwner,
+        group: chosenGroup,
+        start: sVal,
+        end: eVal,
+        predecessor: document.getElementById('vgg-f-pred').value.trim(),
+        dependency: depSel.value,
+        lag: document.getElementById('vgg-f-lag').value.trim(),
+        manualPercent: manualChk.checked,
+        percentByDay
+      });
+      closeSubmodal();
+      st.selected = saved.id;
+      rebuildFilterSelects();
+      render();
+      if(typeof toast === 'function') toast((isEdit ? 'Actividad actualizada: ' : 'Actividad creada: ') + (saved.excelId || saved.id));
+    } catch (err) {
+      errBox.textContent = err?.message || 'No se pudo guardar la actividad.';
+      errBox.hidden = false;
+    }
+  });
+  document.getElementById('vgg-f-title')?.focus();
+}
+
+function openGroupModal(gid=''){
+  const store = window.bimGanttScheduleStore;
+  if(!store) return;
+  const sched = store.getSchedule();
+  const existing = gid ? sched.groups[gid] : null;
+  const ownerList = allOwnerOptions();
+  const initialOwner = existing?.owner || st.owner || ownerList[0] || '';
+  const hasActs = existing ? Object.values(sched.activities).some(a => a.owner===existing.owner && a.group.toLocaleLowerCase('es')===existing.title.toLocaleLowerCase('es')) : false;
+
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal narrow" role="dialog" aria-modal="true" aria-label="'+(existing?'Editar grupo':'Nuevo grupo Gantt')+'">'+
+    '<div class="vgg-submodal-hd"><h3>'+(existing ? 'Editar grupo' : 'Nuevo grupo en Gantt')+'</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<form id="vgg-group-form"><div class="vgg-submodal-body">'+
+    '<div id="vgg-grp-err" class="vgg-sub-error" hidden></div>'+
+    '<div class="vgg-form-field"><label for="vgg-g-owner">Responsable *</label><select id="vgg-g-owner"></select><input id="vgg-g-owner-custom" placeholder="Nombre del responsable" hidden></div>'+
+    '<div class="vgg-form-field"><label for="vgg-g-title">Nombre del grupo *</label><input id="vgg-g-title" value="'+escapeText(existing?.title||'')+'" maxlength="160" required placeholder="Ej.: Modelado BIM · Sector 3"></div>'+
+    (existing && hasActs ? '<p style="margin:0;opacity:.8;font-size:11px">Renombrar este grupo actualizará automáticamente todas sus actividades.</p>' : '')+
+    '</div>'+
+    '<div class="vgg-submodal-ft">'+
+    (existing && !hasActs ? '<button type="button" id="vgg-g-delete" class="vgg-sub-btn danger" style="margin-right:auto">Eliminar grupo</button>' : '')+
+    '<button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button><button type="submit" class="vgg-sub-btn primary">'+(existing?'Guardar grupo':'Crear grupo')+'</button></div>'+
+    '</form></div>';
+  back.hidden = false;
+
+  const ownerSel = document.getElementById('vgg-g-owner');
+  const ownerCustom = document.getElementById('vgg-g-owner-custom');
+  ownerSel.innerHTML = ownerList.map(o => '<option value="'+escapeText(o)+'">'+escapeText(o)+'</option>').join('') +
+    '<option value="__custom__">+ Otro responsable…</option>';
+  if(ownerList.includes(initialOwner)) ownerSel.value = initialOwner;
+  else if(initialOwner){ ownerSel.value = '__custom__'; ownerCustom.hidden = false; ownerCustom.value = initialOwner; }
+  ownerSel.addEventListener('change', () => { ownerCustom.hidden = ownerSel.value !== '__custom__'; });
+
+  document.getElementById('vgg-g-delete')?.addEventListener('click', () => {
+    try {
+      store.deleteGroup(existing.id);
+      closeSubmodal();
+      rebuildFilterSelects();
+      render();
+      if(typeof toast === 'function') toast('Grupo eliminado del cronograma.');
+    } catch (err) {
+      const errBox = document.getElementById('vgg-grp-err');
+      errBox.textContent = err?.message || 'No se pudo eliminar.';
+      errBox.hidden = false;
+    }
+  });
+
+  document.getElementById('vgg-group-form').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const errBox = document.getElementById('vgg-grp-err');
+    const chosenOwner = ownerSel.value === '__custom__' ? ownerCustom.value.trim() : ownerSel.value;
+    const title = document.getElementById('vgg-g-title').value.trim();
+    if(!chosenOwner || !title){
+      errBox.textContent = 'Completa responsable y nombre del grupo.';
+      errBox.hidden = false;
+      return;
+    }
+    try {
+      store.upsertGroup({ id: existing?.id || '', owner: chosenOwner, title });
+      closeSubmodal();
+      rebuildFilterSelects();
+      render();
+      if(typeof toast === 'function') toast(existing ? 'Grupo actualizado.' : 'Grupo creado.');
+    } catch (err) {
+      errBox.textContent = err?.message || 'Error al guardar grupo.';
+      errBox.hidden = false;
+    }
+  });
+  document.getElementById('vgg-g-title')?.focus();
+}
+
+function openDeleteActivityConfirm(activityId){
+  const store = window.bimGanttScheduleStore;
+  const row = getSource().rows.find(r => r.kind==='activity' && r.id===activityId);
+  if(!store || !row) return;
+  const linked = store.linkedTasksForActivity(activityId);
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal narrow" role="dialog" aria-modal="true" aria-label="Confirmar eliminación">'+
+    '<div class="vgg-submodal-hd"><h3>Eliminar actividad del Gantt</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<div class="vgg-submodal-body">'+
+    '<p style="margin:0">¿Seguro que deseas eliminar <b>'+escapeText((row.excelId||row.id)+' — '+row.title)+'</b>?</p>'+
+    (linked.length ? '<div class="vgg-sub-warn">Atención: esta actividad está vinculada a <b>'+linked.map(t=>escapeText(t.id)).join(', ')+'</b>. Al eliminarla, esas tareas quedarán desvinculadas del Gantt.</div>' : '')+
+    '</div>'+
+    '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button>'+
+    '<button type="button" id="vgg-confirm-del-btn" class="vgg-sub-btn danger">Eliminar actividad</button></div></div>';
+  back.hidden = false;
+  document.getElementById('vgg-confirm-del-btn')?.addEventListener('click', () => {
+    store.deleteActivity(activityId);
+    if(st.selected === activityId) st.selected = '';
+    closeSubmodal();
+    rebuildFilterSelects();
+    render();
+    if(typeof toast === 'function') toast('Actividad eliminada del cronograma.');
+  });
+}
+
+/* ============================================================================
+   EXPORTACIÓN Y ACTUALIZACIÓN DE EXCEL EXCLUSIVA PARA AREA_BIM2
+   ============================================================================ */
 function loadSheetJs(){
   if(window.XLSX) return Promise.resolve(window.XLSX);
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
     s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
     s.onload = () => window.XLSX ? resolve(window.XLSX) : reject(new Error('XLSX no disponible'));
-    s.onerror = () => reject(new Error('No se pudo cargar el lector de Excel (verifica tu conexión)'));
+    s.onerror = () => reject(new Error('No se pudo cargar SheetJS (verifica tu conexión a internet)'));
     document.head.appendChild(s);
   });
 }
 
-function excelSerialToIso(val){
-  if(!val) return '';
-  if(val instanceof Date && Number.isFinite(val.getTime())){
-    return val.toISOString().slice(0,10);
-  }
-  if(typeof val === 'number' && val > 25000 && val < 80000){
-    const utc = new Date(Math.round((val - 25569) * 86400 * 1000));
-    return Number.isFinite(utc.getTime()) ? utc.toISOString().slice(0,10) : '';
-  }
-  const str = String(val).trim();
-  if(/^\d{4}-\d{2}-\d{2}/.test(str)) return str.slice(0,10);
-  const dmy = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
-  if(dmy){
-    const y = dmy[3].length === 2 ? '20' + dmy[3] : dmy[3];
-    return y + '-' + dmy[2].padStart(2,'0') + '-' + dmy[1].padStart(2,'0');
-  }
-  return '';
-}
+function buildGantWorksheet(XLSX){
+  const S = getSource();
+  const allDates = getAllDates();
+  const dnames = ['D','L','M','X','J','V','S'];
+  const metaHeaders = ['ID','EDT','Actividad / hito','Responsable','Tipo','Dur. (dc)','Inicio','Fin','Predecesor','Dependencia','Desfase (dc)'];
 
-function parseExcelWorkbook(wb, fileName){
-  const sheetName = wb.SheetNames.find(n => /^gant+$/i.test(n.trim())) || wb.SheetNames[0];
-  const sheet = wb.Sheets[sheetName];
-  if(!sheet) throw new Error('No se encontró la hoja Gantt en el archivo.');
-  const matrix = window.XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '' });
-  if(!matrix.length) throw new Error('La hoja seleccionada está vacía.');
+  const row1 = new Array(metaHeaders.length).fill('');
+  const row2 = [...metaHeaders];
+  const row3 = new Array(metaHeaders.length).fill('');
+  const merges = [];
 
-  // Detectar fila de encabezados
-  let headerRowIdx = -1;
-  for(let r = 0; r < Math.min(matrix.length, 20); r++){
-    const joined = matrix[r].map(c => normalizeKey(c)).join('|');
-    if(joined.includes('actividad') && (joined.includes('inicio') || joined.includes('responsable'))){
-      headerRowIdx = r;
-      break;
+  // Encabezados de semanas (fila 1), días (fila 2) y letras D-L-M (fila 3)
+  let colIdx = metaHeaders.length;
+  let lastW = '', wStartCol = colIdx;
+  allDates.forEach((d, idx) => {
+    const w = week(d);
+    const info = dayInfo(d);
+    row2.push(Number(d.slice(-2)));
+    row3.push(dnames[info.dow]);
+    if(w !== lastW){
+      if(lastW && colIdx - 1 > wStartCol){
+        merges.push({ s:{ r:0, c:wStartCol }, e:{ r:0, c:colIdx-1 } });
+      }
+      row1.push(w);
+      lastW = w;
+      wStartCol = colIdx;
+    } else {
+      row1.push('');
     }
-  }
-  if(headerRowIdx < 0) throw new Error('No se detectaron las columnas estándar del Gantt (Actividad, Inicio, Fin).');
-
-  const hdr = matrix[headerRowIdx].map(c => normalizeKey(c));
-  const findCol = (...pats) => hdr.findIndex(h => pats.some(p => h === p || h.includes(p)));
-  const cId = Math.max(0, findCol('id'));
-  const cEdt = findCol('edt');
-  const cTitle = findCol('actividad', 'hito', 'entregable');
-  const cOwner = findCol('responsable', 'colaborador');
-  const cType = findCol('tipo');
-  const cDur = findCol('dur');
-  const cStart = findCol('inicio');
-  const cEnd = findCol('fin');
-  const cPred = findCol('predecesor');
-  const cDep = findCol('dependencia');
-  const cLag = findCol('desfase', 'lag');
-
-  // Detectar columnas de días (1..31) en la fila de encabezados o la siguiente
-  const dayCols = [];
-  const probeRows = [headerRowIdx, headerRowIdx + 1, headerRowIdx - 1].filter(i => i >= 0 && i < matrix.length);
-  for(const pr of probeRows){
-    const found = [];
-    const rowVals = matrix[pr];
-    for(let c = Math.max(cEnd, cTitle, 5) + 1; c < rowVals.length; c++){
-      const n = Number(rowVals[c]);
-      if(Number.isInteger(n) && n >= 1 && n <= 31) found.push({ col: c, day: n });
+    colIdx++;
+    if(idx === allDates.length - 1 && colIdx - 1 > wStartCol){
+      merges.push({ s:{ r:0, c:wStartCol }, e:{ r:0, c:colIdx-1 } });
     }
-    if(found.length >= 15){ dayCols.push(...found); break; }
-  }
-
-  // Mapa para conservar IDs internos históricos de Supabase por título o excelId
-  const baseByExcelId = new Map();
-  const baseByTitle = new Map();
-  BASE_SOURCE.rows.filter(r => r.kind === 'activity').forEach(r => {
-    if(r.excelId) baseByExcelId.set(r.excelId.toUpperCase(), r.id);
-    if(r.title) baseByTitle.set(normalizeKey(r.title), r.id);
   });
 
-  const parsedRows = [];
-  let currentOwnerLabel = '', currentOwnerName = '', currentGroup = '', currentGroupNo = '';
-  let minDate = '', maxDate = '';
+  const aoa = [row1, row2, row3];
+  const percentCells = [];
 
-  const startDataRow = Math.max(headerRowIdx + 1, probeRows.length ? Math.max(...probeRows) + 1 : headerRowIdx + 1);
-  for(let r = startDataRow; r < matrix.length; r++){
-    const line = matrix[r];
-    if(!line || line.every(v => String(v||'').trim() === '')) continue;
-
-    const rawId = String(line[cId] ?? '').trim();
-    const rawEdt = cEdt >= 0 ? String(line[cEdt] ?? '').trim() : '';
-    const rawTitle = cTitle >= 0 ? String(line[cTitle] ?? '').trim() : '';
-    const rawOwner = cOwner >= 0 ? String(line[cOwner] ?? '').trim() : '';
-    const rawType = cType >= 0 ? String(line[cType] ?? '').trim() : '';
-    const startIso = cStart >= 0 ? excelSerialToIso(line[cStart]) : '';
-    const endIso = cEnd >= 0 ? excelSerialToIso(line[cEnd]) : '';
-
-    // Fila de sección de responsable (ej. "ACTIVIDADES JUAN CARLOS PRADA")
-    const firstNonEmpty = String(line.find(v => String(v||'').trim() !== '') || '').trim();
-    if(/^actividades\s+/i.test(firstNonEmpty) && !startIso && !endIso){
-      currentOwnerLabel = firstNonEmpty;
-      currentOwnerName = firstNonEmpty.replace(/^actividades\s+/i, '').trim();
-      parsedRows.push({ kind: 'owner', label: currentOwnerLabel });
+  for(const r of S.rows){
+    if(r.kind === 'owner'){
+      const line = new Array(metaHeaders.length + allDates.length).fill('');
+      line[0] = r.label;
+      aoa.push(line);
       continue;
     }
-
-    // Fila de grupo resumen
-    if((/resumen/i.test(rawType) || (!rawId && rawEdt && !rawEdt.includes('.'))) && rawTitle){
-      currentGroup = rawTitle;
-      currentGroupNo = rawEdt || '';
-      parsedRows.push({
-        kind: 'group',
-        id: currentGroupNo,
-        title: rawTitle,
-        duration: cDur >= 0 ? Number(line[cDur]) || '' : '',
-        start: startIso,
-        end: endIso,
-        owner: currentOwnerLabel || currentOwnerName
-      });
+    if(r.kind === 'group'){
+      const line = [
+        '', r.id, r.title, '', 'Resumen', r.duration || '',
+        r.start ? new Date(r.start + 'T12:00:00Z') : '',
+        r.end ? new Date(r.end + 'T12:00:00Z') : '',
+        '', '', ''
+      ];
+      allDates.forEach(() => line.push(''));
+      aoa.push(line);
       continue;
     }
-
-    if(!rawTitle || (!startIso && !endIso)) continue;
-    const excelId = rawId || ('A' + String(parsedRows.filter(x=>x.kind==='activity').length + 1).padStart(2,'0'));
-    const internalId = baseByTitle.get(normalizeKey(rawTitle)) || baseByExcelId.get(excelId.toUpperCase()) || excelId;
-
-    const percentByDay = {};
-    for(const dc of dayCols){
-      const rawVal = line[dc.col];
-      if(rawVal === '' || rawVal == null) continue;
-      let num = typeof rawVal === 'number' ? rawVal : Number(String(rawVal).replace('%','').replace(',','.').trim());
-      if(!Number.isFinite(num) || num <= 0) continue;
-      if(num > 1.0001) num = num / 100;
-      percentByDay[String(dc.day)] = Number(num.toFixed(6));
-    }
-
-    if(startIso && (!minDate || startIso < minDate)) minDate = startIso;
-    if(endIso && (!maxDate || endIso > maxDate)) maxDate = endIso;
-
-    parsedRows.push({
-      kind: 'activity',
-      id: internalId,
-      excelId,
-      edt: rawEdt,
-      title: rawTitle,
-      owner: rawOwner || currentOwnerName || 'Sin asignar',
-      group: currentGroup || 'General',
-      groupNo: currentGroupNo,
-      type: rawType || 'Act.',
-      duration: cDur >= 0 ? (Number(line[cDur]) || '') : '',
-      start: startIso || endIso,
-      end: endIso || startIso,
-      predecessor: cPred >= 0 ? String(line[cPred] ?? '').trim() : '',
-      dependency: cDep >= 0 ? String(line[cDep] ?? '').trim() : '',
-      lag: cLag >= 0 ? String(line[cLag] ?? '').trim() : '',
-      percentByDay
+    const rowIdx = aoa.length;
+    const line = [
+      r.excelId || r.id,
+      r.edt || '',
+      r.title || '',
+      r.owner || '',
+      r.type || 'Act.',
+      r.duration || '',
+      r.start ? new Date(r.start + 'T12:00:00Z') : '',
+      r.end ? new Date(r.end + 'T12:00:00Z') : '',
+      r.predecessor || '',
+      r.dependency || '',
+      r.lag || ''
+    ];
+    allDates.forEach((d, dIdx) => {
+      const val = r.percentByDay?.[String(Number(d.slice(8,10)))] || 0;
+      if(val > 0){
+        line.push(Number(val));
+        percentCells.push({ r: rowIdx, c: metaHeaders.length + dIdx, v: Number(val) });
+      } else {
+        line.push('');
+      }
     });
+    aoa.push(line);
   }
 
-  const actsCount = parsedRows.filter(r => r.kind === 'activity').length;
-  if(!actsCount) throw new Error('No se encontraron actividades con fechas válidas en la hoja "' + sheetName + '".');
-
-  const monthStart = minDate ? minDate.slice(0,7) + '-01' : BASE_SOURCE.start;
-  const dEnd = maxDate ? new Date(Number(maxDate.slice(0,4)), Number(maxDate.slice(5,7)), 0) : new Date(BASE_SOURCE.end + 'T00:00:00Z');
-  const monthEnd = dEnd.getFullYear() + '-' + String(dEnd.getMonth()+1).padStart(2,'0') + '-' + String(dEnd.getDate()).padStart(2,'0');
-  const calDays = dates(monthStart, monthEnd).length;
-
-  return {
-    project: BASE_SOURCE.project,
-    start: monthStart,
-    end: monthEnd,
-    calendarDays: calDays,
-    workingDays: BASE_SOURCE.workingDays,
-    source: fileName,
-    importedAt: new Date().toLocaleString('es-PE', { dateStyle:'short', timeStyle:'short' }),
-    holidays: BASE_SOURCE.holidays || {},
-    nonWorkingByOwner: BASE_SOURCE.nonWorkingByOwner || {},
-    rows: parsedRows
-  };
-}
-
-async function handleExcelFileImport(file){
-  if(!file) return;
-  if(typeof toast === 'function') toast('Leyendo archivo Excel "' + file.name + '"…');
-  try {
-    const XLSX = await loadSheetJs();
-    const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, { type:'array', cellDates:true });
-    const nextSource = parseExcelWorkbook(wb, file.name);
-    S = nextSource;
-    try { localStorage.setItem(STORAGE_EXCEL_KEY, JSON.stringify(nextSource)); } catch {}
-    st.owner = ''; st.group = ''; st.week = ''; st.status = ''; st.search = ''; st.selected = '';
-    collapsedOwners.clear(); collapsedGroups.clear();
-    rebuildFilterSelects();
-    render();
-    const count = S.rows.filter(r => r.kind === 'activity').length;
-    if(typeof toast === 'function') toast('Excel importado: ' + count + ' actividades cargadas desde ' + file.name);
-  } catch (err) {
-    if(typeof toast === 'function') toast('Error al importar Excel: ' + (err?.message || 'formato no compatible'));
+  const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
+  ws['!merges'] = merges;
+  ws['!cols'] = [
+    { wch: 7 }, { wch: 7 }, { wch: 44 }, { wch: 22 }, { wch: 9 }, { wch: 9 },
+    { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 10 },
+    ...allDates.map(() => ({ wch: 5.5 }))
+  ];
+  for(const pc of percentCells){
+    const addr = XLSX.utils.encode_cell({ r: pc.r, c: pc.c });
+    if(ws[addr]) ws[addr].z = pc.v < 0.1 ? '0.0%' : '0%';
   }
+  return ws;
 }
 
-function restoreBaseSource(){
-  try { localStorage.removeItem(STORAGE_EXCEL_KEY); } catch {}
-  S = BASE_SOURCE;
-  st.owner = ''; st.group = ''; st.week = ''; st.status = ''; st.search = ''; st.selected = '';
-  collapsedOwners.clear(); collapsedGroups.clear();
-  rebuildFilterSelects();
-  render();
-  if(typeof toast === 'function') toast('Cronograma restaurado al corte base (13/11/2026).');
+function buildActualProgressWorksheet(XLSX){
+  const S = getSource();
+  const labels = { completed:'Completada', pending:'Pendiente', unassigned:'Sin asignar' };
+  const aoa = [['ID Excel','ID Interno','EDT','Actividad / hito','Responsable','Grupo','Inicio','Fin','Estado Gantt','Entregables BIM','Avance real (%)','Fin real']];
+  for(const r of S.rows){
+    if(r.kind !== 'activity') continue;
+    const stInfo = taskState(r);
+    aoa.push([
+      r.excelId || r.id,
+      r.id,
+      r.edt || '',
+      r.title,
+      r.owner,
+      r.group,
+      r.start,
+      r.end,
+      labels[stInfo.state] || stInfo.state,
+      stInfo.taskIds.join(', ') || 'Sin vincular',
+      Number.isFinite(stInfo.actual) ? stInfo.actual : '',
+      stInfo.completedAt || ''
+    ]);
+  }
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [
+    {wch:10},{wch:10},{wch:8},{wch:44},{wch:22},{wch:28},{wch:12},{wch:12},{wch:14},{wch:18},{wch:14},{wch:12}
+  ];
+  return ws;
+}
+
+function openArea2AuthThenExcelSync(){
+  if(window.bimArea2Auth?.isVerified?.()){
+    openExcelSyncModal();
+    return;
+  }
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal narrow" role="dialog" aria-modal="true" aria-label="Autenticación AREA_BIM2">'+
+    '<div class="vgg-submodal-hd"><h3>Acceso exclusivo AREA_BIM2</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<form id="vgg-auth-form"><div class="vgg-submodal-body">'+
+    '<p style="margin:0;line-height:1.45">Solo el usuario <b>AREA_BIM2</b> está autorizado para transferir los cambios del cronograma al Excel original.</p>'+
+    '<div id="vgg-auth-err" class="vgg-sub-error" hidden></div>'+
+    '<div class="vgg-form-field"><label for="vgg-a-user">Usuario</label><input id="vgg-a-user" autocomplete="username" required placeholder="AREA_BIM2"></div>'+
+    '<div class="vgg-form-field"><label for="vgg-a-pass">Contraseña</label><input id="vgg-a-pass" type="password" autocomplete="current-password" required></div>'+
+    '</div>'+
+    '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button>'+
+    '<button type="submit" class="vgg-sub-btn success">Verificar y continuar</button></div>'+
+    '</form></div>';
+  back.hidden = false;
+  document.getElementById('vgg-auth-form').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const u = document.getElementById('vgg-a-user').value.trim().toUpperCase();
+    const p = document.getElementById('vgg-a-pass').value;
+    const errBox = document.getElementById('vgg-auth-err');
+    if(!window.bimArea2Auth?.verify?.(u, p)){
+      errBox.textContent = u && u !== 'AREA_BIM2'
+        ? 'Solo el usuario AREA_BIM2 está autorizado para actualizar el Excel.'
+        : 'Usuario o contraseña incorrectos.';
+      errBox.hidden = false;
+      document.getElementById('vgg-a-pass').value = '';
+      document.getElementById('vgg-a-pass').focus();
+      return;
+    }
+    renderHeaderMeta();
+    openExcelSyncModal();
+  });
+  document.getElementById('vgg-a-user')?.focus();
+}
+
+function openExcelSyncModal(){
+  const actsCount = getSource().rows.filter(r => r.kind === 'activity').length;
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal" role="dialog" aria-modal="true" aria-label="Actualizar Excel AREA_BIM2">'+
+    '<div class="vgg-submodal-hd"><h3>Actualizar Excel del Cronograma · AREA_BIM2</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<div class="vgg-submodal-body">'+
+    '<div id="vgg-xls-err" class="vgg-sub-error" hidden></div>'+
+    '<div class="vgg-excel-card"><h4>Opción 1 · Reemplazar hoja «Gant» en tu Excel original (OneDrive)</h4>'+
+    '<p>Selecciona tu archivo <code>Actividades Área Bim - Noviembre.xlsx</code>. Se conservarán todas las demás pestañas del libro y se reescribirá únicamente la hoja <b>Gant</b> con las <b>'+actsCount+' actividades</b> actuales de Supabase.</p>'+
+    '<input type="file" id="vgg-xls-target" accept=".xlsx,.xlsm" hidden>'+
+    '<div><button type="button" id="vgg-xls-merge-btn" class="vgg-sub-btn success">Elegir mi Excel (.xlsx) y actualizar hoja Gant</button></div></div>'+
+    '<div class="vgg-excel-card"><h4>Opción 2 · Descargar libro Excel nuevo</h4>'+
+    '<p>Genera un archivo <code>Actividades Área Bim - Actualizado.xlsx</code> desde cero con la hoja <b>Gant</b> y una pestaña adicional <b>Avance_Real_BIM</b> con el avance real y las tareas vinculadas.</p>'+
+    '<div><button type="button" id="vgg-xls-new-btn" class="vgg-sub-btn primary">Descargar Excel nuevo (.xlsx)</button></div></div>'+
+    '</div>'+
+    '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cerrar</button></div></div>';
+  back.hidden = false;
+
+  const errBox = document.getElementById('vgg-xls-err');
+  const targetInput = document.getElementById('vgg-xls-target');
+  document.getElementById('vgg-xls-merge-btn')?.addEventListener('click', () => targetInput?.click());
+  targetInput?.addEventListener('change', async ev => {
+    const file = ev.target.files?.[0];
+    ev.target.value = '';
+    if(!file) return;
+    errBox.hidden = true;
+    try {
+      const XLSX = await loadSheetJs();
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf, { type:'array', cellDates:true });
+      const targetSheetName = wb.SheetNames.find(n => /^gant+$/i.test(n.trim())) || 'Gant';
+      const ws = buildGantWorksheet(XLSX);
+      if(!wb.SheetNames.includes(targetSheetName)) wb.SheetNames.unshift(targetSheetName);
+      wb.Sheets[targetSheetName] = ws;
+      XLSX.writeFile(wb, file.name);
+      closeSubmodal();
+      if(typeof toast === 'function') toast('Excel actualizado (' + targetSheetName + ') descargado como ' + file.name);
+    } catch (err) {
+      errBox.textContent = 'No se pudo actualizar el archivo: ' + (err?.message || 'error desconocido');
+      errBox.hidden = false;
+    }
+  });
+
+  document.getElementById('vgg-xls-new-btn')?.addEventListener('click', async () => {
+    errBox.hidden = true;
+    try {
+      const XLSX = await loadSheetJs();
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, buildGantWorksheet(XLSX), 'Gant');
+      XLSX.utils.book_append_sheet(wb, buildActualProgressWorksheet(XLSX), 'Avance_Real_BIM');
+      XLSX.writeFile(wb, 'Actividades Area Bim - Actualizado.xlsx');
+      closeSubmodal();
+      if(typeof toast === 'function') toast('Excel nuevo generado con hojas Gant y Avance_Real_BIM.');
+    } catch (err) {
+      errBox.textContent = 'No se pudo generar el Excel: ' + (err?.message || 'error desconocido');
+      errBox.hidden = false;
+    }
+  });
 }
 
 function rebuildFilterSelects(){
@@ -1138,13 +1478,16 @@ function rebuildFilterSelects(){
   if(ownerSel){
     ownerSel.innerHTML = '<option value="">Todos</option>' +
       owners().map(o => '<option value="'+escapeText(o)+'">'+escapeText(o)+'</option>').join('');
-    ownerSel.value = st.owner;
+    if(owners().includes(st.owner)) ownerSel.value = st.owner;
+    else { st.owner = ''; ownerSel.value = ''; }
   }
   const weekSel = document.getElementById('vgg-week');
   if(weekSel){
+    const wList = getWeeks();
     weekSel.innerHTML = '<option value="">Mes completo</option>' +
-      getWeeks().map(w => '<option value="'+w+'">'+w+'</option>').join('');
-    weekSel.value = st.week;
+      wList.map(w => '<option value="'+w+'">'+w+'</option>').join('');
+    if(wList.includes(st.week)) weekSel.value = st.week;
+    else { st.week = ''; weekSel.value = ''; }
   }
   const statusSel = document.getElementById('vgg-status');
   if(statusSel) statusSel.value = st.status;
@@ -1176,10 +1519,19 @@ window.addEventListener('bim-gantt-columns-updated', () => {
   if(scroll){ scroll.scrollLeft = left; scroll.scrollTop = top; }
 });
 
+window.addEventListener('bim-gantt-schedule-updated', () => {
+  if(!overlay || overlay.hidden) return;
+  const scroll = overlay.querySelector('.vgg-scroll');
+  const left = scroll?.scrollLeft || 0, top = scroll?.scrollTop || 0;
+  rebuildFilterSelects();
+  render();
+  if(scroll){ scroll.scrollLeft = left; scroll.scrollTop = top; }
+});
+
 function redrawGroups(){
   const select = document.getElementById('vgg-group');
   if(!select) return;
-  const groups = [...new Set(S.rows.filter(r => r.kind==='activity' && (!st.owner || r.owner===st.owner)).map(r => r.group))];
+  const groups = [...new Set(getSource().rows.filter(r => r.kind==='activity' && (!st.owner || r.owner===st.owner)).map(r => r.group))];
   if(!groups.includes(st.group)) st.group = '';
   select.innerHTML = '<option value="">Todos los grupos</option>' + groups.map(g =>
     '<option value="'+escapeText(g)+'">'+escapeText(g)+'</option>').join('');
@@ -1188,6 +1540,7 @@ function redrawGroups(){
 
 function close(){
   if(!overlay || overlay.hidden) return;
+  closeSubmodal();
   overlay.hidden = true;
   document.body.style.overflow = bodyOverflow;
   if(lastTrigger && lastTrigger.isConnected && typeof lastTrigger.focus==='function') lastTrigger.focus();
@@ -1203,14 +1556,14 @@ function open(){
     overlay.hidden = true;
     overlay.setAttribute('role','dialog');
     overlay.setAttribute('aria-modal','true');
-    overlay.setAttribute('aria-label','Visor Gantt Excel');
+    overlay.setAttribute('aria-label','Visor Gantt Colaborativo');
     overlay.innerHTML = '<section id="bim-gantt-modal"><header class="vgg-header"><div>'+
       '<h2>CRONOGRAMA DEL PROYECTO — DIAGRAMA DE GANTT <span id="vgg-source-badge" class="vgg-source-badge"></span></h2>'+
       '<p id="vgg-header-sub"></p></div>'+
       '<div class="vgg-header-actions">'+
-      '<input type="file" id="vgg-excel-input" accept=".xlsx,.xls" hidden>'+
-      '<button type="button" data-vgg-action="import-excel" title="Cargar archivo Excel (.xlsx) actualizado con la hoja Gant">↑ Importar Excel</button>'+
-      '<button type="button" id="vgg-restore-excel" data-vgg-action="restore-excel" hidden title="Volver al corte base del repositorio">Restaurar base</button>'+
+      '<button type="button" data-vgg-action="new-activity" title="Agregar nueva actividad al cronograma">+ Nueva actividad</button>'+
+      '<button type="button" data-vgg-action="new-group" title="Crear nuevo grupo de actividades">+ Grupo</button>'+
+      '<button type="button" id="vgg-excel-sync-btn" data-vgg-action="open-excel-sync" title="Solo AREA_BIM2: transferir datos del Gantt a Excel">🔒 Actualizar Excel</button>'+
       '<button type="button" data-vgg-action="today" title="Desplazar el cronograma hasta la columna de hoy">Ir a Hoy</button>'+
       '<button type="button" data-vgg-action="expand">Pantalla completa</button>'+
       '<button type="button" data-vgg-action="close">✕ Cerrar</button></div></header>'+
@@ -1237,7 +1590,7 @@ function open(){
         (hiddenColumns.has(i)?'':' checked')+' data-vgg-col="'+i+'"> '+escapeText(col[0])+'</label>').join('')+
       '<button type="button" data-vgg-action="all-columns">Mostrar todas</button></div></details>'+
       '<span class="vgg-count" id="vgg-count"></span></div>'+
-      '<div class="vgg-scroll"><table class="vgg-table" id="vgg-table" aria-label="Cronograma Gantt basado en Excel"></table>'+
+      '<div class="vgg-scroll"><table class="vgg-table" id="vgg-table" aria-label="Cronograma Gantt editable"></table>'+
       '<svg id="vgg-links-svg" class="vgg-links-svg" aria-hidden="true"></svg>'+
       '<div id="vgg-empty-state" class="vgg-empty-state" hidden><strong>Sin actividades coincidentes</strong>'+
       '<p>Ninguna actividad del cronograma coincide con los filtros o búsqueda aplicados.</p>'+
@@ -1253,7 +1606,9 @@ function open(){
       '<span class="vgg-chip"><i class="pred"></i> Predecesor</span>'+
       '<span class="vgg-chip"><i class="succ"></i> Dependiente</span>'+
       '<span id="vgg-footer-source"></span>'+
-      '</footer></section>';
+      '</footer>'+
+      '<div id="vgg-submodal-back" class="vgg-submodal-back" hidden></div>'+
+      '</section>';
     document.body.appendChild(overlay);
 
     const zoomEl = document.getElementById('vgg-zoom');
@@ -1283,17 +1638,39 @@ function open(){
         document.getElementById('bim-gantt-modal')?.classList.toggle('vgg-dark-table', darkTableMode);
       });
     }
-    const fileInput = document.getElementById('vgg-excel-input');
-    fileInput?.addEventListener('change', ev => {
-      const f = ev.target.files?.[0];
-      ev.target.value = '';
-      if(f) handleExcelFileImport(f);
+
+    overlay.addEventListener('dblclick', ev => {
+      const tr = ev.target.closest('tr[data-gantt-activity]');
+      if(tr) openActivityModal({ activityId: tr.dataset.ganttActivity });
     });
 
     overlay.addEventListener('click', ev => {
       if(ev.target === overlay){ close(); return; }
+      const subBack = document.getElementById('vgg-submodal-back');
+      if(ev.target === subBack || ev.target.closest('[data-vgg-sub-close]')){ closeSubmodal(); return; }
+
       const columnPicker = document.getElementById('vgg-colchooser');
       if(columnPicker?.open && !columnPicker.contains(ev.target)) columnPicker.open = false;
+
+      const addInGroup = ev.target.closest('[data-vgg-add-in-group]');
+      if(addInGroup){
+        ev.stopPropagation();
+        const [pOwner, pGroup] = addInGroup.dataset.vggAddInGroup.split('|');
+        openActivityModal({ presetOwner: pOwner, presetGroup: pGroup });
+        return;
+      }
+      const editGroupBtn = ev.target.closest('[data-vgg-edit-group]');
+      if(editGroupBtn){
+        ev.stopPropagation();
+        openGroupModal(editGroupBtn.dataset.vggEditGroup);
+        return;
+      }
+
+      const editActBtn = ev.target.closest('[data-vgg-edit-activity]');
+      if(editActBtn){ openActivityModal({ activityId: editActBtn.dataset.vggEditActivity }); return; }
+
+      const delActBtn = ev.target.closest('[data-vgg-delete-activity]');
+      if(delActBtn){ openDeleteActivityConfirm(delActBtn.dataset.vggDeleteActivity); return; }
 
       const openTaskBtn = ev.target.closest('[data-vgg-open-task]');
       if(openTaskBtn){ openLinkedTask(openTaskBtn.dataset.vggOpenTask); return; }
@@ -1331,8 +1708,9 @@ function open(){
       const button = ev.target.closest('[data-vgg-action]');
       if(button){
         const act = button.dataset.vggAction;
-        if(act === 'import-excel'){ fileInput?.click(); return; }
-        if(act === 'restore-excel'){ restoreBaseSource(); return; }
+        if(act === 'new-activity'){ openActivityModal(); return; }
+        if(act === 'new-group'){ openGroupModal(); return; }
+        if(act === 'open-excel-sync'){ openArea2AuthThenExcelSync(); return; }
         if(act === 'today'){
           const scroll = overlay.querySelector('.vgg-scroll');
           const todayCell = overlay.querySelector('th.today-header');
@@ -1348,8 +1726,7 @@ function open(){
             collapsedOwners.clear();
             collapsedGroups.clear();
           } else {
-            const acts = visibleActivities();
-            acts.forEach(a => collapsedGroups.add(a.owner + '|' + a.group));
+            visibleActivities().forEach(a => collapsedGroups.add(a.owner + '|' + a.group));
           }
           render();
           return;
@@ -1415,6 +1792,8 @@ function open(){
     overlay.addEventListener('keydown', ev => {
       if(ev.key === 'Escape'){
         ev.preventDefault();
+        const sub = document.getElementById('vgg-submodal-back');
+        if(sub && !sub.hidden){ closeSubmodal(); return; }
         const picker = document.getElementById('vgg-colchooser');
         if(picker?.open){ picker.open = false; return; }
         close();
@@ -1435,7 +1814,11 @@ function open(){
 }
 
 document.addEventListener('keydown', ev => {
-  if(ev.key==='Escape' && overlay && !overlay.hidden) close();
+  if(ev.key==='Escape' && overlay && !overlay.hidden){
+    const sub = document.getElementById('vgg-submodal-back');
+    if(sub && !sub.hidden){ closeSubmodal(); return; }
+    close();
+  }
 });
 window.addEventListener('resize', () => {
   if(overlay && !overlay.hidden) requestAnimationFrame(drawDependencyLinksSvg);
