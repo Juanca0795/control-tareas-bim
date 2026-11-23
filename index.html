@@ -5609,28 +5609,28 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 }
 
 /* ============================================================================
-   TEMA GRAFITO CAD OSCURO (Opción B — Estilo Linear / Figma / Revit Dark)
+   TEMA GRAFITO CAD OSCURO TRANSLÚCIDO (Smoked Glass — Linear / Raycast / Revit)
    Solo presentación: conserva 100% de Supabase, Gantt, CNC, Proyección y PPTX.
    ============================================================================ */
 :root,
 html[data-theme="dark"] {
   color-scheme: dark;
-  --bg-app: #0B0B0D;
-  --bg-panel: #121215;
-  --bg-subtle: #18181C;
-  --bg-hover: #202026;
-  --bg-selected: rgba(215, 25, 32, 0.12);
+  --bg-app: #09090B;
+  --bg-panel: rgba(20, 20, 24, 0.72);
+  --bg-subtle: rgba(30, 30, 36, 0.62);
+  --bg-hover: rgba(42, 42, 50, 0.76);
+  --bg-selected: rgba(215, 25, 32, 0.14);
 
   --ink-primary: #F4F4F5;
-  --ink-secondary: #B4B4BC;
-  --ink-muted: #7C7C86;
+  --ink-secondary: #B8B8C2;
+  --ink-muted: #82828E;
 
-  --border-base: #232329;
-  --border-strong: #34343D;
+  --border-base: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
 
-  --sidebar-bg: rgba(11, 11, 13, 0.94);
-  --sidebar-hover: #1C1C22;
-  --sidebar-ink: #8E8E98;
+  --sidebar-bg: rgba(11, 11, 14, 0.72);
+  --sidebar-hover: rgba(255, 255, 255, 0.06);
+  --sidebar-ink: #92929E;
   --sidebar-ink-active: #F4F4F5;
 
   --brand-red: #D71920;
@@ -5638,54 +5638,55 @@ html[data-theme="dark"] {
   --accent-blue: #6E9FD4;
   --accent-purple: #9B8EC7;
 
-  --status-done-bg: rgba(52, 199, 139, 0.08);
+  --status-done-bg: rgba(52, 199, 139, 0.10);
   --status-done-fg: #4DD19B;
-  --status-done-bd: rgba(52, 199, 139, 0.22);
+  --status-done-bd: rgba(52, 199, 139, 0.24);
 
-  --status-prog-bg: rgba(110, 159, 212, 0.09);
+  --status-prog-bg: rgba(110, 159, 212, 0.11);
   --status-prog-fg: #8BB6E6;
-  --status-prog-bd: rgba(110, 159, 212, 0.22);
+  --status-prog-bd: rgba(110, 159, 212, 0.24);
 
-  --status-todo-bg: rgba(161, 161, 170, 0.08);
-  --status-todo-fg: #A1A1AA;
+  --status-todo-bg: rgba(161, 161, 170, 0.09);
+  --status-todo-fg: #A8A8B3;
   --status-todo-bd: rgba(161, 161, 170, 0.20);
 
-  --status-warn-bg: rgba(229, 169, 60, 0.09);
+  --status-warn-bg: rgba(229, 169, 60, 0.10);
   --status-warn-fg: #EAB85C;
-  --status-warn-bd: rgba(229, 169, 60, 0.24);
+  --status-warn-bd: rgba(229, 169, 60, 0.25);
 
-  --status-crit-bg: rgba(224, 82, 99, 0.10);
+  --status-crit-bg: rgba(224, 82, 99, 0.12);
   --status-crit-fg: #EB707E;
-  --status-crit-bd: rgba(224, 82, 99, 0.26);
+  --status-crit-bd: rgba(224, 82, 99, 0.28);
 
   --radius-xs: 3px;
   --radius-sm: 5px;
   --radius-md: 7px;
   --radius-lg: 9px;
 
-  --shadow-sm: none;
-  --shadow-md: 0 18px 48px rgba(0, 0, 0, 0.65);
-  --bim-interaction-glow: rgba(255, 255, 255, 0.05);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --shadow-sm: 0 4px 20px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --shadow-md: 0 20px 54px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --bim-interaction-glow: rgba(255, 255, 255, 0.06);
 }
 
-/* Modo claro a juego: Papel Técnico Neutro (sin tinte azulado) */
+/* Modo claro a juego: Vidrio Esmerilado Neutro */
 html[data-theme="light"] {
   color-scheme: light;
-  --bg-app: #F5F5F3;
-  --bg-panel: #FFFFFF;
-  --bg-subtle: #ECECE8;
-  --bg-hover: #E4E4DF;
-  --bg-selected: rgba(215, 25, 32, 0.07);
+  --bg-app: #F1F1EE;
+  --bg-panel: rgba(255, 255, 255, 0.78);
+  --bg-subtle: rgba(236, 236, 231, 0.72);
+  --bg-hover: rgba(224, 224, 218, 0.78);
+  --bg-selected: rgba(215, 25, 32, 0.08);
 
   --ink-primary: #111113;
   --ink-secondary: #45454C;
   --ink-muted: #71717A;
 
-  --border-base: #E2E2DC;
-  --border-strong: #C9C9C1;
+  --border-base: rgba(17, 17, 19, 0.09);
+  --border-strong: rgba(17, 17, 19, 0.17);
 
-  --sidebar-bg: rgba(255, 255, 255, 0.96);
-  --sidebar-hover: #ECECE8;
+  --sidebar-bg: rgba(255, 255, 255, 0.76);
+  --sidebar-hover: rgba(17, 17, 19, 0.05);
   --sidebar-ink: #52525B;
   --sidebar-ink-active: #111113;
 
@@ -5694,34 +5695,44 @@ html[data-theme="light"] {
   --accent-blue: #3B6EA5;
   --accent-purple: #6D5FA3;
 
-  --status-done-bg: #EEF8F3;
+  --status-done-bg: rgba(28, 116, 82, 0.09);
   --status-done-fg: #1C7452;
-  --status-done-bd: #C4E6D6;
+  --status-done-bd: rgba(28, 116, 82, 0.22);
 
-  --status-prog-bg: #EFF4FA;
+  --status-prog-bg: rgba(43, 91, 142, 0.09);
   --status-prog-fg: #2B5B8E;
-  --status-prog-bd: #C5D7EA;
+  --status-prog-bd: rgba(43, 91, 142, 0.22);
 
-  --status-todo-bg: #F2F2EF;
+  --status-todo-bg: rgba(82, 82, 91, 0.08);
   --status-todo-fg: #52525B;
-  --status-todo-bd: #D6D6D0;
+  --status-todo-bd: rgba(82, 82, 91, 0.18);
 
-  --status-warn-bg: #FBF5E8;
+  --status-warn-bg: rgba(148, 96, 18, 0.09);
   --status-warn-fg: #946012;
-  --status-warn-bd: #E8D2A4;
+  --status-warn-bd: rgba(148, 96, 18, 0.22);
 
-  --status-crit-bg: #FDF0F1;
+  --status-crit-bg: rgba(180, 35, 51, 0.09);
   --status-crit-fg: #B42333;
-  --status-crit-bd: #ECC1C6;
+  --status-crit-bd: rgba(180, 35, 51, 0.22);
 
-  --shadow-sm: none;
-  --shadow-md: 0 16px 40px rgba(17, 17, 19, 0.12);
+  --glass-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --shadow-sm: 0 2px 12px rgba(17, 17, 19, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  --shadow-md: 0 16px 42px rgba(17, 17, 19, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
-/* 1. Eliminar degradados y resplandores "de IA" */
+/* 1. Profundidad ambiental grafito sutil (sin azul neón) + desactivar brillos IA */
 body {
-  background: var(--bg-app) !important;
-  background-image: none !important;
+  background-color: var(--bg-app) !important;
+  background-image:
+    radial-gradient(ellipse 900px 420px at 50% -140px, rgba(255, 255, 255, 0.045), transparent 72%),
+    radial-gradient(circle 520px at 88% 12%, rgba(215, 25, 32, 0.045), transparent 68%) !important;
+  background-attachment: fixed !important;
+}
+
+html[data-theme="light"] body {
+  background-image:
+    radial-gradient(ellipse 900px 380px at 50% -120px, rgba(255, 255, 255, 0.85), transparent 70%),
+    radial-gradient(circle 480px at 90% 10%, rgba(215, 25, 32, 0.035), transparent 65%) !important;
 }
 
 :is(#dashboard-view, #tasks-view, #weekly-view):not(.hidden)
@@ -5743,14 +5754,15 @@ body {
   filter: none !important;
 }
 
-/* 2. Cabecera y navegación estilo CAD / Linear */
+/* 2. Cabecera y navegación translúcida estilo CAD / Linear */
 .sidebar {
   height: 60px;
   min-height: 60px;
   background: var(--sidebar-bg);
   border-bottom: 1px solid var(--border-base);
-  box-shadow: none !important;
-  backdrop-filter: blur(12px);
+  box-shadow: var(--glass-highlight) !important;
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 }
 
 .sidebar nav {
@@ -5899,7 +5911,7 @@ input[type="number"]:focus {
   outline-offset: 0;
 }
 
-/* 4. Tarjetas, paneles y KPIs de precisión */
+/* 4. Tarjetas, paneles y KPIs de precisión con vidrio ahumado translúcido */
 .card,
 .chart-card,
 .weekly-chart-card,
@@ -5908,7 +5920,9 @@ input[type="number"]:focus {
   background: var(--bg-panel);
   border: 1px solid var(--border-base);
   border-radius: var(--radius-md);
-  box-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
 }
 
 .card-head {
@@ -5921,7 +5935,9 @@ input[type="number"]:focus {
   background: var(--bg-panel);
   border: 1px solid var(--border-base);
   border-radius: var(--radius-md);
-  box-shadow: none !important;
+  box-shadow: var(--shadow-sm) !important;
+  backdrop-filter: blur(14px) saturate(130%);
+  -webkit-backdrop-filter: blur(14px) saturate(130%);
   transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
@@ -5992,22 +6008,29 @@ table tbody tr:hover,
   letter-spacing: 0.02em;
 }
 
-/* 6. Modales limpios en grafito */
+/* 6. Modales limpios en vidrio grafito */
 .modal-back {
-  background: rgba(5, 5, 7, 0.76);
-  backdrop-filter: blur(4px);
+  background: rgba(5, 5, 7, 0.70);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .modal {
-  background: var(--bg-panel);
+  background: rgba(18, 18, 22, 0.86);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-md);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+}
+
+html[data-theme="light"] .modal {
+  background: rgba(255, 255, 255, 0.90);
 }
 
 .modal-hd,
 .modal-ft {
-  background: var(--bg-panel);
+  background: transparent;
   border-color: var(--border-base);
 }
 </style>
