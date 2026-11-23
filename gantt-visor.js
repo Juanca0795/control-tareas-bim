@@ -109,22 +109,21 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-
 .vgg-table tbody tr.vgg-group-row td.vgg-day.holiday,
 .vgg-table tbody tr.vgg-group-row td.vgg-day.day-off{background:#f1f5f9!important}
 
-/* Barras continuas */
+/* Barras continuas limpias sin porcentajes ni cortes internos */
 .vgg-table tbody td.vgg-day.scheduled{border-right-color:transparent;overflow:visible}
 .vgg-table tbody td.vgg-day.scheduled.bar-end{border-right-color:#edf2f7}
-.vgg-bar-seg{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;height:20px;margin:0;width:calc(100% + 1px);margin-right:-1px;background:linear-gradient(180deg,#4f83cc 0%,#3b6db5 100%);box-shadow:0 1px 2px rgba(15,23,42,.18);border-right:1px solid rgba(255,255,255,.24);transition:filter .15s ease}
+.vgg-bar-seg{position:relative;z-index:2;display:flex;align-items:center;justify-content:center;height:20px;margin:0;width:calc(100% + 1px);margin-right:-1px;background:linear-gradient(180deg,#4f83cc 0%,#3b6db5 100%);box-shadow:0 1px 2px rgba(15,23,42,.15);border-right:0;transition:filter .15s ease}
 .vgg-day.bar-start .vgg-bar-seg{border-top-left-radius:6px;border-bottom-left-radius:6px;margin-left:2px;width:calc(100% - 1px)}
-.vgg-day.bar-end .vgg-bar-seg{border-top-right-radius:6px;border-bottom-right-radius:6px;border-right:0;margin-right:2px;width:calc(100% - 2px)}
+.vgg-day.bar-end .vgg-bar-seg{border-top-right-radius:6px;border-bottom-right-radius:6px;margin-right:2px;width:calc(100% - 2px)}
 .vgg-day.bar-start.bar-end .vgg-bar-seg{margin-left:2px;margin-right:2px;width:calc(100% - 4px)}
 .vgg-bar-seg.done{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%)}
 .vgg-bar-seg.partial{background:linear-gradient(90deg,#10b981 0%,#10b981 var(--vgg-real-fill),#4679c2 var(--vgg-real-fill),#4679c2 100%)}
 .vgg-bar-seg.late{background:linear-gradient(180deg,#e5a13e 0%,#c98324 100%)}
-.vgg-bar-seg.culminated{border-right:0!important;box-shadow:none}
-.vgg-table tbody td.vgg-day.vgg-week-start.scheduled-culminated:not(.bar-start){border-left-color:transparent!important}
-.vgg-table tbody td.vgg-day.vgg-week-start.scheduled-culminated:not(.bar-start) .vgg-bar-seg.culminated{margin-left:-1px;width:calc(100% + 2px)}
-.vgg-table tbody td.vgg-day.vgg-week-start.scheduled-culminated.bar-end:not(.bar-start) .vgg-bar-seg.culminated{width:calc(100% - 1px)}
+.vgg-bar-seg.culminated{box-shadow:none}
+.vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start){border-left-color:transparent!important}
+.vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start) .vgg-bar-seg{margin-left:-1px;width:calc(100% + 2px)}
+.vgg-table tbody td.vgg-day.vgg-week-start.scheduled.bar-end:not(.bar-start) .vgg-bar-seg{width:calc(100% - 1px)}
 .vgg-table tbody tr.vgg-activity:hover .vgg-bar-seg{filter:brightness(1.07)}
-.vgg-cell-percent{font:700 8.5px/1 'JetBrains Mono',Inter,sans-serif;color:#ffffff;letter-spacing:-.2px;font-variant-numeric:tabular-nums;text-shadow:0 1px 1px rgba(0,0,0,.22)}
 
 /* Barra Resumen ultra fina (2px) */
 .vgg-table tbody tr.vgg-group-row td.vgg-day.scheduled{overflow:visible}
@@ -557,7 +556,7 @@ function dayBar(row, d, state, days, idx){
   const realPart = Number((planned*fill/100).toFixed(2));
   const tip = (row.excelId||row.id)+' · '+readable(d)+' · Programado: '+planned+' % · Ejecutado: '+realPart+' % ('+Number(fill.toFixed(1))+' % del día)';
   return '<td class="'+cls+' scheduled'+segCls+'"'+dateAttr+' title="'+escapeText(tip)+'">'+
-    '<div class="vgg-bar-seg'+status+'"'+style+'><span class="vgg-cell-percent">'+excelPercent(value)+'</span></div></td>';
+    '<div class="vgg-bar-seg'+status+'"'+style+'></div></td>';
 }
 
 function visibleColumns(){
