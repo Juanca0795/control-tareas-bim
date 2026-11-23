@@ -5649,7 +5649,8 @@ html[data-theme="light"] :is(#dashboard-view,#tasks-view) .stat.kpi-support:is(:
 
   .sidebar nav .nav-link,
   .sidebar nav .nav-link.active,
-  .sidebar nav .bim-nav-indicator {
+  .sidebar nav .bim-nav-indicator,
+  .sidebar #header-gantt-viewer-launch {
     border-radius: 999px !important;
   }
 
@@ -5843,12 +5844,12 @@ html[data-theme="light"] #tasks-view .stat.kpi-support {
   </div>
   <nav aria-label="Vistas del sistema" role="tablist">
   <button type="button" id="header-gantt-viewer-launch" 
-    onclick="openBimGanttViewer()" title="Visualizar el Gantt original del Excel" aria-label="Visualizar Gantt del Excel">
+    onclick="openBimGanttViewer()" title="Visualizar el Gantt original del Excel" aria-label="GANT">
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <rect x="3" y="4" width="18" height="17" rx="2"></rect>
       <path d="M3 10h18M9 4v17M15 10v11M3 16h18"></path>
     </svg>
-    Visualizar Gantt
+    GANT
   </button>
 
     <button type="button" id="weekly-ppt-launch" class="weekly-ppt-launch hidden"
@@ -8451,10 +8452,9 @@ function switchView(v, authenticated=false){
   }
   $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
   $('#weekly-ppt-launch').classList.toggle('hidden',v!=='weekly');
-  // En Control Semanal, ubicar Visualizar Gantt JUSTO ANTES de Seguimiento.
-  // En Dashboard y Control de tareas, mantenerlo junto al botón de su vista.
+  // Mantener GANT siempre fijo a la izquierda de Dashboard en todas las vistas.
   const ganttLaunch=$('#header-gantt-viewer-launch');
-  const destination=v==='weekly'?$('#weekly-tab-seguimiento'):$('#nav-'+v);
+  const destination=$('#nav-dashboard');
   if(ganttLaunch&&destination?.parentElement){
     ganttLaunch.classList.remove('hidden');
     destination.parentElement.insertBefore(ganttLaunch,destination);
