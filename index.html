@@ -7627,9 +7627,9 @@ function syncGanttRuntimeFromCatalogs(){
     window.BIM_GANTT_ACTIVITIES=nextActs;
   }
   window.dispatchEvent(new Event('bim-gantt-schedule-updated'));
-  if(typeof currentView!=='undefined'&&currentView==='weekly'&&typeof renderWeekly==='function'){
-    try{renderWeekly(false);}catch(e){}
-  }
+  try{
+    if(currentView==='weekly'&&typeof renderWeekly==='function')renderWeekly(false);
+  }catch(e){}
 }
 function orderedOwnersOfSchedule(sched){
   const base=window.BIM_GANTT_BASE_SOURCE||window.BIM_GANTT_VIEW_SOURCE||{rows:[]};
@@ -7979,7 +7979,6 @@ window.bimGanttScheduleStore={
     return normalized;
   }
 };
-if(catalogs?.ganttSchedule?.initialized)syncGanttRuntimeFromCatalogs();
 let settingsTab = 'packages';
 let settingsEditing = null;
 
@@ -8031,6 +8030,7 @@ syncCatalogsWithTasks();
 let editingId = null;
 let currentView = 'dashboard';
 let dashboardDrill = null;
+if(catalogs?.ganttSchedule?.initialized)syncGanttRuntimeFromCatalogs();
 let linkedTaskIds = null;
 let linkedLabel = '';
 let hoveredTaskId = null;
