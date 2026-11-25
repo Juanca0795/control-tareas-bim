@@ -6341,30 +6341,60 @@ html[data-theme="light"] .card {
   max-height: 292px !important;
   flex: 0 0 auto !important;
 }
-#alerts-list .priority-task {
+#alerts-list .priority-task,
+:is(#dashboard-view,#dashboard-list-back) .priority-task {
   flex: 0 0 auto !important;
   height: auto !important;
   min-height: 0 !important;
   width: 100% !important;
   box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
   border: 0 !important;
   border-bottom: 1px solid var(--border-base) !important;
   border-left: 3px solid transparent !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 8px 12px !important;
+  padding: 7px 12px !important;
   margin: 0 !important;
-  gap: 3px !important;
   box-shadow: none !important;
   transition: background-color .14s ease, border-left-color .14s ease !important;
 }
+#alerts-list .priority-task-main,
+:is(#dashboard-view,#dashboard-list-back) .priority-task-main {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+  min-width: 0 !important;
+  flex: 1 1 auto !important;
+}
+#alerts-list .priority-task-side,
+:is(#dashboard-view,#dashboard-list-back) .priority-task-side {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  flex: 0 0 auto !important;
+}
+#alerts-list .priority-task .priority-deadline,
+:is(#dashboard-view,#dashboard-list-back) .priority-task .priority-deadline {
+  padding: 2px 6px !important;
+  font-size: 9.5px !important;
+  line-height: 1.2 !important;
+}
 #alerts-list .priority-task .priority-task-title {
   font-size: 11.5px !important;
+  line-height: 1.25 !important;
 }
 #alerts-list .priority-task .priority-task-meta,
 #alerts-list .priority-task .priority-task-code,
 #alerts-list .priority-task .priority-task-status {
   font-size: 10px !important;
+  line-height: 1.2 !important;
 }
 #alerts-list .priority-task:last-child {
   border-bottom: 0 !important;
@@ -9777,11 +9807,15 @@ function renderPriorityTasks(rows){
     const lod=t.lod?`<span class="priority-lod">${esc(t.lod)}</span>`:'';
     return `<button type="button" class="priority-task ${tone}${selectedDrill('task',t.id)?' selected':''}"
       data-drill="task" data-value="${esc(t.id)}" aria-pressed="${selectedDrill('task',t.id)}">
-      <span class="priority-task-top"><span class="priority-task-code">${critical?'<i class="priority-blink" aria-label="Atención inmediata"></i>':''}${esc(t.id)}</span>
-        <span class="priority-deadline">${esc(deadline)}</span></span>
-      <strong class="priority-task-title">${esc(t.title)}</strong>
-      <span class="priority-task-bottom"><span class="priority-task-meta">${lod}<span>Resp: ${esc(t.owner||'Sin asignar')}</span></span>
-        <span class="priority-task-status" title="Estado operativo configurado">${esc(t.status)}</span></span>
+      <span class="priority-task-main">
+        <span class="priority-task-code">${critical?'<i class="priority-blink" aria-label="Atención inmediata"></i>':''}${esc(t.id)}</span>
+        <strong class="priority-task-title">${esc(t.title)}</strong>
+        <span class="priority-task-meta">${lod}<span>Resp: ${esc(t.owner||'Sin asignar')}</span></span>
+      </span>
+      <span class="priority-task-side">
+        <span class="priority-deadline">${esc(deadline)}</span>
+        <span class="priority-task-status" title="Estado operativo configurado">${esc(t.status)}</span>
+      </span>
     </button>`;
   }).join('');
 }
