@@ -6266,34 +6266,47 @@ html[data-theme="light"] .card {
   margin-bottom: 10px !important;
 }
 
-/* Salud Operativa BIM: compacto, sin caja anidada, filas limpias */
+/* Salud Operativa BIM: adaptado al 100% del alto de la tarjeta sin espacio vacío */
+#dashboard-view .health-card {
+  display: flex !important;
+  flex-direction: column !important;
+}
 .operational-health {
-  gap: 14px !important;
-  align-items: center !important;
+  flex: 1 1 auto !important;
+  gap: 16px !important;
+  align-items: stretch !important;
+  min-height: 0 !important;
 }
 .health-panel {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  padding: 2px 4px !important;
+  padding: 6px 8px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 100% !important;
+  gap: 12px !important;
 }
 .health-ring {
-  width: 138px !important;
-  height: 138px !important;
+  width: 170px !important;
+  height: 170px !important;
 }
 .health-ring-center strong {
-  font-size: 20px !important;
+  font-size: 25px !important;
 }
 .health-ring-center small {
-  font-size: 8.5px !important;
+  font-size: 9px !important;
 }
 .health-caption {
-  font-size: 10.5px !important;
-  margin-top: 6px !important;
+  font-size: 11px !important;
+  margin-top: 2px !important;
 }
 .health-metrics {
   display: flex !important;
   flex-direction: column !important;
+  height: 100% !important;
   gap: 0 !important;
   border: 1px solid var(--border-base) !important;
   border-radius: 10px !important;
@@ -6301,22 +6314,23 @@ html[data-theme="light"] .card {
   overflow: hidden !important;
 }
 .health-metrics > button, .health-metric {
+  flex: 1 1 0 !important;
   border: 0 !important;
   border-bottom: 1px solid var(--border-base) !important;
   border-radius: 0 !important;
   background: transparent !important;
   min-height: 0 !important;
   height: auto !important;
-  padding: 6px 11px !important;
+  padding: 8px 13px !important;
   margin: 0 !important;
-  font-size: 11px !important;
-  line-height: 1.2 !important;
+  font-size: 11.5px !important;
+  line-height: 1.25 !important;
   box-shadow: none !important;
   transition: background-color .14s ease !important;
 }
 .health-metrics > button small, .health-metric small {
-  font-size: 9.5px !important;
-  line-height: 1.15 !important;
+  font-size: 10px !important;
+  line-height: 1.2 !important;
 }
 .health-metrics > button:last-child, .health-metric:last-child {
   border-bottom: 0 !important;
