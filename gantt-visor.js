@@ -1436,10 +1436,10 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     bottom:{style:'thin',color:{argb:'FFE2E8F0'}}
   };
   const calBorder = {
-    top:{style:'thin',color:{argb:'FFE6ECF5'}},
-    left:{style:'thin',color:{argb:'FFFFFFFF'}},
-    bottom:{style:'thin',color:{argb:'FFE6ECF5'}},
-    right:{style:'thin',color:{argb:'FFFFFFFF'}}
+    top:{style:'thin',color:{argb:'FFE2E8F0'}},
+    left:{style:'thin',color:{argb:'FFE2E8F0'}},
+    bottom:{style:'thin',color:{argb:'FFE2E8F0'}},
+    right:{style:'thin',color:{argb:'FFE2E8F0'}}
   };
   const fillSolid = argb => ({ type:'pattern', pattern:'solid', fgColor:{ argb } });
   // IMPORTANTE OOXML: en formato condicional (<dxf>), Excel usa bgColor para rellenos sólidos
@@ -1553,12 +1553,15 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     wsGant.getCell(`${colL}9`).border = thinBorder;
   });
 
-  // Encabezado del calendario (M7:<lastCalL>9) con valores en caché + colores exactos por semana ISO
+  // Encabezado del calendario (M7:<lastCalL>9) con valores en caché + bloques limpios por semana ISO + Hoy en dorado
+  const todayStr = typeof todayString === 'function' ? todayString() : new Date().toISOString().slice(0,10);
   for(let i = 0; i < calSpan; i++){
     const col = calStartCol + i;
     const cL = excelColLetter(col);
     const dt = calDatesUtc[i];
+    const dIso = calDatesIso[i];
     const inRange = i < plazoDias;
+    const isToday = dIso === todayStr;
     const wkNum = isoWeekNum(dt);
     const wd = weekdayMon1(dt);
     const weekStartMs = Math.max(baseStartUtc.getTime(), dt.getTime() - (wd - 1) * 86400000);
@@ -1568,6 +1571,8 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     const isEvenWk = wkNum % 2 === 0;
     const hdrBg = !inRange ? 'FFFFFFFF' : (isEvenWk ? 'FF1B2A49' : 'FFDCE3EE');
     const hdrFg = !inRange ? 'FFFFFFFF' : (isEvenWk ? 'FFFFFFFF' : 'FF1B2A49');
+    const dayBg = isToday ? 'FFB08D57' : hdrBg;
+    const dayFg = isToday ? 'FFFFFFFF' : hdrFg;
 
     const c7 = wsGant.getCell(7, col);
     c7.value = {
@@ -1577,27 +1582,25 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     c7.font = { name:FONT, size:7, bold:true, color:{ argb:hdrFg } };
     c7.fill = fillSolid(hdrBg);
     c7.alignment = { horizontal:'center', vertical:'middle' };
-    c7.border = thinBorder;
 
     const c8 = wsGant.getCell(8, col);
     c8.value = i === 0
       ? { formula: '$C$4', result: dt }
       : { formula: `${excelColLetter(col - 1)}8+1`, result: dt };
     c8.numFmt = 'd';
-    c8.font = { name:FONT, size:8, bold:true, color:{ argb:hdrFg } };
-    c8.fill = fillSolid(hdrBg);
+    c8.font = { name:FONT, size:8, bold:true, color:{ argb:dayFg } };
+    c8.fill = fillSolid(dayBg);
     c8.alignment = { horizontal:'center', vertical:'middle' };
-    c8.border = thinBorder;
 
     const c9 = wsGant.getCell(9, col);
     c9.value = {
       formula: `UPPER(CHOOSE(WEEKDAY(${cL}8,2),"L","M","X","J","V","S","D"))`,
       result: dayLetters[wd]
     };
-    c9.font = { name:FONT, size:8, bold:true, color:{ argb:hdrFg } };
-    c9.fill = fillSolid(hdrBg);
+    c9.font = { name:FONT, size:8, bold:true, color:{ argb:dayFg } };
+    c9.fill = fillSolid(dayBg);
     c9.alignment = { horizontal:'center', vertical:'middle' };
-    c9.border = thinBorder;
+    c9.border = { bottom:{style:'thin',color:{argb:'FF94A3B8'}} };
   }
 
   // --- Escribir filas del cronograma desde la fila 10 ---
