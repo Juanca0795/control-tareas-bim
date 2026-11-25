@@ -6695,6 +6695,28 @@ main {
     display: none !important;
   }
 }
+/* Superficie uniforme grafito oscuro en TODAS las tarjetas/KPIs/tablas, conservando solo el brillo sutil en bordes */
+:is(#dashboard-view,#tasks-view,#weekly-view) :is(.card,.chart-card,.weekly-chart-card,.dash-filters,.drill-card,.stat,.stat.kpi-reference,.stat.kpi-support,.weekly-kpi,.weekly-status-strip) {
+  background: var(--bg-panel) !important;
+  background-image: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+:is(#dashboard-view,#tasks-view,#weekly-view):not(.hidden)
+  :is(.card,.stat.kpi-reference,.weekly-kpi,.weekly-status-strip,
+      .task-mobile-card,.weekly-time-step)::after {
+  background: none !important;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, .045),
+    inset 0 0 0 1px rgba(var(--bim-ambient-rgb), .12),
+    inset 0 -12px 18px -16px rgba(var(--bim-ambient-rgb), .34) !important;
+}
+html[data-theme="light"] :is(#dashboard-view,#tasks-view,#weekly-view):not(.hidden)
+  :is(.card,.stat.kpi-reference,.weekly-kpi,.weekly-status-strip,
+      .task-mobile-card,.weekly-time-step)::after {
+  background: none !important;
+  box-shadow: none !important;
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
