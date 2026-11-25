@@ -6159,72 +6159,112 @@ html[data-theme="light"] header, html[data-theme="light"] .topbar {
   background: var(--bg-hover) !important;
 }
 
-/* Tarjetas Bento Grid (limpias, sin capas recargadas) */
-.card {
+/* Tarjetas Bento Grid — 100% superficie uniforme (elimina gradientes azules heredados) */
+.card, .chart-card, .radar-card, .attention-card, .owner-card, .pulse-card, .dash-filters {
   background: var(--bg-panel) !important;
+  background-image: none !important;
   border: 1px solid var(--border-base) !important;
-  border-radius: 16px !important;
+  border-radius: 13px !important;
   box-shadow: 0 1px 2px rgba(0, 0, 0, .18) !important;
-  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease !important;
+  transition: border-color .16s ease, transform .16s ease !important;
+}
+.card::before, .chart-card::before, .stat-card::before,
+.card::after, .chart-card::after, .stat-card::after {
+  background: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  opacity: 0 !important;
 }
 html[data-theme="light"] .card {
   box-shadow: 0 1px 3px rgba(15, 23, 42, .05) !important;
 }
 .dash-tip {
-  font-size: 11.5px !important;
+  font-size: 10.5px !important;
   color: var(--ink-muted) !important;
-  margin: 4px 2px 10px !important;
+  margin: 2px 2px 7px !important;
 }
 
-/* 6 KPI Bento Tiles — alineación horizontal perfecta */
+/* 6 KPI Bento Tiles — compactos, misma superficie y alineación horizontal perfecta */
 #dash-stats.stat-grid, #task-stats.stat-grid {
-  gap: 12px !important;
+  gap: 9px !important;
+  margin-bottom: 10px !important;
 }
 #dash-stats .stat-card, #task-stats .stat-card {
-  border-radius: 15px !important;
+  border-radius: 12px !important;
   border: 1px solid var(--border-base) !important;
-  background: linear-gradient(180deg, rgba(255,255,255,.025) 0%, transparent 45%), var(--bg-panel) !important;
-  padding: 15px 16px 13px !important;
+  background: var(--bg-panel) !important;
+  background-image: none !important;
+  padding: 10px 13px 9px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: space-between !important;
-  min-height: 132px !important;
+  min-height: 94px !important;
   position: relative !important;
   overflow: hidden !important;
 }
-html[data-theme="light"] #dash-stats .stat-card, html[data-theme="light"] #task-stats .stat-card {
-  background: var(--bg-panel) !important;
+#dash-stats .stat-card .stat-label, #dash-stats .stat-card h3, #dash-stats .stat-card .kpi-label {
+  font-size: 10px !important;
+  letter-spacing: .04em !important;
+}
+#dash-stats .stat-card .stat-value, #dash-stats .stat-card .kpi-val, #dash-stats .stat-card .kpi-value {
+  font-size: 24px !important;
+  line-height: 1.15 !important;
 }
 #dash-stats .stat-card:hover, #task-stats .stat-card:hover {
   border-color: var(--border-strong) !important;
-  transform: translateY(-2px) !important;
+  transform: translateY(-1px) !important;
 }
 
-/* Bento Grid Asimétrico Principal */
+/* Bento Grid Asimétrico Principal — compacto y sin espacios vacíos */
 .executive-grid {
-  gap: 14px !important;
+  gap: 10px !important;
 }
 .executive-grid .chart-card {
-  padding: 18px 20px !important;
+  padding: 13px 15px !important;
+}
+.executive-grid .chart-card h2 {
+  font-size: 11.5px !important;
+  letter-spacing: .04em !important;
+}
+.executive-grid .chart-card .desc {
+  font-size: 10.5px !important;
+  margin-top: 1px !important;
+}
+.control-card-title, .pulse-matrix-heading {
+  margin-bottom: 10px !important;
 }
 
-/* Salud Operativa BIM: quitar caja anidada alrededor del donut y convertir métricas en filas limpias */
+/* Salud Operativa BIM: compacto, sin caja anidada, filas limpias */
 .operational-health {
-  gap: 16px !important;
+  gap: 14px !important;
   align-items: center !important;
 }
 .health-panel {
   background: transparent !important;
   border: 0 !important;
   box-shadow: none !important;
-  padding: 6px 4px !important;
+  padding: 2px 4px !important;
+}
+.health-ring {
+  width: 138px !important;
+  height: 138px !important;
+}
+.health-ring-center strong {
+  font-size: 20px !important;
+}
+.health-ring-center small {
+  font-size: 8.5px !important;
+}
+.health-caption {
+  font-size: 10.5px !important;
+  margin-top: 6px !important;
 }
 .health-metrics {
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
   border: 1px solid var(--border-base) !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   background: var(--bg-subtle) !important;
   overflow: hidden !important;
 }
@@ -6233,8 +6273,9 @@ html[data-theme="light"] #dash-stats .stat-card, html[data-theme="light"] #task-
   border-bottom: 1px solid var(--border-base) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 10px 14px !important;
+  padding: 7px 11px !important;
   margin: 0 !important;
+  font-size: 11px !important;
   box-shadow: none !important;
   transition: background-color .14s ease !important;
 }
@@ -6245,13 +6286,13 @@ html[data-theme="light"] #dash-stats .stat-card, html[data-theme="light"] #task-
   background: var(--bg-hover) !important;
 }
 
-/* Tareas con Prioridad: lista estilo Linear (más densa, limpia, sin cajas pesadas) */
+/* Tareas con Prioridad: lista compacta estilo Linear */
 #alerts-list.big-list {
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
   border: 1px solid var(--border-base) !important;
-  border-radius: 12px !important;
+  border-radius: 10px !important;
   background: var(--bg-subtle) !important;
   overflow-y: auto !important;
 }
@@ -6261,11 +6302,19 @@ html[data-theme="light"] #dash-stats .stat-card, html[data-theme="light"] #task-
   border-left: 3px solid transparent !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 10px 14px !important;
+  padding: 7px 12px !important;
   margin: 0 !important;
-  gap: 3px !important;
+  gap: 2px !important;
   box-shadow: none !important;
   transition: background-color .14s ease, border-left-color .14s ease !important;
+}
+#alerts-list .priority-task .priority-task-title {
+  font-size: 11.5px !important;
+}
+#alerts-list .priority-task .priority-task-meta,
+#alerts-list .priority-task .priority-task-code,
+#alerts-list .priority-task .priority-task-status {
+  font-size: 10px !important;
 }
 #alerts-list .priority-task:last-child {
   border-bottom: 0 !important;
@@ -6280,27 +6329,55 @@ html[data-theme="light"] #dash-stats .stat-card, html[data-theme="light"] #task-
   background: var(--bg-hover) !important;
 }
 
-/* Tablas modernas técnicas (Control de tareas, Control semanal y Matriz Operativa) */
+/* Carga y Desempeño por Colaborador BIM: lista uniforme compacta (mismo estilo que Prioridad) */
+#owner-chart.h-bars {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  border: 1px solid var(--border-base) !important;
+  border-radius: 10px !important;
+  background: var(--bg-subtle) !important;
+  overflow: hidden !important;
+}
+#owner-chart.h-bars > * {
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-base) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 7px 12px !important;
+  margin: 0 !important;
+  font-size: 11px !important;
+  box-shadow: none !important;
+}
+#owner-chart.h-bars > *:last-child {
+  border-bottom: 0 !important;
+}
+#owner-chart.h-bars > *:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Tablas modernas técnicas compactas (Control de tareas, Control semanal y Matriz Operativa) */
 #tasks-view table, #weekly-view table, #team-summary table {
   border-collapse: separate !important;
   border-spacing: 0 !important;
+  font-size: 11.5px !important;
 }
 #tasks-view thead th, #weekly-view thead th, #team-summary thead th {
   background: var(--bg-subtle) !important;
   color: var(--ink-muted) !important;
-  font-size: 10.5px !important;
+  font-size: 10px !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
   letter-spacing: .05em !important;
   border-bottom: 1px solid var(--border-strong) !important;
-  padding: 10px 12px !important;
+  padding: 7px 10px !important;
 }
 #tasks-view tbody td, #weekly-view tbody td, #team-summary tbody td {
   border-bottom: 1px solid var(--border-base) !important;
-  padding: 10px 12px !important;
+  padding: 7px 10px !important;
   font-variant-numeric: tabular-nums !important;
 }
-#tasks-view tbody tr:hover td, #weekly-view tbody tr:hover td {
+#tasks-view tbody tr:hover td, #weekly-view tbody tr:hover td, #team-summary tbody tr:hover td {
   background: var(--bg-hover) !important;
 }
 .kpi-value,.kpi-val,.kpi-num,.stat-value,.badge,.pill,.progress-pct,
@@ -6314,11 +6391,9 @@ html[data-theme="light"] #dash-stats .stat-card, html[data-theme="light"] #task-
   from{opacity:0;transform:translateY(6px)}
   to{opacity:1;transform:none}
 }
-@media (max-width:1480px){
-  #dash-stats.stat-grid{gap:10px !important}
-  #dash-stats .stat-card{min-height:124px !important;padding:13px 14px 11px !important}
-  .executive-grid .chart-card{padding:15px 16px !important}
-  main{padding-top:10px !important}
+main {
+  padding-top: 10px !important;
+  padding-bottom: 18px !important;
 }
 </style>
 <script src="evidencias.js"></script>
