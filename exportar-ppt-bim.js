@@ -47,6 +47,33 @@ function pptBimGroupName(item){
 function pptBimSector(item){
   return taskSector(item.package)||'Sin sector';
 }
+/* Área de trabajo (Revit / Civil 3D / GIS / otras) usada por la opción "Todos". */
+const PPT_BIM_STD_TEAMS=new Set(['revit','rvt','civil','civil 3d','civil3d','c3d']);
+function pptBimAreaOf(task){
+  const team=String(task?.team||'').trim(),key=pptBimNormalizeOwner(team);
+  if(key&&!PPT_BIM_STD_TEAMS.has(key))return team;
+  const s=pptBimSpecialtyForOwner(task?.owner);
+  if(s==='excluded')return '';
+  return s==='civil'?'Civil 3D':'Revit';
+}
+function pptBimAreaRank(area){
+  const k=pptBimNormalizeOwner(area);
+  return k==='revit'?0:k==='civil 3d'?1:2;
+}
+function pptBimCompareArea(a,b){
+  return pptBimAreaRank(a)-pptBimAreaRank(b)||
+    String(a||'').localeCompare(String(b||''),'es',{numeric:true});
+}
+function pptBimIsAllAreas(){
+  return pptBimState.profile==='by-person'&&pptBimState.specialty==='all';
+}
+/* Color del estado de la actividad dentro del cuadro de cada diapositiva. */
+function pptBimStatusStyle(status){
+  const cat=typeof categoryOf==='function'?categoryOf(status):'';
+  if(cat==='done')return {fill:'1E8E5A',text:'FFFFFF'};
+  if(cat==='progress')return {fill:'2563EB',text:'FFFFFF'};
+  return {fill:'6B7280',text:'FFFFFF'};
+}
 let pptBimState={items:[],week:'',mode:'reunion',meetingDay:pptBimSavedMeetingDay(),
   profile:'standard',specialty:'revit',includeTables:false,exportContent:'fotos',sectorFilter:'',manualMeetingRange:null,
   weekFilters:{ingreso:true,culminacion:true},
@@ -317,7 +344,10 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   for(const task of tasks){
     // El perfil original nunca entra en esta condición ni cambia su selección.
     if(specialty){
-      if(specialty.startsWith('team:')){
+      if(specialty==='all'){
+        // "Todos": Revit + Civil 3D + GIS y demás áreas en una sola presentación.
+        if(!pptBimAreaOf(task))continue;
+      }else if(specialty.startsWith('team:')){
         // Las especialidades adicionales (ej. GIS) se basan en la disciplina registrada.
         // La exclusión por responsable pertenece solo a los perfiles de
         // Revit/Civil 3D. Al escoger GIS u otra disciplina explícita,
@@ -365,6 +395,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
         displayCode:displayCodes?.get(task.id)||task.id,
         package:task.package||'Sin paquete',
         team:task.team||'',owner:task.owner||'',
+        area:pptBimAreaOf(task),status:task.status||'',
         title:task.title||task.id,caption:task.title||task.id,
         name:photo.name||'Fotografía'
       });
@@ -376,6 +407,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
         displayCode:displayCodes?.get(task.id)||task.id,
         package:task.package||'Sin paquete',
         team:task.team||'',owner:task.owner||'',
+        area:pptBimAreaOf(task),
         status:task.status||'',deadline:task.deadline||'',
         title:task.title||task.id,caption:task.title||task.id,
         name:'Sin captura',photoIndex:0,photoCount:0
@@ -384,6 +416,7 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
   }
   out.sort((a,b)=>
     Number(!!a.empty)-Number(!!b.empty)||
+    (specialty==='all'?pptBimCompareArea(a.area,b.area):0)||
     (specialty?a.owner.localeCompare(b.owner,'es',{numeric:true}):a.package.localeCompare(b.package,'es',{numeric:true}))||
     (specialty?pptBimSector(a).localeCompare(pptBimSector(b),'es',{numeric:true}):0)||
     (specialty?a.package.localeCompare(b.package,'es',{numeric:true}):0)||
@@ -538,6 +571,7 @@ function pptBimTableSpecialties(){
     .sort((a,b)=>a.label.localeCompare(b.label,'es',{numeric:true}));
 }
 function pptBimSpecialtyName(value){
+  if(value==='all')return 'Todos';
   if(value==='civil')return 'Civil 3D';
   if(value==='revit')return 'Revit';
   return pptBimTableSpecialties().find(opt=>opt.value===value)?.label||'Revit';
@@ -546,6 +580,7 @@ function pptBimRenderSpecialties(){
   const menu=$('#bim-ppt-specialty-menu');
   if(!menu)return;
   const options=[
+    {value:'all',label:'Todos'},
     {value:'revit',label:'Revit'},{value:'civil',label:'Civil 3D'},
     ...pptBimTableSpecialties()
   ];
@@ -630,7 +665,7 @@ function pptBimRefreshModeInfo(){
   pptBimRenderPeoplePicker();
   const note=$('#bim-ppt-design-note');
   if(note)note.innerHTML=special
-    ?'Perfil AREA_BIM2: Por semana incluye actividades desde el ingreso hasta el cierre real o fecha límite. Las tareas en progreso muestran fotos de esa semana; las completadas en la semana muestran también sus fotos históricas. Con Añadir tablas, las actividades sin fotos seleccionadas van al final. Se mantienen los filtros de sector, paquete, especialidad y personal.'
+    ?'Exportación avanzada: Por semana incluye actividades desde el ingreso hasta el cierre real o fecha límite. Con "Todos" se exportan Revit, Civil 3D, GIS y demás áreas en un solo PPT, separados por área de trabajo. Cada cuadro muestra el estado de la actividad (Completada, En Progreso, etc.). Con Añadir tablas, las actividades sin fotos seleccionadas van al final.'
     :'Diseño basado en la plantilla de reunión semanal: fotografías en tres columnas y actividades sin fotografía en tablas editables al final. Se respetan el período de reunión y los filtros de sector, paquete, disciplina y colaborador.';
   const dayPicker=$('#bim-ppt-day-picker');
   const dayTrigger=$('#bim-ppt-meeting-trigger');
@@ -832,7 +867,7 @@ function handleBimPptSpecialtyKey(event){
 function setBimPptSpecialty(value){
   if(pptBimState.profile!=='by-person'||pptBimState.busy||
     !$('#bim-ppt-back')?.classList.contains('open')||
-    !['revit','civil',...pptBimTableSpecialties().map(opt=>opt.value)].includes(value))return;
+    !['all','revit','civil',...pptBimTableSpecialties().map(opt=>opt.value)].includes(value))return;
   if(value!==pptBimState.specialty){
     closeBimPptPeopleMenu();
     pptBimState.specialty=value;
@@ -1122,6 +1157,20 @@ function pptBimPackSlides(items,byPerson=false){
     }
     const activities=[...grouped.values()];
     const pages=[];
+    if(pptBimIsAllAreas()){
+      // Nunca mezclar áreas en una misma diapositiva.
+      const byArea=new Map();
+      for(const activity of activities){
+        const area=activity.area||'Sin área';
+        if(!byArea.has(area))byArea.set(area,[]);
+        byArea.get(area).push(activity);
+      }
+      for(const area of [...byArea.keys()].sort(pptBimCompareArea)){
+        const list=byArea.get(area);
+        for(let i=0;i<list.length;i+=3)pages.push(list.slice(i,i+3));
+      }
+      return pages;
+    }
     for(let i=0;i<activities.length;i+=3)
       pages.push(activities.slice(i,i+3));
     return pages;
@@ -1223,7 +1272,8 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   // fotografía dibujan bordes, sector, encabezado y descripción.
   // Las posiciones restantes quedan completamente blancas y sin líneas.
   const start=.28,totalWidth=12.801,top=1.13,redH=.673,picH=3.746,captionH=.961;
-  const sectorH=.21,packageH=redH-sectorH;
+  const sectorH=.28,packageH=redH-sectorH;
+  const allAreas=byPerson&&pptBimIsAllAreas();
   const gap=.015,slotWidth=(totalWidth-gap*2)/3;
   for(let k=0;k<entries.length;k++){
     const e=entries[k],x=start+k*(slotWidth+gap),w=slotWidth;
@@ -1231,12 +1281,28 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
       fill:{color:'E9EFF5'},line:{color:'000000',width:.8}});
     slide.addShape(S.rect,{x,y:top+sectorH,w,h:packageH,
       fill:{color:'C00000'},line:{color:'000000',width:.8}});
+    const pillW=1.22,pillH=.2,pillY=top+(sectorH-pillH)/2;
+    // Área de trabajo (izquierda) cuando se exporta "Todos".
+    if(allAreas){
+      slide.addShape(S.roundRect,{x:x+.06,y:pillY,w:pillW,h:pillH,rectRadius:.05,
+        fill:{color:'172B49'},line:{color:'172B49',width:.5}});
+      pptBimAddText(slide,String(e.area||'Sin área').toUpperCase(),
+        {x:x+.06,y:pillY+.015,w:pillW,h:pillH-.03,fontSize:7.5,bold:true,
+          color:'FFFFFF',align:'center',valign:'mid',fit:'shrink'});
+    }
+    // Estado de la actividad (derecha): Completada, En Progreso, No Iniciada, etc.
+    const st=pptBimStatusStyle(e.status);
+    slide.addShape(S.roundRect,{x:x+w-pillW-.06,y:pillY,w:pillW,h:pillH,rectRadius:.05,
+      fill:{color:st.fill},line:{color:st.fill,width:.5}});
+    pptBimAddText(slide,String(e.status||'Sin estado').toUpperCase(),
+      {x:x+w-pillW-.06,y:pillY+.015,w:pillW,h:pillH-.03,fontSize:7.5,bold:true,
+        color:st.text,align:'center',valign:'mid',fit:'shrink'});
     pptBimAddText(slide,pptBimSector(e).toUpperCase(),
-      {x:x+.10,y:top+.045,w:w-.20,h:.12,fontSize:10,bold:true,
+      {x:x+pillW+.12,y:top+.06,w:w-2*pillW-.24,h:.16,fontSize:10,bold:true,
         color:'172B49',align:'center',fit:'shrink'});
     // AREA_BIM muestra paquete; AREA_BIM2 mantiene responsable.
     pptBimAddText(slide,String(byPerson?(e.owner||'Sin responsable'):(e.package||'Sin paquete')).toUpperCase(),
-      {x:x+.10,y:top+sectorH+.072,w:w-.20,h:.31,fontSize:16,bold:true,
+      {x:x+.10,y:top+sectorH+.05,w:w-.20,h:.29,fontSize:15,bold:true,
         color:'FFFFFF',align:'center',fit:'shrink'});
     slide.addShape(S.rect,{x,y:top+redH,w,h:picH,
       fill:{color:'FFFFFF'},line:{color:'000000',width:.8}});
@@ -1266,10 +1332,28 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
   }
   const groups=[...new Set(entries.map(e=>byPerson?
     (e.owner||'Sin responsable'):(e.package||'Sin paquete')))];
-  const label=groups.length===1?groups[0]:groups.join(' / ');
+  const label=(allAreas&&entries[0]?.area?String(entries[0].area).toUpperCase()+' · ':'')+
+    (groups.length===1?groups[0]:groups.join(' / '));
   slide.addShape(S.rect,{x:0,y:6.8,w:4.1,h:.34,fill:{color:'FF0000'},line:{color:'FF0000'}});
   pptBimAddText(slide,label+' · '+week.replace('-W',' / S'),
     {x:.17,y:6.88,w:3.83,h:.16,fontSize:10,color:'FFFFFF',bold:true,align:'center',fit:'shrink'});
+}
+/* Diapositiva separadora por área de trabajo (opción "Todos"). */
+function pptBimAreaSeparator(pptx,week,area,activityCount,photoCount){
+  const slide=pptx.addSlide();
+  pptBimMaster(slide,pptx);
+  const S=pptx.ShapeType;
+  pptBimAddText(slide,'ÁREA DE TRABAJO',
+    {x:.55,y:2.15,w:12.15,h:.4,fontSize:16,bold:true,color:'626B78'});
+  pptBimAddText(slide,String(area||'Sin área').toUpperCase(),
+    {x:.55,y:2.62,w:12.15,h:.95,fontSize:40,bold:true,color:'172B49',fit:'shrink'});
+  slide.addShape(S.rect,{x:.55,y:3.72,w:12.18,h:.1,fill:{color:'C00000'},line:{color:'C00000'}});
+  pptBimAddText(slide,'ACTIVIDADES: '+activityCount+'     FOTOGRAFÍAS: '+photoCount+
+    '     SEMANA '+week.split('-W')[1],
+    {x:.55,y:4.02,w:12,h:.45,fontSize:16,bold:true,color:'172B49'});
+  slide.addShape(S.rect,{x:0,y:6.79,w:4.12,h:.35,fill:{color:'FF0000'},line:{color:'FF0000'}});
+  pptBimAddText(slide,'ÁREA BIM · S&P',{x:.45,y:6.87,w:3.4,h:.16,
+    fontSize:10,color:'FFFFFF',bold:true,align:'center'});
 }
 /* AREA_BIM2: actividades sin fotografías en cuadrículas editables de PowerPoint.
  * Se ordenan por responsable y sector, se deduplican por código y se paginan
@@ -1299,20 +1383,30 @@ function pptBimMissingActivitySlides(pptx,week,items){
       (ownerLines>2?.1:0)));
   };
   const pages=[];
-  let page=[],height=headerH;
+  const allAreas=pptBimIsAllAreas();
+  const areaGroups=new Map();
   for(const item of entries){
-    const h=rowHeight(item);
-    if(page.length&&tableY+height+h>maxY){
-      pages.push(page);page=[];height=headerH;
-    }
-    page.push({item,h});height+=h;
+    const area=allAreas?(item.area||'Sin área'):'';
+    if(!areaGroups.has(area))areaGroups.set(area,[]);
+    areaGroups.get(area).push(item);
   }
-  if(page.length)pages.push(page);
-  pages.forEach((page,index)=>{
+  for(const area of [...areaGroups.keys()].sort(pptBimCompareArea)){
+    let page=[],height=headerH;
+    for(const item of areaGroups.get(area)){
+      const h=rowHeight(item);
+      if(page.length&&tableY+height+h>maxY){
+        pages.push({area,rows:page});page=[];height=headerH;
+      }
+      page.push({item,h});height+=h;
+    }
+    if(page.length)pages.push({area,rows:page});
+  }
+  pages.forEach(({area,rows:page},index)=>{
     const slide=pptx.addSlide();
     pptBimMaster(slide,pptx);
-    pptBimAddText(slide,'ACTIVIDADES SIN EVIDENCIA FOTOGRÁFICA · SEMANA '+week.split('-W')[1],
-      {x:.37,y:.79,w:12.55,h:.30,fontSize:16.6,bold:true});
+    pptBimAddText(slide,'ACTIVIDADES SIN EVIDENCIA FOTOGRÁFICA · SEMANA '+week.split('-W')[1]+
+      (area?' · ÁREA: '+String(area).toUpperCase():''),
+      {x:.37,y:.79,w:12.55,h:.30,fontSize:16.6,bold:true,fit:'shrink'});
     pptBimAddText(slide,'Registros sin capturas en el período seleccionado · Ordenados por responsable y sector',
       {x:.38,y:1.18,w:12.4,h:.20,fontSize:10,color:'626B78'});
     // Renderizar la tabla como celdas y textos editables. PptxGenJS 4.0.0
@@ -1336,11 +1430,13 @@ function pptBimMissingActivitySlides(pptx,week,items){
           x,y,w,h,fill:{color:background},
           line:{color:'BFC5CE',width:.55}
         });
+        const statusCell=!header&&col===widths.length-1;
+        const statusColor=statusCell?pptBimStatusStyle(page[rowIndex-1].item.status).fill:'';
         pptBimAddText(slide,String(rows[rowIndex][col]||''),{
           x:x+.06,y:y+.06,w:w-.12,h:Math.max(.20,h-.12),
           fontFace:'Arial',fontSize:header?9.2:col===1?10.4:col===2?9.8:9.3,
-          color:header?'FFFFFF':'172B49',
-          bold:header||col===0,align:!header&&col===1?'left':'center',
+          color:header?'FFFFFF':statusCell?statusColor:'172B49',
+          bold:header||col===0||statusCell,align:!header&&col===1?'left':'center',
           valign:'mid',fit:'shrink'
         });
         x+=w;
@@ -1416,10 +1512,22 @@ async function exportBimPpt(){
     }
     // AREA_BIM2: fotos en tres columnas completas; al final, tablas por actividad.
     const pages=pptBimPackSlides(decoded,byPerson);
-    for(const entries of pages)pptBimEvidenceSlide(pptx,pptBimState.week,entries,byPerson);
+    const allAreas=byPerson&&pptBimIsAllAreas();
+    let separators=0,lastArea=null;
+    for(const entries of pages){
+      const area=entries[0]?.area||'Sin área';
+      if(allAreas&&area!==lastArea){
+        lastArea=area;
+        const inArea=decoded.filter(x=>(x.area||'Sin área')===area);
+        pptBimAreaSeparator(pptx,pptBimState.week,area,
+          new Set(inArea.map(x=>x.taskId)).size,inArea.filter(x=>!x.empty).length);
+        separators++;
+      }
+      pptBimEvidenceSlide(pptx,pptBimState.week,entries,byPerson);
+    }
     const tableSlides=pptBimMissingActivitySlides(pptx,pptBimState.week,decoded);
     if(status)status.textContent='Generando PPTX editable…';
-    const totalSlides=1+pages.length+tableSlides;
+    const totalSlides=1+separators+pages.length+tableSlides;
     const generated=await pptx.write({outputType:'blob',compression:true});
     let blob=generated instanceof Blob?generated:new Blob([generated],
       {type:'application/vnd.openxmlformats-officedocument.presentationml.presentation'});
