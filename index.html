@@ -6632,9 +6632,9 @@ html[data-theme="light"] .bim-dirty-badge {
           </div>
         </div>
 
-        <div class="form-section-head"><span class="section-index">G</span><div><h3>ASIGNACIÓN DE ACTIVIDAD</h3><p>Vinculación al cronograma Gantt</p></div></div>
+        <div class="form-section-head hidden" id="gantt-assign-head" aria-hidden="true"><span class="section-index">G</span><div><h3>ASIGNACIÓN DE ACTIVIDAD</h3><p>Vinculación al cronograma Gantt</p></div></div>
         <div class="gantt-link-panel" id="gantt-link-panel">
-          <div id="gantt-select-fields" class="form-grid">
+          <div id="gantt-select-fields" class="form-grid hidden" aria-hidden="true">
             <div class="form-field">
               <label for="f-gantt-activity-trigger">Actividad del Gantt</label>
               <div class="gantt-activity-picker">
@@ -10415,12 +10415,9 @@ async function saveEditor(e){
     // Se guarda en el JSONB sincronizado con Supabase y nunca aparece en el formulario.
     catalogs.analytics.createdAtByTask[obj.id]=currentPeruDate;
   }
-  // La vinculación queda en bim_catalogs.data: no cambia el esquema de bim_tasks.
-  if(quality.ganttLink){
+  // La vinculación se gestiona desde el Gantt; aquí preservamos cualquier vínculo existente sin sobrescribirlo.
+  if(quality.ganttLink && !quality.ganttLink.invalid){
     catalogs.ganttLinksByTask[obj.id]={...quality.ganttLink,updatedAt:new Date().toISOString()};
-  }else if(catalogs.ganttLinksByTask[obj.id]){
-    // Marca de desvinculación para que otra sesión no restituya el enlace anterior.
-    catalogs.ganttLinksByTask[obj.id]={mode:'none',activityId:'',group:'',name:'',updatedAt:new Date().toISOString()};
   }
   if(progressEntry)applyGanttEditorProgress(obj.id,quality.ganttLink,progressEntry);
   rememberEditorDefaults(obj);
