@@ -398,22 +398,23 @@ function recordedActivityActual(row, matched, completedAt){
   return {actual:completedAt?100:null, source:completedAt?'cierre':'', achievedOn:completedAt||''};
 }
 
+function dayShare(row, d){
+  if(!row || !d || !row.start || !row.end || d < row.start || d > row.end) return 0;
+  return Number(row.percentByDay?.[d] || row.percentByDay?.[String(Number(d.slice(8,10)))] || 0);
+}
+
 function realFillOfGanttDay(row, date, actual){
-  if(!Number.isFinite(actual)) return 0;
-  const daily = Object.entries(row.percentByDay||{}).map(([day,share])=>({
-    day:Number(day), share:Number(share)
-  })).filter(x=>Number.isInteger(x.day)&&x.day>=1&&x.day<=31&&Number.isFinite(x.share)&&x.share>0)
-    .sort((a,b)=>a.day-b.day);
-  const total = daily.reduce((sum,x)=>sum+x.share, 0);
+  if(!Number.isFinite(actual) || !row?.start || !row?.end || date < row.start || date > row.end) return 0;
+  const scheduled = dates(row.start, row.end).map(iso => ({ iso, share: dayShare(row, iso) })).filter(x => x.share > 0);
+  const total = scheduled.reduce((sum, x) => sum + x.share, 0);
   if(!total) return 0;
-  const day = Number(date.slice(8,10));
   let preceding = 0;
-  for(const entry of daily){
-    if(entry.day===day){
-      const fulfilled = Math.min(Math.max(total*actual/100 - preceding, 0), entry.share);
-      return Math.min(100, Math.max(0, 100*fulfilled/entry.share));
+  for(const entry of scheduled){
+    if(entry.iso === date){
+      const fulfilled = Math.min(Math.max(total * actual / 100 - preceding, 0), entry.share);
+      return Math.min(100, Math.max(0, 100 * fulfilled / entry.share));
     }
-    if(entry.day < day) preceding += entry.share;
+    if(entry.iso < date) preceding += entry.share;
   }
   return 0;
 }
@@ -564,10 +565,10 @@ function dayBar(row, d, state, days, idx){
     const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
     return '<td class="'+cls+' scheduled group'+segCls+'"'+dateAttr+'><span class="vgg-group-bar"></span></td>';
   }
-  const value = row.percentByDay?.[String(Number(d.slice(8,10)))] || 0;
+  const value = dayShare(row, d);
   if(!value) return '<td class="'+cls+'"'+dateAttr+'></td>';
-  const prevHas = idx > 0 && Boolean(row.percentByDay?.[String(Number(days[idx-1].slice(8,10)))]);
-  const nextHas = idx < days.length - 1 && Boolean(row.percentByDay?.[String(Number(days[idx+1].slice(8,10)))]);
+  const prevHas = idx > 0 && dayShare(row, days[idx-1]) > 0;
+  const nextHas = idx < days.length - 1 && dayShare(row, days[idx+1]) > 0;
   const segCls = (!prevHas ? ' bar-start' : '') + (!nextHas ? ' bar-end' : '');
   const actual = Number.isFinite(state.actual) ? Math.min(100, Math.max(0, state.actual)) : 0;
   let status = '', style = '';
@@ -583,12 +584,12 @@ function dayBar(row, d, state, days, idx){
     // Encontrar en qué bloque contiguo cae el frente de avance para mostrar un único % centrado en ese bloque
     let frontierIdx = -1;
     for(let i = 0; i < days.length; i++){
-      const vDay = row.percentByDay?.[String(Number(days[i].slice(8,10)))] || 0;
+      const vDay = dayShare(row, days[i]);
       if(vDay > 0 && realFillOfGanttDay(row, days[i], actual) > 0.001) frontierIdx = i;
     }
     if(frontierIdx >= idx){
       let blockEnd = idx;
-      while(blockEnd + 1 < days.length && Boolean(row.percentByDay?.[String(Number(days[blockEnd + 1].slice(8,10)))])){
+      while(blockEnd + 1 < days.length && dayShare(row, days[blockEnd + 1]) > 0){
         blockEnd++;
       }
       if(frontierIdx <= blockEnd){
