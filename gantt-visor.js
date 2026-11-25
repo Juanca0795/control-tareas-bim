@@ -346,6 +346,7 @@ const STORAGE_DARK_TABLE_KEY = 'bim-gantt-dark-table-v1';
 const STORAGE_LINKS_KEY = 'bim-gantt-show-links-v1';
 const STORAGE_CPM_KEY = 'bim-gantt-show-cpm-v1';
 const STORAGE_BASELINE_KEY = 'bim-gantt-show-baseline-v1';
+const STORAGE_OVERLOAD_DOTS_KEY = 'bim-gantt-overload-dots-v1';
 const ZOOM_WIDTHS = { compact: 22, normal: 30, wide: 42 };
 const MIN_DAY_WIDTH = 18;
 const MAX_DAY_WIDTH = 64;
@@ -396,6 +397,7 @@ let darkTableMode = readPref(STORAGE_DARK_TABLE_KEY, '0') === '1';
 let showLinksP6 = readPref(STORAGE_LINKS_KEY, '1') !== '0';
 let showCpm = readPref(STORAGE_CPM_KEY, '0') === '1';
 let showBaseline = readPref(STORAGE_BASELINE_KEY, '1') !== '0';
+let showOverloadDots = readPref(STORAGE_OVERLOAD_DOTS_KEY, '0') === '1';
 let cpmState = { byId: new Map(), overload: new Map(), overloadList: [] };
 let overlay = null, bodyOverflow = '', lastTrigger = null;
 const hiddenColumns = new Set();
@@ -785,7 +787,7 @@ function dayBar(row, d, state, days, idx){
   }
   const handles = (isStart ? '<span class="vgg-bar-handle left" data-vgg-drag="resize-left" title="Arrastra para cambiar fecha de inicio"></span>' : '') +
     (isEnd ? '<span class="vgg-bar-handle right" data-vgg-drag="resize-right" title="Arrastra para cambiar fecha de fin"></span>' : '');
-  const overDot = isOverloaded ? '<span class="vgg-overload-dot" title="Sobreasignación: '+(cpmState.overload.get(row.owner+'|'+d).length)+' actividades simultáneas para '+escapeText(row.owner)+'"></span>' : '';
+  const overDot = (showOverloadDots && isOverloaded) ? '<span class="vgg-overload-dot" title="Sobreasignación: '+(cpmState.overload.get(row.owner+'|'+d).length)+' actividades simultáneas para '+escapeText(row.owner)+'"></span>' : '';
   const tip = (row.excelId||row.id)+' · '+row.title+' · '+readable(row.start)+' al '+readable(row.end)+
     (cpmInfo ? ' · Holgura: '+cpmInfo.totalFloat+' d'+(cpmInfo.isCritical?' (RUTA CRÍTICA)':'') : '')+
     (blEntry ? ' · Línea base: '+readable(blEntry.start)+' al '+readable(blEntry.end) : '')+
@@ -3321,6 +3323,7 @@ function open(){
       '<label class="vgg-col-item"><input type="checkbox" id="vgg-show-links"> Enlaces P6 (dependencias)</label>'+
       '<label class="vgg-col-item"><input type="checkbox" id="vgg-show-cpm"> Ruta crítica (CPM)</label>'+
       '<label class="vgg-col-item"><input type="checkbox" id="vgg-show-baseline"> Línea base comparativa</label>'+
+      '<label class="vgg-col-item"><input type="checkbox" id="vgg-show-ovdots"> Puntos de sobrecarga</label>'+
       '<label class="vgg-col-item"><input type="checkbox" id="vgg-dark-table"> Tabla oscura</label>'+
       '<div class="vgg-view-group-title">Escala y cronograma</div>'+
       '<label class="vgg-col-item" style="justify-content:space-between"><span>Zoom</span><select id="vgg-zoom" aria-label="Zoom del calendario" style="height:26px;max-width:118px">'+
@@ -3422,6 +3425,15 @@ function open(){
       blEl.addEventListener('change', ev => {
         showBaseline = ev.target.checked;
         savePref(STORAGE_BASELINE_KEY, showBaseline ? '1' : '0');
+        render();
+      });
+    }
+    const ovDotsEl = document.getElementById('vgg-show-ovdots');
+    if(ovDotsEl){
+      ovDotsEl.checked = showOverloadDots;
+      ovDotsEl.addEventListener('change', ev => {
+        showOverloadDots = ev.target.checked;
+        savePref(STORAGE_OVERLOAD_DOTS_KEY, showOverloadDots ? '1' : '0');
         render();
       });
     }

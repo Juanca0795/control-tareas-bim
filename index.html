@@ -6076,21 +6076,236 @@ html[data-theme="light"] .bim-dirty-badge {
 @media (prefers-reduced-motion: reduce) {
   .bim-sync-pill .sync-dot { animation: none !important; }
 }
-/* Pulido global de ergonomía, densidad y alineación numérica (sin modificar paleta de colores) */
+/* ============================================================================
+   REDISEÑO BENTO GRID EJECUTIVO (LINEAR / AUTODESK ACC) + PALETA GRAPHITE COBALT
+   Mantiene 100% de los datos, KPIs, gráficos y sincronización Supabase.
+   ============================================================================ */
+:root {
+  --bg-app: #f3f5f8;
+  --bg-panel: #ffffff;
+  --bg-subtle: #f7f9fc;
+  --bg-hover: #eef2f7;
+  --border-base: #e2e7ef;
+  --border-strong: #cdd6e3;
+  --ink-primary: #0d1321;
+  --ink-secondary: #425066;
+  --ink-muted: #6c7a91;
+  --accent-blue: #2563eb;
+  --brand-red: #e11d48;
+  --brand-red-hover: #be123c;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+}
+html[data-theme="dark"] {
+  --bg-app: #090a0e;
+  --bg-panel: #111319;
+  --bg-subtle: #171a22;
+  --bg-hover: #1c202b;
+  --border-base: rgba(255, 255, 255, .075);
+  --border-strong: rgba(255, 255, 255, .14);
+  --ink-primary: #f4f6fa;
+  --ink-secondary: #a1acbf;
+  --ink-muted: #6e7b91;
+  --accent-blue: #38bdf8;
+  --brand-red: #e11d48;
+  --brand-red-hover: #f43f5e;
+  --status-done-bg: rgba(16, 185, 129, .14); --status-done-fg: #34d399; --status-done-bd: rgba(16, 185, 129, .32);
+  --status-prog-bg: rgba(56, 189, 248, .14); --status-prog-fg: #38bdf8; --status-prog-bd: rgba(56, 189, 248, .32);
+  --status-warn-bg: rgba(245, 158, 11, .14); --status-warn-fg: #fbbf24; --status-warn-bd: rgba(245, 158, 11, .32);
+  --status-crit-bg: rgba(244, 63, 94, .14); --status-crit-fg: #fb7185; --status-crit-bd: rgba(244, 63, 94, .34);
+}
+body {
+  background-color: var(--bg-app) !important;
+  background-image: radial-gradient(rgba(148, 163, 184, .09) 1px, transparent 1px) !important;
+  background-size: 24px 24px !important;
+}
+html[data-theme="light"] body {
+  background-image: radial-gradient(rgba(15, 23, 42, .055) 1px, transparent 1px) !important;
+}
+
+/* Cabecera flotante estilo Linear / ACC */
+header, .topbar {
+  background: rgba(17, 19, 25, .82) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  border: 1px solid var(--border-base) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .28) !important;
+}
+html[data-theme="light"] header, html[data-theme="light"] .topbar {
+  background: rgba(255, 255, 255, .88) !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, .06) !important;
+}
+
+/* Barra de filtros unificada */
+.dash-filters, #tasks-view .filters, #weekly-view .filters {
+  border-radius: 14px !important;
+  border: 1px solid var(--border-base) !important;
+  background: var(--bg-panel) !important;
+  padding: 10px 14px !important;
+  gap: 8px !important;
+  box-shadow: none !important;
+}
+.dash-filters select, #tasks-view .filters select, #weekly-view .filters select,
+#tasks-view .filters input[type="search"], #tasks-view .filters input[type="text"] {
+  height: 34px !important;
+  border-radius: 9px !important;
+  background: var(--bg-subtle) !important;
+  border: 1px solid var(--border-base) !important;
+  transition: border-color .15s ease, background-color .15s ease !important;
+}
+.dash-filters select:hover, #tasks-view .filters select:hover, #weekly-view .filters select:hover {
+  border-color: var(--border-strong) !important;
+  background: var(--bg-hover) !important;
+}
+
+/* Tarjetas Bento Grid (limpias, sin capas recargadas) */
+.card {
+  background: var(--bg-panel) !important;
+  border: 1px solid var(--border-base) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .18) !important;
+  transition: border-color .18s ease, transform .18s ease, box-shadow .18s ease !important;
+}
+html[data-theme="light"] .card {
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .05) !important;
+}
+.dash-tip {
+  font-size: 11.5px !important;
+  color: var(--ink-muted) !important;
+  margin: 4px 2px 10px !important;
+}
+
+/* 6 KPI Bento Tiles — alineación horizontal perfecta */
+#dash-stats.stat-grid, #task-stats.stat-grid {
+  gap: 12px !important;
+}
+#dash-stats .stat-card, #task-stats .stat-card {
+  border-radius: 15px !important;
+  border: 1px solid var(--border-base) !important;
+  background: linear-gradient(180deg, rgba(255,255,255,.025) 0%, transparent 45%), var(--bg-panel) !important;
+  padding: 15px 16px 13px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  min-height: 132px !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+html[data-theme="light"] #dash-stats .stat-card, html[data-theme="light"] #task-stats .stat-card {
+  background: var(--bg-panel) !important;
+}
+#dash-stats .stat-card:hover, #task-stats .stat-card:hover {
+  border-color: var(--border-strong) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* Bento Grid Asimétrico Principal */
+.executive-grid {
+  gap: 14px !important;
+}
+.executive-grid .chart-card {
+  padding: 18px 20px !important;
+}
+
+/* Salud Operativa BIM: quitar caja anidada alrededor del donut y convertir métricas en filas limpias */
+.operational-health {
+  gap: 16px !important;
+  align-items: center !important;
+}
+.health-panel {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 6px 4px !important;
+}
+.health-metrics {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  border: 1px solid var(--border-base) !important;
+  border-radius: 12px !important;
+  background: var(--bg-subtle) !important;
+  overflow: hidden !important;
+}
+.health-metrics > button, .health-metric {
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-base) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 10px 14px !important;
+  margin: 0 !important;
+  box-shadow: none !important;
+  transition: background-color .14s ease !important;
+}
+.health-metrics > button:last-child, .health-metric:last-child {
+  border-bottom: 0 !important;
+}
+.health-metrics > button:hover, .health-metric:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Tareas con Prioridad: lista estilo Linear (más densa, limpia, sin cajas pesadas) */
+#alerts-list.big-list {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0 !important;
+  border: 1px solid var(--border-base) !important;
+  border-radius: 12px !important;
+  background: var(--bg-subtle) !important;
+  overflow-y: auto !important;
+}
+#alerts-list .priority-task {
+  border: 0 !important;
+  border-bottom: 1px solid var(--border-base) !important;
+  border-left: 3px solid transparent !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 10px 14px !important;
+  margin: 0 !important;
+  gap: 3px !important;
+  box-shadow: none !important;
+  transition: background-color .14s ease, border-left-color .14s ease !important;
+}
+#alerts-list .priority-task:last-child {
+  border-bottom: 0 !important;
+}
+#alerts-list .priority-task.critical, #alerts-list .priority-task.overdue {
+  border-left-color: #f43f5e !important;
+}
+#alerts-list .priority-task.soon {
+  border-left-color: #f59e0b !important;
+}
+#alerts-list .priority-task:hover {
+  background: var(--bg-hover) !important;
+}
+
+/* Tablas modernas técnicas (Control de tareas, Control semanal y Matriz Operativa) */
+#tasks-view table, #weekly-view table, #team-summary table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+#tasks-view thead th, #weekly-view thead th, #team-summary thead th {
+  background: var(--bg-subtle) !important;
+  color: var(--ink-muted) !important;
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: .05em !important;
+  border-bottom: 1px solid var(--border-strong) !important;
+  padding: 10px 12px !important;
+}
+#tasks-view tbody td, #weekly-view tbody td, #team-summary tbody td {
+  border-bottom: 1px solid var(--border-base) !important;
+  padding: 10px 12px !important;
+  font-variant-numeric: tabular-nums !important;
+}
+#tasks-view tbody tr:hover td, #weekly-view tbody tr:hover td {
+  background: var(--bg-hover) !important;
+}
 .kpi-value,.kpi-val,.kpi-num,.stat-value,.badge,.pill,.progress-pct,
 #tasks-view td,#weekly-view td,#dashboard-view .kpi-card strong{
   font-variant-numeric:tabular-nums;
-}
-#dashboard-view .filter-bar,#tasks-view .filter-bar,#weekly-view .filter-bar,
-.controls-bar,.scope-bar{
-  align-items:center;
-  gap:8px;
-}
-#dashboard-view .filter-bar select,#tasks-view .filter-bar select,#weekly-view .filter-bar select,
-#tasks-view .filter-bar input[type="search"],#tasks-view .filter-bar input[type="text"],
-#weekly-view .filter-bar input[type="search"]{
-  height:34px;
-  border-radius:9px;
 }
 .modal-back.open .modal,.modal-back.open .task-drawer{
   animation:bim-surface-in .18s cubic-bezier(.16,1,.3,1);
@@ -6100,10 +6315,10 @@ html[data-theme="light"] .bim-dirty-badge {
   to{opacity:1;transform:none}
 }
 @media (max-width:1480px){
-  #dashboard-view .kpi-grid{gap:10px}
-  #dashboard-view .kpi-card{padding:13px 15px}
-  #dashboard-view .card,#tasks-view .card,#weekly-view .card{padding:14px 16px}
-  main{padding-top:12px}
+  #dash-stats.stat-grid{gap:10px !important}
+  #dash-stats .stat-card{min-height:124px !important;padding:13px 14px 11px !important}
+  .executive-grid .chart-card{padding:15px 16px !important}
+  main{padding-top:10px !important}
 }
 </style>
 <script src="evidencias.js"></script>
