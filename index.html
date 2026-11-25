@@ -6501,6 +6501,108 @@ main {
   padding-top: 10px !important;
   padding-bottom: 18px !important;
 }
+/* Selector de Vista (mostrar/ocultar bloques del Dashboard) */
+#dashboard-view .card.dash-filters {
+  overflow: visible !important;
+  position: relative !important;
+  z-index: 25 !important;
+}
+.dash-view-wrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+.dash-view-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  white-space: nowrap !important;
+}
+.dash-view-btn.has-hidden,
+.dash-view-btn[aria-expanded="true"] {
+  border-color: var(--accent-blue) !important;
+  color: var(--accent-blue) !important;
+}
+.dash-view-count {
+  font: 700 10px var(--font-mono);
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, .16);
+  color: var(--accent-blue);
+}
+.dash-view-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 220px;
+  z-index: 80;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .48);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.dash-view-popover.hidden {
+  display: none !important;
+}
+.dash-view-popover-hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--border-base);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--ink-muted);
+}
+.dash-view-reset {
+  border: 0;
+  background: transparent;
+  color: var(--accent-blue);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+.dash-view-reset:hover {
+  background: var(--bg-hover);
+}
+.dash-view-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-primary);
+  user-select: none;
+  transition: background-color .12s ease;
+}
+.dash-view-item:hover {
+  background: var(--bg-hover);
+}
+.dash-view-item input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+  accent-color: var(--accent-blue);
+  cursor: pointer;
+}
+.dash-section-hidden {
+  display: none !important;
+}
+#dashboard-view .executive-grid > .chart-card.dash-card-full {
+  grid-column: 1 / -1 !important;
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -6819,6 +6921,22 @@ main {
       <div class="select-wrap"><select id="dash-state" onchange="renderDashboard()" aria-label="Filtrar estado dashboard"></select></div>
       <div class="select-wrap"><select id="dash-priority" onchange="renderDashboard()" aria-label="Filtrar prioridad dashboard"></select></div>
       <button class="btn small" type="button" onclick="clearDashFilters()">Restablecer</button>
+      <div class="dash-view-wrap" id="dash-view-wrap">
+        <button class="btn small dash-view-btn" id="dash-view-btn" type="button" aria-haspopup="true" aria-expanded="false" onclick="toggleDashViewMenu(event)">
+          <span>Vista</span><span id="dash-view-count" class="dash-view-count" hidden></span><span aria-hidden="true">▾</span>
+        </button>
+        <div class="dash-view-popover hidden" id="dash-view-popover" role="menu" aria-label="Mostrar u ocultar bloques del Dashboard" onclick="event.stopPropagation()">
+          <div class="dash-view-popover-hd">
+            <span>Vista del tablero</span>
+            <button type="button" class="dash-view-reset" onclick="resetDashViewSections()">Mostrar todo</button>
+          </div>
+          <label class="dash-view-item"><input type="checkbox" data-dash-section="kpis" checked onchange="setDashSectionVisible('kpis',this.checked)"><span>KPI's</span></label>
+          <label class="dash-view-item"><input type="checkbox" data-dash-section="health" checked onchange="setDashSectionVisible('health',this.checked)"><span>Salud Operativa</span></label>
+          <label class="dash-view-item"><input type="checkbox" data-dash-section="priority" checked onchange="setDashSectionVisible('priority',this.checked)"><span>Tareas con Prioridad</span></label>
+          <label class="dash-view-item"><input type="checkbox" data-dash-section="load" checked onchange="setDashSectionVisible('load',this.checked)"><span>Carga y Desempeño</span></label>
+          <label class="dash-view-item"><input type="checkbox" data-dash-section="matrix" checked onchange="setDashSectionVisible('matrix',this.checked)"><span>Matriz Operativa</span></label>
+        </div>
+      </div>
     </section>
 
     <div id="dash-filter-chips" class="active-filters dash-chip-bar" aria-live="polite"></div>
@@ -9876,8 +9994,93 @@ function renderDashboard(){
     rows.some(t=>categoryOf(t.status)!=='done'&&alertStatus(t).sort<=1));
   renderDrill(rows);
   renderActiveFilterChips('dash');
+  applyDashViewVisibility();
   scheduleBimMetricsAnimation('dashboard');
 }
+const DASH_VIEW_STORAGE_KEY='bim_dash_sections_v1';
+const DASH_VIEW_DEFAULTS={kpis:true,health:true,priority:true,load:true,matrix:true};
+let dashViewSections=(()=>{
+  try{
+    const saved=JSON.parse(localStorage.getItem(DASH_VIEW_STORAGE_KEY)||'null');
+    if(saved&&typeof saved==='object')return {...DASH_VIEW_DEFAULTS,...saved};
+  }catch(_){}
+  return {...DASH_VIEW_DEFAULTS};
+})();
+function saveDashViewSections(){
+  try{localStorage.setItem(DASH_VIEW_STORAGE_KEY,JSON.stringify(dashViewSections));}catch(_){}
+}
+function applyDashViewVisibility(){
+  const s=dashViewSections;
+  const statsEl=$('#dash-stats');
+  const tipEl=$('#dashboard-view .dash-tip');
+  const gridEl=$('#dashboard-view .executive-grid');
+  const healthEl=$('#dashboard-view .radar-card');
+  const priorityEl=$('#dashboard-view .attention-card');
+  const loadEl=$('#dashboard-view .owner-card');
+  const matrixEl=$('#dashboard-view .pulse-card');
+  if(statsEl)statsEl.classList.toggle('dash-section-hidden',!s.kpis);
+  if(tipEl)tipEl.classList.toggle('dash-section-hidden',!s.kpis);
+  if(healthEl){
+    healthEl.classList.toggle('dash-section-hidden',!s.health);
+    healthEl.classList.toggle('dash-card-full',s.health&&!s.priority);
+  }
+  if(priorityEl){
+    priorityEl.classList.toggle('dash-section-hidden',!s.priority);
+    priorityEl.classList.toggle('dash-card-full',s.priority&&!s.health);
+  }
+  if(loadEl){
+    loadEl.classList.toggle('dash-section-hidden',!s.load);
+    loadEl.classList.toggle('dash-card-full',s.load&&!s.matrix);
+  }
+  if(matrixEl){
+    matrixEl.classList.toggle('dash-section-hidden',!s.matrix);
+    matrixEl.classList.toggle('dash-card-full',s.matrix&&!s.load);
+  }
+  if(gridEl)gridEl.classList.toggle('dash-section-hidden',!s.health&&!s.priority&&!s.load&&!s.matrix);
+  document.querySelectorAll('#dash-view-popover input[data-dash-section]').forEach(cb=>{
+    cb.checked=Boolean(s[cb.dataset.dashSection]);
+  });
+  const total=Object.keys(DASH_VIEW_DEFAULTS).length;
+  const visible=Object.keys(DASH_VIEW_DEFAULTS).filter(k=>s[k]).length;
+  const countEl=$('#dash-view-count');
+  const btnEl=$('#dash-view-btn');
+  if(countEl){
+    countEl.hidden=visible===total;
+    countEl.textContent=visible+'/'+total;
+  }
+  if(btnEl)btnEl.classList.toggle('has-hidden',visible<total);
+}
+function toggleDashViewMenu(event){
+  if(event)event.stopPropagation();
+  const pop=$('#dash-view-popover'),btn=$('#dash-view-btn');
+  if(!pop||!btn)return;
+  const opening=pop.classList.contains('hidden');
+  pop.classList.toggle('hidden',!opening);
+  btn.setAttribute('aria-expanded',String(opening));
+}
+function closeDashViewMenu(){
+  const pop=$('#dash-view-popover'),btn=$('#dash-view-btn');
+  if(pop)pop.classList.add('hidden');
+  if(btn)btn.setAttribute('aria-expanded','false');
+}
+function setDashSectionVisible(key,visible){
+  if(!(key in DASH_VIEW_DEFAULTS))return;
+  dashViewSections[key]=Boolean(visible);
+  saveDashViewSections();
+  applyDashViewVisibility();
+}
+function resetDashViewSections(){
+  dashViewSections={...DASH_VIEW_DEFAULTS};
+  saveDashViewSections();
+  applyDashViewVisibility();
+}
+document.addEventListener('click',e=>{
+  const wrap=$('#dash-view-wrap');
+  if(wrap&&!wrap.contains(e.target))closeDashViewMenu();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeDashViewMenu();
+});
 
 function selectedDrill(type, value=''){
   return Boolean(dashboardDrill && dashboardDrill.type===type && (dashboardDrill.value||'')===value);
