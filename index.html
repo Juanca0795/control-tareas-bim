@@ -6076,6 +6076,35 @@ html[data-theme="light"] .bim-dirty-badge {
 @media (prefers-reduced-motion: reduce) {
   .bim-sync-pill .sync-dot { animation: none !important; }
 }
+/* Pulido global de ergonomía, densidad y alineación numérica (sin modificar paleta de colores) */
+.kpi-value,.kpi-val,.kpi-num,.stat-value,.badge,.pill,.progress-pct,
+#tasks-view td,#weekly-view td,#dashboard-view .kpi-card strong{
+  font-variant-numeric:tabular-nums;
+}
+#dashboard-view .filter-bar,#tasks-view .filter-bar,#weekly-view .filter-bar,
+.controls-bar,.scope-bar{
+  align-items:center;
+  gap:8px;
+}
+#dashboard-view .filter-bar select,#tasks-view .filter-bar select,#weekly-view .filter-bar select,
+#tasks-view .filter-bar input[type="search"],#tasks-view .filter-bar input[type="text"],
+#weekly-view .filter-bar input[type="search"]{
+  height:34px;
+  border-radius:9px;
+}
+.modal-back.open .modal,.modal-back.open .task-drawer{
+  animation:bim-surface-in .18s cubic-bezier(.16,1,.3,1);
+}
+@keyframes bim-surface-in{
+  from{opacity:0;transform:translateY(6px)}
+  to{opacity:1;transform:none}
+}
+@media (max-width:1480px){
+  #dashboard-view .kpi-grid{gap:10px}
+  #dashboard-view .kpi-card{padding:13px 15px}
+  #dashboard-view .card,#tasks-view .card,#weekly-view .card{padding:14px 16px}
+  main{padding-top:12px}
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>

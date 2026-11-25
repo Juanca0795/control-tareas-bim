@@ -253,7 +253,14 @@ html[data-theme="light"] .vgg-dep-pill.succ{background:#cffafe;color:#0e7490;bor
 /* Submodales internos del visor Gantt */
 .vgg-submodal-back{position:absolute;inset:0;z-index:90;background:rgba(4,9,20,.72);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:16px}
 .vgg-submodal-back[hidden]{display:none!important}
-.vgg-submodal{width:min(620px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--bg-panel,#111827);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-strong,#334155);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.55);overflow:hidden}
+.vgg-submodal{width:min(620px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--bg-panel,#111827);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-strong,#334155);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.55);overflow:hidden;animation:vgg-pop .16s cubic-bezier(.16,1,.3,1)}
+@keyframes vgg-pop{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+.vgg-ctx-menu{animation:vgg-pop .12s cubic-bezier(.16,1,.3,1)}
+.vgg-view-popover{width:255px}
+.vgg-view-group-title{margin:8px 0 4px;padding-top:7px;border-top:1px solid var(--border-base,#253048);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-secondary,#94a3b8)}
+.vgg-view-group-title:first-child{margin-top:0;padding-top:0;border-top:0}
+.vgg-view-actions{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px}
+.vgg-view-actions button{margin-top:0!important;padding:6px 8px!important;font-size:11px!important;text-align:center}
 .vgg-submodal.narrow{width:min(460px,95vw)}
 .vgg-submodal.wide{width:min(820px,96vw)}
 .vgg-cfg-tabs{display:flex;gap:6px;padding:10px 18px 0;border-bottom:1px solid var(--border-base,#253048);flex-wrap:wrap}
@@ -3307,22 +3314,25 @@ function open(){
       '<option value="unassigned">Sin asignar</option><option value="pending">Pendiente</option>'+
       '<option value="completed">Completada</option></select></label>'+
       '<input id="vgg-search" type="search" placeholder="Buscar actividad / ID (/)" aria-label="Buscar actividad">'+
-      '<label>Zoom <select id="vgg-zoom" aria-label="Zoom del calendario">'+
+      '<button type="button" id="vgg-overload-btn" class="vgg-tool-btn" data-vgg-action="open-overload" title="Ver días con sobreasignación por responsable">✓ Sin sobrecarga</button>'+
+      '<details id="vgg-viewmenu" class="vgg-colchooser"><summary>Vista ▾</summary>'+
+      '<div class="vgg-colchooser-popover vgg-view-popover" aria-label="Opciones visuales y herramientas del cronograma">'+
+      '<div class="vgg-view-group-title">Capas visuales</div>'+
+      '<label class="vgg-col-item"><input type="checkbox" id="vgg-show-links"> Enlaces P6 (dependencias)</label>'+
+      '<label class="vgg-col-item"><input type="checkbox" id="vgg-show-cpm"> Ruta crítica (CPM)</label>'+
+      '<label class="vgg-col-item"><input type="checkbox" id="vgg-show-baseline"> Línea base comparativa</label>'+
+      '<label class="vgg-col-item"><input type="checkbox" id="vgg-dark-table"> Tabla oscura</label>'+
+      '<div class="vgg-view-group-title">Escala y cronograma</div>'+
+      '<label class="vgg-col-item" style="justify-content:space-between"><span>Zoom</span><select id="vgg-zoom" aria-label="Zoom del calendario" style="height:26px;max-width:118px">'+
       '<option value="compact">Compacto</option><option value="normal">Normal</option><option value="wide">Amplio</option>'+
       '</select></label>'+
-      '<label class="vgg-theme-toggle" title="Mostrar u ocultar líneas de relación predecesor-sucesor estilo Primavera P6">'+
-      '<input type="checkbox" id="vgg-show-links"> Enlaces P6</label>'+
-      '<label class="vgg-theme-toggle" title="Resaltar actividades de la Ruta Crítica (holgura = 0 días)">'+
-      '<input type="checkbox" id="vgg-show-cpm"> Ruta crítica</label>'+
-      '<label class="vgg-theme-toggle" title="Mostrar línea base comparativa debajo de cada barra">'+
-      '<input type="checkbox" id="vgg-show-baseline"> Línea base</label>'+
-      '<label class="vgg-theme-toggle" title="Activar modo oscuro en las celdas de la tabla">'+
-      '<input type="checkbox" id="vgg-dark-table"> Tabla oscura</label>'+
-      '<button type="button" class="vgg-tool-btn" data-vgg-action="baseline-menu" title="Fijar o borrar Línea Base del cronograma">📌 Línea base</button>'+
-      '<button type="button" class="vgg-tool-btn" data-vgg-action="auto-schedule" title="Recalcular automáticamente fechas dependientes en cascada">⚡ Recalcular</button>'+
-      '<button type="button" id="vgg-overload-btn" class="vgg-tool-btn" data-vgg-action="open-overload" title="Ver días con sobreasignación por responsable">✓ Sin sobrecarga</button>'+
-      '<button type="button" id="vgg-collapse-all" class="vgg-tool-btn" data-vgg-action="toggle-collapse-all">Contraer todo</button>'+
-      '<details id="vgg-colchooser" class="vgg-colchooser"><summary>Columnas compartidas</summary>'+
+      '<div class="vgg-view-actions">'+
+      '<button type="button" data-vgg-action="baseline-menu" title="Fijar o borrar Línea Base">📌 Línea base</button>'+
+      '<button type="button" data-vgg-action="auto-schedule" title="Recalcular dependencias en cascada">⚡ Recalcular</button>'+
+      '</div>'+
+      '<button type="button" id="vgg-collapse-all" data-vgg-action="toggle-collapse-all">Contraer todo</button>'+
+      '</div></details>'+
+      '<details id="vgg-colchooser" class="vgg-colchooser"><summary>Columnas ▾</summary>'+
       '<div class="vgg-colchooser-popover" aria-label="Columnas visibles para todos">'+
       '<p style="margin:0 0 7px;color:var(--ink-secondary,#abc1db);font-size:10px">La selección se comparte con todos mediante Supabase.</p>'+
       columns.map((col,i) => '<label class="vgg-col-item"><input type="checkbox"'+
@@ -3595,6 +3605,8 @@ function open(){
 
       const columnPicker = document.getElementById('vgg-colchooser');
       if(columnPicker?.open && !columnPicker.contains(ev.target)) columnPicker.open = false;
+      const viewMenu = document.getElementById('vgg-viewmenu');
+      if(viewMenu?.open && !viewMenu.contains(ev.target)) viewMenu.open = false;
 
       const addInGroup = ev.target.closest('[data-vgg-add-in-group]');
       if(addInGroup){
@@ -3682,9 +3694,10 @@ function open(){
         if(act === 'new-activity'){ openActivityModal(); return; }
         if(act === 'new-group'){ openGroupModal(); return; }
         if(act === 'open-config'){ openGanttConfigModal(); return; }
-        if(act === 'baseline-menu'){ openBaselineModal(); return; }
+        if(act === 'baseline-menu'){ const vm=document.getElementById('vgg-viewmenu'); if(vm) vm.open=false; openBaselineModal(); return; }
         if(act === 'open-overload'){ openOverloadModal(); return; }
         if(act === 'auto-schedule'){
+          const vm=document.getElementById('vgg-viewmenu'); if(vm) vm.open=false;
           const n = window.bimGanttScheduleStore?.autoSchedule?.() || 0;
           rebuildFilterSelects();
           render();
@@ -3777,6 +3790,8 @@ function open(){
         if(sub && !sub.hidden){ closeSubmodal(); return; }
         const picker = document.getElementById('vgg-colchooser');
         if(picker?.open){ picker.open = false; return; }
+        const vMenu = document.getElementById('vgg-viewmenu');
+        if(vMenu?.open){ vMenu.open = false; return; }
         close();
         return;
       }
