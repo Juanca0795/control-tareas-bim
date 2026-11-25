@@ -6209,28 +6209,41 @@ html[data-theme="light"] .card {
   border-color: var(--border-strong) !important;
   transform: translateY(-1px) !important;
 }
-#dashboard-view .stat .stat-top, #tasks-view .stat .stat-top {
+#dashboard-view .stat .stat-head, #tasks-view .stat .stat-head {
   margin-bottom: 0 !important;
+  gap: 6px !important;
 }
-#dashboard-view .stat .stat-label, #tasks-view .stat .stat-label {
+#dashboard-view .stat .label, #tasks-view .stat .label {
   font-size: 9.5px !important;
   letter-spacing: .04em !important;
 }
-#dashboard-view .stat .stat-main, #tasks-view .stat .stat-main {
+#dashboard-view .stat .stamp, #tasks-view .stat .stamp {
+  width: 24px !important;
+  height: 24px !important;
+  border-radius: 7px !important;
+}
+#dashboard-view .stat .stat-number-line, #tasks-view .stat .stat-number-line {
   margin: 0 !important;
   padding: 0 !important;
+  min-height: 0 !important;
 }
-#dashboard-view .stat .stat-value, #tasks-view .stat .stat-value {
+#dashboard-view .stat .val, #tasks-view .stat .val {
   font-size: 22px !important;
-  line-height: 1.15 !important;
+  line-height: 1.1 !important;
 }
-#dashboard-view .stat .stat-foot, #tasks-view .stat .stat-foot {
+#dashboard-view .stat .stat-detail-line, #tasks-view .stat .stat-detail-line {
   margin-top: 2px !important;
   padding-top: 6px !important;
   font-size: 10px !important;
+  gap: 6px !important;
 }
-#dashboard-view .stat .stat-bar, #tasks-view .stat .stat-bar {
-  margin-top: 4px !important;
+#dashboard-view .stat .foot, #tasks-view .stat .foot,
+#dashboard-view .stat .stat-right, #tasks-view .stat .stat-right {
+  font-size: 10px !important;
+  line-height: 1.2 !important;
+}
+#dashboard-view .stat .stat-meter, #tasks-view .stat .stat-meter {
+  margin-top: 3px !important;
   height: 3px !important;
 }
 
@@ -6313,24 +6326,35 @@ html[data-theme="light"] .card {
 }
 
 /* Tareas con Prioridad: lista compacta estilo Linear */
+#dashboard-view .attention-card #alerts-list.big-list,
 #alerts-list.big-list {
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
+  padding: 0 !important;
   border: 1px solid var(--border-base) !important;
   border-radius: 10px !important;
   background: var(--bg-subtle) !important;
+  overflow-x: hidden !important;
   overflow-y: auto !important;
+  height: 292px !important;
+  max-height: 292px !important;
+  flex: 0 0 auto !important;
 }
 #alerts-list .priority-task {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
   border: 0 !important;
   border-bottom: 1px solid var(--border-base) !important;
   border-left: 3px solid transparent !important;
   border-radius: 0 !important;
   background: transparent !important;
-  padding: 7px 12px !important;
+  padding: 8px 12px !important;
   margin: 0 !important;
-  gap: 2px !important;
+  gap: 3px !important;
   box-shadow: none !important;
   transition: background-color .14s ease, border-left-color .14s ease !important;
 }
@@ -6360,12 +6384,17 @@ html[data-theme="light"] .card {
   display: flex !important;
   flex-direction: column !important;
   gap: 0 !important;
+  padding: 0 !important;
   border: 1px solid var(--border-base) !important;
   border-radius: 10px !important;
   background: var(--bg-subtle) !important;
-  overflow: hidden !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
 }
 #owner-chart.h-bars > * {
+  flex: 0 0 auto !important;
+  height: auto !important;
+  min-height: 0 !important;
   border: 0 !important;
   border-bottom: 1px solid var(--border-base) !important;
   border-radius: 0 !important;
@@ -9028,7 +9057,7 @@ function statCard(label,val,foot,iconSvg='',accent='',drill='',selected=false,pr
       <span class="val">${esc(val)}</span>
       ${text?`<span class="stat-kpi-badge ${badgeKind}" ${badge.help&&!extraMarkup?`title="${esc(badge.help)}"`:''}>${esc(text)}</span>`:''}
     </div>
-    ${remainderPercent===null?'':`<div class="support-bim-complement"><strong>${esc(remainderPercent)}</strong><span>BIM</span></div>`}
+    ${!remainderPercent?'':`<div class="support-bim-complement"><strong>${esc(remainderPercent)}</strong><span>BIM</span></div>`}
     <div class="stat-detail-line"><span class="foot">${esc(foot)}</span>${rightText?`<strong class="stat-right">${esc(rightText)}</strong>`:''}</div>
     ${percent===null?'':`<span class="stat-meter" aria-hidden="true"><i style="width:${percent}%"></i></span>`}
     ${extraMarkup}
@@ -9228,7 +9257,7 @@ function makeStats(rows,interactive=false){
       SVG_ICONS.support,'blue','support','teal',support.percent,
       support.percent.toFixed(1)==='0.0'?null:badge(support.primaryArea,'neutral',support.areaHelp),
       (support.total?100-support.percent:0).toFixed(1)+'% BIM',supportAreaPopover(support,interactive?'dashboard':'tasks'),
-      '')
+      null)
   ].join('');
 }
 
