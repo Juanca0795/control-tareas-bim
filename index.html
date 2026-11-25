@@ -6296,15 +6296,46 @@ html[data-theme="light"] .card {
   height: 100% !important;
   gap: 12px !important;
 }
-.health-ring {
-  width: 170px !important;
-  height: 170px !important;
+.health-ring.health-gauge {
+  width: 230px !important;
+  height: 138px !important;
+  aspect-ratio: auto !important;
+  position: relative !important;
 }
-.health-ring-center strong {
-  font-size: 25px !important;
+.health-gauge-svg {
+  width: 100% !important;
+  height: 100% !important;
+  overflow: visible !important;
 }
-.health-ring-center small {
+.health-gauge-segment {
+  cursor: pointer;
+  transition: opacity .15s ease, stroke-width .15s ease;
+}
+.health-gauge-segment:hover,
+.health-gauge-segment:focus-visible {
+  opacity: .88;
+  stroke-width: 21;
+  outline: none;
+}
+.health-gauge-scale {
+  font: 600 9px var(--font-mono);
+  fill: var(--ink-muted);
+}
+.health-gauge-target-label {
+  font: 700 9.5px var(--font-mono);
+  fill: var(--ink-secondary);
+}
+.health-ring.health-gauge .health-gauge-center {
+  inset: auto 0 14px 0 !important;
+  gap: 2px !important;
+}
+.health-ring.health-gauge .health-gauge-center strong {
+  font-size: 28px !important;
+  line-height: 1 !important;
+}
+.health-ring.health-gauge .health-gauge-center small {
   font-size: 9px !important;
+  letter-spacing: .06em !important;
 }
 .health-caption {
   font-size: 11px !important;
@@ -6636,15 +6667,18 @@ main {
     padding: 8px 10px 4px !important;
     gap: 14px !important;
   }
-  #dashboard-view.dash-single-row-fill .health-ring {
-    width: 236px !important;
-    height: 236px !important;
+  #dashboard-view.dash-single-row-fill .health-ring.health-gauge {
+    width: 344px !important;
+    height: 206px !important;
   }
-  #dashboard-view.dash-single-row-fill .health-ring-center strong {
-    font-size: 32px !important;
+  #dashboard-view.dash-single-row-fill .health-ring.health-gauge .health-gauge-center {
+    bottom: 24px !important;
   }
-  #dashboard-view.dash-single-row-fill .health-ring-center small {
-    font-size: 10px !important;
+  #dashboard-view.dash-single-row-fill .health-ring.health-gauge .health-gauge-center strong {
+    font-size: 40px !important;
+  }
+  #dashboard-view.dash-single-row-fill .health-ring.health-gauge .health-gauge-center small {
+    font-size: 10.5px !important;
   }
   #dashboard-view.dash-single-row-fill .health-caption {
     font-size: 12px !important;
@@ -10038,19 +10072,25 @@ function renderOperationalHealth(rows){
     title:'Sin fecha',count:groups.noDeadline,color:'#8493aa',kind:'neutral',
     drill:'noDeadline',detail:'Sin vencimiento definido'
   });
-  // SVG real, con extremos redondeados y segmentos individuales superpuestos:
-  // cada arco expone en hover/foco una cantidad y porcentaje verificables.
+  // Velocímetro semicircular ejecutivo (180°) con cortes limpios sin solapamiento
+  // y marca de referencia Meta LPS 85%. Orden izquierda -> derecha: seguros primero.
+  const gaugeOrder=['success','blue','warning','neutral','critical'];
+  const gaugeSegments=gaugeOrder
+    .map(k=>distribution.find(d=>d.kind===k))
+    .filter(item=>item&&item.count>0);
+  const gapUnit=gaugeSegments.length>1?0.55:0;
   let offset=0;
-  const arcs=distribution.filter(item=>item.count>0).map(item=>{
+  const arcs=gaugeSegments.map(item=>{
     const pct=item.count/rows.length*100;
+    const drawLen=Math.max(0.65,pct-gapUnit);
     const current=offset;
     offset+=pct;
     const tooltip=esc(item.title+': '+item.count+' de '+rows.length+' entregables ('+pct.toFixed(1)+'%)');
-    return `<circle class="health-ring-segment" cx="80" cy="80" r="58"
-      pathLength="100" fill="none" stroke="${item.color}" stroke-width="19"
-      stroke-linecap="round" stroke-dasharray="${pct.toFixed(4)} ${(100-pct).toFixed(4)}"
+    return `<path class="health-ring-segment health-gauge-segment" d="M 34 128 A 96 96 0 0 1 226 128"
+      pathLength="100" fill="none" stroke="${item.color}" stroke-width="18"
+      stroke-linecap="butt" stroke-dasharray="${drawLen.toFixed(4)} 100"
       stroke-dashoffset="${(-current).toFixed(4)}"
-      tabindex="0" role="img" aria-label="${tooltip}"><title>${tooltip}</title></circle>`;
+      data-drill="${item.drill}" tabindex="0" role="img" aria-label="${tooltip}"><title>${tooltip}</title></path>`;
   }).join('');
   const metrics=distribution.map(m=>`<button type="button" class="health-metric ${m.kind}${selectedDrill(m.drill)?' selected':''}"
       data-drill="${m.drill}" aria-pressed="${selectedDrill(m.drill)}">
@@ -10059,16 +10099,25 @@ function renderOperationalHealth(rows){
     </button>`).join('');
   return `<div class="operational-health">
     <div class="health-panel">
-      <div class="health-ring" role="group" aria-label="Distribución de ${rows.length} entregables por cumplimiento de plazos">
-        <svg class="health-ring-svg" viewBox="0 0 160 160" role="group"
+      <div class="health-ring health-gauge" role="group" aria-label="Distribución de ${rows.length} entregables por cumplimiento de plazos">
+        <svg class="health-ring-svg health-gauge-svg" viewBox="0 0 260 156" role="group"
           aria-label="Pasa el mouse o enfoca un segmento para conocer sus cantidades">
-          <g transform="rotate(-90 80 80)">
-            <circle cx="80" cy="80" r="58" fill="none" stroke="var(--border-strong)"
-              stroke-width="19" aria-hidden="true"/>
-            ${arcs}
+          <path d="M 34 128 A 96 96 0 0 1 226 128" pathLength="100" fill="none"
+            stroke="var(--border-strong)" stroke-width="18" stroke-linecap="butt" opacity="0.45" aria-hidden="true"/>
+          <path d="M 52 128 A 78 78 0 0 1 208 128" fill="none"
+            stroke="var(--border-strong)" stroke-width="1.2" stroke-dasharray="2.5 4.5" opacity="0.65" aria-hidden="true"/>
+          ${arcs}
+          <g class="health-gauge-target" aria-hidden="true">
+            <line x1="201.3" y1="91.7" x2="229.8" y2="77.1" stroke="var(--ink-primary)" stroke-width="2" stroke-linecap="round" opacity="0.85">
+              <title>Meta LPS: 85%</title>
+            </line>
+            <text x="233" y="75" text-anchor="start" class="health-gauge-target-label">85%</text>
           </g>
+          <text x="34" y="146" text-anchor="middle" class="health-gauge-scale">0%</text>
+          <text x="130" y="18" text-anchor="middle" class="health-gauge-scale">50%</text>
+          <text x="226" y="146" text-anchor="middle" class="health-gauge-scale">100%</text>
         </svg>
-        <div class="health-ring-center"><strong>${percent.toFixed(1)}%</strong><small>SIN ALERTA CRÍTICA</small></div>
+        <div class="health-ring-center health-gauge-center"><strong>${percent.toFixed(1)}%</strong><small>SIN ALERTA CRÍTICA</small></div>
       </div>
       <strong class="health-caption${percent<85?' health-needs-attention':''}">${safe} de ${rows.length} sin vencimiento crítico verificado</strong>
     </div>
