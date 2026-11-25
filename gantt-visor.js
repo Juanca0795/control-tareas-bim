@@ -1407,6 +1407,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   const lastCalL = excelColLetter(calEndCol);
   const helperL = excelColLetter(helperCol);
   const FONT = 'Century Gothic';
+  const FONT_UI = 'Arial';
 
   // Forzar recálculo completo al abrir en Excel
   wb.calcProperties = { fullCalcOnLoad: true };
@@ -1431,6 +1432,15 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     bottom:{style:'thin',color:{argb:'FFD0D7E2'}},
     right:{style:'thin',color:{argb:'FFD0D7E2'}}
   };
+  const horizBorder = {
+    bottom:{style:'thin',color:{argb:'FFE2E8F0'}}
+  };
+  const calBorder = {
+    top:{style:'thin',color:{argb:'FFE6ECF5'}},
+    left:{style:'thin',color:{argb:'FFFFFFFF'}},
+    bottom:{style:'thin',color:{argb:'FFE6ECF5'}},
+    right:{style:'thin',color:{argb:'FFFFFFFF'}}
+  };
   const fillSolid = argb => ({ type:'pattern', pattern:'solid', fgColor:{ argb } });
   // IMPORTANTE OOXML: en formato condicional (<dxf>), Excel usa bgColor para rellenos sólidos
   const cfFill = argb => ({ type:'pattern', pattern:'solid', bgColor:{ argb } });
@@ -1442,7 +1452,8 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   });
 
   const wsGant = wb.addWorksheet('Gant', {
-    views:[{ state:'frozen', xSplit:12, ySplit:9, showGridLines:false }]
+    views:[{ state:'frozen', xSplit:12, ySplit:9, showGridLines:false }],
+    properties:{ outlineLevelRow:2, outlineProperties:{ summaryBelow:false, summaryRight:false } }
   });
   const wsCfg = wb.addWorksheet('Config', { views:[{ showGridLines:true }] });
   const wsAlert = wb.addWorksheet('Alertas', {
@@ -1459,17 +1470,20 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     { width:0.1, hidden:true }
   ];
 
-  // Encabezado superior exacto (Fila 1 banda azul marino #1B2A49 con texto blanco Century Gothic 14)
+  // Encabezado superior exacto (Fila 1 banda azul marino #1B2A49 + Fila 2 línea dorada #B08D57)
   wsGant.getRow(1).height = 30;
   for(let col = 2; col <= calEndCol; col++){
-    const c = wsGant.getCell(1, col);
-    c.fill = fillSolid('FF1B2A49');
+    wsGant.getCell(1, col).fill = fillSolid('FF1B2A49');
   }
   wsGant.getCell('B1').value = 'CRONOGRAMA DEL PROYECTO – DIAGRAMA DE GANTT';
   wsGant.getCell('B1').font = { name:FONT, size:14, bold:true, color:{ argb:'FFFFFFFF' } };
   wsGant.getCell('B1').alignment = { vertical:'middle' };
 
-  wsGant.getRow(2).height = 4;
+  wsGant.getRow(2).height = 3.75;
+  for(let col = 2; col <= calEndCol; col++){
+    wsGant.getCell(2, col).fill = fillSolid('FFB08D57');
+  }
+
   wsGant.getRow(3).height = 19.5;
   wsGant.getCell('B3').value = S.project || 'PROYECTO BIM';
   wsGant.getCell('B3').font = { name:FONT, size:11, bold:true, color:{ argb:'FF1B2A49' } };
@@ -1481,7 +1495,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   wsGant.getCell('B4').alignment = { vertical:'middle' };
   const cC4 = wsGant.getCell('C4');
   cC4.value = baseStartUtc;
-  cC4.numFmt = 'dd/mm/yy';
+  cC4.numFmt = 'dd/mm/yyyy';
   cC4.font = { name:FONT, size:10, bold:true, color:{ argb:'FF0000FF' } };
   cC4.fill = fillSolid('FFFFF4D6');
   cC4.alignment = { horizontal:'center', vertical:'middle' };
@@ -1492,10 +1506,9 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   wsGant.getCell('E4').alignment = { horizontal:'right', vertical:'middle' };
   wsGant.mergeCells('F4:G4');
   const cF4 = wsGant.getCell('F4');
-  cF4.numFmt = 'dd/mm/yy';
+  cF4.numFmt = 'dd/mm/yyyy';
   cF4.font = { name:FONT, size:10, bold:true, color:{ argb:'FF1F2328' } };
-  cF4.alignment = { horizontal:'center', vertical:'middle' };
-  cF4.border = thinBorder;
+  cF4.alignment = { horizontal:'left', vertical:'middle' };
 
   wsGant.mergeCells('M4:N4');
   wsGant.getCell('M4').value = 'Plazo (dc):';
@@ -1506,10 +1519,17 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   const cO4 = wsGant.getCell('O4');
   cO4.value = plazoDias;
   cO4.font = { name:FONT, size:10, bold:true, color:{ argb:'FF1F2328' } };
-  cO4.fill = fillSolid('FFFFF4D6');
-  cO4.alignment = { horizontal:'center', vertical:'middle' };
-  cO4.border = thinBorder;
+  cO4.alignment = { horizontal:'left', vertical:'middle' };
   cO4.dataValidation = { type:'whole', operator:'between', allowBlank:true, formulae:[1,180], showErrorMessage:true, errorTitle:'Plazo (dc)', error:'Ingresa un número entero entre 1 y 180.' };
+
+  wsGant.mergeCells('T4:X4');
+  wsGant.getCell('T4').value = 'Días laborables (dl):';
+  wsGant.getCell('T4').font = { name:FONT, size:8, bold:true, color:{ argb:'FF1B2A49' } };
+  wsGant.getCell('T4').alignment = { horizontal:'right', vertical:'middle' };
+  wsGant.mergeCells('Y4:Z4');
+  const cY4 = wsGant.getCell('Y4');
+  cY4.font = { name:FONT, size:10, bold:true, color:{ argb:'FF0000FF' } };
+  cY4.alignment = { horizontal:'center', vertical:'middle' };
 
   wsGant.getRow(5).height = 10;
   wsGant.getRow(6).height = 10;
@@ -1595,9 +1615,15 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   const mappedRows = rowsList.map(r => ({ r, rowNum: curRow++ }));
   const lastDataRow = Math.max(12, curRow - 1);
 
-  // Calcular fecha máxima real para caché de F4
+  // Calcular fecha máxima real para caché de F4 y días laborables para Y4
   const maxEndIso = rowsList.reduce((acc, r) => (r.end && r.end > acc ? r.end : acc), S.end || baseStartIso);
   cF4.value = { formula: `IF(COUNT(I12:I${lastDataRow})=0,"",MAX(I12:I${lastDataRow}))`, result: isoToUtcDate(maxEndIso) };
+  const baseHolsForDl = S.holidays || window.BIM_GANTT_BASE_SOURCE?.holidays || {};
+  const dlCache = calDatesUtc.slice(0, plazoDias).filter((dt, idx) => weekdayMon1(dt) <= 5 && !baseHolsForDl[calDatesIso[idx]]).length;
+  cY4.value = {
+    formula: `IF(OR(C4="",F4=""),"",_xlfn.LET(_xlpm.personas,_xlfn.UNIQUE(_xlfn._xlws.FILTER($E$11:$E$${lastDataRow},($F$11:$F$${lastDataRow}="Act.")*($E$11:$E$${lastDataRow}<>""))),MAX(_xlfn.MAP(_xlpm.personas,_xlfn.LAMBDA(_xlpm.persona,_xlfn.LET(_xlpm.abrev,_xlfn.XLOOKUP(_xlpm.persona,Responsables,RespAbrev,"#"),SUMPRODUCT(($M$8:$${lastCalL}$8>=C4)*($M$8:$${lastCalL}$8<=F4)*($M$8:$${lastCalL}$8<=FinCalendario)*(COUNTIFS(DiasNoLaborables,$M$8:$${lastCalL}$8,DiaLaborableSiNo,"<>SI")=0)*((COUNTIFS(Feriados,$M$8:$${lastCalL}$8,FeriadosAbrev,_xlpm.abrev)+COUNTIFS(Feriados,$M$8:$${lastCalL}$8,FeriadosAbrev,""))=0))))))))`,
+    result: dlCache
+  };
 
   // Calcular rangos de actividades hijas para cada grupo
   mappedRows.forEach((item, idx) => {
@@ -1641,7 +1667,8 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   const baseLeaves = S.nonWorkingByOwner || window.BIM_GANTT_BASE_SOURCE?.nonWorkingByOwner || {};
 
   mappedRows.forEach(({ r, rowNum, firstAct, lastAct }) => {
-    wsGant.getRow(rowNum).height = 15;
+    const rowObj = wsGant.getRow(rowNum);
+    rowObj.height = 14.5;
     if(r.kind === 'owner'){
       wsGant.getCell(rowNum, 4).value = r.label || 'ACTIVIDADES';
       for(let col = 2; col <= 12; col++){
@@ -1649,15 +1676,16 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
         c.font = { name:FONT, size:8.5, bold:true, color:{ argb:'FF1B2A49' } };
         c.fill = fillSolid('FFE9EDF4');
         c.alignment = { horizontal: col===4 ? 'left' : 'center', vertical:'middle' };
-        c.border = thinBorder;
+        c.border = horizBorder;
       }
       for(let col = calStartCol; col <= calEndCol; col++){
         const inRange = (col - calStartCol) < plazoDias;
         const c = wsGant.getCell(rowNum, col);
         c.fill = fillSolid(inRange ? 'FFE9EDF4' : 'FFFFFFFF');
-        c.border = thinBorder;
+        c.border = calBorder;
       }
     } else if(r.kind === 'group'){
+      rowObj.outlineLevel = 1;
       grpCounter++;
       actInGrpCounter = 0;
       const gStartUtc = isoToUtcDate(r.start);
@@ -1677,7 +1705,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
         c.font = { name:FONT, size:8, bold:true, color:{ argb:'FF1B2A49' } };
         c.fill = fillSolid('FFE9EDF4');
         c.alignment = { horizontal: col===4 ? 'left' : 'center', vertical:'middle' };
-        c.border = thinBorder;
+        c.border = horizBorder;
         if(col === 8 || col === 9) c.numFmt = 'dd/mm/yy';
       }
       for(let i = 0; i < calSpan; i++){
@@ -1687,9 +1715,10 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
         const inSpan = inRange && r.start && r.end && dIso >= r.start && dIso <= r.end;
         const c = wsGant.getCell(rowNum, col);
         c.fill = fillSolid(!inRange ? 'FFFFFFFF' : (inSpan ? 'FF1B2A49' : 'FFE9EDF4'));
-        c.border = thinBorder;
+        c.border = calBorder;
       }
     } else if(r.kind === 'activity'){
+      rowObj.outlineLevel = 2;
       actGlobalCounter++;
       actInGrpCounter++;
       const aIdText = r.excelId || ('A' + String(actGlobalCounter).padStart(2, '0'));
@@ -1726,7 +1755,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
         const c = wsGant.getCell(rowNum, col);
         c.font = { name:FONT, size:8, color:{ argb:'FF1F2328' } };
         c.alignment = { horizontal: (col===4 || col===5) ? 'left' : 'center', vertical:'middle' };
-        c.border = thinBorder;
+        c.border = horizBorder;
         if(col === 8 || col === 9) c.numFmt = 'dd/mm/yy';
       }
       wsGant.getCell(rowNum, 7).dataValidation = { type:'custom', allowBlank:true, formulae:[`OR(G${rowNum}="",IFERROR(AND(ISNUMBER(G${rowNum}),G${rowNum}>0,MOD(G${rowNum},1)=0),FALSE))`], showErrorMessage:true, errorTitle:'Entrada no válida', error:'Duración: entero positivo o vacío.' };
@@ -1760,7 +1789,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
         else if(isHol) c.fill = fillSolid('FFE8D9B5');
         else if(isWknd) c.fill = fillSolid('FFF6CFCB');
         c.alignment = { horizontal:'center', vertical:'middle' };
-        c.border = thinBorder;
+        c.border = calBorder;
       }
     }
   });
@@ -1866,37 +1895,39 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   ];
   wsCfg.getRow(1).height = 20;
   wsCfg.getCell('A1').value = 'CONFIGURACIÓN DEL CRONOGRAMA';
-  wsCfg.getCell('A1').font = { name:FONT, size:13, bold:true, color:{ argb:'FF1B2A49' } };
-  wsCfg.getCell('A2').value = 'Feriados (col A): escríbelos tú. Abreviatura (col C): vacía = aplica a todos. Sábados y domingos (col E) se calculan solos; cambia col G a SI para habilitar trabajo ese día.';
-  wsCfg.getCell('A2').font = { name:FONT, size:8.5, italic:true, color:{ argb:'FF595959' } };
+  wsCfg.getCell('A1').font = { name:FONT_UI, size:12, bold:true, color:{ argb:'FF000000' } };
+  wsCfg.getCell('A2').value = 'Feriados (columna A): escríbelos tú. Abreviatura (columna C): escribe la abreviatura del responsable al que aplica el feriado (ver columna M); si la dejas vacía, aplica a todos. Sábados y domingos (columna E): se llenan solos; cambia columna G a SI para habilitar trabajo.';
+  wsCfg.getCell('A2').font = { name:FONT_UI, size:8.5, italic:true, color:{ argb:'FF333333' } };
 
   [['A3','Feriados (no laborables)'],['E3','Días no laborables (sáb y dom automáticos)'],['I3','Rango del cronograma'],['L3','Responsables (nombres)']].forEach(([ref, txt]) => {
     const c = wsCfg.getCell(ref);
     c.value = txt;
-    c.font = { name:FONT, size:9.5, bold:true, color:{ argb:'FF1B2A49' } };
+    c.font = { name:FONT_UI, size:9.5, bold:true, color:{ argb:'FF000000' } };
   });
   [['A4','Fecha'],['B4','Descripción'],['C4','Abreviatura'],['E4','Fecha'],['F4','Día'],['G4','¿Laborable?'],['I4','Inicio del Gantt'],['L4','Nombre'],['M4','Abreviatura']].forEach(([ref, txt]) => {
     const c = wsCfg.getCell(ref);
     c.value = txt;
-    c.font = { name:FONT, size:8.5, bold:true, color:{ argb:'FFFFFFFF' } };
-    c.fill = fillSolid('FF1B2A49');
-    c.alignment = { horizontal:'center', vertical:'middle' };
-    c.border = thinBorder;
+    c.font = { name:FONT_UI, size:9, bold:true, color:{ argb:'FF000000' } };
+    c.fill = fillSolid('FFD9E1F2');
+    c.alignment = { horizontal: (ref==='C4'||ref==='G4') ? 'center' : 'left', vertical:'middle' };
   });
   wsCfg.getCell('N4').value = '← Escribe aquí los nombres (uno por fila, sin dejar filas vacías).';
-  wsCfg.getCell('N4').font = { name:FONT, size:8, italic:true, color:{ argb:'FF595959' } };
+  wsCfg.getCell('N4').font = { name:FONT_UI, size:8.5, italic:true, color:{ argb:'FF595959' } };
 
   const ownerList = owners();
-  ownerList.forEach((oName, i) => {
-    const rn = 5 + i;
-    wsCfg.getCell(rn, 12).value = oName;
-    wsCfg.getCell(rn, 13).value = ownerInitials(oName);
-    wsCfg.getCell(rn, 12).font = { name:FONT, size:8.5 };
-    wsCfg.getCell(rn, 13).font = { name:FONT, size:8.5, bold:true };
-    wsCfg.getCell(rn, 12).border = thinBorder;
-    wsCfg.getCell(rn, 13).border = thinBorder;
-    wsCfg.getCell(rn, 13).alignment = { horizontal:'center' };
-  });
+  for(let r = 5; r <= 54; r++){
+    const oName = ownerList[r - 5] || null;
+    const cL = wsCfg.getCell(r, 12), cM = wsCfg.getCell(r, 13);
+    if(oName){
+      cL.value = oName;
+      cM.value = ownerInitials(oName);
+    }
+    cL.font = { name:FONT_UI, size:9, color:{ argb:'FF000000' } };
+    cM.font = { name:FONT_UI, size:9, color:{ argb:'FF000000' } };
+    cL.fill = fillSolid('FFFFF4D6');
+    cM.fill = fillSolid('FFFFF4D6');
+    cM.alignment = { horizontal:'left', vertical:'middle' };
+  }
 
   const holidayEntries = [];
   Object.entries(baseHols).forEach(([iso, desc]) => holidayEntries.push({ iso, desc, abrev:'' }));
@@ -1912,38 +1943,39 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
       cB.value = entry.desc;
       cC.value = entry.abrev;
     }
-    cA.font = cB.font = cC.font = { name:FONT, size:8.5 };
-    cA.numFmt = 'dd/mm/yy';
-    cA.border = cB.border = cC.border = thinBorder;
-    cC.alignment = { horizontal:'center' };
+    cA.font = cB.font = cC.font = { name:FONT_UI, size:9, color:{ argb:'FF000000' } };
+    cA.fill = cB.fill = cC.fill = fillSolid('FFFFF4D6');
+    cA.numFmt = 'dd/mm/yyyy';
+    cA.alignment = { horizontal:'right', vertical:'middle' };
+    cC.alignment = { horizontal:'center', vertical:'middle' };
     cC.dataValidation = { type:'list', allowBlank:true, formulae:['=$M$5:$M$54'], showErrorMessage:true, errorStyle:'warning', errorTitle:'Abreviatura', error:'Usa una abreviatura de la columna M o déjalo vacío para todos.' };
   }
 
   wsCfg.getCell('J4').value = { formula: 'Gant!C4', result: baseStartUtc };
   wsCfg.getCell('J4').numFmt = 'dd/mm/yy';
-  wsCfg.getCell('J4').font = { name:FONT, size:8.5 };
-  wsCfg.getCell('J4').alignment = { horizontal:'center' };
-  wsCfg.getCell('J4').border = thinBorder;
+  wsCfg.getCell('J4').font = { name:FONT_UI, size:9 };
+  wsCfg.getCell('J4').fill = fillSolid('FFF2F2F2');
+  wsCfg.getCell('J4').alignment = { horizontal:'right' };
 
   wsCfg.getCell('I5').value = 'Fin del proyecto';
-  wsCfg.getCell('I5').font = { name:FONT, size:8.5, bold:true, color:{ argb:'FF1B2A49' } };
-  wsCfg.getCell('I5').border = thinBorder;
+  wsCfg.getCell('I5').font = { name:FONT_UI, size:9, bold:true, color:{ argb:'FF000000' } };
+  wsCfg.getCell('I5').fill = fillSolid('FFD9E1F2');
   wsCfg.getCell('J5').value = { formula: 'Gant!F4', result: isoToUtcDate(maxEndIso) };
   wsCfg.getCell('J5').numFmt = 'dd/mm/yy';
-  wsCfg.getCell('J5').font = { name:FONT, size:8.5 };
-  wsCfg.getCell('J5').alignment = { horizontal:'center' };
-  wsCfg.getCell('J5').border = thinBorder;
+  wsCfg.getCell('J5').font = { name:FONT_UI, size:9 };
+  wsCfg.getCell('J5').fill = fillSolid('FFF2F2F2');
+  wsCfg.getCell('J5').alignment = { horizontal:'right' };
 
   wsCfg.getCell('I6').value = 'Fin del calendario';
-  wsCfg.getCell('I6').font = { name:FONT, size:8.5, bold:true, color:{ argb:'FF1B2A49' } };
-  wsCfg.getCell('I6').border = thinBorder;
+  wsCfg.getCell('I6').font = { name:FONT_UI, size:9, bold:true, color:{ argb:'FF000000' } };
+  wsCfg.getCell('I6').fill = fillSolid('FFD9E1F2');
   wsCfg.getCell('J6').value = { formula: 'J4+DiasCronograma-1', result: finCalUtc };
   wsCfg.getCell('J6').numFmt = 'dd/mm/yy';
-  wsCfg.getCell('J6').font = { name:FONT, size:8.5, bold:true };
-  wsCfg.getCell('J6').alignment = { horizontal:'center' };
-  wsCfg.getCell('J6').border = thinBorder;
+  wsCfg.getCell('J6').font = { name:FONT_UI, size:9 };
+  wsCfg.getCell('J6').fill = fillSolid('FFF2F2F2');
+  wsCfg.getCell('J6').alignment = { horizontal:'right' };
 
-  // Sábados y domingos automáticos (E5:G60) con resultado en caché
+  // Sábados y domingos automáticos (E5:G60) con resultado en caché y colores exactos (#F2F2F2 / #FFF4D6 azul)
   const weekendDates = calDatesUtc.slice(0, plazoDias).filter(dt => weekdayMon1(dt) > 5);
   for(let r = 5; r <= 60; r++){
     const wkDt = weekendDates[r - 5] || null;
@@ -1958,10 +1990,14 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
       result: wkDt ? (weekdayMon1(wkDt) === 6 ? 'Sábado' : 'Domingo') : ''
     };
     cG.value = 'NO';
-    cE.font = cF.font = cG.font = { name:FONT, size:8.5 };
+    cE.font = cF.font = { name:FONT_UI, size:9, color:{ argb:'FF000000' } };
+    cE.fill = cF.fill = fillSolid('FFF2F2F2');
+    cE.alignment = { horizontal:'right' };
+    cG.font = { name:FONT_UI, size:9, color:{ argb:'FF0000FF' } };
+    cG.fill = fillSolid('FFFFF4D6');
     cG.alignment = { horizontal:'center' };
     cG.dataValidation = { type:'list', allowBlank:true, formulae:['"SI,NO"'], showErrorMessage:true, errorTitle:'¿Laborable?', error:'Elige SI o NO.' };
-    cE.border = cF.border = cG.border = thinBorder;
+    cE.border = cF.border = cG.border = horizBorder;
   }
   wsCfg.addConditionalFormatting({
     ref: 'G5:G60',
@@ -1975,19 +2011,18 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   wsAlert.mergeCells('A1:G1');
   wsAlert.getRow(1).height = 23.25;
   wsAlert.getCell('A1').value = 'CONTROL DEL CRONOGRAMA';
-  wsAlert.getCell('A1').font = { name:FONT, size:13, bold:true, color:{ argb:'FF1B2A49' } };
+  wsAlert.getCell('A1').font = { name:FONT_UI, size:14, color:{ argb:'FF1B2A49' } };
   wsAlert.mergeCells('A2:G2');
   wsAlert.getRow(2).height = 24;
-  wsAlert.getCell('A2').value = 'Revisión automática. Las predecesoras deben estar arriba de la actividad. Cualquier celda distinta de "OK" resalta una observación.';
-  wsAlert.getCell('A2').font = { name:FONT, size:8.5, italic:true, color:{ argb:'FF595959' } };
+  wsAlert.getCell('A2').value = 'Revisión automática. Las predecesoras deben estar arriba de la actividad. No se modifican fechas.';
+  wsAlert.getCell('A2').font = { name:FONT_UI, size:9, color:{ argb:'FF333333' } };
 
   ['ID','Actividad','Responsable','Entradas','Programación','Calendario','Vínculo'].forEach((h, i) => {
     const c = wsAlert.getCell(4, i + 1);
     c.value = h;
-    c.font = { name:FONT, size:8.5, bold:true, color:{ argb:'FFFFFFFF' } };
+    c.font = { name:FONT_UI, size:9, bold:true, color:{ argb:'FFFFFFFF' } };
     c.fill = fillSolid('FF1B2A49');
-    c.alignment = { horizontal:'center', vertical:'middle' };
-    c.border = thinBorder;
+    c.alignment = { horizontal:'left', vertical:'middle' };
   });
 
   actMeta.forEach(({ gantRow, alertRow, act, aIdText }) => {
@@ -2001,9 +2036,9 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     wsAlert.getCell(alertRow, 7).value = { formula: `IF(Gant!J${gantRow}="","OK",IFERROR(_xlfn.LET(_xlpm.ids,_xlfn.TEXTSPLIT(SUBSTITUTE(Gant!J${gantRow}," ",""),{",",";"}),IF(SUM(--(COUNTIF(Gant!$B$11:$B${p},_xlpm.ids)>0))=COUNTA(_xlpm.ids),"OK","Revisar predecesora")),"Revisar predecesora"))`, result: 'OK' };
     for(let col = 1; col <= 7; col++){
       const c = wsAlert.getCell(alertRow, col);
-      c.font = { name:FONT, size:8.5, color:{ argb:'FF1B2A49' } };
-      c.alignment = { horizontal: col===1||col>=4 ? 'center' : 'left', vertical:'middle' };
-      c.border = thinBorder;
+      c.font = { name:FONT_UI, size:9, color:{ argb:'FF000000' } };
+      c.alignment = { horizontal:'left', vertical:'middle' };
+      c.border = horizBorder;
     }
   });
   const lastAlertRow = Math.max(5, 4 + actMeta.length);
@@ -2019,9 +2054,9 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   ];
   wsCtrl.getRow(1).height = 23.25;
   wsCtrl.getCell('A1').value = 'CONTROL SEMANAL DEL CRONOGRAMA';
-  wsCtrl.getCell('A1').font = { name:FONT, size:13, bold:true, color:{ argb:'FF1B2A49' } };
+  wsCtrl.getCell('A1').font = { name:FONT_UI, size:13, bold:true, color:{ argb:'FF1B2A49' } };
   wsCtrl.getCell('A2').value = 'Actividades cuya fecha de fin en el Gantt cae dentro de la semana seleccionada. Escribe SI o NO en "¿Cumplió?" para actualizar el cumplimiento.';
-  wsCtrl.getCell('A2').font = { name:FONT, size:8.5, italic:true, color:{ argb:'FF595959' } };
+  wsCtrl.getCell('A2').font = { name:FONT_UI, size:8.5, italic:true, color:{ argb:'FF595959' } };
 
   const nowUtc = new Date();
   const todayUtc = new Date(Date.UTC(nowUtc.getFullYear(), nowUtc.getMonth(), nowUtc.getDate()));
@@ -2030,28 +2065,26 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
 
   wsCtrl.getCell('B4').value = 'Inicio de semana (lunes)';
   wsCtrl.getCell('C4').value = { formula: 'TODAY()-WEEKDAY(TODAY(),2)+1', result: monUtc };
-  wsCtrl.getCell('C4').numFmt = 'dd/mm/yy';
+  wsCtrl.getCell('C4').numFmt = 'dd/mm/yyyy';
   wsCtrl.getCell('C4').fill = fillSolid('FFFFF4D6');
   wsCtrl.getCell('D4').value = '← Por defecto es la semana actual; escribe cualquier lunes para revisar otra semana.';
-  wsCtrl.getCell('D4').font = { name:FONT, size:8.5, italic:true, color:{ argb:'FF595959' } };
+  wsCtrl.getCell('D4').font = { name:FONT_UI, size:8.5, italic:true, color:{ argb:'FF595959' } };
 
   wsCtrl.getCell('B5').value = 'Fecha de corte (domingo)';
   wsCtrl.getCell('C5').value = { formula: 'C4+6', result: sunUtc };
-  wsCtrl.getCell('C5').numFmt = 'dd/mm/yy';
+  wsCtrl.getCell('C5').numFmt = 'dd/mm/yyyy';
 
   wsCtrl.getCell('B6').value = 'Semana';
   wsCtrl.getCell('C6').value = { formula: '"S"&_xlfn.ISOWEEKNUM(C4)', result: 'S' + isoWeekNum(monUtc) };
 
   [4,5,6].forEach(rn => {
-    wsCtrl.getCell(rn, 2).font = { name:FONT, size:8.5, bold:true, color:{ argb:'FF1B2A49' } };
-    wsCtrl.getCell(rn, 2).border = thinBorder;
-    wsCtrl.getCell(rn, 3).font = { name:FONT, size:8.5, bold:true, color:{ argb:'FF1B2A49' } };
+    wsCtrl.getCell(rn, 2).font = { name:FONT_UI, size:9, bold:true, color:{ argb:'FF1B2A49' } };
+    wsCtrl.getCell(rn, 3).font = { name:FONT_UI, size:9, bold:true, color:{ argb: rn===4 ? 'FF0000FF' : 'FF1B2A49' } };
     wsCtrl.getCell(rn, 3).alignment = { horizontal:'center' };
-    wsCtrl.getCell(rn, 3).border = thinBorder;
   });
 
   wsCtrl.getCell('A8').value = 'RESUMEN POR RESPONSABLE';
-  wsCtrl.getCell('A8').font = { name:FONT, size:9.5, bold:true, color:{ argb:'FF1B2A49' } };
+  wsCtrl.getCell('A8').font = { name:FONT_UI, size:10, bold:true, color:{ argb:'FF000000' } };
 
   const sumStartRow = 10;
   const ownerCount = Math.max(1, ownerList.length);
@@ -2066,7 +2099,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   ['Responsable','Controladas','Cumplió','No cumplió','Sin reporte','% cumplimiento','Resultado','Actividades no cumplidas / sin reporte (ID)'].forEach((h, i) => {
     const c = wsCtrl.getCell(9, i + 2);
     c.value = h;
-    c.font = { name:FONT, size:8.5, bold:true, color:{ argb:'FFFFFFFF' } };
+    c.font = { name:FONT_UI, size:9, bold:true, color:{ argb:'FFFFFFFF' } };
     c.fill = fillSolid('FF1B2A49');
     c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
     c.border = thinBorder;
@@ -2087,7 +2120,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     wsCtrl.getCell(rn, 9).value = { formula: `_xlfn.TEXTJOIN(", ",TRUE,_xlfn._xlws.FILTER($A$${detStartRow}:$A$${detEndRow},($C$${detStartRow}:$C$${detEndRow}=$B${rn})*((($J$${detStartRow}:$J$${detEndRow}="No cumplió")+($J$${detStartRow}:$J$${detEndRow}="Sin reporte"))>0),""))`, result: '' };
     for(let col = 2; col <= 9; col++){
       const c = wsCtrl.getCell(rn, col);
-      c.font = { name:FONT, size:8.5, color:{ argb:'FF1B2A49' } };
+      c.font = { name:FONT_UI, size:9, color:{ argb:'FF000000' } };
       c.alignment = { horizontal: (col===2||col===9) ? 'left' : 'center', vertical:'middle' };
       c.border = thinBorder;
     }
@@ -2101,19 +2134,19 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   wsCtrl.getCell(sumTotalRow, 7).numFmt = '0%';
   for(let col = 2; col <= 9; col++){
     const c = wsCtrl.getCell(sumTotalRow, col);
-    c.font = { name:FONT, size:8.5, bold:true, color:{ argb:'FF1B2A49' } };
-    c.fill = fillSolid('FFE9EDF4');
+    c.font = { name:FONT_UI, size:9, bold:true, color:{ argb:'FF000000' } };
+    c.fill = fillSolid('FFD9E1F2');
     c.alignment = { horizontal: col===2 ? 'left' : 'center', vertical:'middle' };
     c.border = thinBorder;
   }
 
   wsCtrl.getCell(detTitleRow, 1).value = 'DETALLE POR ACTIVIDAD';
-  wsCtrl.getCell(detTitleRow, 1).font = { name:FONT, size:9.5, bold:true, color:{ argb:'FF1B2A49' } };
+  wsCtrl.getCell(detTitleRow, 1).font = { name:FONT_UI, size:10, bold:true, color:{ argb:'FF000000' } };
   wsCtrl.getRow(detHdrRow).height = 36;
   ['ID','Actividad','Responsable','Inicio','Fin','Dur. (dc)','% programado al corte','¿Cumplió? (SI/NO)','Debía entregarse en la semana','Estado','Observaciones'].forEach((h, i) => {
     const c = wsCtrl.getCell(detHdrRow, i + 1);
     c.value = h;
-    c.font = { name:FONT, size:8.5, bold:true, color:{ argb:'FFFFFFFF' } };
+    c.font = { name:FONT_UI, size:9, bold:true, color:{ argb:'FFFFFFFF' } };
     c.fill = fillSolid('FF1B2A49');
     c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
     c.border = thinBorder;
@@ -2144,10 +2177,12 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
     }
     for(let col = 1; col <= 11; col++){
       const c = wsCtrl.getCell(rn, col);
-      c.font = { name:FONT, size:8.5, color:{ argb:'FF1B2A49' } };
+      const isEditable = (col === 8 || col === 11);
+      c.font = { name:FONT_UI, size:9, color:{ argb: isEditable ? 'FF0000FF' : 'FF000000' } };
+      if(isEditable) c.fill = fillSolid('FFFFF4D6');
       c.alignment = { horizontal: (col===2||col===3||col===11) ? 'left' : 'center', vertical:'middle' };
       c.border = thinBorder;
-      if(col === 4 || col === 5) c.numFmt = 'dd/mm/yy';
+      if(col === 4 || col === 5) c.numFmt = 'dd/mm/yyyy';
     }
   });
 
