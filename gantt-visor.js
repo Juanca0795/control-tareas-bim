@@ -121,8 +121,8 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-
 .vgg-bar-seg.done{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%)}
 .vgg-bar-seg.partial{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%) left/var(--vgg-real-fill) 100% no-repeat,linear-gradient(180deg,#4f83cc 0%,#3b6db5 100%)}
 .vgg-bar-seg.late{background:linear-gradient(180deg,#e5a13e 0%,#c98324 100%)}
-.vgg-bar-seg.nonwork{background:#f6c8ce;box-shadow:inset 0 0 0 1px rgba(225,29,72,.22)}
-#bim-gantt-modal.vgg-dark-table .vgg-bar-seg.nonwork{background:rgba(244,63,94,.28);box-shadow:inset 0 0 0 1px rgba(244,63,94,.32)}
+.vgg-bar-seg.nonwork{background:#f6c8ce;box-shadow:none}
+#bim-gantt-modal.vgg-dark-table .vgg-bar-seg.nonwork{background:rgba(244,63,94,.28);box-shadow:none}
 .vgg-bar-seg.culminated{box-shadow:none}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start){border-left-color:transparent!important}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start) .vgg-bar-seg{margin-left:-1px;width:calc(100% + 2px)}
