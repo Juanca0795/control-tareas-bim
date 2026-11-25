@@ -1419,7 +1419,7 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='', pres
     createTaskChk.addEventListener('change', () => { taskSyncFields.hidden = !createTaskChk.checked; });
   }
 
-  document.getElementById('vgg-activity-form').addEventListener('submit', ev => {
+  document.getElementById('vgg-activity-form').addEventListener('submit', async ev => {
     ev.preventDefault();
     const errBox = document.getElementById('vgg-act-err');
     const chosenOwner = getChosenOwner();
@@ -1464,7 +1464,7 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='', pres
       });
       let createdTask = null;
       if(createTaskChk?.checked && typeof store.createLinkedTaskForActivity === 'function'){
-        createdTask = store.createLinkedTaskForActivity(saved, {
+        createdTask = await store.createLinkedTaskForActivity(saved, {
           package: document.getElementById('vgg-ft-pkg')?.value || '',
           team: document.getElementById('vgg-ft-team')?.value || '',
           priority: document.getElementById('vgg-ft-prio')?.value || 'Media',
@@ -2913,12 +2913,15 @@ function openQuickRegisterTaskModal(actRow){
   const catTeams = (typeof catalogs !== 'undefined' && Array.isArray(catalogs.teams) && catalogs.teams.length) ? catalogs.teams : ['Coordinación BIM'];
   const catStatuses = (typeof catalogs !== 'undefined' && Array.isArray(catalogs.statuses) && catalogs.statuses.length) ? catalogs.statuses : [{ name:'En progreso', category:'progress' }];
   const defaultStatusName = (catStatuses.find(s => s.category === 'progress') || catStatuses[0]).name;
+  const todayIso = typeof todayString === 'function' ? todayString() : new Date().toISOString().slice(0,10);
+  const pendingFiles = []; // { file, previewUrl }
 
   const back = document.getElementById('vgg-submodal-back');
-  back.innerHTML = '<div class="vgg-submodal narrow" role="dialog" aria-modal="true" aria-label="Registrar actividad en Control de tareas y Dashboard">'+
+  back.innerHTML = '<div class="vgg-submodal" role="dialog" aria-modal="true" aria-label="Registrar actividad en Control de tareas y Dashboard">'+
     '<div class="vgg-submodal-hd"><h3>📋 Registrar ' + escapeText(actRow.excelId || actRow.id) + ' en Tareas y Dashboard</h3>'+
     '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
     '<form id="vgg-qreg-form"><div class="vgg-submodal-body">'+
+    '<div id="vgg-qr-err" class="vgg-sub-error" hidden></div>'+
     '<div style="padding:8px 10px;border-radius:8px;background:var(--bg-subtle,#1e293b);border:1px solid var(--border-base,#253048);font-size:11.5px;line-height:1.45">'+
       '<b>' + escapeText(actRow.title) + '</b><br>'+
       '<span style="color:var(--ink-secondary,#94a3b8)">' + escapeText(actRow.owner) + ' · Plazo: ' + readable(actRow.start) + ' al ' + readable(actRow.end) + '</span>'+
@@ -2928,25 +2931,97 @@ function openQuickRegisterTaskModal(actRow){
       '<div class="vgg-form-field"><label for="vgg-qr-team">Disciplina / Equipo</label><select id="vgg-qr-team">' + catTeams.map(t => '<option value="'+escapeText(t)+'">'+escapeText(t)+'</option>').join('') + '</select></div>'+
       '<div class="vgg-form-field"><label for="vgg-qr-prio">Prioridad</label><select id="vgg-qr-prio"><option value="Alta">Alta</option><option value="Media" selected>Media</option><option value="Baja">Baja</option></select></div>'+
       '<div class="vgg-form-field"><label for="vgg-qr-status">Estado inicial</label><select id="vgg-qr-status">' + catStatuses.map(s => '<option value="'+escapeText(s.name)+'"'+(s.name===defaultStatusName?' selected':'')+'>'+escapeText(s.name)+'</option>').join('') + '</select></div>'+
+      '<div class="vgg-form-field"><label for="vgg-qr-pct">Avance real acumulado (%)</label><input id="vgg-qr-pct" type="number" min="0" max="100" step="1" placeholder="Opcional (0–100 %)"></div>'+
+      '<div class="vgg-form-field"><label for="vgg-qr-pct-date">Fecha del avance</label><input id="vgg-qr-pct-date" type="date" value="'+escapeText(todayIso)+'" max="'+escapeText(todayIso)+'"></div>'+
+    '</div>'+
+    '<div style="padding:10px 12px;border:1px dashed var(--border-strong,#475569);border-radius:10px;background:rgba(15,23,42,.3);display:flex;flex-direction:column;gap:8px">'+
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">'+
+        '<span style="font-size:11.5px;font-weight:700">📷 Evidencia fotográfica (opcional · JPG, PNG, WEBP)</span>'+
+        '<button type="button" id="vgg-qr-pick-img" class="vgg-sub-btn" style="height:28px;padding:0 10px;font-size:11px">+ Elegir imagen(es)</button>'+
+        '<input type="file" id="vgg-qr-files" accept="image/jpeg,image/png,image/webp" multiple hidden>'+
+      '</div>'+
+      '<small style="font-size:10.5px;color:var(--ink-secondary,#94a3b8)">También puedes pegar capturas directamente con <b>Ctrl + V</b> (máx. 6 imágenes, 5 MB c/u).</small>'+
+      '<div id="vgg-qr-previews" style="display:flex;gap:8px;flex-wrap:wrap"></div>'+
     '</div>'+
     '</div>'+
-    '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button><button type="submit" class="vgg-sub-btn success">Registrar actividad</button></div>'+
+    '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button><button type="submit" id="vgg-qr-submit" class="vgg-sub-btn success">Registrar actividad</button></div>'+
     '</form></div>';
   back.hidden = false;
 
-  document.getElementById('vgg-qreg-form')?.addEventListener('submit', ev => {
+  const errBox = document.getElementById('vgg-qr-err');
+  const fileInp = document.getElementById('vgg-qr-files');
+  const previews = document.getElementById('vgg-qr-previews');
+  const allowedMimes = new Set(['image/jpeg','image/png','image/webp']);
+
+  function renderPreviews(){
+    if(!previews) return;
+    previews.innerHTML = pendingFiles.map((item, idx) =>
+      '<div style="position:relative;width:68px;height:54px;border-radius:7px;overflow:hidden;border:1px solid var(--border-strong,#334155)">'+
+        '<img src="'+item.previewUrl+'" alt="" style="width:100%;height:100%;object-fit:cover">'+
+        '<button type="button" data-qr-rm="'+idx+'" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border:0;border-radius:50%;background:rgba(15,23,42,.85);color:#fff;font-size:11px;cursor:pointer;line-height:1">×</button>'+
+      '</div>'
+    ).join('');
+  }
+  function pushImages(fileList){
+    errBox.hidden = true;
+    for(const f of Array.from(fileList || [])){
+      if(!allowedMimes.has(f.type)){ errBox.textContent = 'Solo se aceptan imágenes JPG, PNG o WEBP.'; errBox.hidden = false; continue; }
+      if(f.size > 5 * 1024 * 1024){ errBox.textContent = 'La imagen "' + f.name + '" supera 5 MB.'; errBox.hidden = false; continue; }
+      if(pendingFiles.length >= 6){ errBox.textContent = 'Máximo 6 imágenes por actividad.'; errBox.hidden = false; break; }
+      pendingFiles.push({ file: f, previewUrl: URL.createObjectURL(f) });
+    }
+    renderPreviews();
+  }
+  document.getElementById('vgg-qr-pick-img')?.addEventListener('click', () => fileInp?.click());
+  fileInp?.addEventListener('change', () => { pushImages(fileInp.files); fileInp.value = ''; });
+  previews?.addEventListener('click', ev => {
+    const rm = ev.target.closest('[data-qr-rm]');
+    if(!rm) return;
+    const i = Number(rm.dataset.qrRm);
+    const [removed] = pendingFiles.splice(i, 1);
+    if(removed) try { URL.revokeObjectURL(removed.previewUrl); } catch {}
+    renderPreviews();
+  });
+  const onPaste = ev => {
+    if(back.hidden || !document.getElementById('vgg-qreg-form')){
+      window.removeEventListener('paste', onPaste);
+      return;
+    }
+    const items = [...(ev.clipboardData?.items || [])].filter(it => it.type.startsWith('image/'));
+    if(!items.length) return;
+    const pastedFiles = items.map(it => it.getAsFile()).filter(Boolean);
+    if(pastedFiles.length){ ev.preventDefault(); pushImages(pastedFiles); }
+  };
+  window.addEventListener('paste', onPaste);
+
+  document.getElementById('vgg-qreg-form')?.addEventListener('submit', async ev => {
     ev.preventDefault();
-    const created = store.createLinkedTaskForActivity?.(actRow, {
-      package: document.getElementById('vgg-qr-pkg')?.value || '',
-      team: document.getElementById('vgg-qr-team')?.value || '',
-      priority: document.getElementById('vgg-qr-prio')?.value || 'Media',
-      status: document.getElementById('vgg-qr-status')?.value || ''
-    });
-    closeSubmodal();
-    render();
-    showDetail(actRow.id);
-    if(created && typeof toast === 'function'){
-      toast('Actividad ' + (actRow.excelId || actRow.id) + ' registrada como ' + created.id + ' en Control de tareas y Dashboard.');
+    errBox.hidden = true;
+    const btn = document.getElementById('vgg-qr-submit');
+    if(btn){ btn.disabled = true; btn.textContent = pendingFiles.length ? 'Subiendo y registrando…' : 'Registrando…'; }
+    try {
+      const pctRaw = document.getElementById('vgg-qr-pct')?.value.trim();
+      const created = await store.createLinkedTaskForActivity?.(actRow, {
+        package: document.getElementById('vgg-qr-pkg')?.value || '',
+        team: document.getElementById('vgg-qr-team')?.value || '',
+        priority: document.getElementById('vgg-qr-prio')?.value || 'Media',
+        status: document.getElementById('vgg-qr-status')?.value || '',
+        actual: pctRaw === '' ? null : Number(pctRaw),
+        achievedOn: document.getElementById('vgg-qr-pct-date')?.value || todayIso,
+        files: pendingFiles.map(x => x.file)
+      });
+      window.removeEventListener('paste', onPaste);
+      pendingFiles.forEach(x => { try { URL.revokeObjectURL(x.previewUrl); } catch {} });
+      closeSubmodal();
+      render();
+      showDetail(actRow.id);
+      if(created && typeof toast === 'function'){
+        toast('Actividad ' + (actRow.excelId || actRow.id) + ' registrada como ' + created.id + (pendingFiles.length ? ' con ' + pendingFiles.length + ' imagen(es).' : ' en Control de tareas y Dashboard.'));
+      }
+    } catch (err) {
+      errBox.textContent = err?.message || 'No se pudo registrar la actividad.';
+      errBox.hidden = false;
+      if(btn){ btn.disabled = false; btn.textContent = 'Registrar actividad'; }
     }
   });
 }
