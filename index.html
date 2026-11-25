@@ -5984,10 +5984,14 @@ html[data-theme="light"] .bim-dirty-badge {
 
 /* H9: Toast semántico con icono y contraste claro */
 .toast {
-  display: inline-flex !important;
+  display: none;
   align-items: center;
   gap: 8px;
+  bottom: 84px;
   border-left: 3px solid var(--accent-blue, #5da7ff);
+}
+.toast.show {
+  display: inline-flex !important;
 }
 .toast.toast-success { border-left-color: #10b981; }
 .toast.toast-error { border-left-color: #ef4444; }
