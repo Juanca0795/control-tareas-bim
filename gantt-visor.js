@@ -1452,8 +1452,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   });
 
   const wsGant = wb.addWorksheet('Gant', {
-    views:[{ state:'frozen', xSplit:12, ySplit:9, showGridLines:false }],
-    properties:{ outlineLevelRow:2, outlineProperties:{ summaryBelow:false, summaryRight:false } }
+    views:[{ state:'frozen', xSplit:12, ySplit:9, showGridLines:false }]
   });
   const wsCfg = wb.addWorksheet('Config', { views:[{ showGridLines:true }] });
   const wsAlert = wb.addWorksheet('Alertas', {
@@ -1621,7 +1620,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   const baseHolsForDl = S.holidays || window.BIM_GANTT_BASE_SOURCE?.holidays || {};
   const dlCache = calDatesUtc.slice(0, plazoDias).filter((dt, idx) => weekdayMon1(dt) <= 5 && !baseHolsForDl[calDatesIso[idx]]).length;
   cY4.value = {
-    formula: `IF(OR(C4="",F4=""),"",_xlfn.LET(_xlpm.personas,_xlfn.UNIQUE(_xlfn._xlws.FILTER($E$11:$E$${lastDataRow},($F$11:$F$${lastDataRow}="Act.")*($E$11:$E$${lastDataRow}<>""))),MAX(_xlfn.MAP(_xlpm.personas,_xlfn.LAMBDA(_xlpm.persona,_xlfn.LET(_xlpm.abrev,_xlfn.XLOOKUP(_xlpm.persona,Responsables,RespAbrev,"#"),SUMPRODUCT(($M$8:$${lastCalL}$8>=C4)*($M$8:$${lastCalL}$8<=F4)*($M$8:$${lastCalL}$8<=FinCalendario)*(COUNTIFS(DiasNoLaborables,$M$8:$${lastCalL}$8,DiaLaborableSiNo,"<>SI")=0)*((COUNTIFS(Feriados,$M$8:$${lastCalL}$8,FeriadosAbrev,_xlpm.abrev)+COUNTIFS(Feriados,$M$8:$${lastCalL}$8,FeriadosAbrev,""))=0))))))))`,
+    formula: `IF(OR(C4="",F4=""),"",NETWORKDAYS(C4,F4)-COUNTIFS(Feriados,">="&C4,Feriados,"<="&F4,FeriadosAbrev,"")+COUNTIFS(DiasNoLaborables,">="&C4,DiasNoLaborables,"<="&F4,DiaLaborableSiNo,"SI"))`,
     result: dlCache
   };
 
