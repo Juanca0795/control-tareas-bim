@@ -296,6 +296,15 @@ html[data-theme="light"] .vgg-daily-grid{background:#f8fafc}
 .vgg-excel-card{padding:12px 14px;border:1px solid var(--border-base,#334155);border-radius:10px;background:var(--bg-subtle,#1e293b);display:flex;flex-direction:column;gap:8px}
 .vgg-excel-card h4{margin:0;font-size:12.5px;font-weight:700}
 .vgg-excel-card p{margin:0;font-size:11.5px;color:var(--ink-secondary,#cbd5e1);line-height:1.45}
+.vgg-ctx-menu{position:fixed;z-index:100020;min-width:210px;padding:5px;border-radius:10px;border:1px solid var(--border-strong,#334155);background:var(--bg-panel,#0f172a);color:var(--ink-primary,#f8fafc);box-shadow:0 16px 40px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:2px}
+.vgg-ctx-menu[hidden]{display:none!important}
+.vgg-ctx-item{width:100%;padding:7px 10px;border:0;border-radius:7px;background:transparent;color:inherit;font-size:11.5px;font-weight:600;text-align:left;cursor:pointer;display:flex;align-items:center;gap:8px;transition:background-color .12s}
+.vgg-ctx-item:hover{background:rgba(59,130,246,.16);color:#60a5fa}
+.vgg-ctx-item.danger:hover{background:rgba(239,68,68,.16);color:#f87171}
+html[data-theme="light"] .vgg-ctx-menu{background:#ffffff;color:#0f172a;border-color:#cbd5e1;box-shadow:0 12px 32px rgba(15,23,42,.18)}
+html[data-theme="light"] .vgg-ctx-item:hover{background:#eff6ff;color:#1d4ed8}
+html[data-theme="light"] .vgg-ctx-item.danger:hover{background:#fef2f2;color:#b91c1c}
+.vgg-ctx-sep{height:1px;margin:3px 6px;background:var(--border-base,#253048)}
 
 @media(max-width:780px){#bim-gantt-overlay{padding:0}#bim-gantt-modal{width:100vw;height:100dvh;border-radius:0}.vgg-header{padding:9px}.vgg-controls{padding:7px}.vgg-count{margin-left:0}.vgg-form-grid{grid-template-columns:1fr}}
 `;
@@ -638,12 +647,8 @@ function rowMeta(row, displayed, groupExtra){
     let content = escapeText(items[i]);
     if(groupExtra && i === 2){
       const icon = groupExtra.collapsed ? '▸' : '▾';
-      const addBtn = '<button type="button" class="vgg-inline-act" data-vgg-add-in-group="'+escapeText(groupExtra.owner)+'|'+escapeText(row.title)+'" title="Agregar actividad en este grupo">+</button>';
-      const editBtn = groupExtra.gid
-        ? '<button type="button" class="vgg-inline-act" data-vgg-edit-group="'+escapeText(groupExtra.gid)+'" title="Editar o eliminar grupo">✎</button>'
-        : '';
       content = '<span class="vgg-chevron" aria-hidden="true">'+icon+'</span>' + content +
-        '<span class="vgg-row-badge">'+groupExtra.count+'</span>' + addBtn + editBtn;
+        '<span class="vgg-row-badge">'+groupExtra.count+'</span>';
     }
     return '<td class="'+baseCls.trim()+'"'+stA.style+'>'+content+'</td>';
   }).join('');
@@ -752,7 +757,7 @@ function render(){
       const isCol = collapsedGroups.has(row._groupKey);
       const copy = { id:'', edt:row.id, title:row.title, owner:'', type:'Resumen', duration:row.duration,
         start:row.start, end:row.end, predecessor:'', dependency:'', lag:'' };
-      body += '<tr class="vgg-group-row" data-vgg-toggle-group="'+escapeText(row._groupKey)+'" title="Clic para contraer o expandir">'+
+      body += '<tr class="vgg-group-row" data-vgg-toggle-group="'+escapeText(row._groupKey)+'" data-vgg-gid="'+escapeText(row._gid||'')+'" data-vgg-gowner="'+escapeText(row._ownerKey||'')+'" data-vgg-gtitle="'+escapeText(row.title||'')+'" title="Clic para contraer/expandir · Doble clic o clic derecho para editar">'+
         rowMeta(copy, displayed, { collapsed:isCol, count:row._count, owner:row._ownerKey, gid:row._gid||'' }) +
         days.map((d, idx) => dayBar(row, d, { state:'group' }, days, idx)).join('') + '</tr>';
       continue;
@@ -2745,6 +2750,7 @@ function open(){
       '<span id="vgg-footer-source"></span>'+
       '</footer>'+
       '<div id="vgg-submodal-back" class="vgg-submodal-back" hidden></div>'+
+      '<div id="vgg-ctx-menu" class="vgg-ctx-menu" role="menu" hidden></div>'+
       '</section>';
     document.body.appendChild(overlay);
 
@@ -2776,12 +2782,92 @@ function open(){
       });
     }
 
+    function closeCtxMenu(){
+      const m = document.getElementById('vgg-ctx-menu');
+      if(m){ m.hidden = true; m.innerHTML = ''; }
+    }
+    function openCtxMenu(clientX, clientY, items){
+      const m = document.getElementById('vgg-ctx-menu');
+      if(!m || !items.length) return;
+      m.innerHTML = items.map((it, idx) => it === 'sep'
+        ? '<div class="vgg-ctx-sep"></div>'
+        : '<button type="button" class="vgg-ctx-item'+(it.danger?' danger':'')+'" data-ctx-idx="'+idx+'">'+escapeText(it.label)+'</button>'
+      ).join('');
+      m.hidden = false;
+      const rect = m.getBoundingClientRect();
+      const left = Math.min(clientX, window.innerWidth - rect.width - 10);
+      const top = Math.min(clientY, window.innerHeight - rect.height - 10);
+      m.style.left = Math.max(8, left) + 'px';
+      m.style.top = Math.max(8, top) + 'px';
+      m.onclick = ev => {
+        const btn = ev.target.closest('[data-ctx-idx]');
+        if(!btn) return;
+        const item = items[Number(btn.dataset.ctxIdx)];
+        closeCtxMenu();
+        item?.onClick?.();
+      };
+    }
+
+    overlay.addEventListener('contextmenu', ev => {
+      const grpTr = ev.target.closest('tr.vgg-group-row');
+      if(grpTr){
+        ev.preventDefault();
+        const gid = grpTr.dataset.vggGid || '';
+        const gOwner = grpTr.dataset.vggGowner || '';
+        const gTitle = grpTr.dataset.vggGtitle || '';
+        const items = [];
+        if(gid) items.push({ label:'✎ Editar grupo', onClick: () => openGroupModal(gid) });
+        items.push({ label:'+ Agregar actividad en este grupo', onClick: () => openActivityModal({ presetOwner: gOwner, presetGroup: gTitle }) });
+        if(gid){
+          items.push('sep');
+          items.push({ label:'↑ Subir grupo', onClick: () => {
+            if(window.bimGanttScheduleStore?.moveGroup?.(gid, -1)){ rebuildFilterSelects(); render(); }
+          }});
+          items.push({ label:'↓ Bajar grupo', onClick: () => {
+            if(window.bimGanttScheduleStore?.moveGroup?.(gid, 1)){ rebuildFilterSelects(); render(); }
+          }});
+        }
+        openCtxMenu(ev.clientX, ev.clientY, items);
+        return;
+      }
+      const actTr = ev.target.closest('tr[data-gantt-activity]');
+      if(actTr){
+        ev.preventDefault();
+        const aid = actTr.dataset.ganttActivity;
+        const ref = getSource().rows.find(r => r.kind==='activity' && r.id===aid);
+        if(!ref) return;
+        showDetail(aid);
+        openCtxMenu(ev.clientX, ev.clientY, [
+          { label:'✎ Editar actividad', onClick: () => openActivityModal({ activityId: aid }) },
+          { label:'+ Insertar actividad arriba', onClick: () => openActivityModal({ presetOwner: ref.owner, presetGroup: ref.group, presetPosition: 'before:' + aid }) },
+          { label:'+ Insertar actividad debajo', onClick: () => openActivityModal({ presetOwner: ref.owner, presetGroup: ref.group, presetPosition: 'after:' + aid }) },
+          'sep',
+          { label:'↑ Subir fila', onClick: () => {
+            if(window.bimGanttScheduleStore?.moveActivity?.(aid, -1)){ rebuildFilterSelects(); render(); }
+          }},
+          { label:'↓ Bajar fila', onClick: () => {
+            if(window.bimGanttScheduleStore?.moveActivity?.(aid, 1)){ rebuildFilterSelects(); render(); }
+          }},
+          'sep',
+          { label:'🗑 Eliminar actividad', danger:true, onClick: () => openDeleteActivityConfirm(aid) }
+        ]);
+      }
+    });
+
     overlay.addEventListener('dblclick', ev => {
+      closeCtxMenu();
+      const grpTr = ev.target.closest('tr.vgg-group-row');
+      if(grpTr){
+        const gid = grpTr.dataset.vggGid || '';
+        if(gid) openGroupModal(gid);
+        return;
+      }
       const tr = ev.target.closest('tr[data-gantt-activity]');
       if(tr) openActivityModal({ activityId: tr.dataset.ganttActivity });
     });
 
     overlay.addEventListener('click', ev => {
+      if(!ev.target.closest('#vgg-ctx-menu')) closeCtxMenu();
       if(ev.target === overlay){ close(); return; }
       const subBack = document.getElementById('vgg-submodal-back');
       if(ev.target === subBack || ev.target.closest('[data-vgg-sub-close]')){ closeSubmodal(); return; }
