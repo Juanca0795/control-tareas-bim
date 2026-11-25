@@ -19,6 +19,8 @@ html[data-theme="light"] .vgg-source-badge.live{background:#ecfdf5;color:#047857
 .vgg-header-actions button:hover{border-color:var(--accent-blue,#5da7ff);background:var(--bg-hover,#1a2333)}
 .vgg-header-actions button[data-vgg-action="new-activity"]{background:#d71920;border-color:#d71920;color:#fff}
 .vgg-header-actions button[data-vgg-action="new-activity"]:hover{background:#b51218;border-color:#b51218}
+.vgg-header-actions button[data-vgg-action="open-config"]{border-color:rgba(148,163,184,.45);color:#e2e8f0}
+html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-config"]{color:#1e293b}
 .vgg-header-actions button[data-vgg-action="open-excel-sync"]{border-color:rgba(16,185,129,.45);color:#34d399;background:rgba(16,185,129,.12)}
 .vgg-header-actions button[data-vgg-action="open-excel-sync"]:hover{background:rgba(16,185,129,.22)}
 html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-sync"]{color:#047857;background:#ecfdf5;border-color:#6ee7b7}
@@ -234,6 +236,34 @@ html[data-theme="light"] .vgg-dep-pill.succ{background:#cffafe;color:#0e7490;bor
 .vgg-submodal-back[hidden]{display:none!important}
 .vgg-submodal{width:min(620px,96vw);max-height:90vh;display:flex;flex-direction:column;background:var(--bg-panel,#111827);color:var(--ink-primary,#f8fafc);border:1px solid var(--border-strong,#334155);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.55);overflow:hidden}
 .vgg-submodal.narrow{width:min(460px,95vw)}
+.vgg-submodal.wide{width:min(820px,96vw)}
+.vgg-cfg-tabs{display:flex;gap:6px;padding:10px 18px 0;border-bottom:1px solid var(--border-base,#253048);flex-wrap:wrap}
+.vgg-cfg-tab{padding:8px 13px;border:0;border-bottom:2px solid transparent;background:transparent;color:var(--ink-secondary,#94a3b8);font-size:12px;font-weight:700;cursor:pointer;border-radius:6px 6px 0 0;transition:color .15s,border-color .15s,background .15s}
+.vgg-cfg-tab:hover{color:var(--ink-primary,#fff);background:rgba(59,130,246,.08)}
+.vgg-cfg-tab.active{color:#60a5fa;border-bottom-color:#3b82f6;background:rgba(59,130,246,.12)}
+html[data-theme="light"] .vgg-cfg-tab.active{color:#1d4ed8;border-bottom-color:#2563eb;background:#eff6ff}
+.vgg-cfg-pane[hidden]{display:none!important}
+.vgg-cfg-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.vgg-cfg-quick button{height:26px;padding:0 9px;border-radius:6px;border:1px solid var(--border-strong,#334155);background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#e2e8f0);font-size:11px;font-weight:600;cursor:pointer}
+.vgg-cfg-quick button:hover{border-color:#60a5fa;color:#60a5fa}
+.vgg-cfg-kpi-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.vgg-cfg-kpi{padding:10px 12px;border-radius:10px;border:1px solid var(--border-base,#253048);background:var(--bg-subtle,#1e293b)}
+.vgg-cfg-kpi small{display:block;font-size:10px;color:var(--ink-secondary,#94a3b8);margin-bottom:3px}
+.vgg-cfg-kpi strong{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--ink-primary,#f8fafc)}
+.vgg-cfg-table{width:100%;border-collapse:collapse;font-size:11.5px}
+.vgg-cfg-table th,.vgg-cfg-table td{padding:7px 9px;border-bottom:1px solid var(--border-base,#253048);text-align:left}
+.vgg-cfg-table th{font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-secondary,#94a3b8);background:rgba(15,23,42,.35)}
+html[data-theme="light"] .vgg-cfg-table th{background:#f1f5f9}
+.vgg-cfg-pill{display:inline-flex;align-items:center;padding:2px 8px;border-radius:999px;font-size:10.5px;font-weight:700}
+.vgg-cfg-pill.all{background:rgba(244,63,94,.16);color:#fda4af;border:1px solid rgba(244,63,94,.35)}
+.vgg-cfg-pill.person{background:rgba(167,139,250,.18);color:#c4b5fd;border:1px solid rgba(167,139,250,.38)}
+html[data-theme="light"] .vgg-cfg-pill.all{background:#ffe4e6;color:#9f1239;border-color:#fda4af}
+html[data-theme="light"] .vgg-cfg-pill.person{background:#f3ecff;color:#6d28d9;border-color:#c4b5fd}
+.vgg-wk-btn{height:26px;min-width:110px;padding:0 10px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid}
+.vgg-wk-btn.no{background:rgba(244,63,94,.14);color:#fda4af;border-color:rgba(244,63,94,.35)}
+.vgg-wk-btn.si{background:rgba(16,185,129,.18);color:#34d399;border-color:rgba(16,185,129,.45)}
+html[data-theme="light"] .vgg-wk-btn.no{background:#ffe4e6;color:#be123c;border-color:#fda4af}
+html[data-theme="light"] .vgg-wk-btn.si{background:#dcfce7;color:#15803d;border-color:#86efac}
 .vgg-submodal-hd{padding:14px 18px;border-bottom:1px solid var(--border-base,#253048);display:flex;align-items:center;justify-content:space-between;gap:12px}
 .vgg-submodal-hd h3{margin:0;font-family:'Space Grotesk',Inter,sans-serif;font-size:14px;font-weight:700}
 .vgg-submodal-close{width:28px;height:28px;border-radius:7px;border:1px solid var(--border-base,#334155);background:var(--bg-subtle,#1e293b);color:var(--ink-primary,#f8fafc);font-size:16px;cursor:pointer;display:grid;place-items:center}
@@ -314,7 +344,7 @@ function dates(from, to){
   const d = new Date(from + 'T00:00:00Z');
   const end = new Date(to + 'T00:00:00Z');
   if(!Number.isFinite(d.getTime()) || !Number.isFinite(end.getTime())) return out;
-  for(let guard = 0; d <= end && guard < 120; d.setUTCDate(d.getUTCDate()+1), guard++){
+  for(let guard = 0; d <= end && guard < 185; d.setUTCDate(d.getUTCDate()+1), guard++){
     out.push(d.toISOString().slice(0,10));
   }
   return out;
@@ -490,13 +520,16 @@ function keptRows(activities){
 }
 
 function weekTone(d){ return Number(week(d).slice(1))%2===0 ? 'excel-week-dark' : 'excel-week-light'; }
-function nonWorkingDate(d){ const S = getSource(); return S.holidays?.[d] || window.BIM_GANTT_BASE_SOURCE?.holidays?.[d] || ''; }
+function nonWorkingDate(d){ const S = getSource(); return S.holidays?.[d] || ''; }
 function dayInfo(d){
+  const S = getSource();
   const dow = new Date(d+'T12:00:00Z').getUTCDay();
-  const weekend = dow===0 || dow===6;
+  const rawWeekend = dow===0 || dow===6;
+  const workingOverride = Boolean(S.workingWeekends?.[d]);
+  const weekend = rawWeekend && !workingOverride;
   const holiday = Boolean(nonWorkingDate(d));
-  return { dow, weekend, holiday, mark: weekend || holiday,
-    note: nonWorkingDate(d) || (weekend ? (dow===6 ? 'Sábado' : 'Domingo') : '') };
+  return { dow, weekend, holiday, workingOverride, mark: weekend || holiday,
+    note: nonWorkingDate(d) || (workingOverride ? (dow===6 ? 'Sábado habilitado (laborable)' : 'Domingo habilitado (laborable)') : (weekend ? (dow===6 ? 'Sábado' : 'Domingo') : '')) };
 }
 function excelPercent(value){
   const n = Number(value);
@@ -1621,7 +1654,12 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   const maxEndIso = rowsList.reduce((acc, r) => (r.end && r.end > acc ? r.end : acc), S.end || baseStartIso);
   cF4.value = { formula: `IF(COUNT(I12:I${lastDataRow})=0,"",MAX(I12:I${lastDataRow}))`, result: isoToUtcDate(maxEndIso) };
   const baseHolsForDl = S.holidays || window.BIM_GANTT_BASE_SOURCE?.holidays || {};
-  const dlCache = calDatesUtc.slice(0, plazoDias).filter((dt, idx) => weekdayMon1(dt) <= 5 && !baseHolsForDl[calDatesIso[idx]]).length;
+  const wkndOverrideForDl = S.workingWeekends || {};
+  const dlCache = calDatesUtc.slice(0, plazoDias).filter((dt, idx) => {
+    const iso = calDatesIso[idx];
+    const isW = weekdayMon1(dt) <= 5 || Boolean(wkndOverrideForDl[iso]);
+    return isW && !baseHolsForDl[iso];
+  }).length;
   cY4.value = {
     formula: `IF(OR(C4="",F4=""),"",NETWORKDAYS(C4,F4)-COUNTIFS(Feriados,">="&C4,Feriados,"<="&F4,FeriadosAbrev,"")+COUNTIFS(DiasNoLaborables,">="&C4,DiasNoLaborables,"<="&F4,DiaLaborableSiNo,"SI"))`,
     result: dlCache
@@ -1773,7 +1811,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
         const dIso = calDatesIso[i];
         const inRange = i < plazoDias;
         const wd = weekdayMon1(calDatesUtc[i]);
-        const isWknd = wd > 5;
+        const isWknd = wd > 5 && !wkndOverrideForDl[dIso];
         const isHol = Boolean(baseHols[dIso] || ownerLeaveMap[dIso]);
         const inSpan = inRange && r.start && r.end && dIso >= r.start && dIso <= r.end && !isWknd && !isHol;
         const dayVal = inSpan ? (1 / aDur) : 0;
@@ -1978,9 +2016,12 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   wsCfg.getCell('J6').alignment = { horizontal:'right' };
 
   // Sábados y domingos automáticos (E5:G60) con resultado en caché y colores exactos (#F2F2F2 / #FFF4D6 azul)
+  const workingWkndMap = S.workingWeekends || {};
   const weekendDates = calDatesUtc.slice(0, plazoDias).filter(dt => weekdayMon1(dt) > 5);
   for(let r = 5; r <= 60; r++){
     const wkDt = weekendDates[r - 5] || null;
+    const wkIso = wkDt ? wkDt.toISOString().slice(0,10) : '';
+    const isEnabledWknd = Boolean(wkIso && workingWkndMap[wkIso]);
     const cE = wsCfg.getCell(r, 5), cF = wsCfg.getCell(r, 6), cG = wsCfg.getCell(r, 7);
     cE.value = {
       formula: `IF($J$4-WEEKDAY($J$4,2)+6+7*INT((ROW()-ROW($E$5)+(WEEKDAY($J$4,2)=7))/2)+MOD((ROW()-ROW($E$5)+(WEEKDAY($J$4,2)=7)),2)>$J$6,"",$J$4-WEEKDAY($J$4,2)+6+7*INT((ROW()-ROW($E$5)+(WEEKDAY($J$4,2)=7))/2)+MOD((ROW()-ROW($E$5)+(WEEKDAY($J$4,2)=7)),2))`,
@@ -1991,12 +2032,12 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
       formula: `IF(E${r}="","",IF(WEEKDAY(E${r},2)=6,"Sábado","Domingo"))`,
       result: wkDt ? (weekdayMon1(wkDt) === 6 ? 'Sábado' : 'Domingo') : ''
     };
-    cG.value = 'NO';
+    cG.value = isEnabledWknd ? 'SI' : 'NO';
     cE.font = cF.font = { name:FONT_UI, size:9, color:{ argb:'FF000000' } };
     cE.fill = cF.fill = fillSolid('FFF2F2F2');
     cE.alignment = { horizontal:'right' };
-    cG.font = { name:FONT_UI, size:9, color:{ argb:'FF0000FF' } };
-    cG.fill = fillSolid('FFFFF4D6');
+    cG.font = { name:FONT_UI, size:9, color:{ argb: isEnabledWknd ? 'FF006100' : 'FF0000FF' } };
+    cG.fill = fillSolid(isEnabledWknd ? 'FFC6EFCE' : 'FFFFF4D6');
     cG.alignment = { horizontal:'center' };
     cG.dataValidation = { type:'list', allowBlank:true, formulae:['"SI,NO"'], showErrorMessage:true, errorTitle:'¿Laborable?', error:'Elige SI o NO.' };
     cE.border = cF.border = cG.border = horizBorder;
@@ -2215,6 +2256,272 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   });
 }
 
+/* ============================================================================
+   CONFIGURACIÓN DEL CRONOGRAMA (RANGO/PLAZO, VACACIONES/FERIADOS Y SÁB/DOM)
+   ============================================================================ */
+function openGanttConfigModal(initialTab = 'range'){
+  const cfg = window.bimGanttScheduleStore?.getConfig?.() || {
+    start: getSource().start || '2026-11-01',
+    plazo: Number(getSource().calendarDays) || 30,
+    holidays: { ...(getSource().holidays || {}) },
+    nonWorkingByOwner: JSON.parse(JSON.stringify(getSource().nonWorkingByOwner || {})),
+    workingWeekends: { ...(getSource().workingWeekends || {}) }
+  };
+  // Estado local editable hasta pulsar Guardar
+  const draft = {
+    start: cfg.start,
+    plazo: cfg.plazo,
+    holidays: { ...(cfg.holidays || {}) },
+    nonWorkingByOwner: JSON.parse(JSON.stringify(cfg.nonWorkingByOwner || {})),
+    workingWeekends: { ...(cfg.workingWeekends || {}) }
+  };
+  let activeTab = initialTab;
+  const allOwners = [...new Set([...owners(), ...Object.keys(draft.nonWorkingByOwner || {})])];
+
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal wide" role="dialog" aria-modal="true" aria-label="Configuración del Cronograma">'+
+    '<div class="vgg-submodal-hd"><h3>⚙ Configuración del Cronograma (equiv. hoja Config)</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<div class="vgg-cfg-tabs" role="tablist">'+
+    '<button type="button" class="vgg-cfg-tab" data-cfg-tab="range">📅 Rango y Días</button>'+
+    '<button type="button" class="vgg-cfg-tab" data-cfg-tab="leaves">🏖 Vacaciones y Feriados</button>'+
+    '<button type="button" class="vgg-cfg-tab" data-cfg-tab="weekends">🗓 Sábados y Domingos</button>'+
+    '</div>'+
+    '<div class="vgg-submodal-body" id="vgg-cfg-body">'+
+    '<div id="vgg-cfg-err" class="vgg-sub-error" hidden></div>'+
+    '<div class="vgg-cfg-pane" data-cfg-pane="range">'+
+      '<p style="margin:0 0 10px;color:var(--ink-secondary,#94a3b8);line-height:1.45">Ajusta la fecha de inicio y el plazo en días calendario (hasta 180 días) para extender el cronograma sin perder tus actividades.</p>'+
+      '<div class="vgg-form-grid">'+
+        '<div class="vgg-form-field"><label for="vgg-cfg-start">Inicio del Gantt</label><input id="vgg-cfg-start" type="date" value="'+escapeText(draft.start)+'"></div>'+
+        '<div class="vgg-form-field"><label for="vgg-cfg-plazo">Plazo (días calendario, 1–180)</label><input id="vgg-cfg-plazo" type="number" min="1" max="180" value="'+draft.plazo+'">'+
+          '<div class="vgg-cfg-quick">'+
+            '<button type="button" data-cfg-add-days="7">+7 días</button>'+
+            '<button type="button" data-cfg-add-days="15">+15 días</button>'+
+            '<button type="button" data-cfg-add-days="30">+30 días</button>'+
+            '<button type="button" data-cfg-set-month="1">Mes exacto</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="vgg-cfg-kpi-row" style="margin-top:12px" id="vgg-cfg-kpis"></div>'+
+    '</div>'+
+    '<div class="vgg-cfg-pane" data-cfg-pane="leaves" hidden>'+
+      '<p style="margin:0 0 10px;color:var(--ink-secondary,#94a3b8);line-height:1.45">Registra feriados generales (aplican a todo el equipo) o <b>vacaciones / permisos</b> para una persona específica. Puedes ingresar un solo día o un rango de fechas.</p>'+
+      '<div class="vgg-form-grid" style="margin-bottom:10px">'+
+        '<div class="vgg-form-field"><label for="vgg-cfg-lv-owner">Aplica a</label><select id="vgg-cfg-lv-owner">'+
+          '<option value="">Todos (Feriado general)</option>'+
+          allOwners.map(o => '<option value="'+escapeText(o)+'">'+escapeText(o)+'</option>').join('')+
+        '</select></div>'+
+        '<div class="vgg-form-field"><label for="vgg-cfg-lv-desc">Motivo / Descripción</label><input id="vgg-cfg-lv-desc" placeholder="Ej. Vacaciones, Día libre, Feriado..." value="Vacaciones"></div>'+
+        '<div class="vgg-form-field"><label for="vgg-cfg-lv-from">Desde</label><input id="vgg-cfg-lv-from" type="date" value="'+escapeText(draft.start)+'"></div>'+
+        '<div class="vgg-form-field"><label for="vgg-cfg-lv-to">Hasta (opcional para rango)</label><input id="vgg-cfg-lv-to" type="date" value="'+escapeText(draft.start)+'"></div>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:flex-end;margin-bottom:10px"><button type="button" id="vgg-cfg-lv-add" class="vgg-sub-btn primary">+ Agregar día(s)</button></div>'+
+      '<div style="max-height:240px;overflow:auto;border:1px solid var(--border-base,#253048);border-radius:10px"><table class="vgg-cfg-table"><thead><tr><th>Fecha</th><th>Aplica a</th><th>Descripción</th><th style="width:76px;text-align:center">Quitar</th></tr></thead><tbody id="vgg-cfg-lv-list"></tbody></table></div>'+
+    '</div>'+
+    '<div class="vgg-cfg-pane" data-cfg-pane="weekends" hidden>'+
+      '<p style="margin:0 0 10px;color:var(--ink-secondary,#94a3b8);line-height:1.45">Por defecto todos los sábados y domingos son no laborables (rojo claro). Haz clic en <b>NO / SI</b> para habilitar trabajo en un fin de semana específico.</p>'+
+      '<div style="max-height:310px;overflow:auto;border:1px solid var(--border-base,#253048);border-radius:10px"><table class="vgg-cfg-table"><thead><tr><th>Fecha</th><th>Día</th><th style="width:140px;text-align:center">¿Laborable?</th></tr></thead><tbody id="vgg-cfg-wk-list"></tbody></table></div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="vgg-submodal-ft">'+
+    '<span style="margin-right:auto;font-size:11px;color:var(--ink-secondary,#94a3b8)">Se guarda en Supabase para todo el equipo y se replica al exportar Excel.</span>'+
+    '<button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button>'+
+    '<button type="button" id="vgg-cfg-save" class="vgg-sub-btn success">Guardar configuración</button>'+
+    '</div></div>';
+  back.hidden = false;
+
+  const errBox = document.getElementById('vgg-cfg-err');
+  const startInp = document.getElementById('vgg-cfg-start');
+  const plazoInp = document.getElementById('vgg-cfg-plazo');
+  const endIsoOfDraft = () => {
+    const s = Date.parse(draft.start + 'T00:00:00Z');
+    if(!Number.isFinite(s)) return draft.start;
+    return new Date(s + (Math.max(1, draft.plazo) - 1) * 86400000).toISOString().slice(0, 10);
+  };
+
+  function syncTabs(){
+    back.querySelectorAll('[data-cfg-tab]').forEach(btn => btn.classList.toggle('active', btn.dataset.cfgTab === activeTab));
+    back.querySelectorAll('[data-cfg-pane]').forEach(pane => { pane.hidden = pane.dataset.cfgPane !== activeTab; });
+  }
+  function renderRangeKpis(){
+    const endIso = endIsoOfDraft();
+    const list = dates(draft.start, endIso);
+    const workDays = list.filter(iso => {
+      const dow = new Date(iso + 'T12:00:00Z').getUTCDay();
+      const isWknd = (dow === 0 || dow === 6) && !draft.workingWeekends[iso];
+      return !isWknd && !draft.holidays[iso];
+    }).length;
+    const el = document.getElementById('vgg-cfg-kpis');
+    if(el){
+      el.innerHTML =
+        '<div class="vgg-cfg-kpi"><small>Fin del calendario</small><strong>'+readable(endIso)+'</strong></div>'+
+        '<div class="vgg-cfg-kpi"><small>Plazo total</small><strong>'+list.length+' días</strong></div>'+
+        '<div class="vgg-cfg-kpi"><small>Días laborables (dl)</small><strong>'+workDays+' días</strong></div>';
+    }
+  }
+  function renderLeavesTable(){
+    const rows = [];
+    Object.entries(draft.holidays || {}).forEach(([iso, desc]) => rows.push({ iso, owner:'', desc }));
+    Object.entries(draft.nonWorkingByOwner || {}).forEach(([oName, map]) => {
+      Object.entries(map || {}).forEach(([iso, desc]) => rows.push({ iso, owner:oName, desc }));
+    });
+    rows.sort((a,b) => a.iso.localeCompare(b.iso) || a.owner.localeCompare(b.owner, 'es'));
+    const tbody = document.getElementById('vgg-cfg-lv-list');
+    if(!tbody) return;
+    if(!rows.length){
+      tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--ink-secondary,#94a3b8);padding:14px">Sin feriados ni vacaciones registrados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = rows.map(r => '<tr>'+
+      '<td style="font-family:\'JetBrains Mono\',monospace">'+readable(r.iso)+'</td>'+
+      '<td>'+(r.owner ? '<span class="vgg-cfg-pill person">'+escapeText(r.owner)+'</span>' : '<span class="vgg-cfg-pill all">Todos</span>')+'</td>'+
+      '<td>'+escapeText(r.desc)+'</td>'+
+      '<td style="text-align:center"><button type="button" class="vgg-action-btn danger" style="height:24px;padding:0 8px" data-cfg-del-lv="'+escapeText(r.iso+'|'+r.owner)+'">✕</button></td>'+
+    '</tr>').join('');
+  }
+  function renderWeekendsTable(){
+    const list = dates(draft.start, endIsoOfDraft()).filter(iso => {
+      const dow = new Date(iso + 'T12:00:00Z').getUTCDay();
+      return dow === 0 || dow === 6;
+    });
+    const tbody = document.getElementById('vgg-cfg-wk-list');
+    if(!tbody) return;
+    if(!list.length){
+      tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--ink-secondary,#94a3b8);padding:14px">No hay sábados ni domingos en el rango seleccionado.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = list.map(iso => {
+      const dow = new Date(iso + 'T12:00:00Z').getUTCDay();
+      const dayName = dow === 6 ? 'Sábado' : 'Domingo';
+      const isSi = Boolean(draft.workingWeekends[iso]);
+      return '<tr>'+
+        '<td style="font-family:\'JetBrains Mono\',monospace">'+readable(iso)+'</td>'+
+        '<td>'+dayName+'</td>'+
+        '<td style="text-align:center"><button type="button" class="vgg-wk-btn '+(isSi?'si':'no')+'" data-cfg-toggle-wk="'+iso+'">'+(isSi?'SI · Laborable':'NO · Descanso')+'</button></td>'+
+      '</tr>';
+    }).join('');
+  }
+
+  back.querySelector('.vgg-submodal')?.addEventListener('click', ev => {
+    const tabBtn = ev.target.closest('[data-cfg-tab]');
+    if(tabBtn){
+      activeTab = tabBtn.dataset.cfgTab;
+      syncTabs();
+      if(activeTab === 'weekends') renderWeekendsTable();
+      return;
+    }
+    const addDaysBtn = ev.target.closest('[data-cfg-add-days]');
+    if(addDaysBtn){
+      draft.plazo = Math.min(180, Math.max(1, (Number(draft.plazo) || 30) + Number(addDaysBtn.dataset.cfgAddDays)));
+      plazoInp.value = String(draft.plazo);
+      renderRangeKpis();
+      renderWeekendsTable();
+      return;
+    }
+    if(ev.target.closest('[data-cfg-set-month]')){
+      const y = Number(draft.start.slice(0,4)), m = Number(draft.start.slice(5,7));
+      const daysInMonth = new Date(Date.UTC(y, m, 0)).getUTCDate();
+      draft.start = draft.start.slice(0,7) + '-01';
+      draft.plazo = daysInMonth;
+      startInp.value = draft.start;
+      plazoInp.value = String(draft.plazo);
+      renderRangeKpis();
+      renderWeekendsTable();
+      return;
+    }
+    const delLv = ev.target.closest('[data-cfg-del-lv]');
+    if(delLv){
+      const [iso, oName] = delLv.dataset.cfgDelLv.split('|');
+      if(!oName) delete draft.holidays[iso];
+      else if(draft.nonWorkingByOwner[oName]){
+        delete draft.nonWorkingByOwner[oName][iso];
+        if(!Object.keys(draft.nonWorkingByOwner[oName]).length) delete draft.nonWorkingByOwner[oName];
+      }
+      renderLeavesTable();
+      renderRangeKpis();
+      return;
+    }
+    const togWk = ev.target.closest('[data-cfg-toggle-wk]');
+    if(togWk){
+      const iso = togWk.dataset.cfgToggleWk;
+      if(draft.workingWeekends[iso]) delete draft.workingWeekends[iso];
+      else draft.workingWeekends[iso] = true;
+      renderWeekendsTable();
+      renderRangeKpis();
+      return;
+    }
+  });
+
+  startInp?.addEventListener('change', () => {
+    if(/^\d{4}-\d{2}-\d{2}$/.test(startInp.value)){
+      draft.start = startInp.value;
+      renderRangeKpis();
+      renderWeekendsTable();
+    }
+  });
+  plazoInp?.addEventListener('input', () => {
+    const n = Number(plazoInp.value);
+    if(Number.isInteger(n) && n >= 1 && n <= 180){
+      draft.plazo = n;
+      renderRangeKpis();
+      renderWeekendsTable();
+    }
+  });
+
+  document.getElementById('vgg-cfg-lv-add')?.addEventListener('click', () => {
+    errBox.hidden = true;
+    const oName = document.getElementById('vgg-cfg-lv-owner').value;
+    const desc = document.getElementById('vgg-cfg-lv-desc').value.trim() || (oName ? 'Vacaciones' : 'Feriado');
+    const from = document.getElementById('vgg-cfg-lv-from').value;
+    const to = document.getElementById('vgg-cfg-lv-to').value || from;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || to < from){
+      errBox.textContent = 'Selecciona una fecha "Desde" válida y asegúrate que "Hasta" no sea anterior.';
+      errBox.hidden = false;
+      return;
+    }
+    const range = dates(from, to);
+    if(range.length > 60){
+      errBox.textContent = 'El rango máximo por operación es de 60 días.';
+      errBox.hidden = false;
+      return;
+    }
+    range.forEach(iso => {
+      if(!oName){
+        draft.holidays[iso] = desc;
+      } else {
+        if(!draft.nonWorkingByOwner[oName]) draft.nonWorkingByOwner[oName] = {};
+        draft.nonWorkingByOwner[oName][iso] = desc;
+      }
+    });
+    renderLeavesTable();
+    renderRangeKpis();
+  });
+
+  document.getElementById('vgg-cfg-save')?.addEventListener('click', () => {
+    errBox.hidden = true;
+    if(!/^\d{4}-\d{2}-\d{2}$/.test(draft.start) || !Number.isInteger(draft.plazo) || draft.plazo < 1 || draft.plazo > 180){
+      errBox.textContent = 'Verifica la fecha de inicio y el plazo (entre 1 y 180 días).';
+      errBox.hidden = false;
+      return;
+    }
+    try {
+      window.bimGanttScheduleStore?.saveConfig?.(draft, { recomputeActivities: true });
+      closeSubmodal();
+      rebuildFilterSelects();
+      render();
+      if(typeof toast === 'function') toast('Configuración del cronograma guardada y sincronizada.');
+    } catch (err) {
+      errBox.textContent = err?.message || 'No se pudo guardar la configuración.';
+      errBox.hidden = false;
+    }
+  });
+
+  syncTabs();
+  renderRangeKpis();
+  renderLeavesTable();
+  renderWeekendsTable();
+}
+
 function openArea2AuthThenExcelSync(){
   if(window.bimArea2Auth?.isVerified?.()){
     openExcelSyncModal();
@@ -2403,6 +2710,7 @@ function open(){
       '<button type="button" id="vgg-header-clear-filters" data-vgg-action="reset-filters">Quitar filtros</button>'+
       '<button type="button" data-vgg-action="new-activity" title="Agregar nueva actividad al cronograma">+ Nueva actividad</button>'+
       '<button type="button" data-vgg-action="new-group" title="Crear nuevo grupo de actividades">+ Grupo</button>'+
+      '<button type="button" data-vgg-action="open-config" title="Configurar rango de días, vacaciones, feriados y fines de semana">⚙ Configuración</button>'+
       '<button type="button" id="vgg-excel-sync-btn" data-vgg-action="open-excel-sync">🔒 Actualizar Excel</button>'+
       '<button type="button" data-vgg-action="today" title="Desplazar el cronograma hasta la columna de hoy">Ir a Hoy</button>'+
       '<button type="button" data-vgg-action="expand">Pantalla completa</button>'+
@@ -2438,7 +2746,7 @@ function open(){
       '<span class="vgg-chip"><i class="late"></i> Fuera de plazo</span>'+
       '<span class="vgg-chip"><i class="group"></i> Grupo</span>'+
       '<span class="vgg-chip"><i class="weekend"></i> Fin de semana / feriado</span>'+
-      '<span class="vgg-chip"><i class="day-off"></i> Día libre Prada (9-10)</span>'+
+      '<span class="vgg-chip"><i class="day-off"></i> Vacaciones / día libre</span>'+
       '<span class="vgg-chip"><i class="pred"></i> Predecesor</span>'+
       '<span class="vgg-chip"><i class="succ"></i> Dependiente</span>'+
       '<span id="vgg-footer-source"></span>'+
@@ -2573,6 +2881,7 @@ function open(){
         const act = button.dataset.vggAction;
         if(act === 'new-activity'){ openActivityModal(); return; }
         if(act === 'new-group'){ openGroupModal(); return; }
+        if(act === 'open-config'){ openGanttConfigModal(); return; }
         if(act === 'open-excel-sync'){ openArea2AuthThenExcelSync(); return; }
         if(act === 'today'){
           const scroll = overlay.querySelector('.vgg-scroll');
