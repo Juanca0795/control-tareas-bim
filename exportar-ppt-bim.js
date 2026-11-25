@@ -1281,24 +1281,8 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
       fill:{color:'E9EFF5'},line:{color:'000000',width:.8}});
     slide.addShape(S.rect,{x,y:top+sectorH,w,h:packageH,
       fill:{color:'C00000'},line:{color:'000000',width:.8}});
-    const pillW=1.22,pillH=.2,pillY=top+(sectorH-pillH)/2;
-    // Área de trabajo (izquierda) cuando se exporta "Todos".
-    if(allAreas){
-      slide.addShape(S.roundRect,{x:x+.06,y:pillY,w:pillW,h:pillH,rectRadius:.05,
-        fill:{color:'172B49'},line:{color:'172B49',width:.5}});
-      pptBimAddText(slide,String(e.area||'Sin área').toUpperCase(),
-        {x:x+.06,y:pillY+.015,w:pillW,h:pillH-.03,fontSize:7.5,bold:true,
-          color:'FFFFFF',align:'center',valign:'mid',fit:'shrink'});
-    }
-    // Estado de la actividad (derecha): Completada, En Progreso, No Iniciada, etc.
-    const st=pptBimStatusStyle(e.status);
-    slide.addShape(S.roundRect,{x:x+w-pillW-.06,y:pillY,w:pillW,h:pillH,rectRadius:.05,
-      fill:{color:st.fill},line:{color:st.fill,width:.5}});
-    pptBimAddText(slide,String(e.status||'Sin estado').toUpperCase(),
-      {x:x+w-pillW-.06,y:pillY+.015,w:pillW,h:pillH-.03,fontSize:7.5,bold:true,
-        color:st.text,align:'center',valign:'mid',fit:'shrink'});
     pptBimAddText(slide,pptBimSector(e).toUpperCase(),
-      {x:x+pillW+.12,y:top+.06,w:w-2*pillW-.24,h:.16,fontSize:10,bold:true,
+      {x:x+.10,y:top+.06,w:w-.20,h:.16,fontSize:10,bold:true,
         color:'172B49',align:'center',fit:'shrink'});
     // AREA_BIM muestra paquete; AREA_BIM2 mantiene responsable.
     pptBimAddText(slide,String(byPerson?(e.owner||'Sin responsable'):(e.package||'Sin paquete')).toUpperCase(),
@@ -1322,13 +1306,23 @@ function pptBimEvidenceSlide(pptx,week,entries,byPerson=false){
       {x:x+.13,y:top+redH+picH+.09,w:w-.26,h:.59,
         fontSize:caption.length>180?8:caption.length>95?10:13,
         bold:true,align:'center',valign:'mid',fit:'shrink'});
-    const photoLabel=byPerson
-      ?' · '+pictures.length+' foto'+(pictures.length===1?'':'s')
-      :' · Foto '+e.photoIndex+' de '+e.photoCount;
-    pptBimAddText(slide,(byPerson?e.package+' · ':'')+(byPerson?pptBimShownTaskCode(e):e.taskId)+
-      (e.team?' · '+e.team:'')+photoLabel,
-      {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
-        color:'5A5A5A',align:'center'});
+    if(byPerson){
+      // Paquete en negrita + área + estado como texto (sin código BIM ni conteo de fotos).
+      const st=pptBimStatusStyle(e.status);
+      const runs=[{text:String(e.package||'Sin paquete'),
+        options:{bold:true,fontSize:11,color:'172B49'}}];
+      if(allAreas&&e.area)runs.push({text:'  ·  '+String(e.area).toUpperCase(),
+        options:{bold:true,fontSize:9.5,color:'5A5A5A'}});
+      runs.push({text:'  ·  '+String(e.status||'Sin estado').toUpperCase(),
+        options:{bold:true,fontSize:9.5,color:st.fill}});
+      slide.addText(runs,{x:x+.13,y:top+redH+picH+.69,w:w-.26,h:.22,
+        fontFace:'Arial',align:'center',valign:'mid',margin:0,fit:'shrink'});
+    }else{
+      pptBimAddText(slide,e.taskId+(e.team?' · '+e.team:'')+
+        ' · Foto '+e.photoIndex+' de '+e.photoCount,
+        {x:x+.13,y:top+redH+picH+.73,w:w-.26,h:.14,fontSize:8,
+          color:'5A5A5A',align:'center'});
+    }
   }
   const groups=[...new Set(entries.map(e=>byPerson?
     (e.owner||'Sin responsable'):(e.package||'Sin paquete')))];
