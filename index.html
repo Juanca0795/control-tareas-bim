@@ -8158,6 +8158,44 @@ window.bimGanttScheduleStore={
     syncGanttRuntimeFromCatalogs();
     persist();
     return true;
+  },
+  createLinkedTaskForActivity(act,opts={}){
+    if(!act||!act.id)return null;
+    const now=new Date().toISOString();
+    const today=typeof todayString==='function'?todayString():now.slice(0,10);
+    const pkg=String(opts.package||catalogs.packages?.[0]||'General').trim();
+    const team=String(opts.team||catalogs.teams?.[0]||'Coordinación BIM').trim();
+    const priority=String(opts.priority||'Media').trim();
+    const defaultStatus=catalogs.statuses?.find(s=>s.category==='progress')?.name||catalogs.statuses?.[0]?.name||'En progreso';
+    const statusVal=String(opts.status||defaultStatus).trim();
+    const deadline=act.end||act.start||today;
+    const obj={
+      id:nextId(),
+      title:act.title,
+      package:pkg,
+      team,
+      owner:act.owner,
+      priority,
+      lod:String(opts.lod||'').trim(),
+      deadline,
+      status:statusVal,
+      support:'',
+      ...taskWeeklyMetadata(null,statusVal,deadline,today),
+      progress:categoryOf(statusVal)==='done'?100:progressFromStatus(statusVal)
+    };
+    if(act.owner&&!catalogs.owners.includes(act.owner))catalogs.owners.push(act.owner);
+    tasks.push(obj);
+    if(catalogs.analytics?.createdAtByTask)catalogs.analytics.createdAtByTask[obj.id]=today;
+    catalogs.ganttLinksByTask[obj.id]={
+      mode:'select',
+      activityId:act.id,
+      group:act.group||'',
+      name:act.title||'',
+      updatedAt:now
+    };
+    persist();
+    if(typeof renderAll==='function')renderAll();
+    return obj;
   }
 };
 let settingsTab = 'packages';

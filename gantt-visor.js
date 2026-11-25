@@ -1257,6 +1257,23 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='', pres
   const predOptions = S.rows.filter(r => r.kind==='activity' && r.id!==activityId)
     .map(r => '<option value="'+escapeText(r.excelId||r.id)+'">'+escapeText((r.excelId||r.id)+' — '+r.title)+'</option>').join('');
 
+  const linkedTasks = isEdit ? (store.linkedTasksForActivity?.(existing.id) || []) : [];
+  const canCreateLinkedTask = !linkedTasks.length;
+  const catPkgs = (typeof catalogs !== 'undefined' && Array.isArray(catalogs.packages) && catalogs.packages.length) ? catalogs.packages : ['General'];
+  const catTeams = (typeof catalogs !== 'undefined' && Array.isArray(catalogs.teams) && catalogs.teams.length) ? catalogs.teams : ['Coordinación BIM'];
+  const catStatuses = (typeof catalogs !== 'undefined' && Array.isArray(catalogs.statuses) && catalogs.statuses.length) ? catalogs.statuses : [{ name:'En progreso', category:'progress' }];
+  const defaultStatusName = (catStatuses.find(s => s.category === 'progress') || catStatuses[0]).name;
+  const taskSyncHtml = canCreateLinkedTask
+    ? '<div style="padding:10px 12px;border:1px solid rgba(59,130,246,.35);border-radius:10px;background:rgba(59,130,246,.08);display:flex;flex-direction:column;gap:8px">'+
+      '<label style="display:flex;align-items:center;gap:7px;font-size:12px;font-weight:700;cursor:pointer"><input type="checkbox" id="vgg-f-create-task"'+(isEdit?'':' checked')+'> Registrar también en Control de tareas y Dashboard</label>'+
+      '<div id="vgg-task-sync-fields" class="vgg-form-grid"'+(isEdit?' hidden':'')+'>'+
+        '<div class="vgg-form-field"><label for="vgg-ft-pkg">Paquete</label><select id="vgg-ft-pkg">'+catPkgs.map(p=>'<option value="'+escapeText(p)+'">'+escapeText(p)+'</option>').join('')+'</select></div>'+
+        '<div class="vgg-form-field"><label for="vgg-ft-team">Disciplina / Equipo</label><select id="vgg-ft-team">'+catTeams.map(t=>'<option value="'+escapeText(t)+'">'+escapeText(t)+'</option>').join('')+'</select></div>'+
+        '<div class="vgg-form-field"><label for="vgg-ft-prio">Prioridad</label><select id="vgg-ft-prio"><option value="Alta">Alta</option><option value="Media" selected>Media</option><option value="Baja">Baja</option></select></div>'+
+        '<div class="vgg-form-field"><label for="vgg-ft-status">Estado inicial</label><select id="vgg-ft-status">'+catStatuses.map(s=>'<option value="'+escapeText(s.name)+'"'+(s.name===defaultStatusName?' selected':'')+'>'+escapeText(s.name)+'</option>').join('')+'</select></div>'+
+      '</div></div>'
+    : '<div style="font-size:11px;color:#34d399;padding:6px 10px;border-radius:8px;background:rgba(16,185,129,.12);border:1px solid rgba(16,185,129,.3)">✓ Ya vinculada en Control de tareas y Dashboard: <b>'+escapeText(linkedTasks.map(t=>t.id).join(', '))+'</b></div>';
+
   const back = document.getElementById('vgg-submodal-back');
   back.innerHTML = '<div class="vgg-submodal" role="dialog" aria-modal="true" aria-label="'+(isEdit?'Editar actividad':'Nueva actividad Gantt')+'">'+
     '<div class="vgg-submodal-hd"><h3>'+(isEdit ? 'Editar actividad ' + escapeText(existing.excelId||existing.id) : 'Nueva actividad en Gantt')+'</h3>'+
@@ -1275,6 +1292,7 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='', pres
     '<div class="vgg-form-field"><label for="vgg-f-pred">Predecesor (ID)</label><input id="vgg-f-pred" list="vgg-pred-datalist" value="'+escapeText(existing?.predecessor||'')+'" placeholder="Ej.: A01"><datalist id="vgg-pred-datalist">'+predOptions+'</datalist></div>'+
     '<div class="vgg-form-field"><label for="vgg-f-dep">Dependencia / Desfase</label><div style="display:flex;gap:6px"><select id="vgg-f-dep" style="flex:1"><option value="">Sin dep.</option><option value="FC">FC</option><option value="CC">CC</option><option value="FF">FF</option><option value="CF">CF</option></select><input id="vgg-f-lag" style="width:72px" value="'+escapeText(existing?.lag||'')+'" placeholder="Desf."></div></div>'+
     '</div>'+
+    taskSyncHtml +
     '<label style="display:flex;align-items:center;gap:7px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="vgg-f-renumber" checked> Renumerar IDs correlativos (A01, A02…) como en Excel y ajustar predecesoras</label>'+
     '<label style="display:flex;align-items:center;gap:7px;font-size:11.5px;cursor:pointer"><input type="checkbox" id="vgg-f-manual-pct"'+(isEdit?' checked':'')+'> Ajustar porcentajes diarios manualmente (si se desmarca, se reparte automático entre días laborables)</label>'+
     '<div id="vgg-daily-wrap" class="vgg-daily-grid"'+(isEdit?'':' hidden')+'></div>'+
@@ -1395,6 +1413,11 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='', pres
   startEl.addEventListener('change', () => { if(endEl.value < startEl.value) endEl.value = startEl.value; renderDailyGrid(); });
   endEl.addEventListener('change', renderDailyGrid);
   manualChk.addEventListener('change', renderDailyGrid);
+  const createTaskChk = document.getElementById('vgg-f-create-task');
+  const taskSyncFields = document.getElementById('vgg-task-sync-fields');
+  if(createTaskChk && taskSyncFields){
+    createTaskChk.addEventListener('change', () => { taskSyncFields.hidden = !createTaskChk.checked; });
+  }
 
   document.getElementById('vgg-activity-form').addEventListener('submit', ev => {
     ev.preventDefault();
@@ -1439,11 +1462,24 @@ function openActivityModal({ activityId='', presetOwner='', presetGroup='', pres
         manualPercent: manualChk.checked,
         percentByDay
       });
+      let createdTask = null;
+      if(createTaskChk?.checked && typeof store.createLinkedTaskForActivity === 'function'){
+        createdTask = store.createLinkedTaskForActivity(saved, {
+          package: document.getElementById('vgg-ft-pkg')?.value || '',
+          team: document.getElementById('vgg-ft-team')?.value || '',
+          priority: document.getElementById('vgg-ft-prio')?.value || 'Media',
+          status: document.getElementById('vgg-ft-status')?.value || ''
+        });
+      }
       closeSubmodal();
       st.selected = saved.id;
       rebuildFilterSelects();
       render();
-      if(typeof toast === 'function') toast((isEdit ? 'Actividad actualizada: ' : 'Actividad insertada: ') + (saved.excelId || saved.id));
+      if(typeof toast === 'function'){
+        toast(createdTask
+          ? 'Actividad ' + (saved.excelId || saved.id) + ' registrada y vinculada como ' + createdTask.id + ' en Control de tareas y Dashboard.'
+          : (isEdit ? 'Actividad actualizada: ' : 'Actividad insertada: ') + (saved.excelId || saved.id));
+      }
     } catch (err) {
       errBox.textContent = err?.message || 'No se pudo guardar la actividad.';
       errBox.hidden = false;
