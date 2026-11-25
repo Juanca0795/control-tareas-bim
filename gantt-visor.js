@@ -121,6 +121,8 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-
 .vgg-bar-seg.done{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%)}
 .vgg-bar-seg.partial{background:linear-gradient(180deg,#14b89a 0%,#0d947b 100%) left/var(--vgg-real-fill) 100% no-repeat,linear-gradient(180deg,#4f83cc 0%,#3b6db5 100%)}
 .vgg-bar-seg.late{background:linear-gradient(180deg,#e5a13e 0%,#c98324 100%)}
+.vgg-bar-seg.nonwork{background:#f6c8ce;box-shadow:inset 0 0 0 1px rgba(225,29,72,.22)}
+#bim-gantt-modal.vgg-dark-table .vgg-bar-seg.nonwork{background:rgba(244,63,94,.28);box-shadow:inset 0 0 0 1px rgba(244,63,94,.32)}
 .vgg-bar-seg.culminated{box-shadow:none}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start){border-left-color:transparent!important}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start) .vgg-bar-seg{margin-left:-1px;width:calc(100% + 2px)}
@@ -565,14 +567,16 @@ function dayBar(row, d, state, days, idx){
     const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
     return '<td class="'+cls+' scheduled group'+segCls+'"'+dateAttr+'><span class="vgg-group-bar"></span></td>';
   }
+  if(!row.start || !row.end || d < row.start || d > row.end) return '<td class="'+cls+'"'+dateAttr+'></td>';
+  const isStart = idx === 0 || days[idx-1] < row.start;
+  const isEnd = idx === days.length - 1 || days[idx+1] > row.end;
+  const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
   const value = dayShare(row, d);
-  if(!value) return '<td class="'+cls+'"'+dateAttr+'></td>';
-  const prevHas = idx > 0 && dayShare(row, days[idx-1]) > 0;
-  const nextHas = idx < days.length - 1 && dayShare(row, days[idx+1]) > 0;
-  const segCls = (!prevHas ? ' bar-start' : '') + (!nextHas ? ' bar-end' : '');
   const actual = Number.isFinite(state.actual) ? Math.min(100, Math.max(0, state.actual)) : 0;
   let status = '', style = '';
-  if(actual >= 99.999){
+  if(!value){
+    status = ' nonwork';
+  } else if(actual >= 99.999){
     status = state.late ? ' late culminated' : ' done culminated';
   } else if(actual > 0.001){
     const fill = realFillOfGanttDay(row, d, actual);
@@ -580,27 +584,15 @@ function dayBar(row, d, state, days, idx){
     if(status === ' partial') style = ' style="--vgg-real-fill:' + Number(fill.toFixed(3)) + '%"';
   }
   let pctLabel = '';
-  if(!prevHas && actual > 0.001 && actual < 99.999){
-    // Encontrar en qué bloque contiguo cae el frente de avance para mostrar un único % centrado en ese bloque
-    let frontierIdx = -1;
-    for(let i = 0; i < days.length; i++){
-      const vDay = dayShare(row, days[i]);
-      if(vDay > 0 && realFillOfGanttDay(row, days[i], actual) > 0.001) frontierIdx = i;
-    }
-    if(frontierIdx >= idx){
-      let blockEnd = idx;
-      while(blockEnd + 1 < days.length && dayShare(row, days[blockEnd + 1]) > 0){
-        blockEnd++;
-      }
-      if(frontierIdx <= blockEnd){
-        const blockLen = blockEnd - idx + 1;
-        const actualTxt = actual < 10 ? Number(actual.toFixed(1)) : Math.round(actual);
-        pctLabel = '<span class="vgg-bar-center-pct" style="left:calc(' + blockLen + ' * 50%)">' + actualTxt + '%</span>';
-      }
-    }
+  if(isStart && actual > 0.001 && actual < 99.999){
+    let spanLen = 0;
+    for(let i = idx; i < days.length && days[i] <= row.end; i++) spanLen++;
+    const actualTxt = actual < 10 ? Number(actual.toFixed(1)) : Math.round(actual);
+    pctLabel = '<span class="vgg-bar-center-pct" style="left:calc(' + spanLen + ' * 50%)">' + actualTxt + '%</span>';
   }
   const tip = (row.excelId||row.id)+' · '+row.title+' · '+readable(row.start)+' al '+readable(row.end)+
-    (actual >= 99.999 ? ' · Culminada (100 %)'+(state.late?' · Fuera de plazo':'')
+    (!value ? ' · Día no laborable ('+(personalLeave || info.note || 'descanso')+')'
+      : actual >= 99.999 ? ' · Culminada (100 %)'+(state.late?' · Fuera de plazo':'')
       : actual > 0.001 ? ' · Avance real acumulado: '+Number(actual.toFixed(1))+' %'
       : ' · Programada (0 % ejecutado)');
   return '<td class="'+cls+' scheduled'+segCls+'"'+dateAttr+' title="'+escapeText(tip)+'">'+
