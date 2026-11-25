@@ -6603,6 +6603,45 @@ main {
 #dashboard-view .executive-grid > .chart-card.dash-card-full {
   grid-column: 1 / -1 !important;
 }
+/* Modo pantalla completa cuando solo hay 1 fila activa en el Dashboard */
+@media (min-width: 980px) {
+  #dashboard-view.dash-single-row-fill .executive-grid {
+    align-items: stretch !important;
+  }
+  #dashboard-view.dash-single-row-fill .executive-grid > .chart-card:not(.dash-section-hidden) {
+    display: flex !important;
+    flex-direction: column !important;
+    height: var(--dash-single-row-h, 480px) !important;
+    min-height: 360px !important;
+  }
+  #dashboard-view.dash-single-row-fill .attention-card #alerts-list.big-list,
+  #dashboard-view.dash-single-row-fill #owner-chart.h-bars,
+  #dashboard-view.dash-single-row-fill #owner-chart .collaborator-list,
+  #dashboard-view.dash-single-row-fill #team-summary.control-team-summary {
+    flex: 1 1 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    min-height: 0 !important;
+  }
+  #dashboard-view.dash-single-row-fill .health-ring {
+    width: 210px !important;
+    height: 210px !important;
+  }
+  #dashboard-view.dash-single-row-fill .health-ring-center strong {
+    font-size: 30px !important;
+  }
+  #dashboard-view.dash-single-row-fill .health-ring-center small {
+    font-size: 10px !important;
+  }
+  #dashboard-view.dash-single-row-fill .health-caption {
+    font-size: 12px !important;
+  }
+  #dashboard-view.dash-single-row-fill .health-metrics > button,
+  #dashboard-view.dash-single-row-fill .health-metric {
+    font-size: 12.5px !important;
+    padding: 10px 15px !important;
+  }
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -10037,6 +10076,26 @@ function applyDashViewVisibility(){
     matrixEl.classList.toggle('dash-card-full',s.matrix&&!s.load);
   }
   if(gridEl)gridEl.classList.toggle('dash-section-hidden',!s.health&&!s.priority&&!s.load&&!s.matrix);
+  const dashView=$('#dashboard-view');
+  const hasRow1=Boolean(s.health||s.priority);
+  const hasRow2=Boolean(s.load||s.matrix);
+  const singleRowFill=window.innerWidth>=980&&((hasRow1&&!hasRow2)||(!hasRow1&&hasRow2));
+  if(dashView)dashView.classList.toggle('dash-single-row-fill',singleRowFill);
+  if(gridEl){
+    if(singleRowFill){
+      requestAnimationFrame(()=>{
+        if(!dashView||!dashView.classList.contains('dash-single-row-fill')||dashView.classList.contains('hidden'))return;
+        const rect=gridEl.getBoundingClientRect();
+        if(rect.top<=0)return;
+        const footerEl=dashView.querySelector('footer');
+        const footerReserve=(footerEl?footerEl.offsetHeight:18)+26;
+        const avail=Math.max(360,Math.floor(window.innerHeight-rect.top-footerReserve));
+        gridEl.style.setProperty('--dash-single-row-h',avail+'px');
+      });
+    }else{
+      gridEl.style.removeProperty('--dash-single-row-h');
+    }
+  }
   document.querySelectorAll('#dash-view-popover input[data-dash-section]').forEach(cb=>{
     cb.checked=Boolean(s[cb.dataset.dashSection]);
   });
@@ -10080,6 +10139,10 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{
   if(e.key==='Escape')closeDashViewMenu();
+});
+window.addEventListener('resize',()=>{
+  const dashView=$('#dashboard-view');
+  if(dashView&&!dashView.classList.contains('hidden'))applyDashViewVisibility();
 });
 
 function selectedDrill(type, value=''){
