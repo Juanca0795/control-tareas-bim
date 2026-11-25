@@ -234,16 +234,16 @@ function pptBimIngresoWeek(photo){
   const day=pptBimIngresoDate(photo);
   return day?isoWeekKey(new Date(day+'T12:00:00')):'';
 }
-// Semana de la reunión: 7 días previos, hasta el día anterior (ambos inclusive).
+// Semana de la reunión: desde el día siguiente a la reunión anterior hasta el MISMO día de la reunión (ambos inclusive).
+// Ej.: reunión viernes 27 → sábado 21 al viernes 27.
 function pptBimMeetingPeriod(week,meetingDay=3){
   const monday=weekStart(week);
   if(!monday||!Number.isInteger(meetingDay)||meetingDay<1||meetingDay>7)return null;
   const meeting=new Date(monday.getTime());
   meeting.setUTCDate(meeting.getUTCDate()+meetingDay-1);
   const start=new Date(meeting.getTime());
-  start.setUTCDate(start.getUTCDate()-7);
+  start.setUTCDate(start.getUTCDate()-6);
   const end=new Date(meeting.getTime());
-  end.setUTCDate(end.getUTCDate()-1);
   return {meeting:localISO(meeting),start:localISO(start),end:localISO(end)};
 }
 // El rango manual solo aplica a esta exportación; nunca altera las fechas de tareas.
