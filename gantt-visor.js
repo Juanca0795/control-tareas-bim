@@ -2906,6 +2906,51 @@ function buildPrimaveraXer(){
   return [...lines, ...taskLines, ...predLines, '%E'].join('\r\n');
 }
 
+function openQuickRegisterTaskModal(actRow){
+  const store = window.bimGanttScheduleStore;
+  if(!store || !actRow) return;
+  const catPkgs = (typeof catalogs !== 'undefined' && Array.isArray(catalogs.packages) && catalogs.packages.length) ? catalogs.packages : ['General'];
+  const catTeams = (typeof catalogs !== 'undefined' && Array.isArray(catalogs.teams) && catalogs.teams.length) ? catalogs.teams : ['Coordinación BIM'];
+  const catStatuses = (typeof catalogs !== 'undefined' && Array.isArray(catalogs.statuses) && catalogs.statuses.length) ? catalogs.statuses : [{ name:'En progreso', category:'progress' }];
+  const defaultStatusName = (catStatuses.find(s => s.category === 'progress') || catStatuses[0]).name;
+
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal narrow" role="dialog" aria-modal="true" aria-label="Registrar actividad en Control de tareas y Dashboard">'+
+    '<div class="vgg-submodal-hd"><h3>📋 Registrar ' + escapeText(actRow.excelId || actRow.id) + ' en Tareas y Dashboard</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<form id="vgg-qreg-form"><div class="vgg-submodal-body">'+
+    '<div style="padding:8px 10px;border-radius:8px;background:var(--bg-subtle,#1e293b);border:1px solid var(--border-base,#253048);font-size:11.5px;line-height:1.45">'+
+      '<b>' + escapeText(actRow.title) + '</b><br>'+
+      '<span style="color:var(--ink-secondary,#94a3b8)">' + escapeText(actRow.owner) + ' · Plazo: ' + readable(actRow.start) + ' al ' + readable(actRow.end) + '</span>'+
+    '</div>'+
+    '<div class="vgg-form-grid">'+
+      '<div class="vgg-form-field"><label for="vgg-qr-pkg">Paquete</label><select id="vgg-qr-pkg">' + catPkgs.map(p => '<option value="'+escapeText(p)+'">'+escapeText(p)+'</option>').join('') + '</select></div>'+
+      '<div class="vgg-form-field"><label for="vgg-qr-team">Disciplina / Equipo</label><select id="vgg-qr-team">' + catTeams.map(t => '<option value="'+escapeText(t)+'">'+escapeText(t)+'</option>').join('') + '</select></div>'+
+      '<div class="vgg-form-field"><label for="vgg-qr-prio">Prioridad</label><select id="vgg-qr-prio"><option value="Alta">Alta</option><option value="Media" selected>Media</option><option value="Baja">Baja</option></select></div>'+
+      '<div class="vgg-form-field"><label for="vgg-qr-status">Estado inicial</label><select id="vgg-qr-status">' + catStatuses.map(s => '<option value="'+escapeText(s.name)+'"'+(s.name===defaultStatusName?' selected':'')+'>'+escapeText(s.name)+'</option>').join('') + '</select></div>'+
+    '</div>'+
+    '</div>'+
+    '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button><button type="submit" class="vgg-sub-btn success">Registrar actividad</button></div>'+
+    '</form></div>';
+  back.hidden = false;
+
+  document.getElementById('vgg-qreg-form')?.addEventListener('submit', ev => {
+    ev.preventDefault();
+    const created = store.createLinkedTaskForActivity?.(actRow, {
+      package: document.getElementById('vgg-qr-pkg')?.value || '',
+      team: document.getElementById('vgg-qr-team')?.value || '',
+      priority: document.getElementById('vgg-qr-prio')?.value || 'Media',
+      status: document.getElementById('vgg-qr-status')?.value || ''
+    });
+    closeSubmodal();
+    render();
+    showDetail(actRow.id);
+    if(created && typeof toast === 'function'){
+      toast('Actividad ' + (actRow.excelId || actRow.id) + ' registrada como ' + created.id + ' en Control de tareas y Dashboard.');
+    }
+  });
+}
+
 function openBaselineModal(){
   const S = getSource();
   const bl = S.baseline;
@@ -3433,7 +3478,12 @@ function open(){
         const ref = getSource().rows.find(r => r.kind==='activity' && r.id===aid);
         if(!ref) return;
         showDetail(aid);
+        const linked = window.bimGanttScheduleStore?.linkedTasksForActivity?.(aid) || [];
+        const regItem = linked.length
+          ? { label:'↗ Abrir ' + linked[0].id + ' en Control de tareas', onClick: () => openLinkedTask(linked[0].id) }
+          : { label:'📋 Registrar actividad (Tareas / Dashboard)', onClick: () => openQuickRegisterTaskModal(ref) };
         openCtxMenu(ev.clientX, ev.clientY, [
+          regItem,
           { label:'✎ Editar actividad', onClick: () => openActivityModal({ activityId: aid }) },
           { label:'+ Insertar actividad arriba', onClick: () => openActivityModal({ presetOwner: ref.owner, presetGroup: ref.group, presetPosition: 'before:' + aid }) },
           { label:'+ Insertar actividad debajo', onClick: () => openActivityModal({ presetOwner: ref.owner, presetGroup: ref.group, presetPosition: 'after:' + aid }) },
