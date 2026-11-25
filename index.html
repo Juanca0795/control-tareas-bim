@@ -11303,4 +11303,1894 @@ document.addEventListener('keydown', e => {
       e.preventDefault();closeUxHelp();return;
     }
     if($('#settings-auth-back').classList.contains('open')){
-... [truncated for diff preview]
+      e.preventDefault();closeSettingsAuth();return;
+    }
+    if($('#confirm-back').classList.contains('open')){
+      e.preventDefault();closeConfirm();return;
+    }
+    if($('#settings-back').classList.contains('open')){
+      e.preventDefault();closeSettings();return;
+    }
+    if($('#weekly-backup-back').classList.contains('open')){
+      e.preventDefault();closeWeeklyBackupDialog();return;
+    }
+    if($('#bim-ppt-back').classList.contains('open')){
+      e.preventDefault();closeBimPptExport();return;
+    }
+    if($('#cnc-back').classList.contains('open')){
+      e.preventDefault();closeCnc();return;
+    }
+    if($('#modal-back').classList.contains('open')){
+      e.preventDefault();closeEditor();return;
+    }
+    selectedTaskId = null; hoveredTaskId = null; selectTaskRow(null);
+    return;
+  }
+  if(currentView!=='tasks' || $('#confirm-back').classList.contains('open') || $('#settings-back').classList.contains('open') || $('#modal-back').classList.contains('open')) return;
+  const tag = e.target.tagName.toLowerCase();
+  if(['input','textarea','select','button'].includes(tag)) return;
+  const id = selectedTaskId || hoveredTaskId;
+  if(!id || !tasks.some(t=>t.id===id)) return;
+  if(e.key==='Delete' || e.key==='Del'){ e.preventDefault(); deleteTask(id); }
+  else if(e.key==='Enter'){ e.preventDefault(); openEditor(id); }
+});
+
+/* ============================================================================
+   MÓDULO UX — 10 HEURÍSTICAS DE NIELSEN (Estado, Filtros, Atajos, Prevención, Ayuda)
+   ============================================================================ */
+function openUxHelp(){
+  const back = document.getElementById('ux-help-back');
+  if(!back) return;
+  back.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  back.querySelector('.close')?.focus();
+}
+function closeUxHelp(){
+  const back = document.getElementById('ux-help-back');
+  if(!back) return;
+  back.classList.remove('open');
+  document.body.style.overflow = '';
+  document.getElementById('ux-help-trigger')?.focus();
+}
+(function initNielsenUxHeuristics(){
+  // H1: Visibilidad del estado de conexión y sincronización
+  const syncPill = document.getElementById('bim-sync-pill');
+  const syncText = syncPill?.querySelector('.sync-text');
+  function updateSyncPill(state, label){
+    if(!syncPill || !syncText) return;
+    syncPill.dataset.state = state;
+    syncText.textContent = label;
+    syncPill.title = 'Estado de conexión: ' + label;
+  }
+  function refreshNetworkState(){
+    if(navigator.onLine === false){
+      updateSyncPill('offline', 'Sin conexión');
+    } else {
+      const notice = document.getElementById('cloud-data-notice');
+      const noticeVisible = notice && !notice.classList.contains('hidden');
+      const noticeMsg = document.getElementById('cloud-data-message')?.textContent || '';
+      if(noticeVisible && /conectando|verificando|guardando/i.test(noticeMsg)){
+        updateSyncPill('syncing', 'Sincronizando…');
+      } else if(noticeVisible && /error|sin conexi|no se pudo/i.test(noticeMsg)){
+        updateSyncPill('offline', 'Sin conexión');
+      } else {
+        updateSyncPill('online', 'En línea');
+      }
+    }
+  }
+  window.addEventListener('online', () => { refreshNetworkState(); toast('Conexión restablecida.'); });
+  window.addEventListener('offline', () => { refreshNetworkState(); toast('Sin conexión a internet. Los cambios se sincronizarán al volver.'); });
+  const cloudNoticeNode = document.getElementById('cloud-data-notice');
+  if(cloudNoticeNode && typeof MutationObserver !== 'undefined'){
+    new MutationObserver(refreshNetworkState).observe(cloudNoticeNode, { attributes: true, childList: true, subtree: true, characterData: true });
+  }
+  refreshNetworkState();
+
+  // H3 & H6: Resaltado de filtros activos y botón limpiar rápido
+  const taskFilterIds = ['search','filter-package','filter-owner','filter-status','filter-team','filter-sector','filter-priority','filter-due'];
+  const dashFilterIds = ['dash-package','dash-team','dash-owner','dash-state','dash-priority'];
+  const weeklyFilterIds = ['weekly-package','weekly-team','weekly-owner'];
+  const searchInput = document.getElementById('search');
+  const searchClearBtn = document.getElementById('search-clear-btn');
+  const clearTasksBtn = document.getElementById('tasks-clear-filters-btn');
+  const tasksFilterCount = document.getElementById('tasks-filter-count');
+
+  function syncFilterVisualStates(){
+    let activeTaskCount = 0;
+    taskFilterIds.forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      const hasVal = String(el.value || '').trim() !== '';
+      el.classList.toggle('ux-filter-active', hasVal);
+      if(hasVal) activeTaskCount++;
+    });
+    const weekCheck = document.getElementById('task-week-filter');
+    if(weekCheck?.checked) activeTaskCount++;
+    if(searchClearBtn && searchInput){
+      searchClearBtn.hidden = String(searchInput.value || '').trim() === '';
+    }
+    if(clearTasksBtn && tasksFilterCount){
+      clearTasksBtn.hidden = activeTaskCount === 0;
+      tasksFilterCount.textContent = String(activeTaskCount);
+    }
+    [...dashFilterIds, ...weeklyFilterIds].forEach(id => {
+      const el = document.getElementById(id);
+      if(!el) return;
+      el.classList.toggle('ux-filter-active', String(el.value || '').trim() !== '');
+    });
+  }
+
+  document.addEventListener('change', e => {
+    if(e.target?.matches('select, #task-week-filter')) syncFilterVisualStates();
+  });
+  document.addEventListener('input', e => {
+    if(e.target?.id === 'search') syncFilterVisualStates();
+  });
+  searchClearBtn?.addEventListener('click', () => {
+    if(!searchInput) return;
+    searchInput.value = '';
+    if(typeof onTaskFiltersChanged === 'function') onTaskFiltersChanged();
+    syncFilterVisualStates();
+    searchInput.focus();
+  });
+  clearTasksBtn?.addEventListener('click', () => {
+    taskFilterIds.forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+    const weekCheck = document.getElementById('task-week-filter');
+    if(weekCheck && weekCheck.checked){
+      weekCheck.checked = false;
+      if(typeof setTaskWeeklyFilter === 'function') setTaskWeeklyFilter(false);
+    }
+    if(typeof onTaskFiltersChanged === 'function') onTaskFiltersChanged();
+    syncFilterVisualStates();
+    toast('Filtros de tareas restablecidos.');
+  });
+  // Sincronizar cuando se usan botones externos de limpiar
+  document.addEventListener('click', e => {
+    if(e.target?.closest('[onclick*="clearDashFilters"], [onclick*="resetWeeklyFilters"], .filter-chip')) {
+      setTimeout(syncFilterVisualStates, 30);
+    }
+  });
+  setTimeout(syncFilterVisualStates, 250);
+
+  // H5: Prevención de errores en formulario (dirty tracking y validación visual)
+  const taskForm = document.getElementById('task-form');
+  const dirtyBadge = document.getElementById('bim-dirty-badge');
+  const modalBack = document.getElementById('modal-back');
+  function markEditorDirty(isDirty){
+    window.__bimEditorDirty = !!isDirty;
+    if(dirtyBadge) dirtyBadge.classList.toggle('hidden', !window.__bimEditorDirty);
+  }
+  if(taskForm){
+    taskForm.addEventListener('input', e => {
+      if(!modalBack?.classList.contains('open')) return;
+      markEditorDirty(true);
+      e.target?.classList?.remove('ux-field-invalid');
+    });
+    taskForm.addEventListener('change', e => {
+      if(!modalBack?.classList.contains('open')) return;
+      markEditorDirty(true);
+      e.target?.classList?.remove('ux-field-invalid');
+    });
+    taskForm.addEventListener('invalid', e => {
+      e.target?.classList?.add('ux-field-invalid');
+    }, true);
+    taskForm.addEventListener('submit', () => {
+      markEditorDirty(false);
+    });
+  }
+  // Resetear dirty al abrir el modal
+  if(modalBack && typeof MutationObserver !== 'undefined'){
+    new MutationObserver(() => {
+      if(modalBack.classList.contains('open')){
+        markEditorDirty(false);
+      }
+    }).observe(modalBack, { attributes: true, attributeFilter: ['class'] });
+  }
+
+  // H7: Atajos de teclado globales (eficiencia para usuarios avanzados)
+  function hasAnyModalOpen(){
+    const gantt = document.getElementById('bim-gantt-overlay');
+    if(gantt && !gantt.hidden) return true;
+    const lightbox = document.getElementById('bim-photo-lightbox');
+    if(lightbox && !lightbox.hidden) return true;
+    return !!document.querySelector('.modal-back.open');
+  }
+  document.addEventListener('keydown', e => {
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    const tag = (e.target?.tagName || '').toLowerCase();
+    if(['input','textarea','select'].includes(tag) || e.target?.isContentEditable) return;
+    const ganttOpen = !document.getElementById('bim-gantt-overlay')?.hidden;
+    if(e.key === '/' && ganttOpen){
+      e.preventDefault();
+      document.getElementById('vgg-search')?.focus();
+      return;
+    }
+    if(hasAnyModalOpen()) return;
+    if(e.key === '?'){
+      e.preventDefault();
+      openUxHelp();
+    } else if(e.key === '1'){
+      e.preventDefault();
+      if(typeof switchView === 'function') switchView('dashboard');
+    } else if(e.key === '2'){
+      e.preventDefault();
+      if(typeof switchView === 'function') switchView('tasks');
+    } else if(e.key === '3'){
+      e.preventDefault();
+      if(typeof switchView === 'function') switchView('weekly');
+    } else if(e.key === 'g' || e.key === 'G'){
+      e.preventDefault();
+      if(typeof openBimGanttViewer === 'function') openBimGanttViewer();
+    } else if(e.key === 'n' || e.key === 'N'){
+      e.preventDefault();
+      if(typeof openEditor === 'function') openEditor();
+    } else if(e.key === '/'){
+      e.preventDefault();
+      if(typeof currentView !== 'undefined' && currentView !== 'tasks' && typeof switchView === 'function'){
+        switchView('tasks');
+      }
+      setTimeout(() => document.getElementById('search')?.focus(), 40);
+    }
+  });
+})();
+
+/* Interactive controls and executive chart integration - existing data model preserved */
+const CHART_INSTANCES = Object.create(null);
+let chartsUnavailableNotified = false;
+const EXEC_COLORS = {blue:'#5da7ff',cyan:'#64d7ef',green:'#42d4a8',red:'#ff7182',amber:'#ffbc67',violet:'#ab93ff'};
+function chartColor(varName, fallback){
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim() || fallback;
+}
+function destroyExecutiveCharts(){
+  for(const key of Object.keys(CHART_INSTANCES)){
+    try { CHART_INSTANCES[key].destroy(); } catch(e){}
+    delete CHART_INSTANCES[key];
+  }
+}
+function makeThemeChartDefaults(){
+  const text = chartColor('--ink-secondary','#b6c6dc');
+  const muted = chartColor('--ink-muted','#90a2bc');
+  const line = chartColor('--border-base','#253048');
+  const panel = chartColor('--bg-panel','#111726');
+  return {text,muted,line,panel,tooltip:{enabled:true,displayColors:false,
+    backgroundColor:panel,borderColor:chartColor('--border-strong','#3b4b65'),borderWidth:1,
+    titleColor:chartColor('--ink-primary','#f0f5ff'),bodyColor:text,
+    titleFont:{family:'Inter',size:12,weight:'600'},bodyFont:{family:'Inter',size:11},padding:12,cornerRadius:10}};
+}
+function radarMetrics(a){
+  return [
+    {label:'Vencidas / hoy',count:a.filter(t=>alertStatus(t).sort<=1).length,type:'late',color:EXEC_COLORS.red,help:'Atención inmediata'},
+    {label:'Próximas = 3 días',count:a.filter(t=>alertStatus(t).sort===2).length,type:'soon',color:EXEC_COLORS.amber,help:'Vencimiento cercano'},
+    {label:'Completadas',count:a.filter(t=>categoryOf(t.status)==='done').length,type:'completed',color:EXEC_COLORS.green,help:'Entregables cerrados'},
+    {label:'En progreso',count:a.filter(t=>categoryOf(t.status)==='progress').length,type:'inProgress',color:EXEC_COLORS.violet,help:'Desarrollo activo'},
+    {label:'Prioridad alta',count:a.filter(t=>t.priority==='Alta').length,type:'high',color:EXEC_COLORS.blue,help:'Atención prioritaria'}
+  ];
+}
+function executiveBarChart(id,groups,mode){
+  const el=$('#'+id), theme=makeThemeChartDefaults();
+  if(!groups.length){el.innerHTML='<div class="empty">Sin registros en este alcance.</div>';return;}
+  const sorted=groups.map(g=>({name:g.name,value:mode==='owner'?g.items.length:ave(g.items)}))
+    .sort((x,y)=>y.value-x.value);
+  const h=Math.max(205,Math.min(460,sorted.length*42+46));
+  el.innerHTML=`<div class="chart-plot" style="height:${h}px"><canvas id="${id}-canvas" aria-label="${mode==='owner'?'Carga por colaborador':'Avance por paquete'}"></canvas></div>`;
+  const canvas=document.getElementById(id+'-canvas');
+  const isOwner=mode==='owner';
+  CHART_INSTANCES[id]=new Chart(canvas,{
+    type:'bar',
+    data:{labels:sorted.map(x=>x.name),datasets:[{
+      label:isOwner?'Entregables asignados':'Avance histórico',data:sorted.map(x=>x.value),
+      backgroundColor:isOwner?'rgba(93,167,255,.65)':'rgba(171,147,255,.65)',
+      hoverBackgroundColor:isOwner?'rgba(104,200,248,.98)':'rgba(191,174,255,.98)',
+      borderColor:isOwner?'rgba(93,167,255,.9)':'rgba(171,147,255,.9)',
+      borderWidth:1,borderRadius:7,borderSkipped:false,barThickness:13,maxBarThickness:13
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',animation:{duration:350},
+      layout:{padding:{right:15,top:4,bottom:2,left:0}},
+      onClick:(event,elements)=>{if(elements.length) setDrill(mode,sorted[elements[0].index].name);},
+      onHover:(event,elements)=>{if(event.native?.target?.style)event.native.target.style.cursor=elements.length?'pointer':'default';},
+      plugins:{legend:{display:false},tooltip:{...theme.tooltip,
+        callbacks:{label:(ctx)=>isOwner?`${ctx.parsed.x} entregable(s)`:`${Number(ctx.parsed.x).toFixed(1)}% de avance`}}},
+      scales:{
+        x:{beginAtZero:true,max:isOwner?undefined:100,border:{display:false},
+          grid:{color:theme.line,drawTicks:false},ticks:{color:theme.muted,font:{family:'JetBrains Mono',size:10},padding:10,precision:isOwner?0:undefined,
+            callback:v=>v+(isOwner?'':'%')}},
+        y:{border:{display:false},grid:{display:false},ticks:{color:theme.text,font:{family:'Inter',size:11},padding:12,autoSkip:false}}
+      }
+    }
+  });
+}
+function renderExecutiveCharts(a){
+  if(currentView!=='dashboard') return;
+  destroyExecutiveCharts();
+  if(!a.length){
+    // No mostrar radar vacío con ejes ni canvas excesivos.
+    const message=tasks.length?'No hay entregables con estos filtros. Cambia o restablece el alcance.':'Registra entregables para visualizar los indicadores.';
+    const empty='<div class="compact-empty" role="status"><strong>Sin registros para graficar</strong><span>'+esc(message)+'</span></div>';
+    $('#state-chart').innerHTML=empty;
+    $('#owner-chart').innerHTML=empty;
+    $('#package-chart').innerHTML=empty;
+    return;
+  }
+  if(typeof Chart==='undefined'){
+    $('#state-chart').innerHTML=makeRadar(a);
+    $('#owner-chart').innerHTML=makeBarChart(grouped(a,'owner'),x=>x.length,n=>String(n),'owner',100);
+    $('#package-chart').innerHTML=makeBarChart(grouped(a,'package'),ave,n=>n.toFixed(0)+'%','package',100);
+    if(!chartsUnavailableNotified){console.info('Chart.js no está disponible: se muestran gráficos alternativos sin conexión.');chartsUnavailableNotified=true;}
+    return;
+  }
+  const metrics=radarMetrics(a),theme=makeThemeChartDefaults();
+  $('#state-chart').innerHTML=`<div class="radar-shell">
+    <div class="radar-canvas-host"><canvas id="executive-radar-canvas" aria-label="Radar de coordinación BIM"></canvas></div>
+    <div class="radar-legend">${metrics.map(m=>`
+      <button type="button" class="radar-choice${selectedDrill(m.type)?' selected':''}" data-drill="${m.type}" aria-pressed="${selectedDrill(m.type)}">
+        <i style="background:${m.color};color:${m.color}"></i>
+        <span class="radar-choice-body"><span class="radar-title-row"><b>${esc(m.label)}</b><span class="radar-badge" style="background:${m.color}22;color:${m.color}">${m.count}</span></span>
+        <small>${esc(m.help)}</small></span>
+      </button>`).join('')}</div>
+  </div>`;
+  CHART_INSTANCES.radar=new Chart($('#executive-radar-canvas'),{
+    type:'radar',data:{labels:metrics.map(m=>m.label),datasets:[{
+      label:'Indicadores BIM',data:metrics.map(m=>m.count),backgroundColor:'rgba(93,167,255,.18)',
+      borderColor:EXEC_COLORS.blue,pointBackgroundColor:metrics.map(m=>m.color),pointBorderColor:theme.panel,
+      pointBorderWidth:2,pointRadius:4,pointHoverRadius:7,borderWidth:2,fill:true
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,animation:{duration:350},
+      onClick:(event,elements)=>{if(elements.length) setDrill(metrics[elements[0].index].type);},
+      onHover:(event,elements)=>{if(event.native?.target?.style)event.native.target.style.cursor=elements.length?'pointer':'default';},
+      scales:{r:{beginAtZero:true,suggestedMax:Math.max(3,...metrics.map(m=>m.count)),
+        angleLines:{color:theme.line},grid:{color:theme.line},pointLabels:{color:theme.text,font:{family:'Inter',size:10,weight:'500'},padding:8},
+        ticks:{display:false,stepSize:1},pointLabelsDisplay:true}},
+      plugins:{legend:{display:false},tooltip:{...theme.tooltip,callbacks:{label:ctx=>`${ctx.raw} entregable(s)`}}}}
+  });
+  executiveBarChart('owner-chart',grouped(a,'owner'),'owner');
+  executiveBarChart('package-chart',grouped(a,'package'),'package');
+}
+function renderActiveFilterChips(scope){
+  const isDash=scope==='dash';
+  const id=isDash?'dash-filter-chips':'task-filter-chips',data=isDash?[
+    ['dash-package','Paquete'],['dash-team','Disciplina'],['dash-owner','Responsable'],
+    ['dash-state','Estado'],['dash-priority','Prioridad']]:[
+    ['filter-package','Paquete'],['filter-owner','Responsable'],
+    ['filter-status','Estado'],['filter-team','Disciplina'],
+    ['filter-sector','Sector'],['filter-priority','Prioridad'],
+    ['filter-due','Vencimiento'],['search','Búsqueda']];
+  const active=data.map(([key,label])=>({key,label,value:document.getElementById(key)?.value?.trim()||''})).filter(x=>x.value);
+  if(!isDash && linkedTaskIds) active.unshift({key:'linked',label:'Dashboard',value:linkedLabel});
+  const host=document.getElementById(id);
+  host.innerHTML=active.length?`<span class="filter-label">FILTROS ACTIVOS</span>${active.map(x=>
+    `<button class="filter-pill" type="button" data-clear-field="${esc(x.key)}" data-clear-scope="${scope}" title="Quitar filtro ${esc(x.label)}"><b>${esc(x.label)}:</b> ${esc(x.key==='filter-due'?taskCrossLabel('due',x.value):x.value)} <i aria-hidden="true">×</i></button>`).join('')}
+    <button type="button" class="clear-all" data-clear-all="${scope}">Limpiar todo</button>`:'';
+}
+document.addEventListener('click',event=>{
+  const single=event.target.closest('[data-clear-field]');
+  const all=event.target.closest('[data-clear-all]');
+  if(single){
+    if(single.dataset.clearField==='linked') clearLinkedTasks();
+    else {const control=document.getElementById(single.dataset.clearField);if(control)control.value='';}
+    (single.dataset.clearScope==='dash'?renderDashboard:onTaskFiltersChanged)();
+    return;
+  }
+  if(all){
+    if(all.dataset.clearAll==='dash') clearDashFilters();
+    else {
+      for(const id of ['search',...TASK_CROSS_FIELDS.map(([id])=>id)])document.getElementById(id).value='';
+      linkedTaskIds=null;linkedLabel='';onTaskFiltersChanged();
+    }
+  }
+});
+function refreshEditorDeadlinePreview(){
+  const preview=$('#editor-deadline-preview');
+  if(!preview)return;
+  const date=$('#f-deadline').value, status=$('#f-status').value;
+  const days=dueDays(date);
+  preview.className='deadline-preview';
+  if(categoryOf(status)==='done'){preview.textContent='Completada — sin alerta pendiente';preview.classList.add('ok');return;}
+  if(days===null){preview.textContent='Sin fecha límite';return;}
+  if(days<0){preview.textContent=`VENCIDA — ${Math.abs(days)} día(s) de retraso`;preview.classList.add('overdue');return;}
+  if(days===0){preview.textContent='VENCE HOY — atención inmediata';preview.classList.add('today');return;}
+  if(days<=3){preview.textContent=`PRÓXIMA — restan ${days} día(s)`;preview.classList.add('soon');return;}
+  preview.textContent=`EN PLAZO — restan ${days} día(s)`;preview.classList.add('ok');
+}
+$('#f-deadline').addEventListener('change',refreshEditorDeadlinePreview);
+$('#f-status').addEventListener('change',refreshEditorDeadlinePreview);
+function exportData(){
+  const record={format:'aec-obsidian-bim',version:3,exportedAt:new Date().toISOString(),
+    tasks:JSON.parse(JSON.stringify(tasks)),catalogs:JSON.parse(JSON.stringify(catalogs)),weeklySnapshots:JSON.parse(JSON.stringify(weeklySnapshots))};
+  const blob=new Blob([JSON.stringify(record,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),link=document.createElement('a');
+  link.href=url;link.download=`respaldo-bim-${todayString()}.json`;document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+  toast(`Respaldo creado: ${tasks.length} registros`);
+}
+
+/* Backups en Supabase: acceso restringido visualmente a Control Semanal. */
+let weeklyBackupBusy=false,weeklyBackupsShown=[];
+function closeWeeklyBackupDialog(){
+  if(weeklyBackupBusy)return;
+  $('#weekly-backup-back').classList.remove('open');
+  document.body.style.overflow='';
+}
+function weeklyBackupFeedback(message,error=false){
+  const el=$('#weekly-backup-feedback');
+  el.textContent=message;
+  el.classList.toggle('error',error);
+}
+function weeklyBackupUiBusy(value){
+  weeklyBackupBusy=value;
+  for(const selector of ['#weekly-backup-create','#weekly-backup-refresh']){
+    const btn=$(selector);if(btn)btn.disabled=value;
+  }
+  $('#weekly-backup-list')?.querySelectorAll('button').forEach(btn=>btn.disabled=value);
+}
+async function openWeeklyBackupDialog(){
+  if(currentView!=='weekly')return;
+  $('#weekly-backup-back').classList.add('open');
+  document.body.style.overflow='hidden';
+  await refreshWeeklyCloudBackups();
+}
+async function refreshWeeklyCloudBackups(){
+  if(weeklyBackupBusy)return;
+  const api=window.bimCloudBackups;
+  if(!api){weeklyBackupFeedback('Conexión de respaldo no disponible. Actualiza la página.',true);return;}
+  weeklyBackupUiBusy(true);
+  weeklyBackupFeedback('Consultando respaldos en Supabase...');
+  try{
+    weeklyBackupsShown=await api.list();
+    $('#weekly-backup-list').innerHTML=weeklyBackupsShown.length
+      ?weeklyBackupsShown.map(x=>'<article class="weekly-backup-item"><div><strong>'+
+        esc(new Date(x.createdAt).toLocaleString('es-PE'))+' · '+esc(x.label||'Backup manual')+
+        '</strong><small>'+Number(x.tasksCount||0)+' tareas · '+Number(x.weeksCount||0)+
+        ' semanas archivadas</small></div><button type="button" class="btn small danger" data-backup-restore="'+
+        esc(x.id)+'">Restaurar</button><button type="button" class="btn small danger" data-backup-delete="'+
+        esc(x.id)+'" title="Eliminar solo este backup">Eliminar</button></article>').join('')
+      :'<p class="weekly-backup-note">Todavía no hay backups. Crea el primero para poder restaurarlo después.</p>';
+    weeklyBackupFeedback(weeklyBackupsShown.length+' respaldo(s) en Supabase.');
+  }catch(err){weeklyBackupFeedback('No se pudo leer Supabase: '+err.message,true)}
+  finally{weeklyBackupUiBusy(false)}
+}
+async function createWeeklyCloudBackup(){
+  const api=window.bimCloudBackups;
+  if(weeklyBackupBusy||!api)return;
+  weeklyBackupUiBusy(true);
+  weeklyBackupFeedback('Guardando copia en Supabase...');
+  try{
+    const backup=await api.create();
+    weeklyBackupFeedback('Backup verificado: '+new Date(backup.createdAt).toLocaleString('es-PE')+'.');
+    toast('Backup creado y verificado en Supabase');
+  }catch(err){weeklyBackupFeedback('Backup no creado: '+err.message,true)}
+  finally{weeklyBackupUiBusy(false)}
+  if(!$('#weekly-backup-feedback').classList.contains('error'))await refreshWeeklyCloudBackups();
+}
+function confirmWeeklyCloudDelete(id){
+  if(weeklyBackupBusy)return;
+  const b=weeklyBackupsShown.find(x=>x.id===id);
+  if(!b)return;
+  openConfirm('Eliminar backup de Supabase',
+    'Se eliminará definitivamente SOLO la copia del '+new Date(b.createdAt).toLocaleString('es-PE')+
+      '. Las tareas, fechas de ingreso, catálogos y cierres actuales NO se modificarán. ¿Eliminar este backup?',
+    ()=>deleteWeeklyCloudBackup(id));
+}
+async function deleteWeeklyCloudBackup(id){
+  const api=window.bimCloudBackups;
+  if(!api||weeklyBackupBusy)return;
+  weeklyBackupUiBusy(true);
+  weeklyBackupFeedback('Eliminando únicamente el backup seleccionado...');
+  let deleted=false;
+  try{
+    await api.remove(id);
+    deleted=true;
+    weeklyBackupFeedback('Backup eliminado de Supabase. Las tareas y fechas se conservaron.');
+    toast('Backup eliminado; datos activos intactos');
+  }catch(err){weeklyBackupFeedback('No se eliminó el backup: '+err.message,true)}
+  finally{weeklyBackupUiBusy(false)}
+  if(deleted)await refreshWeeklyCloudBackups();
+}
+function confirmWeeklyCloudRestore(id){
+  if(weeklyBackupBusy)return;
+  const b=weeklyBackupsShown.find(x=>x.id===id);
+  if(!b)return;
+  openConfirm('Restaurar backup en Supabase',
+    'Se reemplazarán las tareas, catálogos y semanas archivadas por el estado del '+new Date(b.createdAt).toLocaleString('es-PE')+'. Se guardará primero una copia preventiva del estado actual. ¿Confirmar la restauración?',
+    ()=>restoreWeeklyCloudBackup(id));
+}
+async function restoreWeeklyCloudBackup(id){
+  const api=window.bimCloudBackups;
+  if(!api||weeklyBackupBusy)return;
+  weeklyBackupUiBusy(true);
+  weeklyBackupFeedback('Guardando copia preventiva y restaurando desde Supabase...');
+  let restored=false;
+  try{
+    await api.restore(id);
+    restored=true;
+    weeklyBackupFeedback('Restauración verificada. Los indicadores se actualizaron.');
+    toast('Backup restaurado desde Supabase');
+  }catch(err){weeklyBackupFeedback('No se completó la restauración: '+err.message,true)}
+  finally{weeklyBackupUiBusy(false)}
+  if(restored)await refreshWeeklyCloudBackups();
+}
+document.addEventListener('click',e=>{
+  if(!$('#weekly-backup-back').classList.contains('open'))return;
+  const restoreButton=e.target.closest('[data-backup-restore]');
+  if(restoreButton)confirmWeeklyCloudRestore(restoreButton.dataset.backupRestore);
+  const deleteButton=e.target.closest('[data-backup-delete]');
+  if(deleteButton)confirmWeeklyCloudDelete(deleteButton.dataset.backupDelete);
+});
+/* ---------- CONTROL SEMANAL: fechas ISO, snapshots y KPIs ---------- */
+function isoWeekKey(date){
+  const d=new Date(Date.UTC(date.getFullYear(),date.getMonth(),date.getDate()));
+  d.setUTCDate(d.getUTCDate()+4-(d.getUTCDay()||7));
+  const y=d.getUTCFullYear();
+  const jan1=new Date(Date.UTC(y,0,1));
+  const w=Math.ceil((((d-jan1)/86400000)+1)/7);
+  return `${y}-W${String(w).padStart(2,'0')}`;
+}
+function weekStart(week){
+  const m=/^(\d{4})-W(\d{2})$/.exec(week||'');if(!m)return null;
+  const y=+m[1],n=+m[2];if(n<1||n>53)return null;
+  const jan4=new Date(Date.UTC(y,0,4));
+  jan4.setUTCDate(jan4.getUTCDate()-(jan4.getUTCDay()||7)+1+(n-1)*7);
+  if(isoWeekKey(new Date(jan4.getUTCFullYear(),jan4.getUTCMonth(),jan4.getUTCDate()))!==week)return null;
+  return jan4;
+}
+function dateUTC(d){return d?new Date(d+'T00:00:00Z'):null;}
+function localISO(d){return d.toISOString().slice(0,10);}
+function weekEnd(week){const d=weekStart(week);if(!d)return '';d.setUTCDate(d.getUTCDate()+6);return localISO(d);}
+function neighborWeek(week,delta){const d=weekStart(week);if(!d)return isoWeekKey(new Date());d.setUTCDate(d.getUTCDate()+7*delta);return isoWeekKey(new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()));}
+function weekShort(week){return week?`S${Number(week.split('-W')[1])}`:'-';}
+function weeklySnapshot(week){return weeklySnapshots.find(s=>s.week===week)||null;}
+function weekDatesText(week){const start=weekStart(week);if(!start)return 'Semana no válida';return `${localISO(start).split('-').reverse().join('/')} - ${dateDisplay(weekEnd(week))}`;}
+function effectiveTaskWeek(t){
+  // Los snapshots históricos permanecen en su semana y no se duplican.
+  const archived=weeklySnapshots.find(s=>s.rows?.some(row=>row.id===t.id));
+  if(archived)return archived.week;
+  // PPC y Curva S siguen la fecha de finalización programada.
+  if(/^\d{4}-\d{2}-\d{2}$/.test(t.deadline||'')){
+    const date=new Date(t.deadline+'T12:00:00');
+    if(!Number.isNaN(date.getTime()))return isoWeekKey(date);
+  }
+  if(t.plannedWeek&&weekStart(t.plannedWeek))return t.plannedWeek;
+  const entry=taskCreationDate(t);
+  return /^\d{4}-\d{2}-\d{2}$/.test(entry)?
+    isoWeekKey(new Date(entry+'T12:00:00')):'';
+}
+function weeklyRaw(week){
+  const snap=weeklySnapshot(week);
+  // Cierres: copiar el estado que existía al guardar la semana, sin reconstruirlo desde tareas editadas.
+  if(snap)return {closed:true,createdAt:snap.createdAt,rows:snap.rows.map(t=>({...t})),week};
+  const rows=tasks.filter(t=>effectiveTaskWeek(t)===week).map(t=>({
+    id:t.id,package:t.package,team:t.team,owner:t.owner,deadline:t.deadline||'',
+    completedAt:t.completedAt||'',done:categoryOf(t.status)==='done',statusCategory:categoryOf(t.status)
+  }));
+  return {closed:false,createdAt:null,rows,week};
+}
+function weeklyFiltered(week){
+  const base=weeklyRaw(week);
+  const packageName=$('#weekly-package')?.value||'';
+  const team=$('#weekly-team')?.value||'';
+  const owner=$('#weekly-owner')?.value||'';
+  base.rows=base.rows.filter(t=>(!packageName||t.package===packageName)&&(!team||t.team===team)&&(!owner||t.owner===owner));
+  return base;
+}
+// Una tarea sin fin programado no es un compromiso medible de PPC ni Curva S.
+// Solo lectura: no cambia plazos, registros, estados ni fechas de ingreso.
+function hasPpcDeadline(task){
+  const deadline=String(task?.deadline||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(deadline))return false;
+  const time=Date.parse(deadline+'T00:00:00Z');
+  return Number.isFinite(time)&&new Date(time).toISOString().slice(0,10)===deadline;
+}
+function weeklyMetrics(week){
+  const data=weeklyFiltered(week),end=weekEnd(week),today=todayString();
+  // Las fechas de ingreso y el historial permanecen intactos. Solo los
+  // compromisos con fecha de fin programada entran en los indicadores.
+  const unscheduled=data.rows.filter(t=>!hasPpcDeadline(t)).length;
+  data.rows=data.rows.filter(hasPpcDeadline);
+  const closedOn=data.closed&&data.createdAt?data.createdAt.slice(0,10):null;
+  const cutoff=end<today?end:closedOn&&closedOn<end?closedOn:today;
+  const future=week>isoWeekKey(new Date())&&!data.closed;
+  const planned=data.rows.length;
+  const verified=t=>t.done&&t.completedAt&&t.completedAt<=cutoff;
+  const completedRows=data.rows.filter(verified),completed=completedRows.length;
+  const pending=data.rows.filter(t=>!verified(t));
+  const unknownDate=data.rows.filter(t=>t.done&&!t.completedAt).length;
+  const delayed=pending.filter(t=>t.deadline&&t.deadline<cutoff).length;
+  const dueAtCutoff=pending.filter(t=>t.deadline&&t.deadline===cutoff).length;
+  const onTime=completedRows.filter(t=>t.deadline&&t.completedAt<=t.deadline).length;
+  const lateRows=completedRows.filter(t=>t.deadline&&t.completedAt>t.deadline);
+  const verifiableDate=onTime+lateRows.length;
+  const punctualityBase=verifiableDate+delayed+dueAtCutoff;
+  const lateDays=lateRows.map(t=>(Date.parse(t.completedAt+'T00:00:00Z')-Date.parse(t.deadline+'T00:00:00Z'))/86400000).filter(Number.isFinite);
+  return {...data,planned,completed,remaining:planned-completed,unscheduled,unknownDate,delayed,dueAtCutoff,onTime,
+    observedUntil:cutoff,lateCompleted:lateRows.length,verifiableDate,punctualityBase,
+    ppc:future?null:(planned?100*completed/planned:null),
+    punctuality:future||!punctualityBase?null:100*onTime/punctualityBase,
+    avgDelay:lateDays.length?lateDays.reduce((a,b)=>a+b,0)/lateDays.length:null};
+}
+function updateWeeklyFilters(){
+  // Semanas cerradas usan su snapshot, semanas abiertas sus tareas actuales.
+  // Las opciones dependen de la semana seleccionada y de los demás filtros activos.
+  crossFilterOptions(WEEKLY_CROSS_FIELDS,weeklyRaw(selectedWeek).rows);
+}
+// El segmento visible no se reposiciona al pulsar una semana dentro de él.
+let weeklyTimelineWindowStart=null;
+function ensureWeeklyTimelineWindow(week){
+  if(!weeklyTimelineWindowStart)
+    weeklyTimelineWindowStart=neighborWeek(isoWeekKey(new Date()),-5);
+  if(week<weeklyTimelineWindowStart)weeklyTimelineWindowStart=week;
+  else if(week>neighborWeek(weeklyTimelineWindowStart,7))
+    weeklyTimelineWindowStart=neighborWeek(week,-7);
+}
+function stepWeekly(n){
+  selectedWeek=neighborWeek(selectedWeek,n);
+  try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
+  rememberBimViewInHistory();
+  ensureWeeklyTimelineWindow(selectedWeek);
+  renderWeekly();
+}
+function goToCurrentWeek(){
+  selectedWeek=isoWeekKey(new Date());
+  try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
+  rememberBimViewInHistory();
+  weeklyTimelineWindowStart=neighborWeek(selectedWeek,-5);
+  renderWeekly();
+}
+function changeWeeklyWeek(week){
+  if(!weekStart(week)){toast('Semana ISO no válida');return;}
+  selectedWeek=week;
+  try{sessionStorage.setItem('area-bim-selected-week',selectedWeek)}catch(e){}
+  rememberBimViewInHistory();
+  ensureWeeklyTimelineWindow(week);
+  renderWeekly();
+}
+function renderWeeklyTimeline(){
+  const target=$('#weekly-timeline'),track=$('#weekly-timeline-track');
+  if(!target||!track)return;
+  const nowWeek=isoWeekKey(new Date());
+  ensureWeeklyTimelineWindow(selectedWeek);
+  // Siempre mostrar las ocho semanas en las mismas posiciones: navegar con
+  // flechas o por selector cuando la semana elegida quede fuera del segmento.
+  const weeks=Array.from({length:8},(_,i)=>neighborWeek(weeklyTimelineWindowStart,i));
+  const preservedScroll=target.scrollLeft;
+  track.innerHTML=weeks.map(week=>{
+    const start=dateDisplay(localISO(weekStart(week))).slice(0,5),end=dateDisplay(weekEnd(week)).slice(0,5);
+    // La línea de tiempo debe usar EXACTAMENTE la misma fuente PPC Gantt que las tarjetas.
+    const m=ganttPpcMetric(week,false),archived=false,hasData=m.planned>0;
+    const selected=week===selectedWeek,current=week===nowWeek,future=week>nowWeek&&!archived;
+    const published=archived||week<nowWeek;
+    const visible=hasData&&!future&&(published||current)&&m.ppc!==null;
+    const score=visible?m.ppc.toFixed(1)+'%':'';
+    const classes=['weekly-time-step',hasData?'has-data':'',archived?'archived':'',
+      selected?'selected':'',current?'current':'',future?'future':''].filter(Boolean).join(' ');
+    const subtitle=archived?'Archivada':future?(hasData?'Programada':'Sin planificar'):current?'En curso':hasData?'Con compromisos':'Sin registros';
+    const amounts=hasData?(future?m.planned+' programados':m.completed+'/'+m.planned+' compromisos'):'';
+    const details='PPC Gantt | Compromisos: '+m.planned+
+      ' | Metas alcanzadas: '+m.completed+
+      ' | Avance real verificado: '+m.measured+
+      ' | PPC: '+(m.ppc===null?'Sin avance verificado':m.ppc.toFixed(1)+'%');
+    const accessibility='Semana '+week+', '+subtitle+(visible?', PPC '+score:'');
+    return `<button type="button" class="${classes}" onclick="changeWeeklyWeek('${week}')"
+      aria-pressed="${selected}" aria-label="${esc(accessibility)}" title="${esc(details)}">
+      <span class="weekly-time-dot" aria-hidden="true"></span>
+      <span class="weekly-time-name">${esc(weekShort(week))} <small>${week.slice(0,4)}</small></span>
+      <span class="weekly-time-range">${start} – ${end}</span>
+      <span class="weekly-time-ppc">${score|| (future&&hasData?m.planned+' planif.':'')}</span>
+      <span class="weekly-time-status">${esc(amounts||subtitle)}</span>
+    </button>`;
+  }).join('');
+  target.scrollLeft=preservedScroll;
+}
+function resetWeeklyFilters(){for(const name of ['package','team','owner'])$('#weekly-'+name).value='';$('#weekly-compare').checked=true;renderWeekly();}
+function clearWeeklyFilter(name){$('#weekly-'+name).value='';renderWeekly();}
+function renderWeeklyChips(){
+  const pairs=[['package','Paquete'],['team','Disciplina'],['owner','Colaborador']];
+  $('#weekly-filter-chips').innerHTML=pairs.filter(([k])=>$('#weekly-'+k).value).map(([k,label])=>{
+    const value=$('#weekly-'+k).value;
+    return `<button type="button" class="filter-pill" onclick="clearWeeklyFilter('${k}')" aria-label="Quitar filtro ${esc(label)}"><b>${esc(label)}:</b> ${esc(value)} <i>×</i></button>`;
+  }).join('');
+}
+let weeklyPendingDetailsOpen=false;
+function toggleWeeklyPendingDetails(){
+  weeklyPendingDetailsOpen=!weeklyPendingDetailsOpen;
+  const month=monthOfPpcWeek(selectedWeek);
+  const selectedMetric=weeklyPpcSourceMode==='compare'?
+    (weeklyPpcMonthlyMode?monthlyPpcMetrics(month):weeklyMetrics(selectedWeek)):
+    ganttPpcMetric(weeklyPpcMonthlyMode?month:selectedWeek,weeklyPpcMonthlyMode);
+  renderWeeklyPendingDetails(selectedMetric,weeklyPpcMonthlyMode);
+  const card=document.querySelector('#weekly-kpis .weekly-kpi-pending-button');
+  if(card)card.setAttribute('aria-expanded',String(weeklyPendingDetailsOpen));
+}
+function renderWeeklyPendingDetails(metric,monthly){
+  const target=$('#weekly-pending-details');
+  if(!target)return;
+  target.hidden=!weeklyPendingDetailsOpen;
+  if(!weeklyPendingDetailsOpen){target.innerHTML='';return;}
+  if(weeklyPpcSourceMode!=='compare'){
+    const pending=metric.rows.filter(activity=>!activity.isDone);
+    const period=monthly?ppcMonthlyLabel(metric.period):weekShort(metric.period);
+    const pct=n=>Number.isFinite(n)?Number(n.toFixed(2))+' %':'—';
+    const rows=pending.map(a=>'<tr><td>'+esc(a.id)+'</td>'+
+      '<td class="weekly-pending-title">'+esc(a.title)+'</td>'+
+      '<td>'+esc(a.owner)+'</td><td>'+esc(a.group)+'</td>'+
+      (monthly?'<td>'+esc(weekShort(a.week))+'</td>':'')+
+      '<td>'+pct(a.weeklyTarget)+'</td><td>'+pct(a.plannedCumulative)+'</td>'+
+      '<td>'+pct(a.realCumulative)+'</td><td>'+esc(a.state)+'</td></tr>').join('');
+    target.innerHTML='<div class="weekly-pending-head"><div><strong>PENDIENTES PPC GANTT · '+esc(period)+
+      '</strong><p>'+pending.length+' compromiso(s) semanales sin meta verificada · '+
+      'Registra el avance real en el detalle del PPC Gantt</p>'+
+      '</div><button type="button" class="btn small" onclick="toggleWeeklyPendingDetails()" '+
+      'aria-label="Ocultar compromisos pendientes">Cerrar</button></div>'+
+      (pending.length?'<div class="weekly-pending-scroll"><table><thead><tr>'+
+        '<th>ID</th><th>Actividad Gantt</th><th>Responsable</th><th>Grupo</th>'+
+        (monthly?'<th>Semana</th>':'')+
+        '<th>Meta sem.</th><th>Meta acum.</th><th>Real acum.</th><th>Estado</th>'+
+        '</tr></thead><tbody>'+rows+'</tbody></table></div>':
+        '<p class="weekly-pending-empty">No hay compromisos semanales pendientes.</p>');
+    return;
+  }
+  const scope=monthly?metric.weekMetrics:[metric];
+  const currentTasks=new Map(tasks.map(t=>[t.id,t]));
+  const pending=scope.flatMap(week=>week.rows
+    .filter(t=>!(t.done&&t.completedAt&&t.completedAt<=week.observedUntil))
+    .map(t=>({...t,week:week.week})));
+  const period=monthly?ppcMonthlyLabel(metric.month):weekShort(metric.week);
+  const rows=pending.map(t=>{
+    const title=currentTasks.get(t.id)?.title||t.title||'Entregable sin descripción';
+    const state=t.done
+      ?(t.completedAt?'Completada fuera del corte':'Culminación sin fecha verificada')
+      :t.statusCategory==='progress'?'En progreso':'No iniciada';
+    return `<tr><td>${esc(t.id)}</td><td class="weekly-pending-title">${esc(title)}</td>
+      <td>${esc(t.owner||'Sin responsable')}</td><td>${esc(t.package||'Sin paquete')}</td>
+      <td>${esc(state)}</td><td>${esc(t.deadline?dateDisplay(t.deadline):'Sin fecha')}</td>
+      ${monthly?'<td>'+esc(weekShort(t.week))+'</td>':''}</tr>`;
+  }).join('');
+  target.innerHTML=`<div class="weekly-pending-head">
+    <div><strong>ACTIVIDADES PENDIENTES · ${esc(period)}</strong>
+      <p>${pending.length} compromiso(s) sin culminación verificada al corte · Solo lectura</p></div>
+    <button type="button" class="btn small" onclick="toggleWeeklyPendingDetails()" aria-label="Ocultar listado de pendientes">Cerrar</button>
+    </div>${pending.length?
+    '<div class="weekly-pending-scroll"><table><thead><tr><th>Código</th><th>Entregable</th>'+
+    '<th>Responsable</th><th>Paquete</th><th>Estado al corte</th><th>Fecha límite</th>'+
+    (monthly?'<th>Semana</th>':'')+'</tr></thead><tbody>'+rows+'</tbody></table></div>':
+    '<p class="weekly-pending-empty">No existen compromisos pendientes para los filtros seleccionados.</p>'}`;
+}
+function weeklyKpiCard(title,value,foot,kind='',difference=null){
+  const icon=title==='COMPROMETIDAS'?'▢':title==='CUMPLIDAS'?'✓':
+    (title.startsWith('PPC '))?'↗':title==='PENDIENTES'||title==='ARRASTRE'?'◷':
+    title==='PUNTUALIDAD'?'◉':'!';
+  const differenceLabel=(difference!==null&&Number.isFinite(difference))
+    ?(difference>0?'↑ +':difference<0?'↓ −':'= ')+Math.abs(difference).toFixed(1)+' pp vs anterior':'';
+  const tag=differenceLabel?`<span class="weekly-kpi-tag ${difference<0?'danger':''}">${esc(differenceLabel)}</span>`:'';
+  const interactive=title==='PENDIENTES';
+  const tagName=interactive?'button':'article';
+  const attrs=interactive?'type="button" onclick="toggleWeeklyPendingDetails()" class="weekly-kpi weekly-kpi-pending-button '+kind+'" aria-controls="weekly-pending-details" aria-expanded="'+String(weeklyPendingDetailsOpen)+'" title="Mostrar u ocultar tareas pendientes"':
+    'class="weekly-kpi '+kind+' '+(title.startsWith('PPC ')?'ppc-highlight':'')+'"';
+  return `<${tagName} ${attrs}>
+      <div class="weekly-kpi-header"><span class="label">${esc(title)}</span><span class="weekly-kpi-icon" aria-hidden="true">${icon}</span></div>
+      <div class="weekly-kpi-value"><strong class="number">${esc(value)}</strong>${tag}</div>
+      <span class="foot">${esc(foot)}</span></${tagName}>`;
+}
+function pct(v){return v===null?'-':`${v.toFixed(1)}%`;}
+function groupForWeekly(m,key){
+  const groups=new Map();
+  for(const row of m.rows){
+    const label=row[key]||'Sin asignar';
+    if(!groups.has(label))groups.set(label,{label,planned:0,done:0});
+    const g=groups.get(label);g.planned++;
+    if(row.done&&row.completedAt&&row.completedAt<=weekEnd(m.week))g.done++;
+  }
+  return [...groups.values()].sort((a,b)=>b.planned-a.planned||a.label.localeCompare(b.label,'es'));
+}
+let WEEKLY_CHARTS={};
+function disposeWeeklyCharts(){for(const c of Object.values(WEEKLY_CHARTS)){try{c.destroy()}catch(e){}}WEEKLY_CHARTS={};}
+function weeklyChartMotionOptions(){
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ?{animation:false}
+    :{animation:{duration:760,easing:'easeOutCubic'},
+      transitions:{active:{animation:{duration:130}}}};
+}
+function weeklyChartOptions(){
+  const dark=document.documentElement.dataset.theme==='dark';
+  return {text:dark?'#bdcce4':'#50617c',grid:dark?'rgba(127,160,198,.16)':'rgba(65,85,122,.14)',
+    blue:'#4da5ff',green:'#24cba5',pink:'#f25570',amber:'#f3bb67',muted:dark?'#75839b':'#a4adbd'};
+}
+function weeklyEmpty(el,msg){
+  el.style.removeProperty('height');
+  el.closest('.weekly-chart-card')?.classList.add('weekly-is-empty');
+  el.innerHTML=`<div class="weekly-empty"><strong>Sin datos para graficar</strong><span>${esc(msg)}</span></div>`;
+}
+// Ventana PPC compacta: cuatro semanas anteriores, semana elegida y cuatro
+// posteriores; no retroceder antes del arranque definido (S40 de 2026).
+function weeklyPpcHistoryWeeks(){
+  const first='2026-W40';
+  const proposed=neighborWeek(selectedWeek,-4);
+  const start=proposed<first?first:proposed;
+  return Array.from({length:9},(_,i)=>neighborWeek(start,i));
+}
+// Vista mensual solo de presentación: los compromisos almacenados siguen
+// perteneciendo a su semana ISO. El mes se asigna por el jueves de la semana.
+let weeklyPpcMonthlyMode=false;
+// PPC Operativo temporalmente oculto. Se conserva su cálculo para futura reactivación.
+const WEEKLY_OPERATIONAL_PPC_VISIBLE=false;
+let weeklyPpcSourceMode='gantt';
+function toggleWeeklyPpcOperational(enabled){
+  // Bloqueo de presentación: nunca mostrar PPC Operativo mientras esté suspendido.
+  weeklyPpcSourceMode=WEEKLY_OPERATIONAL_PPC_VISIBLE&&enabled?'compare':'gantt';
+  renderWeekly();
+}
+function toggleWeeklyPpcMonthlyMode(enabled){
+  weeklyPpcMonthlyMode=Boolean(enabled);
+  renderWeekly();
+}
+function monthOfPpcWeek(week){
+  const monday=weekStart(week);
+  if(!monday)return '';
+  monday.setUTCDate(monday.getUTCDate()+3);
+  return localISO(monday).slice(0,7);
+}
+function offsetPpcMonth(month,offset){
+  const [year,number]=month.split('-').map(Number);
+  const d=new Date(Date.UTC(year,number-1+offset,1));
+  return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');
+}
+function ppcMonthlyLabel(month){
+  if(!month)return '-';
+  const names=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  return names[Number(month.slice(5))-1]+' '+month.slice(2,4);
+}
+function monthlyPpcHistoryMonths(){
+  const selected=monthOfPpcWeek(selectedWeek);
+  return Array.from({length:9},(_,i)=>offsetPpcMonth(selected,i-4));
+}
+function weeksAssignedToPpcMonth(month){
+  const [year,number]=month.split('-').map(Number);
+  const firstThursday=new Date(Date.UTC(year,number-1,1));
+  while(firstThursday.getUTCDay()!==4)firstThursday.setUTCDate(firstThursday.getUTCDate()+1);
+  const weeks=[];
+  for(const d=new Date(firstThursday);d.getUTCMonth()===number-1&&d.getUTCFullYear()===year;d.setUTCDate(d.getUTCDate()+7)){
+    const local=new Date(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate());
+    weeks.push(isoWeekKey(local));
+  }
+  return weeks;
+}
+function monthlyPpcMetrics(month){
+  const weeks=weeksAssignedToPpcMonth(month);
+  const list=weeks.map(weeklyMetrics);
+  const sum=k=>list.reduce((n,metric)=>n+(metric[k]||0),0);
+  const planned=sum('planned'),completed=sum('completed');
+  const punctualityBase=sum('punctualityBase'),onTime=sum('onTime');
+  const future=month>todayString().slice(0,7);
+  return {month,weeks,weekMetrics:list,
+    planned,completed,remaining:planned-completed,unscheduled:sum('unscheduled'),delayed:sum('delayed'),
+    dueAtCutoff:sum('dueAtCutoff'),lateCompleted:sum('lateCompleted'),
+    punctualityBase,onTime,
+    ppc:future||!planned?null:100*completed/planned,
+    punctuality:future||!punctualityBase?null:100*onTime/punctualityBase,
+    closed:month<todayString().slice(0,7),
+    observedUntil:month===todayString().slice(0,7)?todayString():
+      localISO(new Date(Date.UTC(Number(month.slice(0,4)),Number(month.slice(5)),0)))};
+}
+function weeklyTrend(m){
+  if(!WEEKLY_OPERATIONAL_PPC_VISIBLE)weeklyPpcSourceMode='gantt';
+  const monthly=weeklyPpcMonthlyMode;
+  const node=$('#weekly-trend-chart'),footer=$('#weekly-trend-footer');
+  const weeks=monthly?monthlyPpcHistoryMonths():weeklyPpcHistoryWeeks();
+  const label=monthly?ppcMonthlyLabel:weekShort;
+  const range=$('#weekly-trend-range'),referenceKey=$('#weekly-trend-progress-key');
+  const heading=$('#weekly-trend-heading'),subtitle=$('#weekly-trend-subtitle');
+  const selector=$('#weekly-ppc-monthly'),operationalToggle=$('#weekly-ppc-operational');
+  if(selector)selector.checked=monthly;
+  if(operationalToggle)operationalToggle.checked=weeklyPpcSourceMode==='compare';
+  heading.textContent='EVOLUCIÓN PPC GANTT'+(monthly?' · MENSUAL':'');
+  subtitle.textContent='Cumplimiento de metas de avance semanal del Gantt Excel · Meta LPS 85%';
+  const operativeKey=$('#weekly-trend-operational-key');
+  if(operativeKey)operativeKey.hidden=weeklyPpcSourceMode!=='compare';
+  if(range)range.textContent=!weeks.length?'Sin períodos registrados':
+    (monthly?'Desde '+label(weeks[0])+' · 9 meses':'Desde '+label(weeks[0])+' · 9 semanas');
+  const nowWeek=monthly?todayString().slice(0,7):isoWeekKey(new Date());
+  // Semanas futuras visibles pero siempre sin PPC real; una semana abierta sí
+  // utiliza los compromisos verificados hasta la fecha.
+  const operationalVals=weeks.map(w=>{
+    const metric=monthly?monthlyPpcMetrics(w):weeklyMetrics(w);
+    return w>nowWeek?null:metric.ppc;
+  });
+  const ganttMetrics=weeks.map(w=>ganttPpcMetric(w,monthly));
+  const ganttVals=ganttMetrics.map((g,i)=>weeks[i]>nowWeek?null:g.ppc);
+  const vals=ganttVals;
+  const known=vals.filter(Number.isFinite);
+  const ganttKnown=ganttVals.filter(Number.isFinite);
+  const mean=known.length?known.reduce((a,b)=>a+b,0)/known.length:null;
+  const ganttMean=ganttKnown.length?ganttKnown.reduce((a,b)=>a+b,0)/ganttKnown.length:null;
+  const goal=85,delta=mean===null?null:mean-goal;
+  const selectedPeriod=monthly?monthOfPpcWeek(selectedWeek):selectedWeek;
+  const selectedPpc=selectedPeriod<=nowWeek?ganttPpcMetric(selectedPeriod,monthly).ppc:null;
+  const summary=$('#weekly-gantt-summary');
+  if(summary){
+    const detail=ganttPpcMetric(selectedPeriod,monthly);
+    const periodLabel=monthly?ppcMonthlyLabel(selectedPeriod):weekShort(selectedPeriod);
+    summary.hidden=false;
+    summary.innerHTML=ganttPpcDetailsHtml(detail,periodLabel);
+  }
+  const hasReference=Number.isFinite(selectedPpc)&&weeks.includes(selectedPeriod);
+  referenceKey.hidden=!hasReference;
+  if(hasReference)$('#weekly-trend-progress-label').textContent=
+    'PPC '+label(selectedPeriod)+': '+selectedPpc.toFixed(1)+'%';
+  const operativeMeanVals=operationalVals.filter(Number.isFinite);
+  const operativeMean=operativeMeanVals.length?
+    operativeMeanVals.reduce((a,b)=>a+b,0)/operativeMeanVals.length:null;
+  const percent=v=>v===null?'—':v.toFixed(1)+'%';
+  footer.innerHTML=weeklyPpcSourceMode==='compare'?
+    '<span>PPC Gantt medio: <strong>'+percent(ganttMean)+
+    '</strong> · PPC Operativo medio: <strong>'+percent(operativeMean)+'</strong></span>':
+    mean===null?
+      '<span>No existen compromisos PPC verificables en el período seleccionado.</span>':
+      `<span>PPC Gantt medio: <strong>${mean.toFixed(1)}%</strong> · ${known.length} ${monthly?'mes(es)':'semana(s)'} con compromisos</span>
+      <span class="weekly-benchmark ${delta>0?'above':delta<0?'below':'at-goal'}">${delta>0?'↑ +':delta<0?'↓ −':'= '}${Math.abs(delta).toFixed(1)} pp ${delta>0?'por encima de':delta<0?'por debajo de':'en'} la meta LPS (85%)</span>`;
+  if(!known.length&&!(weeklyPpcSourceMode==='compare'&&operativeMeanVals.length)){
+    weeklyEmpty(node,'Todavía no existen compromisos verificables en las semanas transcurridas.');
+    return;
+  }
+  if(typeof Chart!=='undefined'){
+    const c=weeklyChartOptions();
+    node.innerHTML='<canvas role="img" aria-label="Evolución PPC Gantt Excel, meta LPS 85% y referencia de la semana seleccionada"></canvas>';
+    // Degradados independientes bajo las dos curvas, también en modo comparativo.
+    // Una serie 0% no tiene altura de área: su gradiente será visible al avanzar.
+    const ppcGradient=(rgb,topAlpha,bottomAlpha)=>({chart})=>{
+      const {ctx,chartArea}=chart;
+      if(!chartArea)return 'rgba('+rgb+','+topAlpha+')';
+      const gradient=ctx.createLinearGradient(0,chartArea.top,0,chartArea.bottom);
+      gradient.addColorStop(0,'rgba('+rgb+','+topAlpha+')');
+      gradient.addColorStop(1,'rgba('+rgb+','+bottomAlpha+')');
+      return gradient;
+    };
+    const ganttFill=ppcGradient('243,187,103',.24,.012);
+    const operationalFill=ppcGradient('37,199,229',.26,.012);
+    const datasets=[{
+      label:'PPC Gantt',data:ganttVals,borderColor:'#f3bb67',
+      backgroundColor:ganttFill,fill:'origin',
+      tension:.28,pointRadius:4,pointHoverRadius:6,borderWidth:2.6,spanGaps:false
+    }];
+    if(weeklyPpcSourceMode==='compare')datasets.push({
+      label:'PPC Operativo',data:operationalVals,borderColor:'#25c7e5',
+      backgroundColor:operationalFill,borderWidth:2.5,fill:'origin',
+      pointRadius:4,pointHoverRadius:6,tension:.22,spanGaps:false
+    });
+    datasets.push({label:'Meta LPS (85%)',data:weeks.map(()=>goal),borderColor:c.pink,
+      borderWidth:.6,pointRadius:0,pointHoverRadius:0,fill:false,tension:0});
+    // La línea punteada es una referencia horizontal, no un PPC proyectado:
+    // se oculta si la semana seleccionada no tiene compromisos verificables.
+    if(hasReference)datasets.push({
+      label:'Referencia PPC '+label(selectedPeriod),
+      data:weeks.map(()=>selectedPpc),borderColor:c.pink,borderDash:[5,5],
+      borderWidth:1.3,pointRadius:0,pointHoverRadius:0,fill:false,tension:0
+    });
+    const pointLabels={
+      id:'weeklyPpcLabels',
+      afterDatasetsDraw(chart){
+        const {ctx,chartArea,scales}=chart;
+        if(!chartArea)return;
+        const points=chart.getDatasetMeta(0).data;
+        const goalY=scales.y.getPixelForValue(goal);
+        const pad=7;
+        const clamp=(v,low,high)=>Math.max(low,Math.min(high,v));
+        const labelsDrawn=[];
+        ctx.save();
+        ctx.font='600 10px Inter, sans-serif';
+        ctx.textBaseline='alphabetic';
+        // Primero la etiqueta de la meta, para reservar su espacio.
+        const goalText='Meta LPS 85%';
+        const goalWidth=ctx.measureText(goalText).width;
+        const goalX=chartArea.left+6;
+        const goalLabelY=clamp(goalY-9,chartArea.top+12,chartArea.bottom-5);
+        labelsDrawn.push({left:goalX-2,right:goalX+goalWidth+2,top:goalLabelY-11,bottom:goalLabelY+3});
+        ctx.fillStyle=c.pink;
+        ctx.textAlign='left';
+        ctx.fillText(goalText,goalX,goalLabelY);
+        ctx.fillStyle=c.text;
+        // Evitar que el primer valor choque con el eje Y, o que etiquetas
+        // próximas al 85% se superpongan con la referencia LPS.
+        points.forEach((point,i)=>{
+          if(!Number.isFinite(vals[i])||point.skip)return;
+          const label=vals[i].toFixed(1)+'%';
+          const width=ctx.measureText(label).width;
+          const isFirst=i===0, isLast=i===points.length-1;
+          let align=isFirst?'left':isLast?'right':'center';
+          let x=point.x+(isFirst?12:isLast?-12:0);
+          let left=x-(align==='center'?width/2:align==='right'?width:0);
+          left=clamp(left,chartArea.left+pad,Math.max(chartArea.left+pad,chartArea.right-pad-width));
+          let y=point.y-12;
+          if(y-11<chartArea.top)y=point.y+19;
+          if(y>chartArea.bottom-3)y=point.y-14;
+          y=clamp(y,chartArea.top+11,chartArea.bottom-4);
+          const occupied=v=>labelsDrawn.some(r=>left<r.right&&left+width>r.left&&v-11<r.bottom&&v+3>r.top);
+          if(occupied(y)){
+            const alternate=clamp(point.y+19,chartArea.top+11,chartArea.bottom-4);
+            if(!occupied(alternate))y=alternate;
+            else {
+              // No dibujar etiquetas encima de otras; el punto y su tooltip permanecen.
+              const above=clamp(point.y-19,chartArea.top+11,chartArea.bottom-4);
+              if(occupied(above))return;
+              y=above;
+            }
+          }
+          ctx.textAlign='left';
+          ctx.fillText(label,left,y);
+          labelsDrawn.push({left:left-2,right:left+width+2,top:y-11,bottom:y+3});
+        });
+        ctx.restore();
+      }
+    };
+    WEEKLY_CHARTS.trend=new Chart(node.querySelector('canvas'),{
+      type:'line',data:{labels:weeks.map(label),datasets},
+      plugins:[pointLabels],
+      options:{...weeklyChartMotionOptions(),
+        maintainAspectRatio:false,responsive:true,interaction:{mode:'index',intersect:false},
+        plugins:{legend:{display:false},tooltip:{
+          // No presentar la referencia constante como dato real de un período futuro.
+          filter:ctx=>!String(ctx.dataset.label||'').startsWith('Referencia PPC'),
+          callbacks:{label:ctx=>{
+            if(ctx.parsed.y===null)return 'Sin dato';
+            if(ctx.dataset.label==='PPC Gantt'){
+              const g=ganttMetrics[ctx.dataIndex];
+              return 'PPC Gantt: '+ctx.parsed.y.toFixed(1)+'% ('+g.completed+'/'+g.planned+
+                ' cumplidas · '+g.unassigned+' sin asignar)';
+            }
+            return ctx.dataset.label+': '+ctx.parsed.y.toFixed(1)+'%';
+          }}
+        }},
+        scales:{
+          x:{ticks:{color:c.text},grid:{display:false}},
+          y:{min:0,max:110,ticks:{stepSize:20,color:c.text,callback:v=>v<=100?v+'%':''},grid:{color:c.grid}}
+        }
+      }
+    });return;
+  }
+  // Alternativa accesible sin Chart.js: mismos datos, meta y referencia.
+  node.innerHTML='<div class="weekly-fallback">'+weeks.map((w,i)=>`
+    <div class="weekly-fallback-row"><span>${esc(label(w))}</span>
+    <span class="weekly-track"><b style="width:${Number.isFinite(vals[i])?vals[i]:0}%"></b></span>
+    <b>${Number.isFinite(vals[i])?vals[i].toFixed(1)+'%':'—'}${weeklyPpcSourceMode==='compare'?
+      ' · Operativo '+(Number.isFinite(operationalVals[i])?operationalVals[i].toFixed(1)+'%':'—'):''}</b></div>`).join('')+
+    '<div class="weekly-fallback-row"><span>Meta LPS</span><span></span><b>85%</b></div>'+
+    (hasReference?'<div class="weekly-fallback-row"><span>PPC '+esc(label(selectedPeriod))+
+    '</span><span></span><b>'+selectedPpc.toFixed(1)+'%</b></div>':'')+'</div>';
+}
+// Análisis CNC mensual: agrega incidencias reales de las semanas del mes
+// asignadas por jueves ISO; incluye causas archivadas tras reprogramaciones.
+function monthlyCncPanel(monthMetric){
+  const container=$('#weekly-cnc'),count=$('#weekly-cnc-count');
+  if(!container||!count)return;
+  const incidents=new Map(),month=monthMetric.month;
+  const filtered={
+    package:$('#weekly-package')?.value||'',
+    team:$('#weekly-team')?.value||'',
+    owner:$('#weekly-owner')?.value||''
+  };
+  for(const metric of monthMetric.weekMetrics){
+    for(const task of metric.rows){
+      if(!task.deadline)continue;
+      const late=task.done&&task.completedAt?
+        task.completedAt>task.deadline:task.deadline<metric.observedUntil;
+      if(!late)continue;
+      const key=task.id+'|'+task.deadline;
+      if(!incidents.has(key))incidents.set(key,{...task,week:metric.week});
+    }
+  }
+  for(const record of catalogs.cncRecords||[]){
+    if(monthOfPpcWeek(record.week)!==month)continue;
+    if(filtered.package&&record.package!==filtered.package)continue;
+    if(filtered.team&&record.team!==filtered.team)continue;
+    if(filtered.owner&&record.owner!==filtered.owner)continue;
+    if(!incidents.has(record.id))incidents.set(record.id,{
+      id:record.taskId,deadline:record.deadline,owner:record.owner,
+      package:record.package,team:record.team,title:record.title||record.taskId,
+      week:record.week,cncHistorical:true
+    });
+  }
+  const entries=[...incidents.values()].sort((a,b)=>a.deadline.localeCompare(b.deadline));
+  const lookup=(task)=>typeof cncFor==='function'?cncFor(task.id,task.deadline):
+    (catalogs.cncRecords||[]).find(r=>r.taskId===task.id&&r.deadline===task.deadline);
+  const missing=entries.filter(t=>!lookup(t)),registered=entries.length-missing.length;
+  count.textContent=missing.length+' sin causa';
+  if(!entries.length){
+    container.innerHTML='<div class="weekly-empty"><strong>Sin incumplimientos del mes</strong>'+
+      '<span>Para este período no hay incidencias de plazo documentadas o pendientes.</span></div>';
+    return;
+  }
+  const taskNames=new Map(tasks.map(t=>[t.id,t.title]));
+  const items=entries.slice(0,5).map(t=>{
+    const record=lookup(t),title=taskNames.get(t.id)||t.title||t.id;
+    return '<div class="weekly-cnc-item"><strong>'+esc(title)+'</strong>'+
+      '<p>Compromiso '+esc(t.id)+' · '+esc(t.owner||'Sin responsable')+'</p>'+
+      '<small>Plazo: '+esc(dateDisplay(t.deadline))+' · '+esc(weekShort(t.week))+
+        (t.cncHistorical?' · CNC histórico':'')+'</small>'+
+      (record?'<p class="cnc-cause">'+esc(record.category)+'</p>'+
+        '<p>'+esc(record.description)+'</p>':
+        '<p class="cnc-cause">Causa pendiente de registrar desde Control de tareas</p>')+
+      '</div>';
+  }).join('');
+  container.innerHTML='<div class="weekly-cnc-summary"><strong>'+entries.length+
+    ' incumplimiento(s) del mes</strong> · '+registered+' documentado(s) · '+
+    missing.length+' por registrar.</div><div class="weekly-cnc-list">'+items+'</div>'+
+    (entries.length>5?'<p class="weekly-cnc-summary">+'+(entries.length-5)+
+      ' incumplimientos adicionales.</p>':'')+
+    '<div class="weekly-cnc-note"><strong>Seguimiento de causas</strong><div>'+
+    (missing.length?missing.length+' actividad(es) requieren registrar su causa desde Control de tareas.':
+      'Todas las incidencias tienen su causa documentada.')+
+    ' Se conserva el vencimiento original.</div></div>';
+}
+function weeklyCncPanel(m){
+  if(typeof renderRegisteredWeeklyCnc==='function')return renderRegisteredWeeklyCnc(m);
+  const container=$('#weekly-cnc'),count=$('#weekly-cnc-count');
+  if(!container||!count)return;
+  const end=weekEnd(m.week);
+  const pending=m.rows.filter(t=>!(t.done&&t.completedAt&&t.completedAt<=end));
+  count.textContent=pending.length+' pendiente'+(pending.length===1?'':'s');
+  if(!m.planned){
+    container.innerHTML='<div class="weekly-empty"><strong>Sin compromisos para analizar</strong><span>El panel se activa con registros reales de la semana elegida.</span></div>';
+    return;
+  }
+  if(!pending.length){
+    container.innerHTML='<div class="weekly-cnc-summary">Todos los compromisos de esta semana figuran como cumplidos.</div>'+
+      '<div class="weekly-cnc-note"><strong>Sin causas registradas</strong><div>No hay incumplimientos que clasificar para el alcance seleccionado.</div></div>';
+    return;
+  }
+  // El formulario actual no contiene una causa CNC estructurada.
+  // No deducir ni inventar interferencias, responsables de bloqueo o acciones correctivas.
+  const currentTasks=new Map(tasks.map(t=>[t.id,t]));
+  const list=pending.slice(0,5).map(t=>{
+    const live=!m.closed?currentTasks.get(t.id):null;
+    const caption=live?.title||t.title||t.id;
+    return `<div class="weekly-cnc-item">
+      <strong>${esc(caption)}</strong>
+      <p>Compromiso ${esc(t.id)} · ${esc(t.owner||'Sin responsable')}</p>
+      <small>${t.deadline?'Plazo: '+esc(dateDisplay(t.deadline)):'Sin fecha límite'} · Causa no clasificada</small>
+    </div>`;
+  }).join('');
+  container.innerHTML=`<div class="weekly-cnc-summary"><strong>${pending.length} de ${m.planned}</strong> compromisos sin cumplimiento verificado.</div>
+    <div class="weekly-cnc-list">${list}</div>
+    ${pending.length>5?'<p class="weekly-cnc-summary">+'+(pending.length-5)+' compromisos adicionales.</p>':''}
+    <div class="weekly-cnc-note"><strong>Causas por documentar</strong><div>El sistema aún no registra categorías CNC ni planes de acción estructurados. No se asignan causas automáticamente.</div></div>`;
+}
+function weeklyGroupChart(id,groups,mode){
+  const node=$('#'+id);
+  if(!groups.length){weeklyEmpty(node,'No existen compromisos semanales en los filtros elegidos.');return;}
+  const items=groups.slice(0,12),theme=weeklyChartOptions();
+  if(typeof Chart!=='undefined'){
+    const canvas=document.createElement('canvas');canvas.setAttribute('role','img');
+    canvas.setAttribute('aria-label',mode==='owner'?'Compromisos por colaborador':'Porcentaje de cumplimiento por paquete');
+    node.replaceChildren(canvas);node.style.height=Math.max(190,items.length*32+30)+'px';
+    WEEKLY_CHARTS[id]=new Chart(canvas,{
+      type:'bar',data:{labels:items.map(x=>x.label),datasets:mode==='owner'?
+        [{label:'Comprometidas',data:items.map(x=>x.planned),backgroundColor:'rgba(77,165,255,.35)',borderColor:theme.blue,borderWidth:1,borderRadius:5},
+         {label:'Cumplidas',data:items.map(x=>x.done),backgroundColor:theme.green,borderRadius:5}]:
+        [{label:'PPC (%)',data:items.map(x=>100*x.done/x.planned),backgroundColor:theme.blue,borderRadius:6}]},
+      options:{...weeklyChartMotionOptions(),indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:mode==='owner',position:'bottom',labels:{color:theme.text,boxWidth:9,font:{size:10}}},tooltip:{callbacks:{label: ctx=>mode==='owner'?`${ctx.dataset.label}: ${ctx.parsed.x}`:`PPC ${ctx.parsed.x.toFixed(1)}%`}}},scales:{x:{beginAtZero:true,max:mode==='package'?100:undefined,grid:{color:theme.grid},ticks:{color:theme.text,precision:0}},y:{ticks:{color:theme.text,font:{size:10},autoSkip:false},grid:{display:false}}}}
+    });return;
+  }
+  node.style.height='auto';node.innerHTML=`<div class="weekly-fallback">${items.map(x=>{
+    const count=mode==='owner'?x.done:100*x.done/x.planned;
+    const max=mode==='owner'?Math.max(1,...items.map(a=>a.planned)):100;
+    return `<div class="weekly-fallback-row"><span title="${esc(x.label)}">${esc(x.label)}</span><span class="weekly-track"><b class="done" style="width:${count/max*100}%"></b></span><b>${mode==='owner'?`${x.done}/${x.planned}`:`${count.toFixed(0)}%`}</b></div>`;
+  }).join('')}</div>`;
+}
+
+/* Visualizaciones semanales: se usa Chart.js cuando está disponible; de lo contrario,
+   se representa una alternativa HTML con exactamente los mismos datos. */
+function weeklyHistoryWeeks(){
+  // La primera semana proviene de compromisos verificables con los filtros activos.
+  // Se muestran también semanas futuras SIN inventar un resultado PPC.
+  const today=isoWeekKey(new Date());
+  const anchor=selectedWeek>today?selectedWeek:today;
+  // Una semana comprometida que todavía es futura también es un registro real
+  // y debe poder iniciar la escala, aunque su PPC permanezca sin valor.
+  const candidates=[...new Set([
+    ...tasks.map(t=>effectiveTaskWeek(t)),
+    ...weeklySnapshots.map(snapshot=>snapshot.week)
+  ])].filter(w=>typeof w==='string'&&weekStart(w)).sort();
+  const earliest=candidates.find(w=>weeklyMetrics(w).planned>0);
+  if(!earliest)return [];
+  // Priorizar ocho semanas desde el primer registro. Cuando se superan, deslizar
+  // la ventana hasta la semana elegida y continuar con proyecciones vacías.
+  const span=[];
+  let week=earliest;
+  for(let i=0;i<8;i++){
+    span.push(week);
+    week=neighborWeek(week,1);
+  }
+  if(anchor<=span[7])return span;
+  return Array.from({length:8},(_,i)=>neighborWeek(anchor,i-7));
+}
+function weeklyPlanChart(){
+  const node=$('#weekly-plan-chart'),weeks=weeklyHistoryWeeks(),metrics=weeks.map(weeklyMetrics);
+  const planned=metrics.map(m=>m.planned),done=metrics.map(m=>m.completed),c=weeklyChartOptions();
+  if(!planned.some(Boolean)){weeklyEmpty(node,'Sin entregables comprometidos en las ocho semanas seleccionadas.');return;}
+  node.style.height='230px';
+  if(typeof Chart!=='undefined'){
+    node.innerHTML='<canvas role="img" aria-label="Planificados frente a completados en las últimas ocho semanas"></canvas>';
+    WEEKLY_CHARTS.plan=new Chart(node.querySelector('canvas'),{
+      type:'bar',data:{labels:weeks.map(weekShort),datasets:[
+        {label:'Planificados',data:planned,backgroundColor:'rgba(77,165,255,.48)',borderColor:c.blue,borderWidth:1,borderRadius:5,maxBarThickness:28},
+        {label:'Completados',data:done,backgroundColor:c.green,borderRadius:5,maxBarThickness:28}]},
+      options:{...weeklyChartMotionOptions(),responsive:true,maintainAspectRatio:false,plugins:{
+        legend:{display:true,position:'bottom',labels:{color:c.text,boxWidth:10,font:{size:10}}},
+        tooltip:{callbacks:{title:items=>weeks[items[0]?.dataIndex]||'',label:ctx=>ctx.dataset.label+': '+ctx.parsed.y}}},
+        scales:{x:{grid:{display:false},ticks:{color:c.text,maxRotation:0}},
+          y:{beginAtZero:true,ticks:{color:c.text,precision:0},grid:{color:c.grid}}}}
+    });return;
+  }
+  node.style.height='auto';
+  const max=Math.max(1,...planned);
+  node.innerHTML='<div class="weekly-fallback">'+weeks.map((w,i)=>`
+    <div class="weekly-fallback-row"><span>${esc(weekShort(w))}</span><span class="weekly-dual-track">
+      <b style="width:${100*planned[i]/max}%"></b><b class="done" style="width:${100*done[i]/max}%"></b>
+    </span><b>${done[i]}/${planned[i]}</b></div>`).join('')+'</div>';
+}
+function weeklyDisciplineChart(m){
+  const node=$('#weekly-discipline-chart'),c=weeklyChartOptions(),grouped=new Map();
+  for(const row of m.rows){
+    const name=row.team||'Sin disciplina';
+    if(!grouped.has(name))grouped.set(name,{name,done:0,progress:0,pending:0,unknown:0,total:0});
+    const g=grouped.get(name);g.total++;
+    // Los cierres históricos previos no guardaban categoría: no atribuir estados inventados.
+    const state=row.statusCategory || (row.done?'done':'unknown');
+    const key=['done','progress','pending'].includes(state)?state:'unknown';
+    g[key]++;
+  }
+  const items=[...grouped.values()].sort((a,b)=>b.total-a.total||a.name.localeCompare(b.name,'es')).slice(0,10);
+  if(!items.length){weeklyEmpty(node,'Sin registros para las disciplinas seleccionadas.');return;}
+  const categories=[
+    ['Completadas','done',c.green],['En progreso','progress',c.blue],
+    ['No iniciadas','pending',c.amber],['Sin detalle histórico','unknown',c.muted]
+  ];
+  node.style.height=Math.max(190,items.length*37+55)+'px';
+  if(typeof Chart!=='undefined'){
+    node.innerHTML='<canvas role="img" aria-label="Completadas, en progreso y no iniciadas por disciplina"></canvas>';
+    WEEKLY_CHARTS.discipline=new Chart(node.querySelector('canvas'),{
+      type:'bar',data:{labels:items.map(x=>x.name),datasets:categories.map(([label,key,color])=>({
+        label,data:items.map(x=>x[key]),backgroundColor:color,borderRadius:3,maxBarThickness:25}))},
+      options:{...weeklyChartMotionOptions(),indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{
+        legend:{display:true,position:'bottom',labels:{color:c.text,boxWidth:9,font:{size:9}}},
+        tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.parsed.x}}},
+        scales:{x:{stacked:true,beginAtZero:true,grid:{color:c.grid},ticks:{color:c.text,precision:0}},
+          y:{stacked:true,grid:{display:false},ticks:{color:c.text,font:{size:10},autoSkip:false}}}}
+    });return;
+  }
+  node.style.height='auto';
+  node.innerHTML='<div class="weekly-fallback">'+items.map(x=>`
+    <div class="weekly-fallback-row"><span title="${esc(x.name)}">${esc(x.name)}</span>
+      <span class="weekly-stacked-track">${categories.map(([,key,color])=>`<b style="width:${100*x[key]/x.total}%;background:${color}"></b>`).join('')}</span>
+      <b>${x.done}/${x.total}</b></div>`).join('')+'</div>';
+}
+function weeklyBacklogChart(){
+  const node=$('#weekly-backlog-chart'),c=weeklyChartOptions(),weeks=weeklyHistoryWeeks();
+  const m=weeks.map(weeklyMetrics);
+  const values=weeks.map((w,i)=>(weekEnd(w)<todayString()||Boolean(weeklySnapshot(w)))?m[i].remaining:null);
+  if(!m.some((x,i)=>x.planned&&values[i]!==null)){
+    weeklyEmpty(node,'El arrastre se muestra en semanas terminadas o archivadas con compromisos.');return;
+  }
+  node.style.height='215px';
+  if(typeof Chart!=='undefined'){
+    node.innerHTML='<canvas role="img" aria-label="Entregables pendientes al cierre de cada semana"></canvas>';
+    WEEKLY_CHARTS.backlog=new Chart(node.querySelector('canvas'),{
+      type:'bar',data:{labels:weeks.map(weekShort),datasets:[
+        {label:'Arrastre',data:values,backgroundColor:c.amber,borderRadius:5,maxBarThickness:30}]},
+      options:{...weeklyChartMotionOptions(),responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+        tooltip:{callbacks:{title:items=>weeks[items[0]?.dataIndex]||'',label:ctx=>'Pendientes: '+ctx.parsed.y}}},
+        scales:{x:{grid:{display:false},ticks:{color:c.text,maxRotation:0}},
+          y:{beginAtZero:true,grid:{color:c.grid},ticks:{color:c.text,precision:0}}}}
+    });return;
+  }
+  node.style.height='auto';
+  const max=Math.max(1,...values.filter(Number.isFinite));
+  node.innerHTML='<div class="weekly-fallback">'+weeks.map((w,i)=>`
+    <div class="weekly-fallback-row"><span>${esc(weekShort(w))}</span><span class="weekly-track">
+      <b style="width:${values[i]===null?0:100*values[i]/max}%;background:${c.amber}"></b></span>
+      <b>${values[i]===null?'-':values[i]}</b></div>`).join('')+'</div>';
+}
+function renderWeekly(forceMotion=false){
+  if(!$('#weekly-view')||currentView!=='weekly')return;
+  if(!WEEKLY_OPERATIONAL_PPC_VISIBLE)weeklyPpcSourceMode='gantt';
+  syncWeeklySubtab();
+  disposeWeeklyCharts();
+  document.querySelectorAll('.weekly-chart-card').forEach(card=>card.classList.remove('weekly-is-empty'));
+  updateWeeklyFilters();
+  $('#weekly-week').value=selectedWeek;
+  $('#weekly-period').textContent='Semana '+selectedWeek.split('-W')[1]+' · '+weekDatesText(selectedWeek);
+  renderWeeklyChips();
+  renderWeeklyTimeline();
+  const weekMetric=weeklyMetrics(selectedWeek);
+  const month=monthOfPpcWeek(selectedWeek);
+  const monthly=weeklyPpcMonthlyMode;
+  // PPC Gantt es la única fuente visible de cumplimiento.
+  // El indicador PPC Operativo permanece oculto y no participa en los KPI.
+  const useOperative=false;
+  const m=ganttPpcMetric(monthly?month:selectedWeek,monthly);
+  const previous=ganttPpcMetric(monthly?offsetPpcMonth(month,-1):
+    neighborWeek(selectedWeek,-1),monthly);
+  const compare=$('#weekly-compare').checked;
+  const delta=compare&&m.ppc!==null&&previous.ppc!==null?m.ppc-previous.ppc:null;
+  const status=$('#weekly-info'),overallWeek=weeklyRaw(selectedWeek);
+  status.className='weekly-status-strip '+(m.closed?'done':m.planned?'':'warn');
+  const comparison=delta===null?'':(delta>0?'↑ +':delta<0?'↓ −':'= ')+Math.abs(delta).toFixed(1)+
+    ' pp respecto a '+(monthly?ppcMonthlyLabel(previous.month):weekShort(previous.week));
+  const description=!useOperative?
+    (m.future?'Compromisos Gantt futuros: resultado no evaluable todavía.':
+      'Metas semanales según el avance diario del Gantt Excel · Todos los responsables incluidos, incluido Oriol.'):
+    monthly?
+      (month>todayString().slice(0,7)?'Mes futuro: programación provisional.':
+        month===todayString().slice(0,7)?'Mes en curso: resultados provisionales hasta el corte.':
+        'Mes finalizado: resultados verificados de sus semanas.'):
+      (m.closed?'Semana archivada: resultados fijados al cierre.':
+        m.planned?'Semana abierta: resultados operativos provisionales.':
+        'No hay compromisos de esta semana en el alcance seleccionado.');
+  const periodName=monthly?ppcMonthlyLabel(month):weekShort(selectedWeek);
+  const unscheduledNote=m.unscheduled?
+    '<span class="weekly-status-context"> · '+m.unscheduled+
+      ' tarea'+(m.unscheduled===1?'':'s')+' sin fecha límite fuera del PPC</span>':'';
+  status.innerHTML=`<span><b class="weekly-status-label">${!useOperative?'COMPROMISOS GANTT:':monthly?'COMPROMISOS DEL MES:':'COMPROMISOS REGISTRADOS:'}</b>
+    ${m.planned} compromiso${m.planned!==1?'s':''} semanal${m.planned!==1?'es':''} planificado${m.planned!==1?'s':''} para ${monthly?'este mes':'esta semana'}.
+    <span class="weekly-status-context">${esc(description)}</span>
+    ${unscheduledNote}
+    ${comparison?`<span class="weekly-status-comparison">${esc(comparison)}</span>`:''}
+    </span><span class="status-side">${esc(periodName)} — ${m.planned} compromisos</span>`;
+  // El cierre de semanas continúa siendo exclusivo de la semana seleccionada.
+  $('#weekly-close-btn').disabled=overallWeek.closed||!overallWeek.rows.length;
+  $('#weekly-close-btn').textContent=overallWeek.closed?'✓ Semana cerrada':'✓ Cerrar semana';
+  $('#weekly-kpis').setAttribute('aria-label',
+    (monthly?'Resultados KPI mensuales':'Resultados KPI semanales')+
+    (useOperative?' · PPC Operativo':' · PPC Gantt Excel'));
+  $('#weekly-kpis').innerHTML=[
+    weeklyKpiCard(useOperative?(monthly?'PPC OPERATIVO MENSUAL':'PPC OPERATIVO'):
+      (monthly?'PPC GANTT MENSUAL':'PPC GANTT'),pct(m.ppc),
+      m.ppc===null&&((monthly?month:selectedWeek)>(monthly?todayString().slice(0,7):isoWeekKey(new Date())))?
+        (monthly?'Mes aún no iniciado':'Semana aún no iniciada'):
+        m.ppc===null&&!m.future?'Sin avances reales verificados':'Cumplidas / comprometidas',
+      m.ppc!==null&&m.ppc<85?'warning':'positive',delta),
+    weeklyKpiCard('COMPROMETIDAS',m.planned,useOperative?
+      (monthly?'Plan mensual · '+(m.closed?'cerrado':'provisional'):
+        (m.closed?'Base archivada del período':'Plan semanal · provisional')):
+      'Metas semanales programadas en el Gantt'),
+    weeklyKpiCard('CUMPLIDAS',m.completed,!useOperative?'Metas semanales alcanzadas':'Cierres verificados hasta el corte','positive'),
+    weeklyKpiCard('PENDIENTES',m.remaining,!useOperative?'Compromisos semanales sin cumplir':'Sin cierre verificado al corte',m.remaining?'warning':''),
+    weeklyKpiCard('PUNTUALIDAD',pct(m.punctuality),m.punctualityBase?
+      m.onTime+'/'+m.punctualityBase+' evaluables · '+(m.observedUntil===todayString()?'incluye hoy':'al corte'):
+      'Sin plazos evaluables al corte',m.punctuality!==null&&m.punctuality<85?'warning':''),
+    weeklyKpiCard('VENCIDAS',m.delayed,m.dueAtCutoff+
+      (m.observedUntil===todayString()?' vencen hoy':' al corte')+' · '+m.lateCompleted+' cierres tardíos',
+      m.delayed?'danger':m.dueAtCutoff?'warning':'positive')
+  ].join('');
+  renderWeeklyPendingDetails(m,monthly);
+  if(weeklyInnerTab==='seguimiento'){
+    weeklyTrend(weekMetric);
+    // CNC del seguimiento: los incumplimientos provienen del PPC Gantt,
+    // no de compromisos operativos por fecha límite.
+    ganttPpcCncPanel(m);
+  }
+  renderWeeklyProjection(weekMetric);
+  scheduleBimMetricsAnimation('weekly',forceMotion);
+}
+function requestWeeklyClose(){
+  if(weeklySnapshot(selectedWeek)){toast('Esta semana ya fue cerrada');return;}
+  if(!weeklyRaw(selectedWeek).rows.length){toast('Asigna compromisos antes de cerrar la semana');return;}
+  showProtectedAuth('weekly');
+}
+function confirmWeeklyClose(){
+  const week=selectedWeek;
+  const base=weeklyRaw(week);
+  if(base.closed||!base.rows.length){toast('La semana no puede cerrarse');return;}
+  openConfirm('Cerrar control semanal',
+    `Se guardarán ${base.rows.length} compromisos de ${weekDatesText(week)}. Los indicadores de ese período quedarán congelados aunque edites las tareas. ¿Confirmar cierre?`,()=>{
+      if(weeklySnapshot(week))return;
+      const snapshot=weeklyRaw(week);
+      weeklySnapshots.push({week,createdAt:new Date().toISOString(),rows:snapshot.rows.map(t=>({...t}))});
+      persist();renderWeekly();toast(`Cierre ${week} guardado`);
+    });
+}
+updateWeeklyFilters();
+
+initTaskFilterMenus();
+renderAll();
+syncThemeButton();
+wireEvidenceControls();
+initBimNavIndicator();
+restoreBimViewOnReload();
+</script>
+</body>
+</html><script>(async()=>{
+// Cargar Supabase con rutas alternativas: algunos navegadores bloquean un CDN concreto.
+async function ensureSupabase(){
+  if(window.supabase?.createClient)return true;
+  for(const url of [
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
+    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'
+  ]){
+    try{
+      await new Promise((resolve,reject)=>{
+        const script=document.createElement('script');
+        script.src=url;script.async=true;
+        let settled=false;
+        const done=error=>{
+          if(settled)return;
+          settled=true;
+          clearTimeout(timeout);
+          script.onload=null;script.onerror=null;
+          if(error){script.remove();reject(error)}else resolve();
+        };
+        const timeout=setTimeout(()=>done(new Error('Tiempo de espera agotado para '+url)),7000);
+        script.onload=()=>done(null);
+        script.onerror=()=>done(new Error('No se cargó '+url));
+        document.head.appendChild(script);
+      });
+      if(window.supabase?.createClient)return true;
+    }catch(error){console.warn('CDN Supabase no disponible',error)}
+  }
+  return false;
+}
+cloudDataNotice('Conectando con Supabase y verificando tareas...');
+if(!await ensureSupabase()){
+  // Lectura de emergencia por PostgREST, sin depender del SDK/CDN.
+  // Modo estrictamente lectura: nunca sincronizar las tareas locales de prueba.
+  const api='https://qpotytogdeanlkmgswpm.supabase.co/rest/v1/';
+  const key='sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu';
+  async function restoreReadOnly(){
+    cloudDataNotice('Recuperando tareas directamente desde Supabase…');
+    try{
+      const headers={apikey:key,Accept:'application/json'};
+      async function get(table,query){
+        const response=await fetch(api+table+'?'+query,{headers,cache:'no-store',signal:AbortSignal.timeout(15000)});
+        if(!response.ok)throw new Error(table+': HTTP '+response.status+' '+(await response.text()).slice(0,180));
+        return response.json();
+      }
+      const [rows,cats,weeks]=await Promise.all([
+        get('bim_tasks','select=*&order=id'),
+        get('bim_catalogs','select=data&user_id=eq.00000000-0000-0000-0000-000000000001&limit=1'),
+        get('bim_weekly_snapshots','select=*&order=week')
+      ]);
+      if(!Array.isArray(rows)||!rows.length)throw new Error('La consulta no devolvió tareas; se conserva la vista actual.');
+      tasks=rows.map(r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,
+        priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,
+        support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',
+        createdAt:r.created_at||'',progress:+r.progress||0}));
+      if(cats[0]?.data)catalogs=normalizeCatalogs(cats[0].data);
+      weeklySnapshots=weeks.map(w=>({week:w.week,createdAt:w.created_at,rows:w.rows||[]}));
+      syncCatalogsWithTasks();renderAll();
+      cloudDataNotice('Datos recuperados: '+tasks.length+' tareas. Modo solo lectura: la conexión completa sigue pendiente.',true);
+    }catch(error){
+      console.error('Restauración directa Supabase',error);
+      cloudDataNotice('No se pudo recuperar la información: '+error.message,true);
+    }
+  }
+  window.bimCloudRetry=restoreReadOnly;
+  await restoreReadOnly();
+  return;
+}
+const d=supabase.createClient('https://qpotytogdeanlkmgswpm.supabase.co','sb_publishable_zKEil_SM25PKMikTmH3HAw_UwiOMylu');const sharedUser='00000000-0000-0000-0000-000000000001';let ready=0,ids=new Set(),lock=0,pendingSave=false,cloudEmptyGuard=false;const f=r=>({id:r.id,title:r.title,package:r.package,team:r.team,owner:r.owner,priority:r.priority,lod:r.lod||'',deadline:r.deadline||'',status:r.status,support:r.support||'',plannedWeek:r.planned_week||'',completedAt:r.completed_at||'',createdAt:r.created_at||'',progress:+r.progress||0}),g=t=>({user_id:sharedUser,id:t.id,title:t.title,package:t.package,team:t.team,owner:t.owner,priority:t.priority,lod:t.lod||null,deadline:t.deadline||null,status:t.status,support:t.support||null,planned_week:t.plannedWeek||null,completed_at:t.completedAt||null,progress:+t.progress||0});function check(r,label){if(r.error)throw new Error(label+': '+r.error.message)}
+let loading=false,revision=0,cloudFailures=0,nextLoadAfter=0;
+// Evita solicitudes sucesivas durante incidentes 503/504; los datos locales
+// continúan visibles, pero no se sustituyen sin una lectura confirmada.
+function cloudRetryDelay(){
+  return Math.min(120000,15000*Math.pow(2,Math.min(cloudFailures-1,3)));
+}
+
+/* Archivos binarios en Supabase Storage; únicamente referencias en bim_catalogs.data.
+   Depósito privado. Las políticas de acceso deben configurarse en Supabase SQL Editor. */
+const EVIDENCE_BUCKET='bim-evidencias';
+window.bimEvidenceCloud={
+  ready:()=>ready>0&&!cloudEmptyGuard,
+  async upload(path,file){
+    if(!ready||cloudEmptyGuard)throw Error('Supabase todavía no está disponible. Verifica la conexión.');
+    const {error}=await d.storage.from(EVIDENCE_BUCKET).upload(path,file,{
+      contentType:file.type,upsert:false,cacheControl:'3600'
+    });
+    if(error)throw Error(error.message+' (revisa el bucket '+EVIDENCE_BUCKET+')');
+  },
+  async url(path){
+    const {data,error}=await d.storage.from(EVIDENCE_BUCKET).createSignedUrl(path,60*30);
+    if(error||!data?.signedUrl)throw Error(error?.message||'No se pudo abrir imagen');
+    return data.signedUrl;
+  },
+  async download(path){
+    // Storage es independiente de la carga de tareas y catálogos.
+    const {data,error}=await d.storage.from(EVIDENCE_BUCKET).download(path);
+    if(error||!data)throw Error(error?.message||'No se descargó la fotografía');
+    return data;
+  },
+  async remove(paths){
+    if(!Array.isArray(paths)||!paths.length)return;
+    const {error}=await d.storage.from(EVIDENCE_BUCKET).remove(paths);
+    if(error)throw Error(error.message);
+  }
+};
+
+async function load(){
+  // El refresco automático no debe sobrescribir modificaciones locales aún no sincronizadas.
+  if(loading||lock||(ready&&pendingSave&&!cloudEmptyGuard))return;
+  loading=true;
+  const loadedAtRevision=revision;
+  const controller=new AbortController();
+  // Supabase puede quedar esperando la respuesta de PostgREST indefinidamente.
+  // Limitar la lectura a 18 s y mostrar el error, sin reescribir la base.
+  const timeout=setTimeout(()=>controller.abort(),18000);
+  try{
+    const [a,c,w]=await Promise.all([
+      d.from('bim_tasks').select('*').order('id').abortSignal(controller.signal),
+      d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1).abortSignal(controller.signal),
+      d.from('bim_weekly_snapshots').select('*').order('week').abortSignal(controller.signal)
+    ]);
+    check(a,'Tareas');check(c,'Catálogos');check(w,'Semanas');
+    cloudFailures=0;
+    nextLoadAfter=Date.now()+60000;
+    const cloudTasks=(a.data||[]).map(f);
+    // Una lista vacía es válida: se eliminaron intencionalmente tareas de prueba.
+    // Los backups son históricos y NO implican que deban existir tareas activas.
+    // Solo se protege una edición local aún sin sincronizar.
+    if(!cloudTasks.length&&tasks.length&&pendingSave){
+      cloudEmptyGuard=true;
+      ready=1;
+      cloudDataNotice('Hay cambios locales sin sincronizar; se conservan antes de aceptar una lista vacía.',true);
+      renderAll();
+      return;
+    }
+    cloudEmptyGuard=false;
+    cloudDataNotice('');
+    const cloudIds=new Set(cloudTasks.map(t=>t.id));
+    const cloudWeeks=(w.data||[]).map(x=>({week:x.week,createdAt:x.created_at,rows:x.rows||[]}));
+    if(loadedAtRevision!==revision){
+      // Una edición ocurrió durante la consulta: descartar respuesta obsoleta.
+      if(!ready){
+        const editedTasks=new Map(tasks.map(t=>[t.id,t]));
+        tasks=[...cloudTasks.map(t=>editedTasks.get(t.id)||t),...tasks.filter(t=>!cloudIds.has(t.id))];
+        const fromCloud=normalizeCatalogs(c.data?.[0]?.data||DEFAULT_CATALOGS);
+        const merged={};
+        for(const key of ['packages','owners','teams'])merged[key]=unique([...fromCloud[key],...catalogs[key]]);
+        merged.statuses=[...fromCloud.statuses,...catalogs.statuses].filter((x,i,all)=>
+          all.findIndex(y=>y.name.toLocaleLowerCase('es')===x.name.toLocaleLowerCase('es'))===i);
+        merged.analytics=mergeMonthlyAnalytics(fromCloud.analytics,catalogs.analytics);
+        merged.cncRecords=mergeCncRecords(fromCloud.cncRecords,catalogs.cncRecords);
+        merged.weeklyForecasts=mergeWeeklyForecasts(fromCloud.weeklyForecasts,catalogs.weeklyForecasts);
+        merged.ganttWeeklyProgress=mergeGanttWeeklyProgress(fromCloud.ganttWeeklyProgress,catalogs.ganttWeeklyProgress);
+        merged.ganttTaskProgressByTask=mergeGanttTaskProgress(fromCloud.ganttTaskProgressByTask,catalogs.ganttTaskProgressByTask);
+        merged.evidenceByTask=mergeEvidenceByTask(fromCloud.evidenceByTask,catalogs.evidenceByTask);
+        merged.ganttLinksByTask=mergeGanttLinks(fromCloud.ganttLinksByTask,catalogs.ganttLinksByTask);
+        merged.ganttViewerColumns=mergeGanttViewerColumns(fromCloud.ganttViewerColumns,catalogs.ganttViewerColumns);
+        merged.ganttSchedule=mergeGanttSchedule(fromCloud.ganttSchedule,catalogs.ganttSchedule);
+        merged.deletedBackupIds=mergeCloudBackupDeletedIds(fromCloud.deletedBackupIds,catalogs.deletedBackupIds);
+        merged.backups=mergeCloudBackupLists(fromCloud.backups,catalogs.backups,merged.deletedBackupIds);
+        catalogs=normalizeCatalogs(merged);
+        notifyGanttViewerColumns();
+        syncGanttRuntimeFromCatalogs();
+        ids=cloudIds;
+        weeklySnapshots=cloudWeeks;
+        syncCatalogsWithTasks();
+        ready=1;
+        if(captureMonthlyStats())persist();else renderAll();
+        if($('#settings-back')?.classList.contains('open')&&!settingsEditing)renderSettingsList();
+      }
+      return;
+    }
+    tasks=cloudTasks;ids=cloudIds;
+    if(c.data?.[0]?.data)catalogs=normalizeCatalogs(c.data[0].data);
+    notifyGanttViewerColumns();
+    syncGanttRuntimeFromCatalogs();
+    weeklySnapshots=cloudWeeks;
+    syncCatalogsWithTasks();ready=1;
+    if(captureMonthlyStats())persist();else renderAll();
+    if($('#settings-back')?.classList.contains('open')&&!settingsEditing)renderSettingsList();
+  }catch(err){
+    cloudFailures++;
+    const delay=cloudRetryDelay();
+    nextLoadAfter=Date.now()+delay;
+    const reason=controller.signal.aborted?'La consulta superó 18 segundos':
+      String(err.message||err);
+    cloudDataNotice('Supabase no respondió correctamente: '+reason+
+      '. Se conservan las tareas locales sin sobrescribirlas. Reintento automático en '+
+      Math.round(delay/1000)+' s, o pulsa Reintentar conexión.',true);
+    throw err;
+  }finally{
+    clearTimeout(timeout);
+    loading=false;
+    if(pendingSave&&ready&&!cloudEmptyGuard)save();
+  }
+}
+async function save(){
+  if(cloudEmptyGuard){
+    pendingSave=true;
+    cloudDataNotice('Escritura suspendida: Supabase devolvió 0 tareas y hay indicios de datos previos. No se reemplazarán.',true);
+    return;
+  }
+  if(!ready||lock){pendingSave=true;return;}
+  lock=1;
+  const savingRevision=revision;
+  pendingSave=false;
+  try{
+    const now=new Set(tasks.map(t=>t.id));
+    const gone=[...ids].filter(id=>!now.has(id));
+    const rows=tasks.map(g);
+    const catalogsToSave=normalizeCatalogs(catalogs);
+    // Mantener copias creadas desde otro navegador antes de sobrescribir data JSONB.
+    const latestCatalogs=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+    check(latestCatalogs,'Consultar copias en Supabase');
+    // Conservar fechas manuales de ingreso guardadas desde otro navegador
+    // antes de reemplazar el JSONB compartido. Gana la revisión más reciente.
+    catalogsToSave.analytics=mergeMonthlyAnalytics(
+      latestCatalogs.data?.[0]?.data?.analytics,catalogsToSave.analytics);
+    catalogs.analytics=catalogsToSave.analytics;
+    catalogsToSave.deletedBackupIds=mergeCloudBackupDeletedIds(
+      latestCatalogs.data?.[0]?.data?.deletedBackupIds,catalogsToSave.deletedBackupIds);
+    catalogs.deletedBackupIds=catalogsToSave.deletedBackupIds;
+    catalogsToSave.backups=mergeCloudBackupLists(
+      latestCatalogs.data?.[0]?.data?.backups,catalogsToSave.backups,catalogsToSave.deletedBackupIds);
+    catalogs.backups=catalogsToSave.backups;
+    // Evitar perder cambios de fecha ingresados desde otros dispositivos.
+    catalogsToSave.analytics=mergeMonthlyAnalytics(
+      latestCatalogs.data?.[0]?.data?.analytics,catalogsToSave.analytics);
+    catalogs.analytics=catalogsToSave.analytics;
+    catalogsToSave.cncRecords=mergeCncRecords(latestCatalogs.data?.[0]?.data?.cncRecords,catalogsToSave.cncRecords);
+    catalogs.cncRecords=catalogsToSave.cncRecords;
+    catalogsToSave.weeklyForecasts=mergeWeeklyForecasts(latestCatalogs.data?.[0]?.data?.weeklyForecasts,catalogsToSave.weeklyForecasts);
+    catalogs.weeklyForecasts=catalogsToSave.weeklyForecasts;
+    catalogsToSave.ganttWeeklyProgress=mergeGanttWeeklyProgress(
+      latestCatalogs.data?.[0]?.data?.ganttWeeklyProgress,catalogsToSave.ganttWeeklyProgress);
+    catalogs.ganttWeeklyProgress=catalogsToSave.ganttWeeklyProgress;
+    catalogsToSave.ganttTaskProgressByTask=mergeGanttTaskProgress(
+      latestCatalogs.data?.[0]?.data?.ganttTaskProgressByTask,catalogsToSave.ganttTaskProgressByTask);
+    catalogs.ganttTaskProgressByTask=catalogsToSave.ganttTaskProgressByTask;
+    catalogsToSave.evidenceByTask=mergeEvidenceByTask(latestCatalogs.data?.[0]?.data?.evidenceByTask,catalogsToSave.evidenceByTask);
+    catalogs.evidenceByTask=catalogsToSave.evidenceByTask;
+    catalogsToSave.ganttLinksByTask=mergeGanttLinks(
+      latestCatalogs.data?.[0]?.data?.ganttLinksByTask,catalogsToSave.ganttLinksByTask);
+    catalogs.ganttLinksByTask=catalogsToSave.ganttLinksByTask;
+    // La vista de columnas de otra sesión nunca se sustituye por una copia antigua.
+    catalogsToSave.ganttViewerColumns=mergeGanttViewerColumns(
+      latestCatalogs.data?.[0]?.data?.ganttViewerColumns,catalogsToSave.ganttViewerColumns);
+    const currentGanttColumns=JSON.stringify(catalogs.ganttViewerColumns?.hidden||[]);
+    catalogs.ganttViewerColumns=catalogsToSave.ganttViewerColumns;
+    if(currentGanttColumns!==JSON.stringify(catalogs.ganttViewerColumns.hidden))
+      notifyGanttViewerColumns();
+    catalogsToSave.ganttSchedule=mergeGanttSchedule(
+      latestCatalogs.data?.[0]?.data?.ganttSchedule,catalogsToSave.ganttSchedule);
+    catalogs.ganttSchedule=catalogsToSave.ganttSchedule;
+    syncGanttRuntimeFromCatalogs();
+    const snapshots=weeklySnapshots.map(x=>({user_id:sharedUser,week:x.week,rows:x.rows||[]}));
+    if(gone.length){
+      const deleted=await d.from('bim_tasks').delete().in('id',gone);
+      check(deleted,'Eliminar tareas');
+    }
+    if(rows.length){
+      const result=await d.from('bim_tasks').upsert(rows,{onConflict:'user_id,id'});
+      check(result,'Guardar tareas');
+    }
+    const savedCatalogs=await d.from('bim_catalogs').upsert({user_id:sharedUser,data:catalogsToSave});
+    check(savedCatalogs,'Guardar catálogos');
+    if(snapshots.length){
+      const savedWeeks=await d.from('bim_weekly_snapshots').upsert(snapshots,{onConflict:'user_id,week'});
+      check(savedWeeks,'Guardar semanas');
+    }
+    ids=now;
+    if(savingRevision===revision)toast('Cambios sincronizados en Supabase');
+  }catch(err){
+    // Evitar perder los cambios ante errores: reintento mediante el ciclo de sincronización.
+    pendingSave=true;
+    console.error(err);
+    toast('Error Supabase: '+err.message);
+  }finally{
+    lock=0;
+    // Guardar también las ediciones realizadas durante la petición anterior.
+    if(pendingSave&&savingRevision!==revision)save();
+  }
+}
+
+// El backup está en bim_catalogs.data.backups (JSONB Supabase existente).
+// No necesita nuevas tablas: incluye tareas, catálogos sin backups y cierres.
+function mergeCloudBackupLists(remote,local,deletedIds=[]){
+  const byId=new Map(),deleted=new Set(deletedIds);
+  for(const backup of [...(Array.isArray(remote)?remote:[]),...(Array.isArray(local)?local:[])]){
+    if(backup&&typeof backup.id==='string'&&!deleted.has(backup.id)&&backup.payload&&
+        Array.isArray(backup.payload.tasks)&&Array.isArray(backup.payload.weeklySnapshots))
+      byId.set(backup.id,backup);
+  }
+  return [...byId.values()].sort((a,b)=>String(a.createdAt).localeCompare(String(b.createdAt)));
+}
+async function backupCloudState(){
+  const [a,c,w]=await Promise.all([
+    d.from('bim_tasks').select('*').eq('user_id',sharedUser).order('id'),
+    d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1),
+    d.from('bim_weekly_snapshots').select('*').eq('user_id',sharedUser).order('week')
+  ]);
+  check(a,'Leer tareas del backup');check(c,'Leer catálogos del backup');check(w,'Leer semanas del backup');
+  return {tasks:a.data||[],catalogs:c.data?.[0]?.data||normalizeCatalogs(DEFAULT_CATALOGS),
+    weeklySnapshots:w.data||[]};
+}
+async function backupStoreCloudCopy(state,label){
+  // Cada snapshot es autocontenido y jamás lleva copias anidadas.
+  const {backups:ignored,deletedBackupIds:ignoredDeletes,...catalogSnapshot}=state.catalogs;
+  const createdAt=new Date().toISOString();
+  const id=createdAt+'-'+Math.random().toString(36).slice(2,9);
+  const copy={
+    id,createdAt,label,tasksCount:state.tasks.length,weeksCount:state.weeklySnapshots.length,
+    payload:{tasks:state.tasks,catalogs:catalogSnapshot,weeklySnapshots:state.weeklySnapshots}
+  };
+  const backups=mergeCloudBackupLists(state.catalogs.backups,[copy],state.catalogs.deletedBackupIds);
+  const result=await d.from('bim_catalogs').upsert({
+    user_id:sharedUser,data:{...state.catalogs,backups}
+  },{onConflict:'user_id'});
+  check(result,'Guardar backup en Supabase');
+  const verify=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+  check(verify,'Verificar backup en Supabase');
+  const recorded=verify.data?.[0]?.data?.backups;
+  if(!Array.isArray(recorded)||!recorded.some(x=>x.id===id))
+    throw Error('Supabase no confirmó el nuevo backup');
+  catalogs.deletedBackupIds=mergeCloudBackupDeletedIds(catalogs.deletedBackupIds,state.catalogs.deletedBackupIds);
+  catalogs.backups=mergeCloudBackupLists(catalogs.backups,recorded,catalogs.deletedBackupIds);
+  try{localStorage.setItem(CATALOG_KEY,JSON.stringify(catalogs))}catch(e){}
+  return copy;
+}
+function cloudBackupMetadata(x){
+  return {id:x.id,createdAt:x.createdAt,label:x.label,
+    tasksCount:x.tasksCount,weeksCount:x.weeksCount};
+}
+async function cloudBackupReady(){
+  if(!ready)throw Error('Espera a que terminen de cargar los datos de Supabase');
+  if(lock||loading)throw Error('Hay una sincronización en curso; vuelve a intentarlo');
+  if(pendingSave){
+    await save();
+    if(pendingSave||lock)throw Error('Existen cambios sin sincronizar; verifica la conexión antes de respaldar');
+  }
+}
+window.bimCloudBackups={
+  isRecoveryMode(){return cloudEmptyGuard},
+  async list(){
+    if(!ready)throw Error('Supabase todavía está cargando');
+    const res=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+    check(res,'Consultar backups');
+    const state=res.data?.[0]?.data||{};
+    return mergeCloudBackupLists(state.backups,[],state.deletedBackupIds)
+      .map(cloudBackupMetadata).reverse();
+  },
+  async create(){
+    await cloudBackupReady();
+    if(cloudEmptyGuard)throw Error('No se permite crear respaldos durante una alerta de datos vacíos');
+    lock=1;
+    try{
+      const cloud=await backupCloudState();
+      return cloudBackupMetadata(await backupStoreCloudCopy(cloud,'Backup manual'));
+    }finally{lock=0}
+  },
+  async remove(id){
+    await cloudBackupReady();
+    if(cloudEmptyGuard)throw Error('No se pueden eliminar backups durante una alerta de recuperación');
+    lock=1;
+    try{
+      const res=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+      check(res,'Consultar backup antes de eliminarlo');
+      const state=res.data?.[0]?.data;
+      if(!state||!Array.isArray(state.backups))throw Error('No se encontró el catálogo de backups');
+      const active=mergeCloudBackupLists(state.backups,[],state.deletedBackupIds);
+      if(!active.some(x=>x.id===id))throw Error('El backup seleccionado ya no existe');
+      const deletedBackupIds=mergeCloudBackupDeletedIds(state.deletedBackupIds,[id]);
+      const updated={...state,deletedBackupIds,
+        backups:mergeCloudBackupLists(state.backups,[],deletedBackupIds)};
+      // Solo el JSONB de copias. No escribir ni eliminar tareas ni semanas.
+      const written=await d.from('bim_catalogs').upsert({
+        user_id:sharedUser,data:updated
+      },{onConflict:'user_id'});
+      check(written,'Eliminar backup');
+      const verified=await d.from('bim_catalogs').select('data').eq('user_id',sharedUser).limit(1);
+      check(verified,'Verificar eliminación');
+      const recorded=verified.data?.[0]?.data||{};
+      if(!Array.isArray(recorded.deletedBackupIds)||
+         !recorded.deletedBackupIds.includes(id)||
+         (recorded.backups||[]).some(x=>x.id===id))
+        throw Error('Supabase no confirmó la eliminación del backup');
+      catalogs.deletedBackupIds=mergeCloudBackupDeletedIds(catalogs.deletedBackupIds,recorded.deletedBackupIds);
+      catalogs.backups=mergeCloudBackupLists(catalogs.backups,recorded.backups,catalogs.deletedBackupIds);
+      try{localStorage.setItem(CATALOG_KEY,JSON.stringify(catalogs))}catch(e){}
+      return {id};
+    }finally{lock=0}
+  },
+  async restore(id){
+    await cloudBackupReady();
+    lock=1;
+    try{
+      const current=await backupCloudState();
+      const backup=mergeCloudBackupLists(
+        current.catalogs.backups,[],current.catalogs.deletedBackupIds).find(x=>x.id===id);
+      if(!backup)throw Error('El backup elegido no existe en Supabase');
+      const data=backup.payload;
+      if(!Array.isArray(data.tasks)||!Array.isArray(data.weeklySnapshots)||
+        !data.catalogs||typeof data.catalogs!=='object')throw Error('Backup incompleto');
+      const validIds=rows=>rows.every(x=>x&&typeof x.id==='string'&&x.id.length>0&&x.user_id===sharedUser);
+      if(!validIds(data.tasks)||data.tasks.length!==new Set(data.tasks.map(x=>x.id)).size)
+        throw Error('El backup contiene tareas inválidas o duplicadas');
+      if(!data.weeklySnapshots.every(x=>x&&typeof x.week==='string'&&
+         /^\d{4}-W\d{2}$/.test(x.week)&&Array.isArray(x.rows)&&x.user_id===sharedUser))
+        throw Error('El backup contiene cierres semanales inválidos');
+      if(data.weeklySnapshots.length!==new Set(data.weeklySnapshots.map(x=>x.week)).size)
+        throw Error('El backup contiene semanas duplicadas');
+      // Punto de retorno: antes de cambiar cualquier registro crear otra copia en Supabase.
+      const rescue=await backupStoreCloudCopy(current,'Antes de restaurar '+id.slice(0,19));
+      const restoredTasks=data.tasks.map(x=>({...x,user_id:sharedUser}));
+      if(restoredTasks.length){
+        const res=await d.from('bim_tasks').upsert(restoredTasks,{onConflict:'user_id,id'});
+        check(res,'Restaurar tareas');
+      }
+      const retainedTasks=new Set(restoredTasks.map(x=>x.id));
+      const removedTasks=current.tasks.map(x=>x.id).filter(id=>!retainedTasks.has(id));
+      if(removedTasks.length){
+        const res=await d.from('bim_tasks').delete().eq('user_id',sharedUser).in('id',removedTasks);
+        check(res,'Eliminar tareas posteriores al backup');
+      }
+      const restoredWeeks=data.weeklySnapshots.map(x=>({...x,user_id:sharedUser}));
+      if(restoredWeeks.length){
+        const res=await d.from('bim_weekly_snapshots').upsert(restoredWeeks,{onConflict:'user_id,week'});
+        check(res,'Restaurar semanas');
+      }
+      const retainedWeeks=new Set(restoredWeeks.map(x=>x.week));
+      const removedWeeks=current.weeklySnapshots.map(x=>x.week).filter(week=>!retainedWeeks.has(week));
+      if(removedWeeks.length){
+        const res=await d.from('bim_weekly_snapshots').delete().eq('user_id',sharedUser).in('week',removedWeeks);
+        check(res,'Eliminar semanas posteriores al backup');
+      }
+      const cloudBackups=mergeCloudBackupLists(
+        current.catalogs.backups,[rescue],current.catalogs.deletedBackupIds);
+      const updatedCatalog=normalizeCatalogs({...data.catalogs,backups:cloudBackups,
+        deletedBackupIds:current.catalogs.deletedBackupIds});
+      const catalogResult=await d.from('bim_catalogs').upsert({
+        user_id:sharedUser,data:updatedCatalog
+      },{onConflict:'user_id'});
+      check(catalogResult,'Restaurar catálogos');
+      // Verificación real de datos antes de confirmar éxito y actualizar la UI.
+      const checkCloud=await backupCloudState();
+      if(checkCloud.tasks.length!==restoredTasks.length||
+         checkCloud.weeklySnapshots.length!==restoredWeeks.length||
+         checkCloud.tasks.some(t=>!retainedTasks.has(t.id))||
+         checkCloud.weeklySnapshots.some(x=>!retainedWeeks.has(x.week)))
+        throw Error('La verificación posterior no coincide con el backup; existe una copia preventiva');
+      const restoredTaskById=new Map(restoredTasks.map(t=>[t.id,t]));
+      const taskFields=['title','package','team','owner','priority','lod','deadline',
+        'status','support','planned_week','completed_at','progress'];
+      if(checkCloud.tasks.some(t=>taskFields.some(key=>
+           String(t[key]??'')!==String(restoredTaskById.get(t.id)?.[key]??''))))
+        throw Error('La validación del contenido restaurado de tareas falló');
+      const restoredWeekById=new Map(restoredWeeks.map(x=>[x.week,x]));
+      if(checkCloud.weeklySnapshots.some(x=>
+           JSON.stringify(x.rows||[])!==JSON.stringify(restoredWeekById.get(x.week)?.rows||[])))
+        throw Error('La validación de los cierres semanales restaurados falló');
+      tasks=checkCloud.tasks.map(f);
+      ids=new Set(tasks.map(x=>x.id));
+      weeklySnapshots=checkCloud.weeklySnapshots.map(x=>({
+        week:x.week,createdAt:x.created_at,rows:x.rows||[]
+      }));
+      catalogs=normalizeCatalogs(checkCloud.catalogs);
+      pendingSave=false;
+      cloudEmptyGuard=false;
+      cloudDataNotice('');
+      revision++;
+      oldPersist(); // Sólo actualiza almacenamiento y vistas locales; no sobreescribe Supabase.
+      return cloudBackupMetadata(backup);
+    }finally{lock=0}
+  }
+};
+
+const oldPersist=persist;
+persist=()=>{revision++;oldPersist();pendingSave=true;save();};
+window.bimCloudRetry=()=>{
+  if(lock||loading)return;
+  nextLoadAfter=0;
+  cloudDataNotice('Conectando con Supabase y verificando tareas...');
+  return load().catch(err=>console.warn('Conexión Supabase:',err));
+};
+cloudDataNotice('Conectando con Supabase y verificando tareas...');
+window.bimCloudRetry();
+// Refresco normal cada 60 s; ante 503/504 usar espera progresiva
+// para no saturar las tres APIs con solicitudes cada 10 segundos.
+setInterval(()=>{
+  if(lock||loading)return;
+  if(pendingSave&&ready&&!cloudEmptyGuard){save();return;}
+  if(Date.now()<nextLoadAfter)return;
+  load().catch(err=>console.warn('Reintento Supabase:',err));
+},10000);
+})();</script>
