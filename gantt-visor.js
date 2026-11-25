@@ -1401,7 +1401,7 @@ function buildActividadesBimTemplateIntoWorkbook(wb){
   const baseStartUtc = isoToUtcDate(baseStartIso) || new Date(Date.UTC(2026, 10, 1));
   const plazoDias = Math.max(allDates.length || 30, 1);
   const calStartCol = 13; // Columna M
-  const calSpan = Math.max(plazoDias + 15, 45);
+  const calSpan = plazoDias;
   const calEndCol = calStartCol + calSpan - 1;
   const helperCol = calEndCol + 1; // Columna oculta auxiliar (equiv. a GI)
   const lastCalL = excelColLetter(calEndCol);
