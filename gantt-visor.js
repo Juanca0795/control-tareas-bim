@@ -19,7 +19,7 @@ html[data-theme="light"] .vgg-source-badge.live{background:#ecfdf5;color:#047857
 .vgg-header-actions button:hover{border-color:var(--accent-blue,#5da7ff);background:var(--bg-hover,#1a2333)}
 .vgg-header-actions button[data-vgg-action="new-activity"]{background:#d71920;border-color:#d71920;color:#fff}
 .vgg-header-actions button[data-vgg-action="new-activity"]:hover{background:#b51218;border-color:#b51218}
-.vgg-header-actions button[data-vgg-action="open-config"]{border-color:rgba(148,163,184,.45);color:#e2e8f0}
+.vgg-header-actions button[data-vgg-action="open-config"]{width:32px;padding:0;justify-content:center;font-size:15px;border-color:rgba(148,163,184,.45);color:#e2e8f0}
 html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-config"]{color:#1e293b}
 .vgg-header-actions button[data-vgg-action="open-excel-sync"]{border-color:rgba(16,185,129,.45);color:#34d399;background:rgba(16,185,129,.12)}
 .vgg-header-actions button[data-vgg-action="open-excel-sync"]:hover{background:rgba(16,185,129,.22)}
@@ -2710,7 +2710,7 @@ function open(){
       '<button type="button" id="vgg-header-clear-filters" data-vgg-action="reset-filters">Quitar filtros</button>'+
       '<button type="button" data-vgg-action="new-activity" title="Agregar nueva actividad al cronograma">+ Nueva actividad</button>'+
       '<button type="button" data-vgg-action="new-group" title="Crear nuevo grupo de actividades">+ Grupo</button>'+
-      '<button type="button" data-vgg-action="open-config" title="Configurar rango de días, vacaciones, feriados y fines de semana">⚙ Configuración</button>'+
+      '<button type="button" data-vgg-action="open-config" aria-label="Configuración del cronograma" title="Configurar rango de días, vacaciones, feriados y fines de semana">⚙</button>'+
       '<button type="button" id="vgg-excel-sync-btn" data-vgg-action="open-excel-sync">🔒 Actualizar Excel</button>'+
       '<button type="button" data-vgg-action="today" title="Desplazar el cronograma hasta la columna de hoy">Ir a Hoy</button>'+
       '<button type="button" data-vgg-action="expand">Pantalla completa</button>'+
