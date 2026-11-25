@@ -6325,6 +6325,16 @@ html[data-theme="light"] .card {
   font: 700 9.5px var(--font-mono);
   fill: var(--ink-secondary);
 }
+.health-gauge-val {
+  font: 800 32px var(--font-mono);
+  fill: var(--ink-primary);
+  font-variant-numeric: tabular-nums;
+}
+.health-gauge-sub {
+  font: 700 8.5px var(--font-sans);
+  fill: var(--ink-muted);
+  letter-spacing: .07em;
+}
 #dashboard-view .health-ring.health-gauge .health-gauge-center {
   position: absolute !important;
   inset: auto 0 18px 0 !important;
@@ -10129,8 +10139,9 @@ function renderOperationalHealth(rows){
           <text x="34" y="146" text-anchor="middle" class="health-gauge-scale">0%</text>
           <text x="130" y="18" text-anchor="middle" class="health-gauge-scale">50%</text>
           <text x="226" y="146" text-anchor="middle" class="health-gauge-scale">100%</text>
+          <text x="130" y="108" text-anchor="middle" class="health-gauge-val">${percent.toFixed(1)}%</text>
+          <text x="130" y="125" text-anchor="middle" class="health-gauge-sub">SIN ALERTA CRÍTICA</text>
         </svg>
-        <div class="health-ring-center health-gauge-center"><strong>${percent.toFixed(1)}%</strong><small>SIN ALERTA CRÍTICA</small></div>
       </div>
       <strong class="health-caption${percent<85?' health-needs-attention':''}">${safe} de ${rows.length} sin vencimiento crítico verificado</strong>
     </div>
