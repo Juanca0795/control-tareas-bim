@@ -379,8 +379,9 @@ function applyDayWidth(nextW, anchorClientX){
       cols[i].style.width = clamped + 'px';
     }
     if(scroll && anchorRatio !== null){
-      scroll.scrollLeft = Math.max(0, anchorRatio * scroll.scrollWidth - offsetInView);
+      scroll.scrollLeft = Math.max(0, anchorRatio * table.offsetWidth - offsetInView);
     }
+    drawDependencyLinksSvg();
     requestAnimationFrame(drawDependencyLinksSvg);
   }
 }
@@ -1019,14 +1020,17 @@ function drawDependencyLinksSvg(){
   if(!svg || !scroll || !table) return;
   if(!showLinksP6 || !table.tBodies[0]?.rows.length){
     svg.innerHTML = '';
+    svg.setAttribute('width', '0');
+    svg.setAttribute('height', '0');
     return;
   }
 
-  const scrollRect = scroll.getBoundingClientRect();
-  const sLeft = scroll.scrollLeft;
-  const sTop = scroll.scrollTop;
-  const fullW = Math.max(table.scrollWidth, scroll.clientWidth);
-  const fullH = Math.max(table.scrollHeight, scroll.clientHeight);
+  // Reiniciar dimensiones del SVG antes de medir para que no infle el ancho del scroll al reducir zoom
+  svg.setAttribute('width', '0');
+  svg.setAttribute('height', '0');
+  const tableRect = table.getBoundingClientRect();
+  const fullW = Math.max(table.offsetWidth, table.scrollWidth);
+  const fullH = Math.max(table.offsetHeight, table.scrollHeight);
   svg.setAttribute('width', String(fullW));
   svg.setAttribute('height', String(fullH));
   svg.setAttribute('viewBox', '0 0 ' + fullW + ' ' + fullH);
@@ -1042,9 +1046,9 @@ function drawDependencyLinksSvg(){
     if(!bars.length) return;
     const first = bars[0].getBoundingClientRect();
     const last = bars[bars.length - 1].getBoundingClientRect();
-    const startX = (first.left - scrollRect.left) + sLeft;
-    const endX = (last.right - scrollRect.left) + sLeft;
-    const midY = (first.top + first.height / 2 - scrollRect.top) + sTop;
+    const startX = first.left - tableRect.left;
+    const endX = last.right - tableRect.left;
+    const midY = (first.top + first.height / 2) - tableRect.top;
     const box = { id, row, startX, endX, midY };
     boxes.set(id, box);
     visibleActs.push(box);
