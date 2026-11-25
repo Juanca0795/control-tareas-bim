@@ -7209,12 +7209,32 @@ function normalizeGanttConfig(input){
   const updatedAt=typeof input?.updatedAt==='string'&&Number.isFinite(Date.parse(input.updatedAt))?input.updatedAt:'';
   return {start,plazo,holidays,nonWorkingByOwner,workingWeekends,updatedAt};
 }
+function normalizeGanttBaseline(input){
+  const savedAt=typeof input?.savedAt==='string'&&Number.isFinite(Date.parse(input.savedAt))?input.savedAt:'';
+  const label=String(input?.label||'').trim().slice(0,120);
+  const activities={};
+  if(input?.activities&&typeof input.activities==='object'){
+    for(const [id,b] of Object.entries(input.activities)){
+      if(!id||!b||typeof b!=='object')continue;
+      const start=String(b.start||'').slice(0,10);
+      const end=String(b.end||'').slice(0,10);
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end))continue;
+      activities[String(id).slice(0,40)]={
+        start,
+        end:end<start?start:end,
+        duration:Number.isFinite(Number(b.duration))?Number(b.duration):1
+      };
+    }
+  }
+  return {savedAt,label,activities};
+}
 function normalizeGanttSchedule(input){
   const out={
     initialized:Boolean(input?.initialized),
     updatedAt:typeof input?.updatedAt==='string'&&Number.isFinite(Date.parse(input.updatedAt))?input.updatedAt:'',
     nextSeq:Number.isInteger(Number(input?.nextSeq))&&Number(input.nextSeq)>=55?Number(input.nextSeq):55,
     config:normalizeGanttConfig(input?.config),
+    baseline:normalizeGanttBaseline(input?.baseline),
     activities:{},
     groups:{},
     deletedActivityIds:{},
@@ -7365,11 +7385,14 @@ function mergeGanttSchedule(remote,local){
   const updatedAt=[a.updatedAt,b.updatedAt].filter(Boolean).sort().pop()||'';
   const cfgA=normalizeGanttConfig(a.config),cfgB=normalizeGanttConfig(b.config);
   const config=(cfgB.updatedAt&&(!cfgA.updatedAt||cfgB.updatedAt>=cfgA.updatedAt))?cfgB:cfgA;
+  const baseA=normalizeGanttBaseline(a.baseline),baseB=normalizeGanttBaseline(b.baseline);
+  const baseline=(baseB.savedAt&&(!baseA.savedAt||baseB.savedAt>=baseA.savedAt))?baseB:baseA;
   return normalizeGanttSchedule({
     initialized:true,
     updatedAt,
     nextSeq:Math.max(a.nextSeq||55,b.nextSeq||55),
     config,
+    baseline,
     activities,
     groups,
     deletedActivityIds,
@@ -7609,11 +7632,13 @@ function syncGanttRuntimeFromCatalogs(){
     target.holidays={...holidays};
     target.nonWorkingByOwner=JSON.parse(JSON.stringify(cfg.nonWorkingByOwner||{}));
     target.workingWeekends={...workingWknd};
+    target.baseline=normalizeGanttBaseline(sched.baseline);
   }
   if(!sched||!sched.initialized){
     target.holidays={...(base.holidays||{})};
     target.nonWorkingByOwner=JSON.parse(JSON.stringify(base.nonWorkingByOwner||{}));
     target.workingWeekends={};
+    target.baseline=normalizeGanttBaseline(null);
   }
   target.start=nextStart;
   target.end=nextEnd;
@@ -7698,6 +7723,108 @@ function renumberGanttExcelIds(sched,now,excludeNewId=''){
     }
   });
 }
+function isGanttWorkingDayIso(iso,owner,cfg){
+  if(!iso||!/^\d{4}-\d{2}-\d{2}$/.test(iso))return false;
+  const d=new Date(iso+'T12:00:00Z');
+  const dow=d.getUTCDay();
+  const isWknd=(dow===0||dow===6)&&!(cfg?.workingWeekends?.[iso]);
+  if(isWknd)return false;
+  if(cfg?.holidays?.[iso])return false;
+  if(owner&&cfg?.nonWorkingByOwner?.[owner]?.[iso])return false;
+  return true;
+}
+function shiftGanttIso(iso,deltaDays){
+  const t=Date.parse(iso+'T00:00:00Z');
+  if(!Number.isFinite(t))return iso;
+  return new Date(t+deltaDays*86400000).toISOString().slice(0,10);
+}
+function nextGanttWorkingIso(iso,owner,cfg,dir=1){
+  let cur=iso;
+  for(let g=0;g<90;g++){
+    if(isGanttWorkingDayIso(cur,owner,cfg))return cur;
+    cur=shiftGanttIso(cur,dir);
+  }
+  return iso;
+}
+function endByWorkingDuration(startIso,workDays,owner,cfg){
+  const need=Math.max(1,Number(workDays)||1);
+  let cur=nextGanttWorkingIso(startIso,owner,cfg,1),count=1;
+  for(let g=0;count<need&&g<240;g++){
+    cur=shiftGanttIso(cur,1);
+    if(isGanttWorkingDayIso(cur,owner,cfg))count++;
+  }
+  return cur;
+}
+function startByWorkingDuration(endIso,workDays,owner,cfg){
+  const need=Math.max(1,Number(workDays)||1);
+  let cur=nextGanttWorkingIso(endIso,owner,cfg,-1),count=1;
+  for(let g=0;count<need&&g<240;g++){
+    cur=shiftGanttIso(cur,-1);
+    if(isGanttWorkingDayIso(cur,owner,cfg))count++;
+  }
+  return cur;
+}
+function countWorkingDaysInSpan(startIso,endIso,owner,cfg){
+  if(!startIso||!endIso||endIso<startIso)return 1;
+  let cur=startIso,cnt=0;
+  for(let g=0;cur<=endIso&&g<240;g++){
+    if(isGanttWorkingDayIso(cur,owner,cfg))cnt++;
+    cur=shiftGanttIso(cur,1);
+  }
+  return Math.max(1,cnt);
+}
+function runGanttAutoSchedule(sched,now,anchorIds=new Set()){
+  const cfg=normalizeGanttConfig(sched.config);
+  const ordered=[];
+  for(const ownerName of orderedOwnersOfSchedule(sched)){
+    for(const grp of orderedGroupsForOwner(sched,ownerName)){
+      ordered.push(...orderedActivitiesInGroup(sched,ownerName,grp.title));
+    }
+  }
+  const byCode=new Map();
+  ordered.forEach(a=>{
+    if(a.id)byCode.set(String(a.id).toUpperCase(),a);
+    if(a.excelId)byCode.set(String(a.excelId).toUpperCase(),a);
+  });
+  let changed=0;
+  for(const act of ordered){
+    if(anchorIds.has(act.id))continue;
+    const predTokens=String(act.predecessor||'').toUpperCase().match(/[A-Z]+\d+/g)||[];
+    const preds=predTokens.map(tok=>byCode.get(tok)).filter(p=>p&&p.id!==act.id);
+    if(!preds.length)continue;
+    const dep=String(act.dependency||'FC').trim().toUpperCase()||'FC';
+    const lag=Number.isFinite(Number(act.lag))?Number(act.lag):0;
+    const workDur=Math.max(1,Object.keys(act.percentByDay||{}).length||countWorkingDaysInSpan(act.start,act.end,act.owner,cfg));
+    let newStart=act.start,newEnd=act.end;
+    if(dep==='CC'||dep==='SS'){
+      const maxStart=preds.map(p=>p.start).sort().pop();
+      newStart=nextGanttWorkingIso(shiftGanttIso(maxStart,lag),act.owner,cfg,1);
+      newEnd=endByWorkingDuration(newStart,workDur,act.owner,cfg);
+    }else if(dep==='FF'){
+      const maxEnd=preds.map(p=>p.end).sort().pop();
+      newEnd=nextGanttWorkingIso(shiftGanttIso(maxEnd,lag),act.owner,cfg,-1);
+      newStart=startByWorkingDuration(newEnd,workDur,act.owner,cfg);
+    }else if(dep==='CF'||dep==='SF'){
+      const maxStart=preds.map(p=>p.start).sort().pop();
+      newEnd=nextGanttWorkingIso(shiftGanttIso(maxStart,lag),act.owner,cfg,-1);
+      newStart=startByWorkingDuration(newEnd,workDur,act.owner,cfg);
+    }else{
+      const maxEnd=preds.map(p=>p.end).sort().pop();
+      newStart=nextGanttWorkingIso(shiftGanttIso(maxEnd,1+lag),act.owner,cfg,1);
+      newEnd=endByWorkingDuration(newStart,workDur,act.owner,cfg);
+    }
+    if(newStart!==act.start||newEnd!==act.end){
+      act.start=newStart;
+      act.end=newEnd<newStart?newStart:newEnd;
+      act.duration=calcGanttDaysInclusive(act.start,act.end)||1;
+      act.percentByDay=computeAutoPercentByDay(act.owner,act.start,act.end,cfg);
+      act.updatedAt=now;
+      changed++;
+    }
+  }
+  return changed;
+}
+
 window.bimGanttScheduleStore={
   ensureInitialized(){
     if(!catalogs.ganttSchedule||!catalogs.ganttSchedule.initialized){
@@ -7977,6 +8104,60 @@ window.bimGanttScheduleStore={
     syncGanttRuntimeFromCatalogs();
     persist();
     return normalized;
+  },
+  autoSchedule(){
+    const sched=this.ensureInitialized();
+    const now=new Date().toISOString();
+    const changed=runGanttAutoSchedule(sched,now);
+    if(changed>0){
+      sched.updatedAt=now;
+      syncGanttRuntimeFromCatalogs();
+      persist();
+    }
+    return changed;
+  },
+  moveOrResizeActivity(id,newStart,newEnd,opts={}){
+    const sched=this.ensureInitialized();
+    const act=sched.activities[id];
+    if(!act||!/^\d{4}-\d{2}-\d{2}$/.test(newStart)||!/^\d{4}-\d{2}-\d{2}$/.test(newEnd))return null;
+    const safeEnd=newEnd<newStart?newStart:newEnd;
+    const now=new Date().toISOString();
+    const cfg=normalizeGanttConfig(sched.config);
+    act.start=newStart;
+    act.end=safeEnd;
+    act.duration=calcGanttDaysInclusive(newStart,safeEnd)||1;
+    act.percentByDay=computeAutoPercentByDay(act.owner,newStart,safeEnd,cfg);
+    act.updatedAt=now;
+    let cascaded=0;
+    if(opts.cascade!==false){
+      cascaded=runGanttAutoSchedule(sched,now,new Set([id]));
+    }
+    sched.updatedAt=now;
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return {activity:act,cascaded};
+  },
+  saveBaseline(label='Línea Base'){
+    const sched=this.ensureInitialized();
+    const now=new Date().toISOString();
+    const activities={};
+    Object.values(sched.activities||{}).forEach(a=>{
+      activities[a.id]={start:a.start,end:a.end,duration:a.duration};
+    });
+    sched.baseline=normalizeGanttBaseline({savedAt:now,label,activities});
+    sched.updatedAt=now;
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return sched.baseline;
+  },
+  clearBaseline(){
+    const sched=this.ensureInitialized();
+    const now=new Date().toISOString();
+    sched.baseline=normalizeGanttBaseline(null);
+    sched.updatedAt=now;
+    syncGanttRuntimeFromCatalogs();
+    persist();
+    return true;
   }
 };
 let settingsTab = 'packages';

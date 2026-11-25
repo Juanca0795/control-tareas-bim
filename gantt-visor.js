@@ -124,6 +124,22 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-
 .vgg-bar-seg.nonwork{background:#f6c8ce;box-shadow:none}
 #bim-gantt-modal.vgg-dark-table .vgg-bar-seg.nonwork{background:rgba(244,63,94,.28);box-shadow:none}
 .vgg-bar-seg.culminated{box-shadow:none}
+.vgg-bar-seg.critical:not(.nonwork){box-shadow:0 0 0 1.5px #ef4444,0 2px 6px rgba(239,68,68,.38);background:linear-gradient(180deg,#ef4444 0%,#dc2626 100%)}
+.vgg-bar-seg.critical.done:not(.nonwork){box-shadow:0 0 0 1.5px #ef4444}
+.vgg-bar-seg.draggable{cursor:grab}
+.vgg-bar-seg.draggable:active{cursor:grabbing}
+.vgg-bar-handle{position:absolute;top:0;bottom:0;width:6px;z-index:6;cursor:ew-resize}
+.vgg-bar-handle.left{left:0}
+.vgg-bar-handle.right{right:0}
+.vgg-bar-handle:hover{background:rgba(255,255,255,.35)}
+.vgg-baseline-seg{position:absolute;left:0;right:-1px;bottom:1px;height:3.5px;z-index:3;background:#f59e0b;opacity:.85;pointer-events:none}
+.vgg-baseline-seg.bl-start{left:2px;border-top-left-radius:2px;border-bottom-left-radius:2px}
+.vgg-baseline-seg.bl-end{right:2px;border-top-right-radius:2px;border-bottom-right-radius:2px}
+.vgg-overload-dot{position:absolute;top:1px;right:1px;width:6px;height:6px;border-radius:50%;background:#f59e0b;box-shadow:0 0 0 1px rgba(0,0,0,.45);z-index:7;pointer-events:none}
+.vgg-drag-pill{position:fixed;z-index:100030;padding:5px 10px;border-radius:8px;background:#0f172a;color:#f8fafc;border:1px solid #3b82f6;font:700 11px/1.2 'JetBrains Mono',Inter,sans-serif;box-shadow:0 10px 28px rgba(0,0,0,.5);pointer-events:none;white-space:nowrap}
+.vgg-drag-pill[hidden]{display:none!important}
+.vgg-tool-btn.warn{border-color:rgba(245,158,11,.5);color:#fbbf24;background:rgba(245,158,11,.12)}
+html[data-theme="light"] .vgg-tool-btn.warn{color:#b45309;background:#fffbeb;border-color:#fcd34d}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start){border-left-color:transparent!important}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled:not(.bar-start) .vgg-bar-seg{margin-left:-1px;width:calc(100% + 2px)}
 .vgg-table tbody td.vgg-day.vgg-week-start.scheduled.bar-end:not(.bar-start) .vgg-bar-seg{width:calc(100% - 1px)}
@@ -319,11 +335,16 @@ try { localStorage.removeItem('bim-gantt-excel-override-v1'); } catch {}
 const STORAGE_ZOOM_KEY = 'bim-gantt-zoom-v1';
 const STORAGE_DARK_TABLE_KEY = 'bim-gantt-dark-table-v1';
 const STORAGE_LINKS_KEY = 'bim-gantt-show-links-v1';
+const STORAGE_CPM_KEY = 'bim-gantt-show-cpm-v1';
+const STORAGE_BASELINE_KEY = 'bim-gantt-show-baseline-v1';
 const ZOOM_WIDTHS = { compact: 22, normal: 30, wide: 42 };
 
 const st = { owner:'', group:'', week:'', status:'', search:'', selected:'', zoom: readPref(STORAGE_ZOOM_KEY, 'normal') };
 let darkTableMode = readPref(STORAGE_DARK_TABLE_KEY, '0') === '1';
 let showLinksP6 = readPref(STORAGE_LINKS_KEY, '1') !== '0';
+let showCpm = readPref(STORAGE_CPM_KEY, '0') === '1';
+let showBaseline = readPref(STORAGE_BASELINE_KEY, '1') !== '0';
+let cpmState = { byId: new Map(), overload: new Map(), overloadList: [] };
 let overlay = null, bodyOverflow = '', lastTrigger = null;
 const hiddenColumns = new Set();
 const collapsedOwners = new Set();
@@ -479,6 +500,106 @@ function findDependencies(activityRow){
   return { predecessors, successors };
 }
 
+/* Motor CPM (Ruta Crítica + Holguras) y detector de sobrecarga por responsable */
+function computeCpmAndOverload(){
+  const S = getSource();
+  const acts = S.rows.filter(r => r.kind === 'activity' && r.start && r.end);
+  const byId = new Map();
+  const codeMap = new Map();
+  const msDay = 86400000;
+  const toNum = iso => Math.round(Date.parse(iso + 'T00:00:00Z') / msDay);
+
+  acts.forEach(a => {
+    const es = toNum(a.start), ef = toNum(a.end);
+    const info = {
+      id: a.id, act: a, es, ef, dur: Math.max(0, ef - es),
+      ls: es, lf: ef, totalFloat: 0, isCritical: false, isNearCritical: false,
+      preds: [], succs: []
+    };
+    byId.set(a.id, info);
+    if(a.id) codeMap.set(String(a.id).toUpperCase(), a.id);
+    if(a.excelId) codeMap.set(String(a.excelId).toUpperCase(), a.id);
+  });
+
+  acts.forEach(a => {
+    const node = byId.get(a.id);
+    const dep = String(a.dependency || 'FC').trim().toUpperCase() || 'FC';
+    const lag = Number.isFinite(Number(a.lag)) ? Number(a.lag) : 0;
+    parsePredecessorCodes(a.predecessor).forEach(code => {
+      const pid = codeMap.get(code);
+      if(!pid || pid === a.id || !byId.has(pid)) return;
+      const pNode = byId.get(pid);
+      node.preds.push({ id: pid, dep, lag });
+      pNode.succs.push({ id: a.id, dep, lag });
+    });
+  });
+
+  const projectEnd = acts.length ? Math.max(...[...byId.values()].map(n => n.ef)) : 0;
+  byId.forEach(n => { n.lf = projectEnd; n.ls = projectEnd - n.dur; });
+
+  // Backward pass iterativo (resiste cualquier orden de filas)
+  for(let pass = 0; pass < Math.min(acts.length + 2, 40); pass++){
+    let updated = false;
+    byId.forEach(n => {
+      if(!n.succs.length) return;
+      let minLf = projectEnd;
+      for(const edge of n.succs){
+        const s = byId.get(edge.id);
+        if(!s) continue;
+        let candLf = projectEnd;
+        if(edge.dep === 'CC' || edge.dep === 'SS'){
+          candLf = (s.ls - edge.lag) + n.dur;
+        } else if(edge.dep === 'FF'){
+          candLf = s.lf - edge.lag;
+        } else if(edge.dep === 'CF' || edge.dep === 'SF'){
+          candLf = (s.lf - edge.lag) + n.dur;
+        } else {
+          candLf = s.ls - 1 - edge.lag;
+        }
+        if(candLf < minLf) minLf = candLf;
+      }
+      if(minLf < n.lf){
+        n.lf = minLf;
+        n.ls = minLf - n.dur;
+        updated = true;
+      }
+    });
+    if(!updated) break;
+  }
+
+  byId.forEach(n => {
+    n.totalFloat = Math.max(0, n.ls - n.es);
+    n.isCritical = n.totalFloat <= 0;
+    n.isNearCritical = n.totalFloat > 0 && n.totalFloat <= 2;
+  });
+
+  // Detector de sobreasignación por (responsable, fecha laborable)
+  const overload = new Map(); // key = owner|iso -> [acts]
+  const allD = getAllDates();
+  acts.forEach(a => {
+    if(!a.owner) return;
+    for(const iso of allD){
+      if(iso < a.start || iso > a.end) continue;
+      if(dayShare(a, iso) > 0){
+        const k = a.owner + '|' + iso;
+        if(!overload.has(k)) overload.set(k, []);
+        overload.get(k).push(a);
+      }
+    }
+  });
+  const overloadList = [];
+  overload.forEach((list, k) => {
+    if(list.length >= 2){
+      const [owner, iso] = k.split('|');
+      overloadList.push({ owner, iso, acts: list });
+    }
+  });
+  overloadList.sort((a,b) => a.iso.localeCompare(b.iso) || a.owner.localeCompare(b.owner, 'es'));
+
+  cpmState = { byId, overload, overloadList };
+  return cpmState;
+}
+
 function visibleActivities(){
   const allDates = getAllDates();
   return getSource().rows.filter(row => {
@@ -576,12 +697,22 @@ function dayBar(row, d, state, days, idx){
     const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
     return '<td class="'+cls+' scheduled group'+segCls+'"'+dateAttr+'><span class="vgg-group-bar"></span></td>';
   }
-  if(!row.start || !row.end || d < row.start || d > row.end) return '<td class="'+cls+'"'+dateAttr+'></td>';
+  const blEntry = showBaseline ? S.baseline?.activities?.[row.id] : null;
+  const inBl = Boolean(blEntry && d >= blEntry.start && d <= blEntry.end);
+  const blHtml = inBl
+    ? '<span class="vgg-baseline-seg'+(d===blEntry.start?' bl-start':'')+(d===blEntry.end?' bl-end':'')+'" title="Línea base: '+readable(blEntry.start)+' al '+readable(blEntry.end)+'"></span>'
+    : '';
+  if(!row.start || !row.end || d < row.start || d > row.end){
+    return '<td class="'+cls+'"'+dateAttr+'>'+blHtml+'</td>';
+  }
   const isStart = idx === 0 || days[idx-1] < row.start;
   const isEnd = idx === days.length - 1 || days[idx+1] > row.end;
   const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
   const value = dayShare(row, d);
   const actual = Number.isFinite(state.actual) ? Math.min(100, Math.max(0, state.actual)) : 0;
+  const cpmInfo = cpmState.byId.get(row.id);
+  const isCrit = showCpm && Boolean(cpmInfo?.isCritical);
+  const isOverloaded = Boolean(value > 0 && row.owner && (cpmState.overload.get(row.owner + '|' + d)?.length || 0) >= 2);
   let status = '', style = '';
   if(!value){
     status = ' nonwork';
@@ -592,6 +723,7 @@ function dayBar(row, d, state, days, idx){
     status = fill >= 99.999 ? ' done' : fill > 0.001 ? ' partial' : '';
     if(status === ' partial') style = ' style="--vgg-real-fill:' + Number(fill.toFixed(3)) + '%"';
   }
+  if(isCrit && value > 0) status += ' critical';
   let pctLabel = '';
   if(isStart && actual > 0.001 && actual < 99.999){
     let spanLen = 0;
@@ -599,13 +731,18 @@ function dayBar(row, d, state, days, idx){
     const actualTxt = actual < 10 ? Number(actual.toFixed(1)) : Math.round(actual);
     pctLabel = '<span class="vgg-bar-center-pct" style="left:calc(' + spanLen + ' * 50%)">' + actualTxt + '%</span>';
   }
+  const handles = (isStart ? '<span class="vgg-bar-handle left" data-vgg-drag="resize-left" title="Arrastra para cambiar fecha de inicio"></span>' : '') +
+    (isEnd ? '<span class="vgg-bar-handle right" data-vgg-drag="resize-right" title="Arrastra para cambiar fecha de fin"></span>' : '');
+  const overDot = isOverloaded ? '<span class="vgg-overload-dot" title="Sobreasignación: '+(cpmState.overload.get(row.owner+'|'+d).length)+' actividades simultáneas para '+escapeText(row.owner)+'"></span>' : '';
   const tip = (row.excelId||row.id)+' · '+row.title+' · '+readable(row.start)+' al '+readable(row.end)+
+    (cpmInfo ? ' · Holgura: '+cpmInfo.totalFloat+' d'+(cpmInfo.isCritical?' (RUTA CRÍTICA)':'') : '')+
+    (blEntry ? ' · Línea base: '+readable(blEntry.start)+' al '+readable(blEntry.end) : '')+
     (!value ? ' · Día no laborable ('+(personalLeave || info.note || 'descanso')+')'
       : actual >= 99.999 ? ' · Culminada (100 %)'+(state.late?' · Fuera de plazo':'')
       : actual > 0.001 ? ' · Avance real acumulado: '+Number(actual.toFixed(1))+' %'
       : ' · Programada (0 % ejecutado)');
   return '<td class="'+cls+' scheduled'+segCls+'"'+dateAttr+' title="'+escapeText(tip)+'">'+
-    '<div class="vgg-bar-seg'+status+'"'+style+'></div>'+pctLabel+'</td>';
+    '<div class="vgg-bar-seg draggable'+status+'" data-vgg-drag="move"'+style+'>'+handles+'</div>'+pctLabel+blHtml+overDot+'</td>';
 }
 
 function visibleColumns(){
@@ -695,7 +832,14 @@ function renderHeaderMeta(){
 function render(){
   if(!overlay || overlay.hidden) return;
   const S = getSource();
+  computeCpmAndOverload();
   renderHeaderMeta();
+  const ovBtn = document.getElementById('vgg-overload-btn');
+  if(ovBtn){
+    const cnt = cpmState.overloadList.length;
+    ovBtn.textContent = cnt > 0 ? '⚠ Sobrecarga (' + cnt + ')' : '✓ Sin sobrecarga';
+    ovBtn.classList.toggle('warn', cnt > 0);
+  }
   const modal = document.getElementById('bim-gantt-modal');
   if(modal) modal.classList.toggle('vgg-dark-table', darkTableMode);
 
@@ -934,8 +1078,20 @@ function showDetail(id){
       ).join('')
     : '';
 
+  const cpmInfo = cpmState.byId.get(row.id);
+  const cpmTxt = cpmInfo
+    ? ' · Holgura: <b>' + cpmInfo.totalFloat + ' d' + (cpmInfo.isCritical ? ' (Crítica)' : '') + '</b>'
+    : '';
+  const blEntry = S.baseline?.activities?.[row.id];
+  let blTxt = '';
+  if(blEntry && row.end && blEntry.end){
+    const diff = Math.round((Date.parse(row.end + 'T00:00:00Z') - Date.parse(blEntry.end + 'T00:00:00Z')) / 86400000);
+    blTxt = ' · Línea base: ' + readable(blEntry.start) + '–' + readable(blEntry.end) +
+      ' (<b>' + (diff === 0 ? 'En fecha' : diff > 0 ? '+' + diff + 'd' : diff + 'd') + '</b>)';
+  }
   const note = '<div class="vgg-detail-text"><b>'+escapeText((row.excelId||row.id)+' — '+row.title)+'</b> · '+escapeText(row.owner)+
     ' · '+readable(row.start)+' al '+readable(row.end)+' · Estado: <b>'+labels[status.state]+'</b>'+
+    cpmTxt + blTxt +
     ' · Entregable vinculado: '+escapeText(status.taskIds.join(', ')||'Sin vincular')+
     (status.completedAt ? ' · Fin real: '+readable(status.completedAt) : '')+
     (Number.isFinite(status.actual) ? ' · Avance real: '+status.actual+' %' : ' · Sin avance real registrado')+
@@ -2520,6 +2676,219 @@ function openGanttConfigModal(initialTab = 'range'){
   renderWeekendsTable();
 }
 
+function downloadTextFile(content, fileName, mime = 'text/plain;charset=utf-8'){
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
+}
+
+/* Exportación a MS Project XML (MSPDI) */
+function buildMsProjectXml(){
+  const S = getSource();
+  const xmlEsc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const isoStart = (S.start || '2026-11-01') + 'T08:00:00';
+  const isoEnd = (S.end || '2026-11-30') + 'T17:00:00';
+  const ownerList = owners();
+  const resUidByOwner = new Map();
+  let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' +
+    '<Project xmlns="http://schemas.microsoft.com/project">\n' +
+    '  <Name>' + xmlEsc(S.project || 'Cronograma BIM') + '</Name>\n' +
+    '  <StartDate>' + isoStart + '</StartDate>\n' +
+    '  <FinishDate>' + isoEnd + '</FinishDate>\n' +
+    '  <ScheduleFromStart>1</ScheduleFromStart>\n' +
+    '  <CalendarUID>1</CalendarUID>\n' +
+    '  <MinutesPerDay>480</MinutesPerDay>\n' +
+    '  <MinutesPerWeek>2400</MinutesPerWeek>\n' +
+    '  <DaysPerMonth>20</DaysPerMonth>\n' +
+    '  <Calendars><Calendar><UID>1</UID><Name>Estándar BIM</Name><IsBaseCalendar>1</IsBaseCalendar><WeekDays>' +
+    '<WeekDay><DayType>1</DayType><DayWorking>0</DayWorking></WeekDay>' +
+    '<WeekDay><DayType>7</DayType><DayWorking>0</DayWorking></WeekDay>' +
+    '</WeekDays></Calendar></Calendars>\n' +
+    '  <Tasks>\n' +
+    '    <Task><UID>0</UID><ID>0</ID><Name>' + xmlEsc(S.project || 'Cronograma BIM') + '</Name><OutlineLevel>0</OutlineLevel><Summary>1</Summary><Start>' + isoStart + '</Start><Finish>' + isoEnd + '</Finish></Task>\n';
+
+  let uid = 1;
+  const uidByCode = new Map();
+  const taskEntries = [];
+  for(const r of S.rows){
+    if(r.kind === 'owner'){
+      taskEntries.push({ uid: uid++, kind:'owner', name: r.label, level: 1, start: S.start, end: S.end, summary: 1 });
+    } else if(r.kind === 'group'){
+      taskEntries.push({ uid: uid++, kind:'group', name: r.title, level: 2, start: r.start || S.start, end: r.end || S.end, summary: 1 });
+    } else if(r.kind === 'activity'){
+      const tUid = uid++;
+      if(r.id) uidByCode.set(String(r.id).toUpperCase(), tUid);
+      if(r.excelId) uidByCode.set(String(r.excelId).toUpperCase(), tUid);
+      taskEntries.push({ uid: tUid, kind:'activity', row: r, name: r.title, level: 3, start: r.start, end: r.end, summary: 0 });
+    }
+  }
+  const depTypeMap = { FF: 0, FC: 1, FS: 1, CF: 2, SF: 2, CC: 3, SS: 3 };
+  const assignments = [];
+  taskEntries.forEach((t, idx) => {
+    const durHrs = t.row ? Math.max(1, Number(t.row.duration) || 1) * 8 : 8;
+    const pct = t.row ? Math.round(Number(taskState(t.row).actual) || 0) : 0;
+    const predsXml = t.row ? parsePredecessorCodes(t.row.predecessor).map(code => {
+      const pUid = uidByCode.get(code);
+      if(!pUid || pUid === t.uid) return '';
+      const depCode = depTypeMap[String(t.row.dependency || 'FC').toUpperCase()] ?? 1;
+      const lagTenths = (Number(t.row.lag) || 0) * 4800;
+      return '      <PredecessorLink><PredecessorUID>' + pUid + '</PredecessorUID><Type>' + depCode + '</Type><LinkLag>' + lagTenths + '</LinkLag></PredecessorLink>\n';
+    }).join('') : '';
+    xml += '    <Task><UID>' + t.uid + '</UID><ID>' + (idx + 1) + '</ID><Name>' + xmlEsc(t.name) + '</Name>' +
+      '<OutlineLevel>' + t.level + '</OutlineLevel><Summary>' + t.summary + '</Summary>' +
+      '<Start>' + (t.start || S.start) + 'T08:00:00</Start><Finish>' + (t.end || S.end) + 'T17:00:00</Finish>' +
+      '<Duration>PT' + durHrs + 'H0M0S</Duration><PercentComplete>' + pct + '</PercentComplete>\n' +
+      predsXml + '    </Task>\n';
+    if(t.row?.owner) assignments.push({ taskUid: t.uid, owner: t.row.owner });
+  });
+  xml += '  </Tasks>\n  <Resources>\n';
+  ownerList.forEach((o, i) => {
+    const rUid = i + 1;
+    resUidByOwner.set(o, rUid);
+    xml += '    <Resource><UID>' + rUid + '</UID><ID>' + rUid + '</ID><Name>' + xmlEsc(o) + '</Name><Type>1</Type></Resource>\n';
+  });
+  xml += '  </Resources>\n  <Assignments>\n';
+  assignments.forEach((a, i) => {
+    const rUid = resUidByOwner.get(a.owner);
+    if(rUid) xml += '    <Assignment><UID>' + (i + 1) + '</UID><TaskUID>' + a.taskUid + '</TaskUID><ResourceUID>' + rUid + '</ResourceUID><Units>1</Units></Assignment>\n';
+  });
+  xml += '  </Assignments>\n</Project>\n';
+  return xml;
+}
+
+/* Exportación a Primavera P6 (.xer) */
+function buildPrimaveraXer(){
+  const S = getSource();
+  const clean = s => String(s ?? '').replace(/[\t\r\n]+/g, ' ').trim();
+  const lines = [
+    'ERMHDR\t20.12\t' + new Date().toISOString().slice(0,10) + '\tProject\tadmin\tAreaBIM\tdbxDatabaseNoName\tProject Management\tUSD',
+    '%T\tCALENDAR',
+    '%F\tclndr_id\tdefault_flag\tclndr_name\tproj_id\tbase_clndr_id\tlast_chng_date\tclndr_type\tday_hr_cnt\tweek_hr_cnt\tmonth_hr_cnt\tyear_hr_cnt',
+    '%R\t1\tY\tCalendario BIM Estándar\t\t\t\tCA_Base\t8\t40\t172\t2000',
+    '%T\tPROJECT',
+    '%F\tproj_id\tproj_short_name\tclndr_id\tplan_start_date\tplan_end_date',
+    '%R\t1\tBIM-CRON\t1\t' + (S.start || '2026-11-01') + ' 08:00\t' + (S.end || '2026-11-30') + ' 17:00',
+    '%T\tPROJWBS',
+    '%F\twbs_id\tproj_id\tseq_num\twbs_short_name\twbs_name\tparent_wbs_id',
+    '%R\t100\t1\t1\tBIM\t' + clean(S.project || 'CRONOGRAMA BIM') + '\t'
+  ];
+  let wbsId = 101, curOwnerWbs = 100, curGrpWbs = 100, seq = 1;
+  const taskLines = [
+    '%T\tTASK',
+    '%F\ttask_id\tproj_id\twbs_id\tclndr_id\ttask_code\ttask_name\ttask_type\tstatus_code\ttarget_drtn_hr_cnt\ttarget_start_date\ttarget_end_date\tphys_complete_pct'
+  ];
+  const predLines = [
+    '%T\tTASKPRED',
+    '%F\ttask_pred_id\ttask_id\tpred_task_id\tproj_id\tpred_proj_id\tpred_type\tlag_hr_cnt'
+  ];
+  let taskId = 1000;
+  const taskIdByCode = new Map();
+  const actRows = [];
+  for(const r of S.rows){
+    if(r.kind === 'owner'){
+      curOwnerWbs = wbsId++;
+      lines.push('%R\t' + curOwnerWbs + '\t1\t' + (seq++) + '\tO' + curOwnerWbs + '\t' + clean(r.label) + '\t100');
+    } else if(r.kind === 'group'){
+      curGrpWbs = wbsId++;
+      lines.push('%R\t' + curGrpWbs + '\t1\t' + (seq++) + '\tG' + curGrpWbs + '\t' + clean(r.title) + '\t' + curOwnerWbs);
+    } else if(r.kind === 'activity'){
+      const tid = taskId++;
+      if(r.id) taskIdByCode.set(String(r.id).toUpperCase(), tid);
+      if(r.excelId) taskIdByCode.set(String(r.excelId).toUpperCase(), tid);
+      const stInfo = taskState(r);
+      const pct = Math.round(Number(stInfo.actual) || 0);
+      const stCode = pct >= 100 ? 'TK_Complete' : pct > 0 ? 'TK_Active' : 'TK_NotStart';
+      const hrs = Math.max(1, Number(r.duration) || 1) * 8;
+      taskLines.push('%R\t' + tid + '\t1\t' + curGrpWbs + '\t1\t' + clean(r.excelId || r.id) + '\t' + clean(r.title) + '\tTT_Task\t' + stCode + '\t' + hrs + '\t' + r.start + ' 08:00\t' + r.end + ' 17:00\t' + pct);
+      actRows.push({ tid, row: r });
+    }
+  }
+  const p6Dep = { FC:'PR_FS', FS:'PR_FS', CC:'PR_SS', SS:'PR_SS', FF:'PR_FF', CF:'PR_SF', SF:'PR_SF' };
+  let predSeq = 1;
+  actRows.forEach(({ tid, row }) => {
+    parsePredecessorCodes(row.predecessor).forEach(code => {
+      const pid = taskIdByCode.get(code);
+      if(!pid || pid === tid) return;
+      const pType = p6Dep[String(row.dependency || 'FC').toUpperCase()] || 'PR_FS';
+      const lagHrs = (Number(row.lag) || 0) * 8;
+      predLines.push('%R\t' + (predSeq++) + '\t' + tid + '\t' + pid + '\t1\t1\t' + pType + '\t' + lagHrs);
+    });
+  });
+  return [...lines, ...taskLines, ...predLines, '%E'].join('\r\n');
+}
+
+function openBaselineModal(){
+  const S = getSource();
+  const bl = S.baseline;
+  const hasBl = Boolean(bl?.savedAt && Object.keys(bl.activities || {}).length);
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal narrow" role="dialog" aria-modal="true" aria-label="Línea Base">'+
+    '<div class="vgg-submodal-hd"><h3>📌 Línea Base del Cronograma</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<div class="vgg-submodal-body">'+
+    (hasBl
+      ? '<div class="vgg-sub-warn">Línea base activa: <b>'+escapeText(bl.label || 'Línea Base')+'</b> · Guardada el <b>'+escapeText(bl.savedAt.slice(0,10))+'</b> ('+Object.keys(bl.activities).length+' actividades).</div>'
+      : '<p style="margin:0;color:var(--ink-secondary,#94a3b8);line-height:1.45">Aún no hay una línea base fijada. Al fijarla, se guardará una foto de las fechas actuales en Supabase para comparar desvíos visualmente debajo de cada barra.</p>')+
+    '<div class="vgg-form-field"><label for="vgg-bl-label">Nombre de la Línea Base</label><input id="vgg-bl-label" value="'+escapeText(bl?.label || ('Línea Base ' + new Date().toISOString().slice(0,10)))+'"></div>'+
+    '</div>'+
+    '<div class="vgg-submodal-ft">'+
+    (hasBl ? '<button type="button" id="vgg-bl-clear" class="vgg-sub-btn danger" style="margin-right:auto">Borrar línea base</button>' : '')+
+    '<button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cancelar</button>'+
+    '<button type="button" id="vgg-bl-save" class="vgg-sub-btn success">Fijar línea base actual</button>'+
+    '</div></div>';
+  back.hidden = false;
+  document.getElementById('vgg-bl-save')?.addEventListener('click', () => {
+    const lbl = document.getElementById('vgg-bl-label')?.value.trim() || 'Línea Base';
+    window.bimGanttScheduleStore?.saveBaseline?.(lbl);
+    showBaseline = true;
+    savePref(STORAGE_BASELINE_KEY, '1');
+    const cb = document.getElementById('vgg-show-baseline');
+    if(cb) cb.checked = true;
+    closeSubmodal();
+    render();
+    if(typeof toast === 'function') toast('Línea base fijada y sincronizada en Supabase.');
+  });
+  document.getElementById('vgg-bl-clear')?.addEventListener('click', () => {
+    window.bimGanttScheduleStore?.clearBaseline?.();
+    closeSubmodal();
+    render();
+    if(typeof toast === 'function') toast('Línea base eliminada.');
+  });
+}
+
+function openOverloadModal(){
+  computeCpmAndOverload();
+  const list = cpmState.overloadList;
+  const back = document.getElementById('vgg-submodal-back');
+  back.innerHTML = '<div class="vgg-submodal wide" role="dialog" aria-modal="true" aria-label="Sobreasignación de recursos">'+
+    '<div class="vgg-submodal-hd"><h3>⚠ Sobreasignación por Responsable ('+list.length+' días con solapamiento)</h3>'+
+    '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
+    '<div class="vgg-submodal-body">'+
+    (list.length
+      ? '<p style="margin:0;color:var(--ink-secondary,#94a3b8)">Estos días tienen 2 o más actividades simultáneas para la misma persona. Haz clic en un ID para ir directo a esa actividad.</p>'+
+        '<div style="max-height:360px;overflow:auto;border:1px solid var(--border-base,#253048);border-radius:10px"><table class="vgg-cfg-table"><thead><tr><th>Fecha</th><th>Responsable</th><th>Actividades simultáneas</th></tr></thead><tbody>'+
+        list.map(it => '<tr><td style="font-family:\'JetBrains Mono\',monospace">'+readable(it.iso)+'</td><td><b>'+escapeText(it.owner)+'</b></td><td>'+
+          it.acts.map(a => '<button type="button" class="vgg-dep-pill pred" data-vgg-ov-jump="'+escapeText(a.id)+'" title="'+escapeText(a.title)+'">'+escapeText(a.excelId||a.id)+' · '+escapeText(a.title.slice(0,32))+'</button>').join(' ')+
+        '</td></tr>').join('')+'</tbody></table></div>'
+      : '<p style="margin:0;color:#34d399;font-weight:600">✓ Excelente: ningún responsable tiene actividades solapadas en el mismo día laborable.</p>')+
+    '</div>'+
+    '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cerrar</button></div></div>';
+  back.hidden = false;
+  back.querySelectorAll('[data-vgg-ov-jump]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.vggOvJump;
+      closeSubmodal();
+      showDetail(id);
+      overlay?.querySelector('tr[data-gantt-activity="'+id+'"]')?.scrollIntoView({ block:'center', behavior:'smooth' });
+    });
+  });
+}
+
 function openArea2AuthThenExcelSync(){
   if(window.bimArea2Auth?.isVerified?.()){
     openExcelSyncModal();
@@ -2572,6 +2941,9 @@ function openExcelSyncModal(){
     '<div class="vgg-excel-card"><h4>Opción 2 · Descargar libro Excel nuevo (Plantilla completa)</h4>'+
     '<p>Genera desde cero <code>Actividades_Area_BIM.xlsx</code> con las 4 hojas (<b>Gant</b>, <b>Config</b>, <b>Alertas</b> y <b>Control Semanal</b>), todas las fórmulas automáticas, validaciones y formato condicional tal cual tu plantilla.</p>'+
     '<div><button type="button" id="vgg-xls-new-btn" class="vgg-sub-btn primary">Descargar Excel con plantilla (.xlsx)</button></div></div>'+
+    '<div class="vgg-excel-card"><h4>Opción 3 · Interoperabilidad Planeamiento (MS Project y Primavera P6)</h4>'+
+    '<p>Exporta tu cronograma BIM en formatos estándar de obra con estructura WBS, fechas, porcentajes y dependencias (<code>FC/CC/FF/CF</code>).</p>'+
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" id="vgg-msp-btn" class="vgg-sub-btn">Exportar MS Project (.xml)</button><button type="button" id="vgg-p6-btn" class="vgg-sub-btn">Exportar Primavera P6 (.xer)</button></div></div>'+
     '</div>'+
     '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cerrar</button></div></div>';
   back.hidden = false;
@@ -2614,6 +2986,17 @@ function openExcelSyncModal(){
       errBox.textContent = 'No se pudo generar el Excel: ' + (err?.message || 'error desconocido');
       errBox.hidden = false;
     }
+  });
+
+  document.getElementById('vgg-msp-btn')?.addEventListener('click', () => {
+    downloadTextFile(buildMsProjectXml(), 'Cronograma_BIM_MSProject.xml', 'application/xml;charset=utf-8');
+    closeSubmodal();
+    if(typeof toast === 'function') toast('Exportado a MS Project (.xml MSPDI).');
+  });
+  document.getElementById('vgg-p6-btn')?.addEventListener('click', () => {
+    downloadTextFile(buildPrimaveraXer(), 'Cronograma_BIM_PrimaveraP6.xer', 'text/plain;charset=utf-8');
+    closeSubmodal();
+    if(typeof toast === 'function') toast('Exportado a Primavera P6 (.xer).');
   });
 }
 
@@ -2725,8 +3108,15 @@ function open(){
       '</select></label>'+
       '<label class="vgg-theme-toggle" title="Mostrar u ocultar líneas de relación predecesor-sucesor estilo Primavera P6">'+
       '<input type="checkbox" id="vgg-show-links"> Enlaces P6</label>'+
+      '<label class="vgg-theme-toggle" title="Resaltar actividades de la Ruta Crítica (holgura = 0 días)">'+
+      '<input type="checkbox" id="vgg-show-cpm"> Ruta crítica</label>'+
+      '<label class="vgg-theme-toggle" title="Mostrar línea base comparativa debajo de cada barra">'+
+      '<input type="checkbox" id="vgg-show-baseline"> Línea base</label>'+
       '<label class="vgg-theme-toggle" title="Activar modo oscuro en las celdas de la tabla">'+
       '<input type="checkbox" id="vgg-dark-table"> Tabla oscura</label>'+
+      '<button type="button" class="vgg-tool-btn" data-vgg-action="baseline-menu" title="Fijar o borrar Línea Base del cronograma">📌 Línea base</button>'+
+      '<button type="button" class="vgg-tool-btn" data-vgg-action="auto-schedule" title="Recalcular automáticamente fechas dependientes en cascada">⚡ Recalcular</button>'+
+      '<button type="button" id="vgg-overload-btn" class="vgg-tool-btn" data-vgg-action="open-overload" title="Ver días con sobreasignación por responsable">✓ Sin sobrecarga</button>'+
       '<button type="button" id="vgg-collapse-all" class="vgg-tool-btn" data-vgg-action="toggle-collapse-all">Contraer todo</button>'+
       '<details id="vgg-colchooser" class="vgg-colchooser"><summary>Columnas compartidas</summary>'+
       '<div class="vgg-colchooser-popover" aria-label="Columnas visibles para todos">'+
@@ -2751,6 +3141,7 @@ function open(){
       '</footer>'+
       '<div id="vgg-submodal-back" class="vgg-submodal-back" hidden></div>'+
       '<div id="vgg-ctx-menu" class="vgg-ctx-menu" role="menu" hidden></div>'+
+      '<div id="vgg-drag-pill" class="vgg-drag-pill" hidden></div>'+
       '</section>';
     document.body.appendChild(overlay);
 
@@ -2772,6 +3163,24 @@ function open(){
         drawDependencyLinksSvg();
       });
     }
+    const cpmEl = document.getElementById('vgg-show-cpm');
+    if(cpmEl){
+      cpmEl.checked = showCpm;
+      cpmEl.addEventListener('change', ev => {
+        showCpm = ev.target.checked;
+        savePref(STORAGE_CPM_KEY, showCpm ? '1' : '0');
+        render();
+      });
+    }
+    const blEl = document.getElementById('vgg-show-baseline');
+    if(blEl){
+      blEl.checked = showBaseline;
+      blEl.addEventListener('change', ev => {
+        showBaseline = ev.target.checked;
+        savePref(STORAGE_BASELINE_KEY, showBaseline ? '1' : '0');
+        render();
+      });
+    }
     const darkEl = document.getElementById('vgg-dark-table');
     if(darkEl){
       darkEl.checked = darkTableMode;
@@ -2781,6 +3190,79 @@ function open(){
         document.getElementById('bim-gantt-modal')?.classList.toggle('vgg-dark-table', darkTableMode);
       });
     }
+
+    // Drag & Resize interactivo sobre barras del Gantt
+    let dragInfo = null;
+    const shiftIsoBy = (iso, d) => new Date(Date.parse(iso + 'T00:00:00Z') + d * 86400000).toISOString().slice(0, 10);
+    overlay.addEventListener('pointerdown', ev => {
+      if(ev.button !== 0) return;
+      const handle = ev.target.closest('[data-vgg-drag]');
+      if(!handle) return;
+      const tr = handle.closest('tr[data-gantt-activity]');
+      if(!tr) return;
+      const actId = tr.dataset.ganttActivity;
+      const row = getSource().rows.find(r => r.kind === 'activity' && r.id === actId);
+      if(!row || !row.start || !row.end) return;
+      dragInfo = {
+        mode: handle.dataset.vggDrag,
+        actId,
+        code: row.excelId || row.id,
+        origStart: row.start,
+        origEnd: row.end,
+        startX: ev.clientX,
+        dayW: ZOOM_WIDTHS[st.zoom] || 30,
+        delta: 0,
+        moved: false
+      };
+    });
+    window.addEventListener('pointermove', ev => {
+      if(!dragInfo) return;
+      const dx = ev.clientX - dragInfo.startX;
+      if(!dragInfo.moved && Math.abs(dx) < 6) return;
+      dragInfo.moved = true;
+      const delta = Math.round(dx / dragInfo.dayW);
+      dragInfo.delta = delta;
+      let nS = dragInfo.origStart, nE = dragInfo.origEnd;
+      if(dragInfo.mode === 'move'){
+        nS = shiftIsoBy(nS, delta); nE = shiftIsoBy(nE, delta);
+      } else if(dragInfo.mode === 'resize-left'){
+        nS = shiftIsoBy(nS, delta); if(nS > nE) nS = nE;
+      } else if(dragInfo.mode === 'resize-right'){
+        nE = shiftIsoBy(nE, delta); if(nE < nS) nE = nS;
+      }
+      const pill = document.getElementById('vgg-drag-pill');
+      if(pill){
+        pill.textContent = dragInfo.code + ' · ' + readable(nS) + ' → ' + readable(nE) + (delta ? ' (' + (delta > 0 ? '+' : '') + delta + 'd)' : '');
+        pill.style.left = Math.min(ev.clientX + 14, window.innerWidth - 220) + 'px';
+        pill.style.top = Math.max(8, ev.clientY - 34) + 'px';
+        pill.hidden = false;
+      }
+    });
+    window.addEventListener('pointerup', () => {
+      if(!dragInfo) return;
+      const info = dragInfo;
+      dragInfo = null;
+      const pill = document.getElementById('vgg-drag-pill');
+      if(pill) pill.hidden = true;
+      if(!info.moved || info.delta === 0) return;
+      let nS = info.origStart, nE = info.origEnd;
+      if(info.mode === 'move'){
+        nS = shiftIsoBy(nS, info.delta); nE = shiftIsoBy(nE, info.delta);
+      } else if(info.mode === 'resize-left'){
+        nS = shiftIsoBy(nS, info.delta); if(nS > nE) nS = nE;
+      } else if(info.mode === 'resize-right'){
+        nE = shiftIsoBy(nE, info.delta); if(nE < nS) nE = nS;
+      }
+      const res = window.bimGanttScheduleStore?.moveOrResizeActivity?.(info.actId, nS, nE, { cascade: true });
+      if(res){
+        rebuildFilterSelects();
+        render();
+        showDetail(info.actId);
+        if(typeof toast === 'function'){
+          toast(info.code + ' movida a ' + readable(nS) + ' – ' + readable(nE) + (res.cascaded ? ' (' + res.cascaded + ' dependientes recalculadas)' : '') + '.');
+        }
+      }
+    });
 
     function closeCtxMenu(){
       const m = document.getElementById('vgg-ctx-menu');
@@ -2961,6 +3443,15 @@ function open(){
         if(act === 'new-activity'){ openActivityModal(); return; }
         if(act === 'new-group'){ openGroupModal(); return; }
         if(act === 'open-config'){ openGanttConfigModal(); return; }
+        if(act === 'baseline-menu'){ openBaselineModal(); return; }
+        if(act === 'open-overload'){ openOverloadModal(); return; }
+        if(act === 'auto-schedule'){
+          const n = window.bimGanttScheduleStore?.autoSchedule?.() || 0;
+          rebuildFilterSelects();
+          render();
+          if(typeof toast === 'function') toast(n > 0 ? 'Recálculo completado: ' + n + ' actividades ajustadas en cascada.' : 'Todas las dependencias ya están alineadas.');
+          return;
+        }
         if(act === 'open-excel-sync'){ openArea2AuthThenExcelSync(); return; }
         if(act === 'today'){
           const scroll = overlay.querySelector('.vgg-scroll');
