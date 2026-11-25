@@ -359,15 +359,10 @@ function pptBimItemsForWeek(week,mode='ingreso',meetingDay=3,specialty=null,week
     if((packageFilter&&task.package!==packageFilter)||
        (teamFilter&&task.team!==teamFilter)||
        (ownerFilter&&task.owner!==ownerFilter))continue;
-    // AREA_BIM2: una actividad aparece en cada semana prevista desde su ingreso,
-    // salvo las posteriores a su fecha real de culminación.
-    // Una evidencia registrada dentro del período también acredita la inclusión
-    // en el informe, aunque el intervalo administrativo de la tarea no coincida.
-    const evidenceInPeriod=mode==='reunion'&&taskEvidenceRecords(task.id).some(photo=>{
-      const date=pptBimIngresoDate(photo);
-      return date&&date>=meetingPeriod.start&&date<=meetingPeriod.end;
-    });
-    if((specialty||includeEmpty)&&!evidenceInPeriod&&!pptBimTaskMatchesReport(
+    // La actividad solo entra si su período activo (ingreso → cierre real o fecha límite)
+    // coincide con el rango del reporte. Las tareas ya completadas antes del período
+    // o vencidas fuera del período no se incluyen aunque tengan fotos subidas después.
+    if((specialty||includeEmpty)&&!pptBimTaskMatchesReport(
       task,week,mode,weekFilters,meetingPeriod))continue;
     // AREA_BIM conserva su flujo original de evidencia sin cambios.
     const matchesCompletion=mode!=='culminacion'||pptBimCompletionWeek(task)===week;
