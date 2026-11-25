@@ -6267,12 +6267,19 @@ html[data-theme="light"] .card {
 }
 
 /* Salud Operativa BIM: adaptado al 100% del alto de la tarjeta sin espacio vacío */
-#dashboard-view .health-card {
+#dashboard-view .radar-card {
   display: flex !important;
   flex-direction: column !important;
 }
-.operational-health {
+#dashboard-view #state-chart {
+  display: flex !important;
+  flex-direction: column !important;
   flex: 1 1 auto !important;
+  min-height: 0 !important;
+}
+#dashboard-view .operational-health {
+  flex: 1 1 auto !important;
+  height: 100% !important;
   gap: 16px !important;
   align-items: stretch !important;
   min-height: 0 !important;
