@@ -531,31 +531,39 @@ function dayBar(row, d, state, days, idx){
     const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
     return '<td class="'+cls+' scheduled group'+segCls+'"'+dateAttr+'><span class="vgg-group-bar"></span></td>';
   }
-  if(!row.start || !row.end || d < row.start || d > row.end) return '<td class="'+cls+'"'+dateAttr+'></td>';
-  const isStart = idx === 0 || days[idx-1] < row.start;
-  const isEnd = idx === days.length - 1 || days[idx+1] > row.end;
-  const segCls = (isStart ? ' bar-start' : '') + (isEnd ? ' bar-end' : '');
+  const value = row.percentByDay?.[String(Number(d.slice(8,10)))] || 0;
+  if(!value) return '<td class="'+cls+'"'+dateAttr+'></td>';
+  const prevHas = idx > 0 && Boolean(row.percentByDay?.[String(Number(days[idx-1].slice(8,10)))]);
+  const nextHas = idx < days.length - 1 && Boolean(row.percentByDay?.[String(Number(days[idx+1].slice(8,10)))]);
+  const segCls = (!prevHas ? ' bar-start' : '') + (!nextHas ? ' bar-end' : '');
   const actual = Number.isFinite(state.actual) ? Math.min(100, Math.max(0, state.actual)) : 0;
   let status = '', style = '';
   if(actual >= 99.999){
     status = state.late ? ' late culminated' : ' done culminated';
   } else if(actual > 0.001){
-    const totalSpan = dates(row.start, row.end);
-    const n = Math.max(1, totalSpan.length);
-    const k = totalSpan.indexOf(d);
-    if(k >= 0){
-      const sliceStart = (k * 100) / n;
-      const sliceEnd = ((k + 1) * 100) / n;
-      const cellFill = actual <= sliceStart ? 0 : actual >= sliceEnd ? 100 : ((actual - sliceStart) / (sliceEnd - sliceStart)) * 100;
-      status = cellFill >= 99.999 ? ' done' : cellFill > 0.001 ? ' partial' : '';
-      if(status === ' partial') style = ' style="--vgg-real-fill:' + Number(cellFill.toFixed(3)) + '%"';
-    }
+    const fill = realFillOfGanttDay(row, d, actual);
+    status = fill >= 99.999 ? ' done' : fill > 0.001 ? ' partial' : '';
+    if(status === ' partial') style = ' style="--vgg-real-fill:' + Number(fill.toFixed(3)) + '%"';
   }
   let pctLabel = '';
-  if(isStart && actual > 0.001 && actual < 99.999){
-    const visSpanCols = days.filter(x => x >= row.start && x <= row.end).length;
-    const actualTxt = actual < 10 ? Number(actual.toFixed(1)) : Math.round(actual);
-    pctLabel = '<span class="vgg-bar-center-pct" style="left:calc(' + visSpanCols + ' * 50%)">' + actualTxt + '%</span>';
+  if(!prevHas && actual > 0.001 && actual < 99.999){
+    // Encontrar en qué bloque contiguo cae el frente de avance para mostrar un único % centrado en ese bloque
+    let frontierIdx = -1;
+    for(let i = 0; i < days.length; i++){
+      const vDay = row.percentByDay?.[String(Number(days[i].slice(8,10)))] || 0;
+      if(vDay > 0 && realFillOfGanttDay(row, days[i], actual) > 0.001) frontierIdx = i;
+    }
+    if(frontierIdx >= idx){
+      let blockEnd = idx;
+      while(blockEnd + 1 < days.length && Boolean(row.percentByDay?.[String(Number(days[blockEnd + 1].slice(8,10)))])){
+        blockEnd++;
+      }
+      if(frontierIdx <= blockEnd){
+        const blockLen = blockEnd - idx + 1;
+        const actualTxt = actual < 10 ? Number(actual.toFixed(1)) : Math.round(actual);
+        pctLabel = '<span class="vgg-bar-center-pct" style="left:calc(' + blockLen + ' * 50%)">' + actualTxt + '%</span>';
+      }
+    }
   }
   const tip = (row.excelId||row.id)+' · '+row.title+' · '+readable(row.start)+' al '+readable(row.end)+
     (actual >= 99.999 ? ' · Culminada (100 %)'+(state.late?' · Fuera de plazo':'')
@@ -1344,140 +1352,533 @@ function openDeleteActivityConfirm(activityId){
 /* ============================================================================
    EXPORTACIÓN Y ACTUALIZACIÓN DE EXCEL EXCLUSIVA PARA AREA_BIM2
    ============================================================================ */
-function loadSheetJs(){
-  if(window.XLSX) return Promise.resolve(window.XLSX);
+function loadExcelJs(){
+  if(window.ExcelJS) return Promise.resolve(window.ExcelJS);
   return new Promise((resolve, reject) => {
     const s = document.createElement('script');
-    s.src = 'https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js';
-    s.onload = () => window.XLSX ? resolve(window.XLSX) : reject(new Error('XLSX no disponible'));
-    s.onerror = () => reject(new Error('No se pudo cargar SheetJS (verifica tu conexión a internet)'));
+    s.src = 'https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js';
+    s.onload = () => window.ExcelJS ? resolve(window.ExcelJS) : reject(new Error('ExcelJS no disponible'));
+    s.onerror = () => reject(new Error('No se pudo cargar ExcelJS (verifica tu conexión a internet)'));
     document.head.appendChild(s);
   });
 }
 
-function buildGantWorksheet(XLSX){
+function excelColLetter(n){
+  let col = '', num = n;
+  while(num > 0){
+    const rem = (num - 1) % 26;
+    col = String.fromCharCode(65 + rem) + col;
+    num = Math.floor((num - 1) / 26);
+  }
+  return col;
+}
+function isoToUtcDate(iso){
+  if(!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return null;
+  return new Date(Date.UTC(Number(iso.slice(0,4)), Number(iso.slice(5,7)) - 1, Number(iso.slice(8,10))));
+}
+function ownerInitials(name){
+  const parts = String(name||'').trim().split(/\s+/).filter(Boolean);
+  if(!parts.length) return 'BM';
+  if(parts.length === 1) return parts[0].slice(0,2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+function downloadExcelBuffer(buffer, fileName){
+  const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { a.remove(); URL.revokeObjectURL(url); }, 1000);
+}
+
+/* Replicación fiel de la plantilla Paquete 09.xlsx (hojas Gant, Actividades y Config con fórmulas y formato condicional) */
+function buildPaqueteTemplateIntoWorkbook(wb){
   const S = getSource();
   const allDates = getAllDates();
-  const dnames = ['D','L','M','X','J','V','S'];
-  const metaHeaders = ['ID','EDT','Actividad / hito','Responsable','Tipo','Dur. (dc)','Inicio','Fin','Predecesor','Dependencia','Desfase (dc)'];
+  const calStartCol = 10; // Columna J
+  const calEndCol = calStartCol + Math.max(allDates.length, 26) - 1;
+  const lastColL = excelColLetter(calEndCol);
 
-  const row1 = new Array(metaHeaders.length).fill('');
-  const row2 = [...metaHeaders];
-  const row3 = new Array(metaHeaders.length).fill('');
-  const merges = [];
+  const thinBorder = {
+    top:{style:'thin',color:{argb:'FFBFC7D5'}},
+    left:{style:'thin',color:{argb:'FFBFC7D5'}},
+    bottom:{style:'thin',color:{argb:'FFBFC7D5'}},
+    right:{style:'thin',color:{argb:'FFBFC7D5'}}
+  };
+  const fillSolid = argb => ({ type:'pattern', pattern:'solid', fgColor:{ argb } });
 
-  // Encabezados de semanas (fila 1), días (fila 2) y letras D-L-M (fila 3)
-  let colIdx = metaHeaders.length;
-  let lastW = '', wStartCol = colIdx;
-  allDates.forEach((d, idx) => {
-    const w = week(d);
-    const info = dayInfo(d);
-    row2.push(Number(d.slice(-2)));
-    row3.push(dnames[info.dow]);
-    if(w !== lastW){
-      if(lastW && colIdx - 1 > wStartCol){
-        merges.push({ s:{ r:0, c:wStartCol }, e:{ r:0, c:colIdx-1 } });
-      }
-      row1.push(w);
-      lastW = w;
-      wStartCol = colIdx;
-    } else {
-      row1.push('');
+  // Eliminar hojas previas si existen para regenerarlas limpiamente conservando cualquier otra hoja del libro
+  ['Gant','Actividades','Config'].forEach(name => {
+    const existing = wb.getWorksheet(name);
+    if(existing) wb.removeWorksheet(existing.id);
+  });
+
+  const wsGant = wb.addWorksheet('Gant', { views:[{ showGridLines:true }] });
+  const wsAct = wb.addWorksheet('Actividades', { views:[{ showGridLines:true }] });
+  const wsCfg = wb.addWorksheet('Config', { views:[{ showGridLines:true }] });
+
+  // --- Estructurar jerarquía 3 niveles (01 Responsable -> 01.01 Grupo -> 01.01.01 Actividad) ---
+  const tree = [];
+  let curOwnerNode = null, curGroupNode = null;
+  for(const r of S.rows){
+    if(r.kind === 'owner'){
+      curOwnerNode = { label: r.label.replace(/^ACTIVIDADES\s+/i,'').trim() || r.label, groups: [] };
+      tree.push(curOwnerNode);
+      curGroupNode = null;
+    } else if(r.kind === 'group'){
+      if(!curOwnerNode){ curOwnerNode = { label: r._ownerName || 'EQUIPO BIM', groups: [] }; tree.push(curOwnerNode); }
+      curGroupNode = { title: r.title, activities: [] };
+      curOwnerNode.groups.push(curGroupNode);
+    } else if(r.kind === 'activity'){
+      if(!curOwnerNode){ curOwnerNode = { label: r.owner || 'EQUIPO BIM', groups: [] }; tree.push(curOwnerNode); }
+      if(!curGroupNode){ curGroupNode = { title: r.group || 'General', activities: [] }; curOwnerNode.groups.push(curGroupNode); }
+      curGroupNode.activities.push(r);
     }
-    colIdx++;
-    if(idx === allDates.length - 1 && colIdx - 1 > wStartCol){
-      merges.push({ s:{ r:0, c:wStartCol }, e:{ r:0, c:colIdx-1 } });
+  }
+
+  // ==================== 1. HOJA GANT ====================
+  wsGant.columns = [
+    { width: 10 }, { width: 55 }, { width: 12 },
+    { width: 11 }, { width: 11 }, { width: 11 }, { width: 11 },
+    { width: 10 }, { width: 9 },
+    ...Array.from({ length: calEndCol - calStartCol + 1 }, () => ({ width: 4 }))
+  ];
+
+  wsGant.getRow(1).height = 26.1;
+  wsGant.getCell('A1').value = 'CRONOGRAMA DEL PROYECTO - DIAGRAMA DE GANTT';
+  wsGant.getCell('A1').font = { name:'Calibri', size:16, bold:true, color:{ argb:'FF1F3864' } };
+  wsGant.getCell('A1').alignment = { vertical:'middle' };
+
+  wsGant.getRow(2).height = 17.1;
+  wsGant.getCell('A2').value = S.project || 'PROYECTO BIM';
+  wsGant.getCell('A2').font = { name:'Calibri', size:11, bold:true, color:{ argb:'FF262626' } };
+  wsGant.getCell('A2').alignment = { vertical:'middle' };
+
+  // Fila 4: Leyenda exacta de Paquete 09.xlsx
+  wsGant.getRow(4).height = 18;
+  const legendItems = [
+    ['J4','K4:N4','FF2E75B6','Programado'],
+    ['O4','P4:S4','FFC00000','Retraso / atrasada'],
+    ['T4','U4:X4','FF1F3864','Resumen'],
+    ['Y4','Z4:AC4','FFD9D9D9','No laborable'],
+    ['AD4','AE4:AH4','FFFFC000','Hoy']
+  ];
+  for(const [swatch, mergeRef, colorArgb, label] of legendItems){
+    wsGant.getCell(swatch).fill = fillSolid(colorArgb);
+    wsGant.getCell(swatch).border = thinBorder;
+    wsGant.mergeCells(mergeRef);
+    const lblCell = wsGant.getCell(mergeRef.split(':')[0]);
+    lblCell.value = label;
+    lblCell.font = { name:'Arial', size:8, color:{ argb:'FF595959' } };
+    lblCell.alignment = { horizontal:'left', vertical:'middle', indent:1 };
+  }
+
+  // Filas 6-8: Encabezados combinados
+  wsGant.getRow(6).height = 36.75;
+  wsGant.getRow(7).height = 14.1;
+  wsGant.getRow(8).height = 15;
+
+  const staticMerges = ['A6:A8','B6:B8','C6:C8','D6:E6','F6:G6','H6:I6','D7:D8','E7:E8','F7:F8','G7:G8','H7:H8','I7:I8'];
+  staticMerges.forEach(m => wsGant.mergeCells(m));
+
+  const hdrTop = [['A6','Item'],['B6','DESCRIPCIÓN'],['C6','CUMPLIDO'],['D6','PROGRAMADO'],['F6','REAL'],['H6','DURACIÓN (días lab.)']];
+  hdrTop.forEach(([ref, txt]) => {
+    const c = wsGant.getCell(ref);
+    c.value = txt;
+    c.font = { name:'Arial', size:10, bold:true, color:{ argb:'FFFFFFFF' } };
+    c.fill = fillSolid('FF1F3864');
+    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+  });
+  const hdrSub = [['D7','FECHA INICIO'],['E7','FECHA FIN'],['F7','FECHA INICIO'],['G7','FECHA FIN'],['H7','PROGR.'],['I7','REAL']];
+  hdrSub.forEach(([ref, txt]) => {
+    const c = wsGant.getCell(ref);
+    c.value = txt;
+    c.font = { name:'Arial', size:9, bold:true, color:{ argb:'FFFFFFFF' } };
+    c.fill = fillSolid('FF2F5597');
+    c.alignment = { horizontal:'center', vertical:'middle', wrapText:true };
+  });
+  for(let r = 6; r <= 8; r++){
+    for(let col = 1; col <= 9; col++) wsGant.getCell(r, col).border = thinBorder;
+  }
+
+  // Encabezado de meses en R6 (agrupado por mes), letras en R7, fechas en R8
+  const totalCalCols = calEndCol - calStartCol + 1;
+  const calDates = [];
+  const baseStartDate = isoToUtcDate(S.start) || new Date(Date.UTC(2026, 10, 1));
+  for(let i = 0; i < totalCalCols; i++){
+    const dt = new Date(baseStartDate.getTime() + i * 86400000);
+    calDates.push(dt.toISOString().slice(0,10));
+  }
+  let mStart = calStartCol, prevMonth = calDates[0].slice(0,7);
+  for(let i = 0; i < totalCalCols; i++){
+    const col = calStartCol + i;
+    const cL = excelColLetter(col);
+    const curMonth = calDates[i].slice(0,7);
+    if(curMonth !== prevMonth || i === totalCalCols - 1){
+      const endC = curMonth !== prevMonth ? col - 1 : col;
+      if(endC > mStart) wsGant.mergeCells(6, mStart, 6, endC);
+      const mCell = wsGant.getCell(6, mStart);
+      const mColL = excelColLetter(mStart);
+      mCell.value = { formula: `CHOOSE(MONTH(${mColL}8),"ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE")&" "&YEAR(${mColL}8)` };
+      mCell.font = { name:'Arial', size:12, bold:true, color:{ argb:'FFFFFFFF' } };
+      mCell.fill = fillSolid('FF1F3864');
+      mCell.alignment = { horizontal:'center', vertical:'middle' };
+      mCell.border = thinBorder;
+      if(curMonth !== prevMonth){
+        mStart = col;
+        prevMonth = curMonth;
+        if(i === totalCalCols - 1){
+          const lastM = wsGant.getCell(6, col);
+          lastM.value = { formula: `CHOOSE(MONTH(${cL}8),"ENERO","FEBRERO","MARZO","ABRIL","MAYO","JUNIO","JULIO","AGOSTO","SEPTIEMBRE","OCTUBRE","NOVIEMBRE","DICIEMBRE")&" "&YEAR(${cL}8)` };
+          lastM.font = { name:'Arial', size:12, bold:true, color:{ argb:'FFFFFFFF' } };
+          lastM.fill = fillSolid('FF1F3864');
+          lastM.alignment = { horizontal:'center', vertical:'middle' };
+          lastM.border = thinBorder;
+        }
+      }
+    }
+    const c7 = wsGant.getCell(7, col);
+    c7.value = { formula: `CHOOSE(WEEKDAY(${cL}$8,2),"L","M","M","J","V","S","D")` };
+    c7.font = { name:'Arial', size:8.5, bold:true, color:{ argb:'FF1F3864' } };
+    c7.fill = fillSolid('FFD9E1F2');
+    c7.alignment = { horizontal:'center', vertical:'middle' };
+    c7.border = thinBorder;
+
+    const c8 = wsGant.getCell(8, col);
+    c8.value = i === 0
+      ? { formula: 'Config!$J$4' }
+      : { formula: `${excelColLetter(col - 1)}8+1` };
+    c8.numFmt = 'd';
+    c8.font = { name:'Arial', size:8.5, bold:true, color:{ argb:'FF1F3864' } };
+    c8.fill = fillSolid('FFEDF2F8');
+    c8.alignment = { horizontal:'center', vertical:'middle' };
+    c8.border = thinBorder;
+  }
+
+  // Fórmulas de duración laborable compatibles con todas las versiones de Excel (sin requerir CSE)
+  const workDaysFormula = (dRef, eRef) =>
+    `IF(AND(ISNUMBER(${dRef}),ISNUMBER(${eRef})),NETWORKDAYS(${dRef},${eRef})-COUNTIFS(Feriados,">="&${dRef},Feriados,"<="&${eRef},FeriadosAbrev,"")+COUNTIFS(DiasNoLaborables,">="&${dRef},DiasNoLaborables,"<="&${eRef},DiaLaborableSiNo,"SI"),"")`;
+  const realWorkDaysFormula = (fRef, dRef, gRef) =>
+    `IF(AND(ISNUMBER(${gRef}),COUNT(${fRef},${dRef})>0),NETWORKDAYS(IF(ISNUMBER(${fRef}),${fRef},${dRef}),${gRef})-COUNTIFS(Feriados,">="&IF(ISNUMBER(${fRef}),${fRef},${dRef}),Feriados,"<="&${gRef},FeriadosAbrev,"")+COUNTIFS(DiasNoLaborables,">="&IF(ISNUMBER(${fRef}),${fRef},${dRef}),DiasNoLaborables,"<="&${gRef},DiaLaborableSiNo,"SI"),"")`;
+  const calCellFormula = (cL, rNum) =>
+    `IF(OR(AND(WEEKDAY(${cL}$8,2)>5,COUNTIFS(DiasNoLaborables,${cL}$8,DiaLaborableSiNo,"SI")=0),COUNTIFS(Feriados,${cL}$8,FeriadosAbrev,"")>0),4,IF(AND(ISNUMBER($D${rNum}),${cL}$8>=$D${rNum},${cL}$8<=$E${rNum}),IF(LEN($A${rNum})<=5,2,1),IF(AND(LEN($A${rNum})>5,ISNUMBER($E${rNum}),${cL}$8>$E${rNum},${cL}$8<=IF(ISNUMBER($G${rNum}),$G${rNum},IF(TODAY()>$E${rNum},TODAY(),0))),5,IF(LEN($A${rNum})=2,7,IF(LEN($A${rNum})=5,6,0)))))`;
+
+  // --- Escribir filas de datos en Gant y acumular filas para Actividades ---
+  let curRow = 9;
+  const actSheetRows = [];
+  const realDateRows = [];
+
+  tree.forEach((ownerNode, oIdx) => {
+    const oCode = String(oIdx + 1).padStart(2, '0');
+    const ownerRowNum = curRow++;
+    const groupRowNums = [];
+
+    // Reservar fila Nivel 1 (Responsable)
+    const rOwner = wsGant.getRow(ownerRowNum);
+    rOwner.height = 18;
+    wsGant.getCell(ownerRowNum, 1).value = oCode;
+    wsGant.getCell(ownerRowNum, 2).value = ownerNode.label;
+    for(let col = 1; col <= 9; col++){
+      const cell = wsGant.getCell(ownerRowNum, col);
+      cell.font = { name:'Calibri', size:9, bold:true, color:{ argb:'FF262626' } };
+      cell.fill = fillSolid('FFBDD7EE');
+      cell.border = thinBorder;
+      cell.alignment = { horizontal: col<=2 ? 'left' : 'center', vertical:'middle', indent: col<=2 ? 1 : 0 };
+      if(col >= 4 && col <= 7) cell.numFmt = 'dd/mm/yy';
+    }
+
+    ownerNode.groups.forEach((grpNode, gIdx) => {
+      const gCode = oCode + '.' + String(gIdx + 1).padStart(2, '0');
+      const grpRowNum = curRow++;
+      groupRowNums.push(grpRowNum);
+
+      const rGrp = wsGant.getRow(grpRowNum);
+      rGrp.height = 18;
+      wsGant.getCell(grpRowNum, 1).value = gCode;
+      wsGant.getCell(grpRowNum, 2).value = grpNode.title;
+      for(let col = 1; col <= 9; col++){
+        const cell = wsGant.getCell(grpRowNum, col);
+        cell.font = { name:'Calibri', size:9, bold:true, color:{ argb:'FF262626' } };
+        cell.fill = fillSolid('FFDDEBF7');
+        cell.border = thinBorder;
+        cell.alignment = { horizontal: col<=2 ? 'left' : 'center', vertical:'middle', indent: col<=2 ? 1 : 0 };
+        if(col >= 4 && col <= 7) cell.numFmt = 'dd/mm/yy';
+      }
+
+      const firstActRow = curRow;
+      grpNode.activities.forEach((act, aIdx) => {
+        const aCode = gCode + '.' + String(aIdx + 1).padStart(2, '0');
+        const aRowNum = curRow++;
+        realDateRows.push(aRowNum);
+        const stInfo = taskState(act);
+
+        const rAct = wsGant.getRow(aRowNum);
+        rAct.height = 18;
+        wsGant.getCell(aRowNum, 1).value = aCode;
+        wsGant.getCell(aRowNum, 2).value = (act.excelId ? '[' + act.excelId + '] ' : '') + act.title;
+        wsGant.getCell(aRowNum, 3).value = { formula: `IF(ISNUMBER(G${aRowNum}),IF(G${aRowNum}<=E${aRowNum},"SI","SI +"&(G${aRowNum}-E${aRowNum})&"d"),IF(AND(ISNUMBER(E${aRowNum}),TODAY()>E${aRowNum}),"NO",""))` };
+        wsGant.getCell(aRowNum, 4).value = isoToUtcDate(act.start);
+        wsGant.getCell(aRowNum, 5).value = isoToUtcDate(act.end);
+        if(stInfo.completedAt){
+          wsGant.getCell(aRowNum, 6).value = isoToUtcDate(act.start);
+          wsGant.getCell(aRowNum, 7).value = isoToUtcDate(stInfo.completedAt);
+        }
+        wsGant.getCell(aRowNum, 8).value = { formula: workDaysFormula(`D${aRowNum}`, `E${aRowNum}`) };
+        wsGant.getCell(aRowNum, 9).value = { formula: realWorkDaysFormula(`F${aRowNum}`, `D${aRowNum}`, `G${aRowNum}`) };
+
+        for(let col = 1; col <= 9; col++){
+          const cell = wsGant.getCell(aRowNum, col);
+          cell.font = { name:'Calibri', size:9, color:{ argb:'FF262626' } };
+          cell.border = thinBorder;
+          cell.alignment = { horizontal: col<=2 ? 'left' : 'center', vertical:'middle', indent: col<=2 ? 1 : 0 };
+          if(col >= 4 && col <= 7) cell.numFmt = 'dd/mm/yy';
+        }
+        // Validación de fecha real (F y G) igual a Paquete 09.xlsx
+        wsGant.getCell(aRowNum, 6).dataValidation = { type:'decimal', operator:'greaterThan', allowBlank:true, formulae:[40000], showErrorMessage:true, errorTitle:'Fecha real de inicio', error:'Escribe una fecha válida (dd/mm/aa).' };
+        wsGant.getCell(aRowNum, 7).dataValidation = { type:'decimal', operator:'greaterThan', allowBlank:true, formulae:[40000], showErrorMessage:true, errorTitle:'Fecha real de fin', error:'Escribe una fecha válida (dd/mm/aa).' };
+
+        actSheetRows.push({
+          item: aCode,
+          equipo: ownerNode.label.toUpperCase(),
+          componente: grpNode.title.toUpperCase(),
+          tarea: act.title,
+          responsable: (act.owner || ownerNode.label).toUpperCase(),
+          done: stInfo.state === 'completed' || (Number.isFinite(stInfo.actual) && stInfo.actual >= 99.999)
+        });
+      });
+      const lastActRow = curRow - 1;
+      if(lastActRow >= firstActRow){
+        wsGant.getCell(grpRowNum, 3).value = { formula: `IF(COUNTIF(C${firstActRow}:C${lastActRow},"NO")>0,"NO",IF(COUNTIF(C${firstActRow}:C${lastActRow},"SI*")=ROWS(C${firstActRow}:C${lastActRow}),IF(COUNTIF(C${firstActRow}:C${lastActRow},"SI +*")>0,"SI +","SI"),""))` };
+        wsGant.getCell(grpRowNum, 4).value = { formula: `MIN(D${firstActRow}:D${lastActRow})` };
+        wsGant.getCell(grpRowNum, 5).value = { formula: `MAX(E${firstActRow}:E${lastActRow})` };
+        wsGant.getCell(grpRowNum, 8).value = { formula: workDaysFormula(`D${grpRowNum}`, `E${grpRowNum}`) };
+      }
+    });
+
+    if(groupRowNums.length){
+      const orNo = groupRowNums.map(rn => `C${rn}="NO"`).join(',');
+      const andSi = groupRowNums.map(rn => `LEFT(C${rn},2)="SI"`).join(',');
+      const concatC = groupRowNums.map(rn => `C${rn}`).join('&');
+      wsGant.getCell(ownerRowNum, 3).value = { formula: `IF(OR(${orNo}),"NO",IF(AND(${andSi}),IF(ISNUMBER(FIND("+",${concatC})),"SI +","SI"),""))` };
+      wsGant.getCell(ownerRowNum, 4).value = { formula: `MIN(${groupRowNums.map(rn => `D${rn}`).join(',')})` };
+      wsGant.getCell(ownerRowNum, 5).value = { formula: `MAX(${groupRowNums.map(rn => `E${rn}`).join(',')})` };
+      wsGant.getCell(ownerRowNum, 8).value = { formula: workDaysFormula(`D${ownerRowNum}`, `E${ownerRowNum}`) };
     }
   });
 
-  const aoa = [row1, row2, row3];
-  const percentCells = [];
+  const lastGantRow = Math.max(9, curRow - 1);
 
-  for(const r of S.rows){
-    if(r.kind === 'owner'){
-      const line = new Array(metaHeaders.length + allDates.length).fill('');
-      line[0] = r.label;
-      aoa.push(line);
-      continue;
+  // Poblar fórmulas de la matriz de calendario (J9:<lastCol><lastRow>)
+  for(let r = 9; r <= lastGantRow; r++){
+    for(let col = calStartCol; col <= calEndCol; col++){
+      const cL = excelColLetter(col);
+      const cell = wsGant.getCell(r, col);
+      cell.value = { formula: calCellFormula(cL, r) };
+      cell.numFmt = ';;;';
+      cell.border = thinBorder;
     }
-    if(r.kind === 'group'){
-      const line = [
-        '', r.id, r.title, '', 'Resumen', r.duration || '',
-        r.start ? new Date(r.start + 'T12:00:00Z') : '',
-        r.end ? new Date(r.end + 'T12:00:00Z') : '',
-        '', '', ''
-      ];
-      allDates.forEach(() => line.push(''));
-      aoa.push(line);
-      continue;
+  }
+
+  // Formato condicional exacto de Paquete 09.xlsx en Gant
+  wsGant.addConditionalFormatting({
+    ref: `C9:C${lastGantRow}`,
+    rules: [
+      { type:'cellIs', operator:'equal', formulae:['"SI"'], priority:1, style:{ font:{bold:true,color:{argb:'FF375623'}}, fill:fillSolid('FFE2F0D9') } },
+      { type:'cellIs', operator:'equal', formulae:['"NO"'], priority:2, style:{ font:{bold:true,color:{argb:'FFC00000'}}, fill:fillSolid('FFF8D7DA') } },
+      { type:'containsText', operator:'containsText', text:'+', priority:3, style:{ font:{bold:true,color:{argb:'FF7F6000'}}, fill:fillSolid('FFFFE699') } }
+    ]
+  });
+  wsGant.addConditionalFormatting({
+    ref: `J7:${lastColL}8`,
+    rules: [
+      { type:'expression', formulae:['J$8=TODAY()'], priority:4, style:{ font:{bold:true,color:{argb:'FF1F3864'}}, fill:fillSolid('FFFFC000') } },
+      { type:'expression', formulae:['OR(AND(WEEKDAY(J$8,2)>5,COUNTIFS(DiasNoLaborables,J$8,DiaLaborableSiNo,"SI")=0),COUNTIFS(Feriados,J$8,FeriadosAbrev,"")>0)'], priority:5, style:{ fill:fillSolid('FFBFBFBF') } }
+    ]
+  });
+  wsGant.addConditionalFormatting({
+    ref: `J9:${lastColL}${lastGantRow}`,
+    rules: [
+      { type:'cellIs', operator:'equal', formulae:['4'], priority:6, style:{ fill:fillSolid('FFD9D9D9') } },
+      { type:'cellIs', operator:'equal', formulae:['5'], priority:7, style:{ fill:fillSolid('FFC00000') } },
+      { type:'cellIs', operator:'equal', formulae:['1'], priority:8, style:{ fill:fillSolid('FF2E75B6') } },
+      { type:'cellIs', operator:'equal', formulae:['2'], priority:9, style:{ fill:fillSolid('FF1F3864') } },
+      { type:'cellIs', operator:'equal', formulae:['6'], priority:10, style:{ fill:fillSolid('FFDDEBF7') } },
+      { type:'cellIs', operator:'equal', formulae:['7'], priority:11, style:{ fill:fillSolid('FFBDD7EE') } }
+    ]
+  });
+  wsGant.pageSetup = { orientation:'landscape', fitToPage:true, fitToWidth:1, fitToHeight:0, printArea:`A1:${lastColL}${lastGantRow}` };
+
+  // ==================== 2. HOJA ACTIVIDADES ====================
+  wsAct.columns = [
+    { width:14 }, { width:33 }, { width:26 }, { width:52 }, { width:26 }, { width:10 }, { width:15 }
+  ];
+  wsAct.getRow(1).height = 26.1;
+  wsAct.getCell('A1').value = 'TAREAS POR ACTIVIDAD - REVISION BIM';
+  wsAct.getCell('A1').font = { name:'Calibri', size:16, bold:true, color:{ argb:'FF1F3864' } };
+  wsAct.getRow(2).height = 15;
+  wsAct.getCell('A2').value = { formula: 'Gant!A2' };
+  wsAct.getCell('A2').font = { name:'Calibri', size:11, bold:true, color:{ argb:'FF262626' } };
+  wsAct.getRow(3).height = 15;
+  wsAct.getCell('A3').value = 'MARCA "TRUE" EN HECHO Y LA TAREA QUEDA CULMINADA. USA LOS FILTROS DEL ENCABEZADO PARA SEGMENTAR.';
+  wsAct.getCell('A3').font = { name:'Calibri', size:9, italic:true, color:{ argb:'FF595959' } };
+
+  wsAct.getRow(4).height = 28;
+  ['ITEM','EQUIPO','COMPONENTE','TAREA','RESPONSABLE','HECHO','% CUMPLIDO'].forEach((h, i) => {
+    const c = wsAct.getCell(4, i + 1);
+    c.value = h;
+    c.font = { name:'Arial', size:10, bold:true, color:{ argb:'FFFFFFFF' } };
+    c.fill = fillSolid('FF1F3864');
+    c.alignment = { horizontal:'center', vertical:'middle' };
+    c.border = thinBorder;
+  });
+  wsAct.autoFilter = 'A4:G4';
+
+  actSheetRows.forEach((item, idx) => {
+    const rn = 5 + idx;
+    wsAct.getRow(rn).height = 18;
+    wsAct.getCell(rn, 1).value = item.item;
+    wsAct.getCell(rn, 2).value = item.equipo;
+    wsAct.getCell(rn, 3).value = item.componente;
+    wsAct.getCell(rn, 4).value = item.tarea;
+    wsAct.getCell(rn, 5).value = item.responsable;
+    wsAct.getCell(rn, 6).value = Boolean(item.done);
+    wsAct.getCell(rn, 7).value = { formula: `IF(F${rn}=TRUE,1,0)` };
+    wsAct.getCell(rn, 7).numFmt = '0%';
+    for(let col = 1; col <= 7; col++){
+      const c = wsAct.getCell(rn, col);
+      c.font = { name:'Calibri', size:9, color:{ argb:'FF262626' } };
+      c.border = thinBorder;
+      c.alignment = { horizontal: col===1||col>=6 ? 'center' : 'left', vertical:'middle' };
     }
-    const rowIdx = aoa.length;
-    const line = [
-      r.excelId || r.id,
-      r.edt || '',
-      r.title || '',
-      r.owner || '',
-      r.type || 'Act.',
-      r.duration || '',
-      r.start ? new Date(r.start + 'T12:00:00Z') : '',
-      r.end ? new Date(r.end + 'T12:00:00Z') : '',
-      r.predecessor || '',
-      r.dependency || '',
-      r.lag || ''
-    ];
-    allDates.forEach((d, dIdx) => {
-      const val = r.percentByDay?.[String(Number(d.slice(8,10)))] || 0;
-      if(val > 0){
-        line.push(Number(val));
-        percentCells.push({ r: rowIdx, c: metaHeaders.length + dIdx, v: Number(val) });
-      } else {
-        line.push('');
-      }
-    });
-    aoa.push(line);
+  });
+  const lastActSheetRow = Math.max(5, 4 + actSheetRows.length);
+  wsAct.addConditionalFormatting({
+    ref: `A5:G${lastActSheetRow}`,
+    rules: [{ type:'expression', formulae:['$F5=TRUE'], priority:1, style:{ font:{color:{argb:'FF1F3864'}}, fill:fillSolid('FFDDEBF7') } }]
+  });
+  wsAct.addConditionalFormatting({
+    ref: `G5:G${lastActSheetRow}`,
+    rules: [{ type:'dataBar', priority:2, minLength:0, maxLength:100, showValue:true, gradient:false, cfvo:[{type:'num',value:0},{type:'num',value:1}] }]
+  });
+
+  // ==================== 3. HOJA CONFIG ====================
+  wsCfg.columns = [
+    { width:17 }, { width:30 }, { width:12 }, { width:3 },
+    { width:17 }, { width:16 }, { width:15 }, { width:4 },
+    { width:24 }, { width:15 }, { width:4 },
+    { width:24 }, { width:12 }, { width:38 }
+  ];
+  wsCfg.getRow(1).height = 20;
+  wsCfg.getCell('A1').value = 'CONFIGURACIÓN DEL CRONOGRAMA';
+  wsCfg.getCell('A1').font = { name:'Calibri', size:14, bold:true, color:{ argb:'FF1F3864' } };
+  wsCfg.getCell('A2').value = 'Feriados (col A): escríbelos aquí. Abreviatura (col C): vacía = aplica a todos. Inicio del calendario en J4 (amarilla). Sábados y domingos (col E) se calculan solos; cambia col G a SI para habilitar trabajo ese día.';
+  wsCfg.getCell('A2').font = { name:'Calibri', size:9, italic:true, color:{ argb:'FF595959' } };
+
+  [['A3','Feriados (no laborables)'],['E3','Días no laborables (sáb y dom automáticos)'],['I3','Rango del cronograma'],['L3','Responsables (nombres)']].forEach(([ref, txt]) => {
+    const c = wsCfg.getCell(ref);
+    c.value = txt;
+    c.font = { name:'Calibri', size:10, bold:true, color:{ argb:'FF1F3864' } };
+  });
+  [['A4','Fecha'],['B4','Descripción'],['C4','Abreviatura'],['E4','Fecha'],['F4','Día'],['G4','¿Laborable?'],['I4','Inicio del Gantt (editable)'],['L4','Nombre'],['M4','Abreviatura']].forEach(([ref, txt]) => {
+    const c = wsCfg.getCell(ref);
+    c.value = txt;
+    c.font = { name:'Arial', size:9, bold:true, color:{ argb:'FFFFFFFF' } };
+    c.fill = fillSolid('FF1F3864');
+    c.alignment = { horizontal:'center', vertical:'middle' };
+    c.border = thinBorder;
+  });
+
+  // Responsables (L5:M54)
+  const ownerList = owners();
+  ownerList.forEach((oName, i) => {
+    const rn = 5 + i;
+    wsCfg.getCell(rn, 12).value = oName.toUpperCase();
+    wsCfg.getCell(rn, 13).value = ownerInitials(oName);
+    wsCfg.getCell(rn, 12).border = thinBorder;
+    wsCfg.getCell(rn, 13).border = thinBorder;
+    wsCfg.getCell(rn, 13).alignment = { horizontal:'center' };
+  });
+
+  // Feriados y días libres personales (A5:C24)
+  const holidayEntries = [];
+  const baseHols = S.holidays || window.BIM_GANTT_BASE_SOURCE?.holidays || {};
+  Object.entries(baseHols).forEach(([iso, desc]) => holidayEntries.push({ iso, desc, abrev:'' }));
+  const baseLeaves = S.nonWorkingByOwner || window.BIM_GANTT_BASE_SOURCE?.nonWorkingByOwner || {};
+  Object.entries(baseLeaves).forEach(([oName, map]) => {
+    const ab = ownerInitials(oName);
+    Object.entries(map || {}).forEach(([iso, desc]) => holidayEntries.push({ iso, desc, abrev:ab }));
+  });
+  for(let r = 5; r <= 24; r++){
+    const entry = holidayEntries[r - 5];
+    const cA = wsCfg.getCell(r, 1), cB = wsCfg.getCell(r, 2), cC = wsCfg.getCell(r, 3);
+    if(entry){
+      cA.value = isoToUtcDate(entry.iso);
+      cB.value = entry.desc;
+      cC.value = entry.abrev;
+    }
+    cA.numFmt = 'dd/mm/yy';
+    cA.border = cB.border = cC.border = thinBorder;
+    cC.alignment = { horizontal:'center' };
+    cC.dataValidation = { type:'list', allowBlank:true, formulae:['=$M$5:$M$54'], showErrorMessage:true, errorStyle:'warning', errorTitle:'Abreviatura', error:'Usa una abreviatura de la columna M o déjalo vacío.' };
   }
 
-  const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
-  ws['!merges'] = merges;
-  ws['!cols'] = [
-    { wch: 7 }, { wch: 7 }, { wch: 44 }, { wch: 22 }, { wch: 9 }, { wch: 9 },
-    { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 11 }, { wch: 10 },
-    ...allDates.map(() => ({ wch: 5.5 }))
-  ];
-  for(const pc of percentCells){
-    const addr = XLSX.utils.encode_cell({ r: pc.r, c: pc.c });
-    if(ws[addr]) ws[addr].z = pc.v < 0.1 ? '0.0%' : '0%';
-  }
-  return ws;
-}
+  // Rango del cronograma (I4:J6)
+  const cJ4 = wsCfg.getCell('J4');
+  cJ4.value = isoToUtcDate(S.start);
+  cJ4.numFmt = 'dd/mm/yy';
+  cJ4.font = { name:'Arial', size:10, bold:true, color:{ argb:'FF1F3864' } };
+  cJ4.fill = fillSolid('FFFFF2CC');
+  cJ4.alignment = { horizontal:'center', vertical:'middle' };
+  cJ4.border = thinBorder;
 
-function buildActualProgressWorksheet(XLSX){
-  const S = getSource();
-  const labels = { completed:'Completada', pending:'Pendiente', unassigned:'Sin asignar' };
-  const aoa = [['ID Excel','ID Interno','EDT','Actividad / hito','Responsable','Grupo','Inicio','Fin','Estado Gantt','Entregables BIM','Avance real (%)','Fin real']];
-  for(const r of S.rows){
-    if(r.kind !== 'activity') continue;
-    const stInfo = taskState(r);
-    aoa.push([
-      r.excelId || r.id,
-      r.id,
-      r.edt || '',
-      r.title,
-      r.owner,
-      r.group,
-      r.start,
-      r.end,
-      labels[stInfo.state] || stInfo.state,
-      stInfo.taskIds.join(', ') || 'Sin vincular',
-      Number.isFinite(stInfo.actual) ? stInfo.actual : '',
-      stInfo.completedAt || ''
-    ]);
+  wsCfg.getCell('I5').value = 'Fin del proyecto';
+  wsCfg.getCell('I5').font = { name:'Calibri', size:9, bold:true };
+  wsCfg.getCell('I5').border = thinBorder;
+  wsCfg.getCell('J5').value = { formula: `MAX(Gant!$E$9:$E$${lastGantRow})` };
+  wsCfg.getCell('J5').numFmt = 'dd/mm/yy';
+  wsCfg.getCell('J5').alignment = { horizontal:'center' };
+  wsCfg.getCell('J5').border = thinBorder;
+
+  wsCfg.getCell('I6').value = 'Fin del calendario';
+  wsCfg.getCell('I6').font = { name:'Calibri', size:9, bold:true };
+  wsCfg.getCell('I6').border = thinBorder;
+  wsCfg.getCell('J6').value = { formula: `MAX(Gant!$J$8:$${lastColL}$8)` };
+  wsCfg.getCell('J6').numFmt = 'dd/mm/yy';
+  wsCfg.getCell('J6').alignment = { horizontal:'center' };
+  wsCfg.getCell('J6').border = thinBorder;
+
+  // Sábados y domingos automáticos (E5:G60)
+  for(let r = 5; r <= 60; r++){
+    const cE = wsCfg.getCell(r, 5), cF = wsCfg.getCell(r, 6), cG = wsCfg.getCell(r, 7);
+    cE.value = { formula: `IF($J$4-WEEKDAY($J$4,2)+6+7*INT((ROW()-ROW($E$5)+(WEEKDAY($J$4,2)=7))/2)+MOD((ROW()-ROW($E$5)+(WEEKDAY($J$4,2)=7)),2)>$J$6,"",$J$4-WEEKDAY($J$4,2)+6+7*INT((ROW()-ROW($E$5)+(WEEKDAY($J$4,2)=7))/2)+MOD((ROW()-ROW($E$5)+(WEEKDAY($J$4,2)=7)),2))` };
+    cE.numFmt = 'dd/mm/yy';
+    cF.value = { formula: `IF(E${r}="","",IF(WEEKDAY(E${r},2)=6,"Sábado","Domingo"))` };
+    cG.value = 'NO';
+    cG.alignment = { horizontal:'center' };
+    cG.dataValidation = { type:'list', allowBlank:true, formulae:['"SI,NO"'], showErrorMessage:true, errorTitle:'¿Laborable?', error:'Elige SI o NO.' };
+    cE.border = cF.border = cG.border = thinBorder;
   }
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [
-    {wch:10},{wch:10},{wch:8},{wch:44},{wch:22},{wch:28},{wch:12},{wch:12},{wch:14},{wch:18},{wch:14},{wch:12}
+  wsCfg.addConditionalFormatting({
+    ref: 'G5:G60',
+    rules: [{ type:'expression', formulae:['$G5="SI"'], priority:1, style:{ fill:fillSolid('FFC6EFCE') } }]
+  });
+
+  // Nombres definidos (definedNames) exactos de Paquete 09.xlsx
+  const namedDefs = [
+    ['Config!$A$5:$A$24', 'Feriados'],
+    ['Config!$C$5:$C$24', 'FeriadosAbrev'],
+    ['Config!$E$5:$E$60', 'DiasNoLaborables'],
+    ['Config!$G$5:$G$60', 'DiaLaborableSiNo'],
+    ['Config!$J$6', 'FinCalendario'],
+    ['Config!$L$5:$L$54', 'Responsables'],
+    ['Config!$M$5:$M$54', 'RespAbrev']
   ];
-  return ws;
+  namedDefs.forEach(([ref, name]) => {
+    try { wb.definedNames.remove(ref, name); } catch {}
+    try { wb.definedNames.add(ref, name); } catch {}
+  });
 }
 
 function openArea2AuthThenExcelSync(){
@@ -1520,18 +1921,18 @@ function openArea2AuthThenExcelSync(){
 function openExcelSyncModal(){
   const actsCount = getSource().rows.filter(r => r.kind === 'activity').length;
   const back = document.getElementById('vgg-submodal-back');
-  back.innerHTML = '<div class="vgg-submodal" role="dialog" aria-modal="true" aria-label="Actualizar Excel AREA_BIM2">'+
-    '<div class="vgg-submodal-hd"><h3>Actualizar Excel del Cronograma · AREA_BIM2</h3>'+
+  back.innerHTML = '<div class="vgg-submodal" role="dialog" aria-modal="true" aria-label="Actualizar Excel">'+
+    '<div class="vgg-submodal-hd"><h3>Actualizar Excel del Cronograma</h3>'+
     '<button type="button" class="vgg-submodal-close" data-vgg-sub-close>×</button></div>'+
     '<div class="vgg-submodal-body">'+
     '<div id="vgg-xls-err" class="vgg-sub-error" hidden></div>'+
-    '<div class="vgg-excel-card"><h4>Opción 1 · Reemplazar hoja «Gant» en tu Excel original (OneDrive)</h4>'+
-    '<p>Selecciona tu archivo <code>Actividades Área Bim - Noviembre.xlsx</code>. Se conservarán todas las demás pestañas del libro y se reescribirá únicamente la hoja <b>Gant</b> con las <b>'+actsCount+' actividades</b> actuales de Supabase.</p>'+
-    '<input type="file" id="vgg-xls-target" accept=".xlsx,.xlsm" hidden>'+
-    '<div><button type="button" id="vgg-xls-merge-btn" class="vgg-sub-btn success">Elegir mi Excel (.xlsx) y actualizar hoja Gant</button></div></div>'+
-    '<div class="vgg-excel-card"><h4>Opción 2 · Descargar libro Excel nuevo</h4>'+
-    '<p>Genera un archivo <code>Actividades Área Bim - Actualizado.xlsx</code> desde cero con la hoja <b>Gant</b> y una pestaña adicional <b>Avance_Real_BIM</b> con el avance real y las tareas vinculadas.</p>'+
-    '<div><button type="button" id="vgg-xls-new-btn" class="vgg-sub-btn primary">Descargar Excel nuevo (.xlsx)</button></div></div>'+
+    '<div class="vgg-excel-card"><h4>Opción 1 · Actualizar mi archivo Excel existente (.xlsx)</h4>'+
+    '<p>Selecciona tu libro Excel local. Se actualizarán las hojas <b>Gant</b>, <b>Actividades</b> y <b>Config</b> con el formato completo, fórmulas y formato condicional de tu plantilla (<b>'+actsCount+' actividades</b>), conservando cualquier otra pestaña adicional que tenga tu archivo.</p>'+
+    '<input type="file" id="vgg-xls-target" accept=".xlsx" hidden>'+
+    '<div><button type="button" id="vgg-xls-merge-btn" class="vgg-sub-btn success">Elegir mi Excel (.xlsx) y actualizar</button></div></div>'+
+    '<div class="vgg-excel-card"><h4>Opción 2 · Descargar libro Excel nuevo (Plantilla completa)</h4>'+
+    '<p>Genera desde cero <code>Cronograma_Gant_BIM.xlsx</code> con las 3 hojas (<b>Gant</b>, <b>Actividades</b> y <b>Config</b>), todas las fórmulas automáticas, validaciones y formato condicional tal cual tu plantilla.</p>'+
+    '<div><button type="button" id="vgg-xls-new-btn" class="vgg-sub-btn primary">Descargar Excel con plantilla (.xlsx)</button></div></div>'+
     '</div>'+
     '<div class="vgg-submodal-ft"><button type="button" class="vgg-sub-btn" data-vgg-sub-close>Cerrar</button></div></div>';
   back.hidden = false;
@@ -1545,16 +1946,15 @@ function openExcelSyncModal(){
     if(!file) return;
     errBox.hidden = true;
     try {
-      const XLSX = await loadSheetJs();
+      const ExcelJS = await loadExcelJs();
       const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf, { type:'array', cellDates:true });
-      const targetSheetName = wb.SheetNames.find(n => /^gant+$/i.test(n.trim())) || 'Gant';
-      const ws = buildGantWorksheet(XLSX);
-      if(!wb.SheetNames.includes(targetSheetName)) wb.SheetNames.unshift(targetSheetName);
-      wb.Sheets[targetSheetName] = ws;
-      XLSX.writeFile(wb, file.name);
+      const wb = new ExcelJS.Workbook();
+      await wb.xlsx.load(buf);
+      buildPaqueteTemplateIntoWorkbook(wb);
+      const outBuf = await wb.xlsx.writeBuffer();
+      downloadExcelBuffer(outBuf, file.name);
       closeSubmodal();
-      if(typeof toast === 'function') toast('Excel actualizado (' + targetSheetName + ') descargado como ' + file.name);
+      if(typeof toast === 'function') toast('Excel actualizado con fórmulas y plantilla: ' + file.name);
     } catch (err) {
       errBox.textContent = 'No se pudo actualizar el archivo: ' + (err?.message || 'error desconocido');
       errBox.hidden = false;
@@ -1564,13 +1964,13 @@ function openExcelSyncModal(){
   document.getElementById('vgg-xls-new-btn')?.addEventListener('click', async () => {
     errBox.hidden = true;
     try {
-      const XLSX = await loadSheetJs();
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, buildGantWorksheet(XLSX), 'Gant');
-      XLSX.utils.book_append_sheet(wb, buildActualProgressWorksheet(XLSX), 'Avance_Real_BIM');
-      XLSX.writeFile(wb, 'Actividades Area Bim - Actualizado.xlsx');
+      const ExcelJS = await loadExcelJs();
+      const wb = new ExcelJS.Workbook();
+      buildPaqueteTemplateIntoWorkbook(wb);
+      const outBuf = await wb.xlsx.writeBuffer();
+      downloadExcelBuffer(outBuf, 'Cronograma_Gant_BIM.xlsx');
       closeSubmodal();
-      if(typeof toast === 'function') toast('Excel nuevo generado con hojas Gant y Avance_Real_BIM.');
+      if(typeof toast === 'function') toast('Excel generado con plantilla completa (Gant, Actividades y Config).');
     } catch (err) {
       errBox.textContent = 'No se pudo generar el Excel: ' + (err?.message || 'error desconocido');
       errBox.hidden = false;
