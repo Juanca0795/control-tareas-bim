@@ -59,6 +59,7 @@ html[data-theme="light"] .vgg-header-actions button[data-vgg-action="open-excel-
 .vgg-table thead .vgg-week th{top:0;height:26px;font-size:11px;letter-spacing:.04em}
 .vgg-table thead .vgg-date th{top:26px;height:22px;font-family:'JetBrains Mono',monospace;font-size:10.5px}
 .vgg-table thead .vgg-weekday th{top:48px;height:22px;font-size:10px;opacity:.92}
+.vgg-table thead th[data-vgg-date],.vgg-table thead .vgg-week th:not(.vgg-meta){cursor:ew-resize;user-select:none}
 .vgg-table thead th.vgg-meta{top:0;z-index:16}
 .vgg-table .vgg-sticky-col{position:sticky;z-index:6}
 .vgg-table thead .vgg-sticky-col{z-index:18}
@@ -333,13 +334,56 @@ if(!window.BIM_GANTT_VIEW_SOURCE) return;
 try { localStorage.removeItem('bim-gantt-excel-override-v1'); } catch {}
 
 const STORAGE_ZOOM_KEY = 'bim-gantt-zoom-v1';
+const STORAGE_DAYW_KEY = 'bim-gantt-dayw-v1';
 const STORAGE_DARK_TABLE_KEY = 'bim-gantt-dark-table-v1';
 const STORAGE_LINKS_KEY = 'bim-gantt-show-links-v1';
 const STORAGE_CPM_KEY = 'bim-gantt-show-cpm-v1';
 const STORAGE_BASELINE_KEY = 'bim-gantt-show-baseline-v1';
 const ZOOM_WIDTHS = { compact: 22, normal: 30, wide: 42 };
+const MIN_DAY_WIDTH = 18;
+const MAX_DAY_WIDTH = 64;
 
 const st = { owner:'', group:'', week:'', status:'', search:'', selected:'', zoom: readPref(STORAGE_ZOOM_KEY, 'normal') };
+let customDayWidth = (() => {
+  const n = Number(readPref(STORAGE_DAYW_KEY, '0'));
+  return Number.isFinite(n) && n >= MIN_DAY_WIDTH && n <= MAX_DAY_WIDTH ? n : 0;
+})();
+function currentDayWidth(){
+  return customDayWidth || ZOOM_WIDTHS[st.zoom] || 30;
+}
+function applyDayWidth(nextW, anchorClientX){
+  const clamped = Math.max(MIN_DAY_WIDTH, Math.min(MAX_DAY_WIDTH, Math.round(nextW)));
+  const prevW = currentDayWidth();
+  if(clamped === prevW) return;
+  const scroll = overlay?.querySelector('.vgg-scroll');
+  let anchorRatio = null, offsetInView = 0;
+  if(scroll && Number.isFinite(anchorClientX)){
+    const rect = scroll.getBoundingClientRect();
+    offsetInView = anchorClientX - rect.left;
+    const totalW = scroll.scrollWidth || 1;
+    anchorRatio = (scroll.scrollLeft + offsetInView) / totalW;
+  }
+  customDayWidth = clamped;
+  savePref(STORAGE_DAYW_KEY, clamped);
+  const zoomEl = document.getElementById('vgg-zoom');
+  if(zoomEl){
+    const nearest = clamped <= 25 ? 'compact' : clamped >= 38 ? 'wide' : 'normal';
+    st.zoom = nearest;
+    zoomEl.value = nearest;
+  }
+  const table = document.getElementById('vgg-table');
+  if(table){
+    const displayedCount = visibleColumns().length;
+    const cols = table.querySelectorAll('colgroup col');
+    for(let i = displayedCount; i < cols.length; i++){
+      cols[i].style.width = clamped + 'px';
+    }
+    if(scroll && anchorRatio !== null){
+      scroll.scrollLeft = Math.max(0, anchorRatio * scroll.scrollWidth - offsetInView);
+    }
+    requestAnimationFrame(drawDependencyLinksSvg);
+  }
+}
 let darkTableMode = readPref(STORAGE_DARK_TABLE_KEY, '0') === '1';
 let showLinksP6 = readPref(STORAGE_LINKS_KEY, '1') !== '0';
 let showCpm = readPref(STORAGE_CPM_KEY, '0') === '1';
@@ -848,7 +892,7 @@ function render(){
   const allDates = getAllDates();
   const days = st.week ? allDates.filter(d => week(d) === st.week) : allDates;
   const displayed = visibleColumns();
-  const dayWidth = ZOOM_WIDTHS[st.zoom] || 30;
+  const dayWidth = currentDayWidth();
 
   const selectedRow = st.selected ? S.rows.find(r => r.kind==='activity' && r.id===st.selected) : null;
   const deps = findDependencies(selectedRow);
@@ -3150,10 +3194,40 @@ function open(){
       zoomEl.value = ZOOM_WIDTHS[st.zoom] ? st.zoom : 'normal';
       zoomEl.addEventListener('change', ev => {
         st.zoom = ev.target.value;
+        customDayWidth = 0;
+        savePref(STORAGE_DAYW_KEY, 0);
         savePref(STORAGE_ZOOM_KEY, st.zoom);
         render();
       });
     }
+    // Zoom continuo en la cabecera del calendario: rueda del mouse o arrastre horizontal
+    let headerZoomDrag = null;
+    overlay.addEventListener('wheel', ev => {
+      const onCalHeader = ev.target.closest('.vgg-table thead th[data-vgg-date], .vgg-table thead .vgg-week th:not(.vgg-meta)');
+      const onTableWithCtrl = ev.ctrlKey && ev.target.closest('.vgg-scroll');
+      if(!onCalHeader && !onTableWithCtrl) return;
+      ev.preventDefault();
+      const step = ev.deltaY < 0 ? 4 : -4;
+      applyDayWidth(currentDayWidth() + step, ev.clientX);
+    }, { passive: false });
+    overlay.addEventListener('pointerdown', ev => {
+      if(ev.button !== 0) return;
+      const th = ev.target.closest('.vgg-table thead th[data-vgg-date], .vgg-table thead .vgg-week th:not(.vgg-meta)');
+      if(!th) return;
+      headerZoomDrag = { startX: ev.clientX, startW: currentDayWidth() };
+    });
+    window.addEventListener('pointermove', ev => {
+      if(!headerZoomDrag) return;
+      const dx = ev.clientX - headerZoomDrag.startX;
+      if(Math.abs(dx) < 3) return;
+      applyDayWidth(headerZoomDrag.startW + Math.round(dx / 6), headerZoomDrag.startX);
+    });
+    window.addEventListener('pointerup', () => { headerZoomDrag = null; });
+    overlay.addEventListener('dblclick', ev => {
+      if(ev.target.closest('.vgg-table thead th[data-vgg-date], .vgg-table thead .vgg-week th:not(.vgg-meta)')){
+        applyDayWidth(30, ev.clientX);
+      }
+    });
     const linksEl = document.getElementById('vgg-show-links');
     if(linksEl){
       linksEl.checked = showLinksP6;
@@ -3210,7 +3284,7 @@ function open(){
         origStart: row.start,
         origEnd: row.end,
         startX: ev.clientX,
-        dayW: ZOOM_WIDTHS[st.zoom] || 30,
+        dayW: currentDayWidth(),
         delta: 0,
         moved: false
       };
