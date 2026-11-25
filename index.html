@@ -6702,6 +6702,121 @@ main {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
+/* Barra superior interna de Control Semanal (Seguimiento / Proyección + Exportar PPT + Acciones) */
+#weekly-view .weekly-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+#weekly-view .weekly-subtabs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 10px;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-base);
+}
+#weekly-view .weekly-subtab {
+  border: 0;
+  background: transparent;
+  color: var(--ink-secondary);
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background-color .14s ease, color .14s ease;
+}
+#weekly-view .weekly-subtab:hover {
+  color: var(--ink-primary);
+  background: var(--bg-hover);
+}
+#weekly-view .weekly-subtab.active {
+  background: rgba(56, 189, 248, .15);
+  color: var(--accent-blue);
+  box-shadow: inset 0 0 0 1px rgba(56, 189, 248, .32);
+}
+#weekly-view .weekly-topbar-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+#weekly-view .weekly-ppt-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  border-color: rgba(56, 189, 248, .38) !important;
+  color: var(--accent-blue) !important;
+  background: rgba(56, 189, 248, .08) !important;
+}
+#weekly-view .weekly-ppt-btn:hover {
+  background: rgba(56, 189, 248, .16) !important;
+  border-color: var(--accent-blue) !important;
+}
+#weekly-view .weekly-ppt-btn svg,
+#weekly-view .weekly-action-item svg {
+  width: 14px;
+  height: 14px;
+  flex: none;
+}
+.weekly-actions-wrap {
+  position: relative;
+  display: inline-flex;
+}
+.weekly-actions-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+}
+.weekly-actions-btn[aria-expanded="true"] {
+  border-color: var(--accent-blue) !important;
+  color: var(--accent-blue) !important;
+}
+.weekly-actions-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  min-width: 205px;
+  z-index: 80;
+  background: var(--bg-panel);
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  padding: 6px;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, .48);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.weekly-actions-popover.hidden {
+  display: none !important;
+}
+.weekly-action-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--ink-primary);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  padding: 7px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background-color .12s ease;
+}
+.weekly-action-item:hover:not(:disabled) {
+  background: var(--bg-hover);
+}
+.weekly-action-item:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+}
 </style>
 <script src="evidencias.js"></script>
 <script src="exportar-ppt-bim.js"></script>
@@ -6739,11 +6854,6 @@ main {
     <div><strong>ÁREA BIM</strong><small>Control operativo</small></div>
   </div>
   <div class="nav-name">ESPACIO DE TRABAJO</div>
-  <!-- Subnavegación exclusiva de Control Semanal, ubicada en el encabezado superior -->
-  <div id="weekly-subtabs" class="weekly-subtabs hidden" role="tablist" aria-label="Secciones de Control Semanal">
-    <button type="button" id="weekly-tab-seguimiento" class="weekly-subtab active" role="tab" aria-selected="true" aria-controls="weekly-seguimiento" onclick="switchWeeklySubtab('seguimiento')">SEGUIMIENTO</button>
-    <button type="button" id="weekly-tab-proyeccion" class="weekly-subtab" role="tab" aria-selected="false" aria-controls="weekly-proyeccion" tabindex="-1" onclick="switchWeeklySubtab('proyeccion')">PROYECCIÓN</button>
-  </div>
   <nav aria-label="Vistas del sistema" role="tablist">
   <button type="button" id="header-gantt-viewer-launch" 
     onclick="openBimGanttViewer()" title="Visualizar el Gantt original del Excel" aria-label="GANT">
@@ -6754,16 +6864,6 @@ main {
     GANT
   </button>
 
-    <button type="button" id="weekly-ppt-launch" class="weekly-ppt-launch hidden"
-      onclick="openBimPptExport()" title="Exportar las fotografías de la semana a una presentación PowerPoint"
-      aria-label="Exportar evidencias BIM a PowerPoint">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
-        <rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M12 14v5m-3-3 3 3 3-3"/>
-      </svg> Exportar PPT
-    </button>
-    <button type="button" id="weekly-backup-launch" class="weekly-backup-launch hidden" onclick="openWeeklyBackupDialog()" title="Administrar backups sin crear automáticamente una copia" aria-label="Abrir respaldos de Control Semanal">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3M5 7a8 8 0 0 1 14 0"/></svg> Backup
-    </button>
     <button class="nav-link active" id="nav-dashboard" type="button" role="tab" aria-selected="true" onclick="switchView('dashboard')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="12" width="4" height="9" rx="1"></rect><rect x="10" y="7" width="4" height="14" rx="1"></rect><rect x="17" y="3" width="4" height="18" rx="1"></rect></svg>
       Dashboard
@@ -6901,6 +7001,41 @@ main {
 
   <!-- VISTA: CONTROL SEMANAL BIM — INDICADORES, NO MATRIZ DE TAREAS -->
   <div id="weekly-view" class="hidden" aria-label="Control semanal BIM">
+    <div class="weekly-topbar" aria-label="Secciones y acciones de Control Semanal">
+      <div id="weekly-subtabs" class="weekly-subtabs" role="tablist" aria-label="Secciones de Control Semanal">
+        <button type="button" id="weekly-tab-seguimiento" class="weekly-subtab active" role="tab" aria-selected="true" aria-controls="weekly-seguimiento" onclick="switchWeeklySubtab('seguimiento')">Seguimiento</button>
+        <button type="button" id="weekly-tab-proyeccion" class="weekly-subtab" role="tab" aria-selected="false" aria-controls="weekly-proyeccion" tabindex="-1" onclick="switchWeeklySubtab('proyeccion')">Proyección</button>
+      </div>
+      <div class="weekly-topbar-actions">
+        <button type="button" id="weekly-ppt-launch" class="btn small weekly-ppt-btn"
+          onclick="openBimPptExport()" title="Exportar evidencias y tablas de la semana a PowerPoint"
+          aria-label="Exportar evidencias BIM a PowerPoint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+            <rect x="5" y="2" width="14" height="20" rx="2"/><path d="M9 7h6M9 11h6M12 14v5m-3-3 3 3 3-3"/>
+          </svg>
+          <span>Exportar PPT</span>
+        </button>
+        <div class="weekly-actions-wrap" id="weekly-actions-wrap">
+          <button type="button" id="weekly-actions-btn" class="btn small weekly-actions-btn" aria-haspopup="true" aria-expanded="false" onclick="toggleWeeklyActionsMenu(event)">
+            <span>Acciones</span><span aria-hidden="true">▾</span>
+          </button>
+          <div class="weekly-actions-popover hidden" id="weekly-actions-popover" role="menu" aria-label="Acciones de Control Semanal" onclick="event.stopPropagation()">
+            <button type="button" class="weekly-action-item" id="weekly-close-btn" role="menuitem" onclick="closeWeeklyActionsMenu();requestWeeklyClose()" title="Cerrar y archivar la semana seleccionada">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+              <span>Cerrar semana</span>
+            </button>
+            <button type="button" class="weekly-action-item" id="weekly-backup-launch" role="menuitem" onclick="closeWeeklyActionsMenu();openWeeklyBackupDialog()" title="Administrar backups sin crear automáticamente una copia">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 17v3h16v-3M5 7a8 8 0 0 1 14 0"/></svg>
+              <span>Backup / Respaldos</span>
+            </button>
+            <button type="button" class="weekly-action-item" role="menuitem" onclick="closeWeeklyActionsMenu();openBimGanttViewer()" title="Abrir el visor y cronograma Gantt BIM">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 10h18M9 4v17M15 10v11M3 16h18"/></svg>
+              <span>Ir al Gantt</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
     <section class="card weekly-filter-card" aria-label="Filtros del control semanal">
       <div class="weekly-week-navigation weekly-timeline-toolbar">
         <div class="weekly-timeline-head">
@@ -6913,9 +7048,6 @@ main {
           <label for="weekly-week">Ir a semana:</label>
           <input type="week" id="weekly-week" class="field-input" aria-label="Elegir semana de análisis" onchange="changeWeeklyWeek(this.value)">
           <button type="button" class="icon-btn" onclick="stepWeekly(1)" aria-label="Semana siguiente" title="Semana siguiente">›</button>
-          <div class="weekly-utility-actions">
-            <button type="button" class="btn small" id="weekly-close-btn" onclick="requestWeeklyClose()" title="Cerrar y archivar la semana seleccionada">Cerrar semana</button>
-          </div>
         </div>
       </div>
       <div id="weekly-timeline" class="weekly-timeline" aria-label="Selecciona una semana en la línea de tiempo" role="group">
@@ -6947,9 +7079,6 @@ main {
         <div class="weekly-card-head">
           <div><h2 id="weekly-trend-heading">EVOLUCIÓN DEL CUMPLIMIENTO PPC</h2><p id="weekly-trend-subtitle">Porcentaje de compromisos cumplidos en la semana planificada · Meta LPS 85%</p></div>
           <div class="weekly-trend-controls">
-            <button type="button" id="weekly-gantt-viewer-launch" class="btn small" 
-              onclick="openBimGanttViewer()" title="Visualizar el cronograma original del Excel en HTML, sin editarlo"
-              aria-label="Visualizar Gantt de noviembre en una tabla calendario">Visualizar Gantt</button>
             <label class="weekly-monthly-toggle" title="Alternar entre PPC semanal y mensual">
               <input id="weekly-ppc-monthly" type="checkbox" onchange="toggleWeeklyPpcMonthlyMode(this.checked)">
               <span>PPC mensual</span>
@@ -10547,8 +10676,6 @@ function switchView(v, authenticated=false){
     $('#nav-'+tab).classList.toggle('active',tab===v);
     $('#nav-'+tab).setAttribute('aria-selected',String(tab===v));
   }
-  $('#weekly-backup-launch').classList.toggle('hidden',v!=='weekly');
-  $('#weekly-ppt-launch').classList.toggle('hidden',v!=='weekly');
   // Mantener GANT siempre fijo a la izquierda de Dashboard en todas las vistas.
   const ganttLaunch=$('#header-gantt-viewer-launch');
   const destination=$('#nav-dashboard');
@@ -10556,17 +10683,14 @@ function switchView(v, authenticated=false){
     ganttLaunch.classList.remove('hidden');
     destination.parentElement.insertBefore(ganttLaunch,destination);
   }
-  // Ambos perfiles (AREA_BIM y AREA_BIM2) muestran Seguimiento y Proyección.
-  // El perfil de exportación PPT sigue siendo independiente.
-  const showWeeklySubtabs=v==='weekly';
-  $('#weekly-subtabs').classList.toggle('hidden',!showWeeklySubtabs);
-  $('.sidebar').classList.toggle('weekly-subtabs-visible',showWeeklySubtabs);
+  if(typeof closeWeeklyActionsMenu==='function')closeWeeklyActionsMenu();
   // La sesión del navegador recuerda la vista, sin almacenar datos de tareas.
   // Salir de Control Semanal revoca el acceso de esta pestaña; reentrar exige clave.
   try{
     sessionStorage.setItem('area-bim-active-view',v);
     if(v==='weekly'){
       sessionStorage.setItem('area-bim-weekly-session','authorized');
+      bimExportProfile='by-person';
       sessionStorage.setItem('area-bim-weekly-export-profile',bimExportProfile);
     }else{
       sessionStorage.removeItem('area-bim-weekly-session');
@@ -10676,10 +10800,10 @@ function validateSettingsAuth(event){
     return;
   }
   const target=authTarget;
-  bimExportProfile=user==='AREA_BIM2'?'by-person':'standard';
+  // Unificación: AREA_BIM (y alias compatible AREA_BIM2) habilitan todas las capacidades de PPT y Excel.
+  bimExportProfile='by-person';
   try{
-    if(user==='AREA_BIM2')sessionStorage.setItem('area-bim-area2-verified','1');
-    else sessionStorage.removeItem('area-bim-area2-verified');
+    sessionStorage.setItem('area-bim-area2-verified','1');
   }catch(e){}
   // Si se cambia el perfil mientras Control Semanal está abierto, actualizar su vista.
   if(currentView==='weekly'&&typeof syncWeeklySubtab==='function')syncWeeklySubtab();
@@ -10702,12 +10826,32 @@ window.bimArea2Auth={
   },
   verify(user,password){
     const u=String(user||'').trim().toUpperCase();
-    if(u!=='AREA_BIM2'||password!=='AREABIM')return false;
+    if(!['AREA_BIM','AREA_BIM2'].includes(u)||password!=='AREABIM')return false;
     bimExportProfile='by-person';
     try{sessionStorage.setItem('area-bim-area2-verified','1');}catch(e){}
     return true;
   }
 };
+function toggleWeeklyActionsMenu(event){
+  if(event)event.stopPropagation();
+  const pop=$('#weekly-actions-popover'),btn=$('#weekly-actions-btn');
+  if(!pop||!btn)return;
+  const opening=pop.classList.contains('hidden');
+  pop.classList.toggle('hidden',!opening);
+  btn.setAttribute('aria-expanded',String(opening));
+}
+function closeWeeklyActionsMenu(){
+  const pop=$('#weekly-actions-popover'),btn=$('#weekly-actions-btn');
+  if(pop)pop.classList.add('hidden');
+  if(btn)btn.setAttribute('aria-expanded','false');
+}
+document.addEventListener('click',e=>{
+  const wrap=$('#weekly-actions-wrap');
+  if(wrap&&!wrap.contains(e.target))closeWeeklyActionsMenu();
+});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape')closeWeeklyActionsMenu();
+});
 
 function showSettings(){
   settingsEditing = null;
@@ -12637,8 +12781,13 @@ function renderWeekly(forceMotion=false){
     ${comparison?`<span class="weekly-status-comparison">${esc(comparison)}</span>`:''}
     </span><span class="status-side">${esc(periodName)} — ${m.planned} compromisos</span>`;
   // El cierre de semanas continúa siendo exclusivo de la semana seleccionada.
-  $('#weekly-close-btn').disabled=overallWeek.closed||!overallWeek.rows.length;
-  $('#weekly-close-btn').textContent=overallWeek.closed?'✓ Semana cerrada':'✓ Cerrar semana';
+  const closeBtn=$('#weekly-close-btn');
+  if(closeBtn){
+    closeBtn.disabled=overallWeek.closed||!overallWeek.rows.length;
+    const closeLabel=closeBtn.querySelector('span');
+    if(closeLabel)closeLabel.textContent=overallWeek.closed?'Semana cerrada':'Cerrar semana';
+    else closeBtn.textContent=overallWeek.closed?'✓ Semana cerrada':'✓ Cerrar semana';
+  }
   $('#weekly-kpis').setAttribute('aria-label',
     (monthly?'Resultados KPI mensuales':'Resultados KPI semanales')+
     (useOperative?' · PPC Operativo':' · PPC Gantt Excel'));
